@@ -63,6 +63,9 @@ Extract, match naming conventions and drop implicit pollutant variable.
     
   # filter NAs
     times <- dplyr::filter(times, !is.na(start), !is.na(end))
+    
+  # save times
+    save(times, file="r_files/times_integrated.Rda")
 ```
 
 ## Extract data for test periods only
