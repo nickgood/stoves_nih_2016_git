@@ -1,0 +1,113 @@
+---
+title: "trans"
+author: "Nicholas Good"
+date: "11/21/2016"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(tibble)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("r_scripts/R_tidy.R")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/samples.Rda")    # sample info
+```
+
+## Load transmissometer data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/trans.Rda")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(trans)
+```
+
+## Load filter id numbers
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/grav.Rda") 
+  filter_info <- dplyr::select(grav, id, id_filter)
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(filter_info, 2)
+```
+
+## Merge data with id
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_merged <- left_join(trans, filter_info, "id_filter") 
+  trans_merged$id <- as.factor(trans_merged$id)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(trans_merged, 2)
+```
+
+## Melt
+
+Make longer and remove missing values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_merged_ <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
+  tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
+  dplyr::mutate(lamda = sub("_.*", "", var)) %>%
+  dplyr::mutate(pos = sub(".*_", "", var)) %>%
+  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
+
+
+```
+
+## QC
+
+Load notes.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/notes.Rda")    # notes
+  notes <- dplyr::filter(notes, grepl("^trans$|^all$", notes$inst) == TRUE)
+```
+
+Flag bad data from notes and plots
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes$qc <- "bad"
+  notes$qc[1:9] <- "maybe"
+  notes$qc[15:16] <- "maybe"
+  notes$qc[17:22] <- "ok"
+  notes$qc[23:27] <- "maybe"
+  notes$qc[35] <- "maybe"
+  notes$qc[42] <- "maybe"
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_merged <- dplyr::left_join(trans_merged, select(notes, id, qc), by = "id")
+  trans_merged$id <- as.factor(trans_merged$id)
+  trans_merged$qc <- ifelse(is.na(trans_merged$qc), "ok", as.character(trans_merged$qc))
+  trans_merged$qc <- as.factor(trans_merged$qc)
+```
+
+Addtional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_merged$qc[trans_merged$id == "G3"] <- "maybe"
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(trans_merged, file = "r_files/trans_merged.Rda")
+```
+
+## Data summary
+
+The $transmissometer$ measured during `r length(unique(trans_merged$id))` experiments between `r min(trans_merged$date, na.rm = TRUE)` and `r max(trans_merged$date, na.rm = TRUE)`. There is no $trans$ data for tests: `r setdiff(levels(samples$id), levels(trans_merged$id))`.
+

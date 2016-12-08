@@ -1,0 +1,105 @@
+---
+title: "pah"
+author: "Nicholas Good"
+date: "11/20/2016"
+output: html_document
+---
+
+## Libraries
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(tibble)
+```
+
+## Source files
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("r_scripts/R_load_data.R")
+  source("r_scripts/R_load_metadata.R")
+  source("r_scripts/R_tidy.R")
+```
+
+## Load pah data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/pah.Rda")    # pah dataset
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  levels(pah$pol)
+```
+
+## Merge with filter meta data
+
+Load metadata
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/data_1.Rda")    # metadata
+```
+
+Extract pah filter cartridge data
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  meta <- dplyr::select(data_1, matches("_red|^id$|^date$"))
+
+  flows <- dplyr::select(meta, matches("flow_|^id$|^date$")) %>%
+    
+            tidyr::gather("var", "value", -id, -date) %>%
+    
+            dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+    
+            dplyr::mutate(type = sub("flow.*", "", var),
+                          rep = as.factor(gsub("[^0-9]", "", var))) %>%
+    
+            dplyr::select(-var)  %>%
+    
+            dplyr::filter(!is.na(id)) %>%
+    
+            dplyr::group_by(rep, id, type) %>%
+    
+            dplyr::mutate(mean = mean(value, na.rm = TRUE))  %>%
+    
+            dplyr::ungroup() %>%
+            
+            dplyr::filter(rep == 1) %>%
+    
+            dplyr::select(-value, -rep, -date)  %>%
+  
+            tidyr::spread(type, mean)
+  
+  times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
+    
+            tidyr::gather("var", "value", -id, -date) %>%
+    
+            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                          type = ifelse(grepl("_end_", var), "end", type)) %>%
+    
+            dplyr::arrange(id) %>%
+            
+            dplyr::filter(!is.na(id)) %>%  
+    
+            dplyr::select(-var, -date) %>%  
+            
+            tidyr::spread(type, value)
+```
+
+Merge pah with filter metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  #pah_merged <- dplyr::left_join(pah, flows, by = "id")  %>%  
+  #                dplyr::left_join(times, by = "id") %>%  
+   #               dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+    #              dplyr::rename(pre_flow = pre, post_flow = post)
+
+  #pah_merged$id <- as.factor(pah_merged$id)
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  #save(pah_merged, file="r_files/pah_merged.Rda")
+```
+
+
+

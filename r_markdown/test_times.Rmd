@@ -1,0 +1,51 @@
+---
+title: "experiment metadata"
+author: "Nicholas Good"
+date: "11/21/2016"
+output: html_document
+---
+
+
+## Librries
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(tibble)
+```
+
+## Source files
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("R_load_data.R")
+  source("R_load_metadata.R")
+  source("R_tidy.R")
+```
+
+## Load sample, wood and batch test meta data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/samples.Rda")
+  load("r_files/batch_times.Rda")
+  load("r_files/wood_times.Rda")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- rbind(select(wood_times, -date), select(batch_times, -date))
+  test_times <- dplyr::filter(inner_join(select(samples, id, date), test_times, by = "id"), is.na(value)==FALSE)
+  test_times$id <- as.factor(test_times$id)
+  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown")
+  test_times <- tidyr::spread(test_times, var, value)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(test_times)
+```
+
+## Save data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(test_times, file="test_times.Rda")
+```
+

@@ -1,0 +1,242 @@
+---
+title: "grav"
+author: "Nicholas Good"
+date: "11/20/2016"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(tibble)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("r_scripts/R_tidy.R")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/samples.Rda")    # sample info
+```
+
+## Load gravimetric data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/grav.Rda")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(grav)
+```
+
+## Merge with filter metadata
+
+Load metadata
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/data_1.Rda")  # metadata
+```
+
+Extract gravimetric filter cartridge data
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  meta <- dplyr::select(data_1, matches("_white_|^id$|^date$"))
+
+  flows <- dplyr::select(meta, matches("flow_|^id$|^date$")) %>%
+            tidyr::gather("var", "value", -id, -date) %>%
+            dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+            dplyr::mutate(type = as.factor(sub("flow.*", "", var)),
+                          rep = as.factor(gsub("[^0-9]", "", var))) %>%
+            dplyr::select(-var)  %>%
+            dplyr::filter(!is.na(id)) %>%
+            dplyr::group_by(id, type, date) %>%
+            dplyr::summarise(mean = mean(value))  %>%
+            tidyr::spread(type, mean)
+  
+  times <- dplyr::select(meta, matches("^time_|^id$")) %>%
+            tidyr::gather("var", "value", -id) %>%
+            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                          type = ifelse(grepl("_end_", var), "end", type)) %>%
+            dplyr::filter(!is.na(id)) %>%  
+            dplyr::select(-var) %>%  
+            tidyr::spread(type, value)
+```
+
+## Filter gravimatric data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- filter(grav, grepl("^[0-9]|^G[0-9]", grav$id))
+```
+
+Merge with filter metadata and drop average values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::left_join(grav, flows, by = "id")  %>%  
+                  dplyr::left_join(times, by = "id") %>%  
+                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                  dplyr::rename(flow_pre = pre, flow_post = post) %>%
+                  dplyr::rename(time_start = start, time_end = end) %>%
+                  dplyr::select(-wgt_pre_avg,
+                                -wgt_post_avg,
+                                -lod, 
+                                -wgt_dif) %>%
+                  dplyr::arrange(id)
+
+  grav_merged$id <- as.factor(grav_merged$id)
+```
+
+## Melt and clean
+
+Split pre and post measurements
+
+Pre-weight average
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
+              tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
+              dplyr::filter(!is.na(val)) %>%
+              dplyr::group_by(id) %>%
+              dplyr::summarise(wgt_pre = mean(val))
+```
+
+Post-weight average
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
+              tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
+              dplyr::filter(!is.na(val)) %>%
+              dplyr::group_by(id) %>%
+              dplyr::summarise(wgt_post = mean(val))
+```
+
+Weight difference
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_dif <- dplyr::full_join(grav_pre, grav_post, by = "id") %>%
+                dplyr::mutate(wgt_delta = wgt_post - wgt_pre)
+```
+
+Merge differences
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::left_join(grav_merged, grav_dif, by = "id") %>%
+                  dplyr::ungroup()
+```
+
+## Add variables
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::mutate(grav_merged, 
+                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre) # calibration weight change
+
+  grav_merged <- dplyr::mutate(grav_merged,
+                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre) # blank change
+```
+
+## QC
+
+Load notes.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/notes.Rda")    # notes
+  notes <- dplyr::filter(notes, grepl("^grav$|^all$", notes$inst) == TRUE)
+```
+
+Flag bad data from notes and plots
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes$qc <- "bad"
+  notes$qc[1:9] <- "maybe"
+  notes$qc[15:16] <- "maybe"
+  notes$qc[17:22] <- "ok"
+  notes$qc[23:27] <- "maybe"
+  notes$qc[33] <- "bad"
+  notes$qc[34] <- "bad"
+  
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::left_join(grav_merged, select(notes, id, qc), by = "id")
+  grav_merged$id <- as.factor(grav_merged$id)
+  grav_merged$qc <- ifelse(is.na(grav_merged$qc), "ok", as.character(grav_merged$qc))
+  grav_merged$qc <- as.factor(grav_merged$qc)
+```
+
+Addtional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged$qc[grav_merged$id == "28A"] <- "bad"
+  grav_merged$qc[grav_merged$id == "28B"] <- "bad"
+  grav_merged$qc[grav_merged$id == "29A"] <- "bad"
+```
+
+Missing data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  missing <- dplyr::select(grav_merged, -notes) 
+  missing <- missing[!complete.cases(missing),]
+```
+
+A total of `r nrow(missing)` tests are missing data. The test id are: `r missing$id`.
+
+## Plots
+
+Weights
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(dplyr::filter(grav_merged, grepl("^[0-9][A-Z]", id)==TRUE),
+         aes(id, wgt_delta, color= qc)) +
+  geom_point() +
+  theme_minimal()
+  
+  ggplot(dplyr::filter(grav_merged, grepl("^[1][0-9][A-Z]", id)==TRUE),
+         aes(id, wgt_delta, color= qc)) +
+  geom_point() +
+  theme_minimal()
+  
+  ggplot(dplyr::filter(grav_merged, grepl("^[2-3][0-9][A-Z]", id)==TRUE),
+         aes(id, wgt_delta, color= qc)) +
+  geom_point() +
+  theme_minimal()
+  
+  ggplot(dplyr::filter(grav_merged, grepl("^[G]", id)==TRUE),
+         aes(id, wgt_delta, color= qc)) +
+  geom_point() +
+  theme_minimal()
+```
+
+Calibration weight
+
+Tests `r dplyr::filter(grav_merged, wgt_cal_delta > 10 | wgt_cal_delta < -10)$id` have large differences (> 10 ug) in the calibration weight values.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav_merged, aes(id, wgt_cal_delta)) +
+  geom_point() +
+  theme_minimal() +
+  ylab("Cal weight delta (mg)") +
+  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+```
+
+Blank weights
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav_merged, aes(id, wgt_blank_delta)) +
+  geom_point() +
+  theme_minimal() +
+  ylab("Blanks weight delta (mg)") +
+  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
+```
+
+## LOD
+
+The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(grav_merged, file="r_files/grav_merged.Rda")
+```
+
+## Summary
+
+$Gravimetric$ data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(levels(samples$id), levels(grav_merged$id))`.
+

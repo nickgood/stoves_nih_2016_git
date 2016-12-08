@@ -1,0 +1,136 @@
+---
+title: "$VOCs$"
+author: "Nicholas Good"
+date: "11/23/2016"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(tibble)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("r_scripts/R_tidy.R")
+```
+
+## Load $VOC$ data
+
+The $VOC$ data is contain in one file. Units are $ppbv$. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/voc.Rda")    # voc dataset
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(voc)
+```
+
+## Remove non-study data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+```
+
+## Convert to longer format
+
+Make longer and remove n/a.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- tidyr::gather(voc, "pol", "val", starts_with("voc_")) %>%
+              dplyr::filter(!is.na(id) & id != "NA")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(voc, 2)
+```
+
+## Merge with meta data
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file="r_files/data_1.Rda")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # match voc metadata
+    meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
+  # merge
+    voc_merged <- dplyr::left_join(voc, meta)
+```
+
+## QC
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("r_files/notes.Rda")    # notes
+  notes <- dplyr::filter(notes, grepl("^voc$|^all$", notes$inst) == TRUE)
+```
+
+Flag bad data from notes and plots
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes$qc <- "bad"
+  notes$qc[1:9] <- "maybe"
+  notes$qc[15:16] <- "maybe"
+  notes$qc[17:22] <- "ok"
+  notes$qc[23:27] <- "maybe"
+  notes$qc[33:36] <- "maybe" # voc specific
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::left_join(voc_merged, select(notes, id, qc), by = "id")
+  voc_merged$id <- as.factor(voc_merged$id)
+  voc_merged$qc <- ifelse(is.na(voc_merged$qc), "ok", as.character(voc_merged$qc))
+  voc_merged$qc <- as.factor(voc_merged$qc)
+```
+
+Additional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  #voc_merged$qc[grav_merged$id == ""] <- "bad"
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(voc_merged, file="r_files/voc_merged.Rda")
+```
+
+## Plot (coloured by fuel type)
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file="r_files/samples.Rda") # load sample info
+  samples <- dplyr::select(samples, id, stove, fuel)
+  
+# join voc with sample info data
+  voc_p <- left_join(voc_merged, samples, by = "id")
+  voc_p$pol <- sub("^voc_", "", voc_p$pol)
+  voc_p$id <- as.factor(voc_p$id)
+  
+# filter out background data and non-detects 
+  voc_p <- filter(voc_p, val > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
+  ggplot(voc_p, aes(id, val, colour = fuel)) + 
+        geom_point() +
+        facet_wrap(~pol, ncol = 1, scales = "free") +
+        theme_minimal() +
+        theme(legend.position = "top") +
+        ylab("ug/m3") + xlab("")
+```
+
+## Plot QC
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
+ggplot(voc_p, aes(id, val, colour = qc)) + 
+        geom_point() +
+        facet_wrap(~pol, ncol = 1, scales = "free") +
+        theme_minimal()
+```
+
+$VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(levels(samples$id), levels(voc_merged$id))`.
+
