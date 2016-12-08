@@ -114,6 +114,43 @@ convert_ppmv_ugpmc <- function(ppmv,mw,t,p){
 #________________________________________________________
 
 
+#________________________________________________________
+# filter data for time periods of interest only
+# requires df with time windows (id, start, end)
+# df with id, time
+
+filter_times <- function(times, df){
+  # get ids for time windows
+    ids <- unique(times$id)
+    
+  # loop ids
+    for(i in 1:length(ids)){
+      # filter out times
+        tmp <- dplyr::filter(df, as.character(id) == as.character(times$id[i]),
+                                  time >= times$start[i],
+                                  time <= times$end[i])
+      # if first match
+        if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+          out <- tmp
+        }
+      # if not first match with data
+        if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+          out <- rbind(out, tmp)
+        }
+    }
+        
+  # return
+      return(out)
+}
+
+
+
+  
+  
+  
+  
+ 
+
 
 
 
