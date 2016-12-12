@@ -103,7 +103,7 @@ load.ecoc.file <- function(file){
   
   # read file
     df <- read.csv(file, header = TRUE, colClasses = classes, 
-                 fill = TRUE, na.strings = c("-"))
+                 fill = TRUE, na.strings = c("-", "na"))
   
   # convert time string to seconds of day
     df <- dplyr::rename(df, time = Time)
