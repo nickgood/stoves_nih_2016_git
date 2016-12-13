@@ -8,10 +8,7 @@ output: html_document
 ## Librries
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(dplyr)
-  library(tidyr)
-  library(ggplot2)
-  library(tibble)
+  library(tidyverse)
 ```
 
 ## Source files
