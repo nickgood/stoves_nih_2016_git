@@ -6,9 +6,7 @@ output: html_document
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(dplyr)
-  library(tidyr)
-  library(ggplot2)
+  library(tidyverse)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
