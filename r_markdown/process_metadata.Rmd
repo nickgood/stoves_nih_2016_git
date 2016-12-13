@@ -7,10 +7,8 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
 # libraries
-  require(tidyr)
-  require(dplyr)
-  require(ggplot2)
-  require(GGally)
+  library(tidyverse)
+  library(GGally)
 
 # source files
   source("r_scripts/R_functions.R")
