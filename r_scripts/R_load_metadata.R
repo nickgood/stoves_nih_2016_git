@@ -1,23 +1,22 @@
 #________________________________________________________
 # Libraries
-  require(xlsx)
-  require(dplyr)
+  library(tidyverse)
+  library(readxl)
 #________________________________________________________
 
 #________________________________________________________
 # Load sample tracking log
-# file <- "data/Sample Tracking Log.xlsx"
+# file <- "data/logs/Sample Tracking Log.xlsx"
 # df <- load.samples(file)
-  load.samples <- function(file){
+  load.samples <- function(file, sheet = "Completed Test Log"){
+    
     # read data
-      df <- read.xlsx(file, 
-                    sheetName="Completed Test Log", 
-                    startRow = 2, endRow = 11, 
-                    header = FALSE)
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
       
-    # transpose
+    # crop and transpose
+      df <- df[1:10,]
       df <- as.data.frame(t(df[-1]))
-      
+     
     # rename columns
       names(df) <- c("num",
                       "date",
@@ -58,16 +57,15 @@
   
 #________________________________________________________
 # Load sample batch log
-# file <- "data/Transcribed Batch Fed Stove Sampling Forms.xlsx"
+# file <- "data/logs/Transcribed Batch Fed Stove Sampling Forms.xlsx"
 # df <- load.batch(file) 
-load.batch <- function(file){
+load.batch <- function(file, sheet = "Batch Fed Sampling Forms"){
     
     # read data
-      df <- read.xlsx(file, 
-                    sheetName="Batch Fed Sampling Forms", startRow = 1,
-                    endRow = 53, header = FALSE)
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
     
-    # transpose
+    # crop transpose
+      df <- df[1:53,]
       df <- as.data.frame(t(df[c(-1,-2)]))
     
     # rename columns
@@ -167,19 +165,19 @@ load.batch <- function(file){
  
 #________________________________________________________
 # Load five gas calibration
-# file <- "data/Transcribed Emissions Tester 1 Calibration Log.xlsx"
+# file <- "data/logs/Transcribed Emissions Tester 1 Calibration Log.xlsx"
 # df <- load.fivegascal(file)
-  load.fivegascal <- function(file){
+  load.fivegascal <- function(file, sheet = "Sheet1"){
     
     # read data
-      df <- read.xlsx(file, 
-                    sheetName="Sheet1", startRow = 1,
-                    endRow = 32, header = FALSE)
-    # transpose
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+      
+    # crop and  transpose
+      df <- df[1:32,]
       df <- as.data.frame(t(df[c(-1,-2)])) 
    
     # rename columns
-    names(df) <- c("date",
+      names(df) <- c("date",
                     "conc_zero",
                    "time_start_zero",
                    "time_end_zero",
@@ -243,20 +241,20 @@ load.batch <- function(file){
 #________________________________________________________  
     
 #________________________________________________________
-# Load five gas and filter metadata
-  load.fivegas_filter_meta <- function(file){
-    # file <- "data/Transcribed Emissions Tester 1 Data Sheets.xlsx"
-    # df <- load.fivegas_filter_meta(file)
+# Load fivegas and filter metadata
+# file <- "data/logs/Transcribed Emissions Tester 1 Data Sheets.xlsx"
+# df <- load.fivegas_filter_meta(file)
+  load.fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
+  
     # read data
-      df <- read.xlsx(file, 
-                    sheetName="Tester 1 Data Sheet", 
-                    startRow = 1, endRow = 50, 
-                    header = FALSE)
-    # transpose
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+      
+    # crop and  transpose
+      df <- df[1:50,]
       df <- as.data.frame(t(df[c(-1,-2)])) 
     
     # rename columns
-    names(df) <- c("date",
+      names(df) <- c("date",
                     "id",
                     "person",
                     "preflow_cart_white_1",
@@ -342,15 +340,16 @@ load.batch <- function(file){
   
 #________________________________________________________
 # Load five gas and filter metadata
-# file <- "data/Transcribed Emissions Tester 2 Calibration Log.xlsx"
+# file <- "data/logs/Transcribed Emissions Tester 2 Calibration Log.xlsx"
 # df <- load.co2_cal_flows_meta(file)
-  load.co2_cal_flows_meta <- function(file){
+  load.co2_cal_flows_meta <- function(file, sheet = "Sheet1"){
     
     # read data
-      df <- read.xlsx(file, 
-                sheetName="Sheet1", startRow = 1,
-                endRow = 32, header = FALSE)
-    
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+      
+    # crop
+      df <- df[1:32,]
+      
     # flip rows and columns
       df <- as.data.frame(t(df[c(-1,-2)]))
     
@@ -418,15 +417,15 @@ load.batch <- function(file){
  
 #________________________________________________________
 # Load flows and five gas metadata
-  load.flow_fivegas_meta <- function(file){
-    # file <- "data/Transcribed Emissions Tester 2 Data Sheets.xlsx"
-    # df <- load.flow_fivegas_meta(file)
+# file <- "data/logs/Transcribed Emissions Tester 2 Data Sheets.xlsx"
+# df <- load.flow_fivegas_meta(file)
+  load.flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
+    
     # read data
-      df <- read.xlsx(file, 
-                    sheetName="Tester 2 Data Sheet", 
-                    startRow = 1, endRow = 26, 
-                    header = FALSE)
-    # transpose
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+      
+    # crop and transpose
+      df <- df[1:26,]
       df <- as.data.frame(t(df[c(-1,-2)])) 
     
     # rename columns
@@ -492,15 +491,16 @@ load.batch <- function(file){
   
 #________________________________________________________
 # Load wood stove log
-  load.wood <- function(file){
-    # file <- "data/logs/Transcribed Wood Stove Sampling Forms.xlsx"
-    # df <- load.wood(file)
-    # read data
-      df <- read.xlsx(file, 
-                    sheetName="Wood Sampling Form", 
-                    startRow = 1, endRow = 72, 
-                    header = FALSE)
+# file <- "data/logs/Transcribed Wood Stove Sampling Forms.xlsx"
+# df <- load.wood(file)
+  load.wood <- function(file, sheet = "Wood Sampling Form"){
     
+    # read data
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+      
+    # crop and transpose
+      df <- df[1:72,]
+      
     # transpose
       df <- as.data.frame(t(df[c(-1,-2)]))
     
