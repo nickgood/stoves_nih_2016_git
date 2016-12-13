@@ -14,8 +14,8 @@ output: html_document
 ## Source files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("R_tidy.R")
-  source("R_functions.R")
+  source("r_scripts/R_tidy.R")
+  source("r_scripts/R_functions.R")
 ```
 
 ## Load files
