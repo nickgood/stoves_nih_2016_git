@@ -1,9 +1,8 @@
 #________________________________________________________
 # Libraries
-  require(xlsx)
-  require(dplyr)
-  require(reshape)
-  require(tidyr)
+  library(tidyverse)
+  library(readxl)
+  library(reshape)
 #________________________________________________________
 
 #________________________________________________________
@@ -233,10 +232,10 @@ load.fivegas.file <- function(file){
 load.grav.file <- function(file, sheet = "Teflon Filter Weights"){
   
   # read file
-    df <- read.xlsx(file, sheetName = sheet, header = FALSE, colClasses = "character", startRow = 2, endRow = 30)
+    df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
   
   # transpose
-    df <- as.data.frame(t(df[-1]))
+    df <- as_tibble(t(df[1:29,-1]))
     
   # column names
     names(df) <- c("id_filter", 
@@ -309,22 +308,18 @@ load.grav.file <- function(file, sheet = "Teflon Filter Weights"){
 
 #________________________________________________________
 # Load ions file
-# file <- "data/ions/20160602_IONS.xls"
+# file <- "data/ions/20161210_IONS.xls"
 # set sheet to "ug" or "ug_m3"
 load.ions.file <- function(file, sheet = "ug"){
   
-  # column classes
-    classes <- c("character", rep("numeric",36))
-               
   # read file
-    df <- read.xlsx(file, sheetName = sheet, header = TRUE, colClasses = classes)
-    names(df) <- tolower(sub("\\.\\.ug\\.m3\\.", "", colnames(df)))
-    names(df) <- tolower(sub("\\.\\.ug\\.", "", colnames(df)))
-    names(df) <- sub("o\\.", "o_", colnames(df))
-    names(df) <- sub("m\\.p\\.", "mp_", colnames(df))
-    names(df) <- sub("x2\\.5\\.", "twofive_", colnames(df))
-    names(df) <- sub("\\.\\.ug\\.c\\.m3\\.", "", colnames(df))
+    df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+    
+  # fix column names
     names(df)[1] <- "id_ions"
+    names(df) <- tolower(colnames(df))
+    names(df) <- sub(" \\(ug\\)|\\(ug c\\)", "", colnames(df))
+    names(df) <- gsub("/|-|,", "_", colnames(df))
 
   # test type
     df$type <- df$id_ions
@@ -346,18 +341,25 @@ load.ions.file <- function(file, sheet = "ug"){
 # Load pah file
 # file <- "data/pah/20160804_PAH.xlsx"
 # set sheet to "ug" or "ug_m3"
+# incomplete need project data
 load.pah.file <- function(file, sheet = "Summary"){
   
   # read file
-    df <- read.xlsx(file, sheetName = sheet, header = TRUE, colClasses = "character", startRow = 2)
+    df <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 1)
   
   # column names
-    names(df) <- tolower(gsub("(\\.)\\1+", "\\1", colnames(df)))
-    names(df) <- gsub("\\.", "_", colnames(df))
-    names(df) <- sub("_$", "", colnames(df))
-  
+    names(df) <- tolower(colnames(df))
+    names(df) <- gsub("\\[", "_", colnames(df))
+    names(df) <- gsub(" ", "_", colnames(df))
+    names(df) <- gsub("\\]", "_", colnames(df))
+    names(df) <- gsub("\\+", "_", colnames(df))
+    names(df) <- gsub("\\(", "_", colnames(df))
+    names(df) <- gsub("\\)", "_", colnames(df))
+    names(df) <- gsub("(_)\\1+", "\\1", colnames(df))
+    names(df)[1] <- "asu_id"
+    
   # melt 
-    out <- tidyr::gather(df, pol, value,  -asu, -csu_label)
+    out <- tidyr::gather(df, pol, value,  -asu_id, -csu_label)
   
   # filter empty rows
     out <- dplyr::filter(out, !is.na(out$csu_label)) 
@@ -388,78 +390,58 @@ load.pah.file <- function(file, sheet = "Summary"){
 #________________________________________________________
 # Load transmissiometer
 # file <- "data/trans/Transmissometer Log.xlsx" 
-load.trans.file <- function(file){
-  
-  # column classes
-    classes = c(rep("factor",2),
-                "character",
-                "factor",
-                rep("numeric",3),
-                "factor",
-                rep("numeric",4),
-                "factor",
-                rep("numeric",8),
-                "character",
-                "factor",
-                rep("numeric",3),
-                rep("factor",2),
-                rep("numeric",3),
-                "factor",
-                rep("numeric",2),
-                "factor",
-                rep("numeric",5),
-                "character")
-                
-  # column names
-    col_names = c("id_filter",
-                  "id_blank",
-                  "date_pre",
-                  "person_pre",
-                  "toc_pre",
-                  "rh_pre",
-                  "phpa_pre",
-                  "id_diff_blank_pre",
-                  "uv_front_blank_pre",
-                  "ir_front_blank_pre",
-                  "uv_back_blank_pre",
-                  "ir_back_blank_pre",
-                  "id_diff_sample_pre",
-                  "uv_front_sample_pre",
-                  "ir_front_sample_pre",
-                  "uv_back_sample_pre",
-                  "ir_back_sample_pre",
-                  "uv_blank_diff_pre",
-                  "ir_blank_diff_pre",
-                  "uv_sample_diff_pre",
-                  "ir_sample_diff_pre",
-                  "date_post",
-                  "person_post",
-                  "toc_post",
-                  "rh_post",
-                  "phpa_post",
-                  "id_diff_blank_post",
-                  "uv_front_blank_post",
-                  "ir_front_blank_post",
-                  "uv_back_blank_post",
-                  "ir_back_blank_post",
-                  "id_diff_sample_post",
-                  "uv_front_sample_post",
-                  "ir_front_sample_post",
-                  "uv_back_sample_post",
-                  "ir_back_sample_post",
-                  "uv_blank_diff_post",
-                  "ir_blank_diff_post",
-                  "uv_sample_diff_post",
-                  "ir_sample_diff_post",
-                  "notes")
+load.trans.file <- function(file, sheet = "Transmissometer Log"){
   
   # read file
-      df <- read.xlsx(file, sheetName = "Transmissometer Log", startRow = 2,
-                    header = FALSE)
+      df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
+      
   # transpose
       df <- as.data.frame(t(df[-1]))
       df <- df[,1:41]
   
+  # column names
+      col_names = c("id_filter",
+                    "id_blank",
+                    "date_pre",
+                    "person_pre",
+                    "toc_pre",
+                    "rh_pre",
+                    "phpa_pre",
+                    "id_diff_blank_pre",
+                    "uv_front_blank_pre",
+                    "ir_front_blank_pre",
+                    "uv_back_blank_pre",
+                    "ir_back_blank_pre",
+                    "id_diff_sample_pre",
+                    "uv_front_sample_pre",
+                    "ir_front_sample_pre",
+                    "uv_back_sample_pre",
+                    "ir_back_sample_pre",
+                    "uv_blank_diff_pre",
+                    "ir_blank_diff_pre",
+                    "uv_sample_diff_pre",
+                    "ir_sample_diff_pre",
+                    "date_post",
+                    "person_post",
+                    "toc_post",
+                    "rh_post",
+                    "phpa_post",
+                    "id_diff_blank_post",
+                    "uv_front_blank_post",
+                    "ir_front_blank_post",
+                    "uv_back_blank_post",
+                    "ir_back_blank_post",
+                    "id_diff_sample_post",
+                    "uv_front_sample_post",
+                    "ir_front_sample_post",
+                    "uv_back_sample_post",
+                    "ir_back_sample_post",
+                    "uv_blank_diff_post",
+                    "ir_blank_diff_post",
+                    "uv_sample_diff_post",
+                    "ir_sample_diff_post",
+                    "notes")    
+      
   # names
       names(df) <- col_names
       
@@ -494,20 +476,22 @@ load.trans.file <- function(file){
 
 #________________________________________________________
 # Load vocs
-# file <- "data/voc/Data_20160706.xlsx"
-load.voc.file <- function(file){
+# file <- "data/voc/20161208_VOC.xlsx"
+load.voc.file <- function(file, sheet = "Sheet1"){
   
   # read file
-    df <- read.xlsx(file, sheetName = "Sheet1", startRow = 1,
-                  header = TRUE, stringsAsFactors=FALSE)
+    df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
     
   # remove second row
     df <- df[-1,]
     
   # rename columns
     names(df) <- paste0("voc_",colnames(df))
-    names(df) <- sub("voc_X","voc_", colnames(df))
-    names(df) <- tolower(gsub("\\.", "_", colnames(df)))
+    names(df) <- tolower(gsub(" ", "_", colnames(df)))
+    names(df) <- gsub("-", "_", colnames(df))
+    names(df) <- gsub("\\+", "_", colnames(df))
+    names(df) <- gsub(",", "_", colnames(df))
+    
     names(df)[1] <- "id_can"
     names(df)[2] <- "id_voc"
     names(df)[3] <- "datetime_start"
@@ -515,7 +499,7 @@ load.voc.file <- function(file){
   
   # classes
     # convert to numeric
-      df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na_)) 
+      df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na)) 
       df_num <- as.data.frame(lapply(df_num, 
                                   function(x) as.numeric(x)))
 
@@ -601,10 +585,10 @@ load.temp.file <- function(file){
 #________________________________________________________
 # Load stove weight
 # file <- "data/scale/20160107_16A_SCALE.xlsx"
-load.scale.file <- function(file){
+load.scale.file <- function(file, sheet = "Sheet1"){
   
   # read file
-    df <- read.xlsx(file, sheetName = "Sheet1", header = FALSE)
+    df <- read_excel(path = file, sheet = sheet, col_names = FALSE)
     
   # grab first four columns
     df <- df[,1:4]
@@ -779,7 +763,7 @@ load.singlefiles <- function(log){
   
   # transmissometer
   if(log == "trans"){
-    filelist <- list.files("data/trans", ".xlsx$", full.names = TRUE)
+    filelist <- list.files("data/trans", "^Transmissometer Log.xlsx$", full.names = TRUE)
     out <- load.trans.file(filelist[1])
   }
   
