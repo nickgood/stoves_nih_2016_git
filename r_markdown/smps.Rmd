@@ -10,18 +10,18 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
-  source("r_scripts/R_functions.R")
+  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")    # sample info
 ```
 
 ## Load smps data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/smps.Rda")    # smps dataset
+  load("../r_files/smps.Rda")    # smps dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -31,7 +31,7 @@ output: html_document
 ## Load flow data and test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/cal_2.Rda")         # measured flow
+  load("../r_files/cal_2.Rda")         # measured flow
 ```
 
 Extract measured flows.
@@ -90,7 +90,7 @@ Separate measurement location and replicate
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("^smps$|^all$", notes$inst) == TRUE)
 ```
 
@@ -127,7 +127,7 @@ Additional bad tests
   smps_ultrafine <- dplyr::filter(smps_merged, size <= 100)
 
 # load time windows
-  load("r_files/times_integrated.Rda")
+  load("../r_files/times_integrated.Rda")
   
 # filter by test time window
   smps_ultrafine <- filter_times(times, smps_ultrafine)
@@ -167,8 +167,8 @@ Plot
 ## Save files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(smps_merged, file="r_files/smps_merged.Rda")
-  save(smps_ultrafine, file="r_files/smps_ultrafine.Rda")
+  save(smps_merged, file = "../r_files/smps_merged.Rda")
+  save(smps_ultrafine, file = "../r_files/smps_ultrafine.Rda")
 ```
 
 ## Plot
