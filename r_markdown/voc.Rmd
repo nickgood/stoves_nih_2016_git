@@ -10,7 +10,7 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_tidy.R")
 ```
 
 ## Load $VOC$ data
@@ -18,7 +18,7 @@ output: html_document
 The $VOC$ data is contain in one file. Units are $ppbv$. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/voc.Rda")    # voc dataset
+  load("../r_files/voc.Rda")    # voc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -47,7 +47,7 @@ Make longer and remove n/a.
 ## Merge with meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="r_files/data_1.Rda")
+  load(file="../r_files/data_1.Rda")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -60,7 +60,7 @@ Make longer and remove n/a.
 ## QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("^voc$|^all$", notes$inst) == TRUE)
 ```
 
@@ -93,13 +93,13 @@ Additional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(voc_merged, file="r_files/voc_merged.Rda")
+  save(voc_merged, file="../r_files/voc_merged.Rda")
 ```
 
 ## Plot (coloured by fuel type)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="r_files/samples.Rda") # load sample info
+  load(file="../r_files/samples.Rda") # load sample info
   samples <- dplyr::select(samples, id, stove, fuel)
   
 # join voc with sample info data
