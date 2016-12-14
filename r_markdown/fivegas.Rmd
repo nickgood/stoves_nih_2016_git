@@ -10,12 +10,12 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
-  source("r_scripts/R_functions.R")
+  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")    
+  load("../r_files/samples.Rda")    
 ```
 
 ## Load fivegas data
@@ -23,7 +23,7 @@ output: html_document
 Mixing ratio files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/fivegas_conc.Rda")    
+  load("../r_files/fivegas_conc.Rda")    
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -33,7 +33,7 @@ Mixing ratio files
 Voltage files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/fivegas_volts.Rda")
+  load("../r_files/fivegas_volts.Rda")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -43,7 +43,7 @@ Voltage files
 Voltage calibration files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/fivegas_calibration.Rda")    # fivegas voltage calibration data files
+  load("../r_files/fivegas_calibration.Rda")    # fivegas voltage calibration data files
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -80,7 +80,7 @@ Voltage calibration files
 ## Load calibration metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/cal_1.Rda")        # meta data
+  load("../r_files/cal_1.Rda")        # meta data
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -231,7 +231,7 @@ Drop variables
 ## Save merged data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file="r_files/fivegas_merged.Rda")
+  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
 ```
 
 ## Plot data
@@ -249,7 +249,7 @@ Drop variables
 
 Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("^fivegas$|^all$", notes$inst) == TRUE)
 ```
 
@@ -284,7 +284,7 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file="r_files/fivegas_merged.Rda")
+  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
 ```
 
 ## Plot QC
