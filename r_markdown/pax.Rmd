@@ -10,17 +10,17 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_tidy.R")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")    # sample info
 ```
 
 ## Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/pax.Rda")    # pax dataset
+  load("../r_files/pax.Rda")    # pax dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -30,8 +30,8 @@ output: html_document
 ## Load flow data and test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/cal_2.Rda")         # measured flow
-  load("r_files/test_times.Rda")    # test times and ids
+  load("../r_files/cal_2.Rda")         # measured flow
+  load("../r_files/test_times.Rda")    # test times and ids
 ```
 
 Extract measured flows.
@@ -102,7 +102,7 @@ Split variable to get measurement type, location and replicate information.
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("^pax$|^all$", notes$inst) == TRUE)
 ```
 
@@ -134,8 +134,7 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(pax_merged, file="r_files/pax_merged.Rda")
-  write.csv(pax_merged, "csv_files/pax.csv", row.names=FALSE)
+  save(pax_merged, file="../r_files/pax_merged.Rda")
 ```
 
 ## Summary
