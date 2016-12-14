@@ -11,32 +11,32 @@ output: html_document
   library(GGally)
 
 # source files
-  source("r_scripts/R_functions.R")
-  source("r_scripts/R_plots.R")
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
+  source("../r_scripts/R_plots.R")
+  source("../r_scripts/R_tidy.R")
 ```  
   
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=TRUE}
 # load time-resolved data data
-  load("r_files/pax.Rda")         # pax data
-  load("r_files/co2_lab.Rda")     # lab co2 levels
-  load("r_files/co2_sample.Rda")    # sample co2 levels
-  load("r_files/scale.Rda")       # scale data
-  load("r_files/temp.Rda")        # temperature data
-  load("r_files/smps.Rda")        # smps data
+  load("../r_files/pax.Rda")         # pax data
+  load("../r_files/co2_lab.Rda")     # lab co2 levels
+  load("../r_files/co2_sample.Rda")    # sample co2 levels
+  load("../r_files/scale.Rda")       # scale data
+  load("../r_files/temp.Rda")        # temperature data
+  load("../r_files/smps.Rda")        # smps data
   
 # load time-integrated data
-  load("r_files/ecoc.Rda")         # ecoc filter analysis
-  load("r_files/ions.Rda")         # ion filter data
-  load("r_files/trans.Rda")        # transmissometer data
-  load("r_files/voc.Rda")          # voc canister data
-  load("r_files/samples.Rda")      # sample info
-  load("r_files/batch.Rda")        # batch sampling log
-  load("r_files/wood.Rda")         # wood sampling log
-  load("r_files/cal_1.Rda")        # meta data
-  load("r_files/data_1.Rda")       # meta data
-  load("r_files/cal_2.Rda")        # meta data
-  load("r_files/data_2.Rda")       # meta data
+  load("../r_files/ecoc.Rda")         # ecoc filter analysis
+  load("../r_files/ions.Rda")         # ion filter data
+  load("../r_files/trans.Rda")        # transmissometer data
+  load("../r_files/voc.Rda")          # voc canister data
+  load("../r_files/samples.Rda")      # sample info
+  load("../r_files/batch.Rda")        # batch sampling log
+  load("../r_files/wood.Rda")         # wood sampling log
+  load("../r_files/cal_1.Rda")        # meta data
+  load("../r_files/data_1.Rda")       # meta data
+  load("../r_files/cal_2.Rda")        # meta data
+  load("../r_files/data_2.Rda")       # meta data
 ```
 
 ## Clean and save metadata
@@ -46,81 +46,81 @@ output: html_document
 
 # batch test weights
   batch_wgts <- dplyr::filter(tidy.id.date(batch, "^wgt_", "wgt_"), !is.na(value))
-    save(batch_wgts, file="r_files/batch_wgts.Rda")
+    save(batch_wgts, file="../r_files/batch_wgts.Rda")
 
 # batch test times   
   batch_times <- dplyr::filter(tidy.id.date(batch, "^time_", "time_"), !is.na(value))
-    save(batch_times, file="r_files/batch_times.Rda")
+    save(batch_times, file="../r_files/batch_times.Rda")
 
 # lab pressure, temperature and relative humidity
   batch_lab <- dplyr::filter(tidy.id.date(batch, "^lab_", "lab_"), !is.na(value))
-    save(batch_lab, file="r_files/batch_lab.Rda")
+    save(batch_lab, file="../r_files/batch_lab.Rda")
     
 # flow for ion and carbonyl filters
   carb_flows <- dplyr::filter(tidy.id.date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
     carb_flows <- split.flows(carb_flows)
-    save(carb_flows, file="r_files/carb_flows.Rda")
+    save(carb_flows, file="../r_files/carb_flows.Rda")
   
 # times for ion and carbonyl filters
   carb_times <- dplyr::filter(tidy.id.date(data_2, "^time_.*carb$", "^time_"), !is.na(value))
     carb_times <- split.times(carb_times)
-    save(carb_times, file="r_files/carb_times.Rda")
+    save(carb_times, file="../r_files/carb_times.Rda")
  
 # flow for isokinetic sampler
   iso_flows <- dplyr::filter(tidy.id.date(data_2, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
     iso_flows <- split.flows(iso_flows)
-    save(iso_flows, file="r_files/iso_flows.Rda")
+    save(iso_flows, file="../r_files/iso_flows.Rda")
     
 # wood test weights  
   wood_wgts <- dplyr::filter(tidy.id.date(wood, "^wgt_", "wgt_"), !is.na(value))
-    save(wood_wgts, file="r_files/wood_wgts.Rda")
+    save(wood_wgts, file="../r_files/wood_wgts.Rda")
   
 # wood test times
   wood_times <- dplyr::filter(tidy.id.date(wood, "^time_", "time_"), !is.na(value))
-    save(wood_times, file="r_files/wood_times.Rda")
+    save(wood_times, file="../r_files/wood_times.Rda")
 
 # lab pressure, temperature and relative humidity
   wood_lab <- dplyr::filter(tidy.id.date(wood, "^lab_", "lab_"), !is.na(value))
-    save(wood_lab, file="r_files/wood_lab.Rda")
+    save(wood_lab, file="../r_files/wood_lab.Rda")
     
 # Tidy by prefix and retain date
     
 # fivegas calibration
     
   fivegas_cal_conc <- dplyr::filter(tidy.date(cal_1, "^conc_", "conc_"), !is.na(value))
-    save(fivegas_cal_conc, file="r_files/fivegas_cal_conc.Rda")
+    save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
     
   fivegas_cal_times <- dplyr::filter(tidy.date(cal_1, "^time_", "time_"), !is.na(value))
     fivegas_cal_times <- split.fivegascaltimes(fivegas_cal_times)
-    save(fivegas_cal_times, file="r_files/fivegas_cal_times.Rda")
+    save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
     
 # filters
   filter_flows <- dplyr::filter(tidy.date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
     filter_flows <- split.filterflows(filter_flows)
-    save(filter_flows, file="r_files/filter_flows.Rda")
+    save(filter_flows, file="../r_files/filter_flows.Rda")
     
   filter_times <- dplyr::filter(tidy.date(data_1, "^time_.*cart", "time_"), !is.na(value))
     filter_times <- split.filtertimes(filter_times)
-    save(filter_times, file="r_files/filter_times.Rda")
+    save(filter_times, file="../r_files/filter_times.Rda")
     
 # co2
   co2_lab_cal <- dplyr::filter(tidy.date(cal_2, "^sensor_1", "sensor_1_"), !is.na(value))
     co2_lab_cal <- split.co2.cal(co2_lab_cal)
-    save(co2_lab_cal, file="r_files/co2_lab_cal.Rda")
+    save(co2_lab_cal, file="../r_files/co2_lab_cal.Rda")
     
   co2_sample_cal <- dplyr::filter(tidy.date(cal_2, "^sensor_2", "sensor_2_"), !is.na(value))
     co2_sample_cal <- split.co2.cal(co2_sample_cal)
-    save(co2_sample_cal, file="r_files/co2_sample_cal.Rda")
+    save(co2_sample_cal, file="../r_files/co2_sample_cal.Rda")
     
 # pax
   pax_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
     pax_flows <- split.paxflows(pax_flows)
-    save(pax_flows, file="r_files/pax_flows.Rda")
+    save(pax_flows, file="../r_files/pax_flows.Rda")
     
 # smps
   smps_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
     smps_flows <- split.flows(smps_flows)
-    save(smps_flows, file="r_files/smps_flows.Rda")
+    save(smps_flows, file="../r_files/smps_flows.Rda")
 
 ```
 
