@@ -10,13 +10,13 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_tidy.R")
 ```
 
 ## Load ecoc data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/ecoc.Rda")    # ecoc dataset
+  load("../r_files/ecoc.Rda")    # ecoc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -26,7 +26,7 @@ output: html_document
 ## Merge with filter meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/data_1.Rda")    # metadata
+  load("../r_files/data_1.Rda")    # metadata
 ```
 
 Extract metadata
@@ -71,7 +71,7 @@ Merge ecoc with metadata
 
 Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="r_files/notes.Rda")
+  load(file="../r_files/notes.Rda")
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst)==TRUE)
 ```
 
@@ -104,13 +104,13 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ecoc_merged, file="r_files/ecoc_merged.Rda")
+  save(ecoc_merged, file="../r_files/ecoc_merged.Rda")
 ```
 
 ## Load sample info
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="r_files/samples.Rda") # load sample info
+  load(file="../r_files/samples.Rda") # load sample info
   samples <- dplyr::select(samples, id, stove, fuel)
   
 # join ecoc with sample info data
