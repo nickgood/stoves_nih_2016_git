@@ -10,17 +10,17 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_functions.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ## Load data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")         # sample info
-  load("r_files/batch_times.Rda")
-  load("r_files/wood_times.Rda")
-  load("r_files/co2_merged.Rda")
-  load("r_files/fivegas_merged.Rda")
+  load("../r_files/samples.Rda")         # sample info
+  load("../r_files/batch_times.Rda")
+  load("../r_files/wood_times.Rda")
+  load("../r_files/co2_merged.Rda")
+  load("../r_files/fivegas_merged.Rda")
 ```
 
 
@@ -62,7 +62,7 @@ Extract, match naming conventions and drop implicit pollutant variable.
     times <- dplyr::filter(times, !is.na(start), !is.na(end))
     
   # save times
-    save(times, file="r_files/times_integrated.Rda")
+    save(times, file="../r_files/times_integrated.Rda")
 ```
 
 ## Extract data for test periods only
