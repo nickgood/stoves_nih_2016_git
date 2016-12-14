@@ -738,80 +738,80 @@ load.smps.file <- function(file){
 load.singlefiles <- function(log){
   # ecoc
   if(log == "ecoc"){
-    filelist <- list.files("data/ecoc", "ECOC.csv$", full.names = TRUE)
+    filelist <- list.files("../data/ecoc", "ECOC.csv$", full.names = TRUE)
     out <- load.ecoc.file(filelist[1])
   }
   
   # grav
   if(log == "grav"){
-    filelist <- list.files("data/grav", "^Teflon Filter Weight Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/grav", "^Teflon Filter Weight Log.xlsx$", full.names = TRUE)
     out <- load.grav.file(filelist[1])
   }
   
   # ions
   if(log == "ions"){
-    filelist <- list.files("data/ions", "IONS.xls$", full.names = TRUE)
+    filelist <- list.files("../data/ions", "IONS.xls$", full.names = TRUE)
     out <- load.ions.file(filelist[1])
   }
   
   # pahs
   if(log == "pah"){
-    filelist <- list.files("data/pah", "PAH.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/pah", "PAH.xlsx$", full.names = TRUE)
     out <- load.pah.file(filelist[1])
   }
   
   
   # transmissometer
   if(log == "trans"){
-    filelist <- list.files("data/trans", "^Transmissometer Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/trans", "^Transmissometer Log.xlsx$", full.names = TRUE)
     out <- load.trans.file(filelist[1])
   }
   
   # vocs
   if(log == "voc"){
-    filelist <- list.files("data/voc", ".xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/voc", ".xlsx$", full.names = TRUE)
     out <- load.voc.file(filelist[1])
   }
   
   # sample log
   if(log == "sample"){
-    filelist <- list.files("data/logs", "^Sample Tracking Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Sample Tracking Log.xlsx$", full.names = TRUE)
     out <- load.samples(filelist[1])
   }
   
   # batch sample log
   if(log == "batch"){
-    filelist <- list.files("data/logs", "^Transcribed Batch Fed Stove Sampling Forms.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Batch Fed Stove Sampling Forms.xlsx$", full.names = TRUE)
     out <- load.batch(filelist[1])
   }
   
   # wood sample log
   if(log == "wood"){
-    filelist <- list.files("data/logs", "^Transcribed Wood Stove Sampling Forms.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Wood Stove Sampling Forms.xlsx$", full.names = TRUE)
     out <- load.wood(filelist[1])
   }
   
   # calibration tester 1 log
   if(log == "cal_1"){
-    filelist <- list.files("data/logs", "^Transcribed Emissions Tester 1 Calibration Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 1 Calibration Log.xlsx$", full.names = TRUE)
     out <- load.fivegascal(filelist[1])
   }
   
   # data sheet tester 1
   if(log == "data_1"){
-    filelist <- list.files("data/logs", "^Transcribed Emissions Tester 1 Data Sheets.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 1 Data Sheets.xlsx$", full.names = TRUE)
     out <- load.fivegas_filter_meta(filelist[1])
   }
   
   # calibration tester 2 log
   if(log == "cal_2"){
-    filelist <- list.files("data/logs", "^Transcribed Emissions Tester 2 Calibration Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 2 Calibration Log.xlsx$", full.names = TRUE)
     out <- load.co2_cal_flows_meta(filelist[1])
   }
   
   # data sheet tester 2
   if(log == "data_2"){
-    filelist <- list.files("data/logs", "^Transcribed Emissions Tester 2 Data Sheets.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 2 Data Sheets.xlsx$", full.names = TRUE)
     out <- load.flow_fivegas_meta(filelist[1])
   }
   
@@ -870,7 +870,7 @@ load.multifile <- function(fldr, pattern, inst){
 # file <- "data/fivegas/20160105_6A_FIVEGAS_OLD.csv"
 # file <- "data/fivegas/20160615_2D_FIVEGAS_FIXED.csv"
 
-load.fivegas <- function(fldr = "data/fivegas", 
+load.fivegas <- function(fldr = "../data/fivegas", 
                          pattern = "[0-9][A-Z]_FIVEGAS_FIXED.csv$|[0-9][A-Z]_FIVEGAS_OLD.csv$",
                          type = "conc"){
   
