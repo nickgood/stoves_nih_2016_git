@@ -45,7 +45,6 @@ output: html_document
   save(test_times, file = "../r_files/test_times.Rda")
 ```
 
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file = "../r_files/samples.Rda") # load sample info
   samples <- dplyr::select(samples, id, stove, fuel)
