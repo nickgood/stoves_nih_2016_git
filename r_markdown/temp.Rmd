@@ -17,10 +17,11 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-## Load temperature data
+## Load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/temp.Rda")    # temperature dataset
+  load("../r_files/temp.Rda")           # temperature dataset
+  load(file = "../r_files/samples.Rda") # load sample
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -49,11 +50,6 @@ temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
   geom_point() +
   facet_wrap(~id, ncol = 3, scales = "free") +
   theme_minimal()
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/samples.Rda") # load sample
 ```
 
 ## Summary
