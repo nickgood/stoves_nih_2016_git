@@ -14,20 +14,20 @@ output: html_document
 ## Source files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
-  source("r_scripts/R_functions.R")
+  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ## Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda") 
-  load("r_files/cal_1.Rda")
-  load("r_files/cal_2.Rda")    
-  load("r_files/data_1.Rda")    
-  load("r_files/data_2.Rda")    
-  load("r_files/grav.Rda")    
-  load("r_files/trans_merged.Rda") 
+  load("../r_files/samples.Rda") 
+  load("../r_files/cal_1.Rda")
+  load("../r_files/cal_2.Rda")    
+  load("../r_files/data_1.Rda")    
+  load("../r_files/data_2.Rda")    
+  load("../r_files/grav.Rda")    
+  load("../r_files/trans_merged.Rda") 
 ```
 
 ## Compile notes
@@ -112,5 +112,5 @@ notes <- dplyr::filter(notes, grepl("^[0-9]|^G[0-9]", notes$id)==TRUE)
 ## Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(notes, file="r_files/notes.Rda")
+  save(notes, file = "../r_files/notes.Rda")
 ```
