@@ -14,13 +14,13 @@ output: html_document
 ## Source files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_tidy.R")
 ```
 
 ## Load temperature data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/temp.Rda")    # temperature dataset
+  load("../r_files/temp.Rda")    # temperature dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -38,7 +38,7 @@ temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(temp_merged, file="r_files/temp_merged.Rda")
+  save(temp_merged, file = "../r_files/temp_merged.Rda")
 ```
 
 ## Plot
@@ -50,3 +50,12 @@ temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
   facet_wrap(~id, ncol = 3, scales = "free") +
   theme_minimal()
 ```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file = "../r_files/samples.Rda") # load sample
+```
+
+## Summary
+
+$Temperature$ was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no $temperature$ data for tests: `r setdiff(levels(samples$id), levels(temp_merged$id))`.
