@@ -10,12 +10,12 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
-  source("r_scripts/R_functions.R")
+  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")    # sample info
 ```
 
 # Load data
@@ -27,7 +27,7 @@ The $CO_{2}$ data is loaded from three files. There are separate files for the m
 Load $CO_{2}$ mixing ratios (ppm) in the lab.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/co2_lab.Rda")    # lab co2 mixing ratio
+  load("../r_files/co2_lab.Rda")    # lab co2 mixing ratio
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -51,7 +51,7 @@ Remove superfluous variables and add a location variable.
 Load $CO_{2}$ mixing ratios (ppm) in the in the sample.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/co2_sample.Rda")    # sample co2 mixing ratio
+  load("../r_files/co2_sample.Rda")    # sample co2 mixing ratio
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -73,7 +73,7 @@ Remove superfluous variables and add a location variable.
 ## Load lab and sample mixing ratios voltages files
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/co2_lab_sample.Rda")
+  load("../r_files/co2_lab_sample.Rda")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -96,7 +96,7 @@ Convert to longer format
 Load calibration file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/cal_2.Rda")  # calibration data
+  load("../r_files/cal_2.Rda")  # calibration data
 ```
 
 Extract calibration data
@@ -178,7 +178,7 @@ Merge voltage data and calibration span, then apply calibration.
 
 Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("co2|all", notes$inst) == TRUE)
 ```
 
@@ -214,7 +214,7 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(co2_merged, file="r_files/co2_merged.Rda")
+  save(co2_merged, file="../r_files/co2_merged.Rda")
 ```
 
 ## Plot QC
