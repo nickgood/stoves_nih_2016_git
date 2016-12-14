@@ -10,17 +10,17 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("r_scripts/R_tidy.R")
+  source("../r_scripts/R_tidy.R")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")    # sample info
 ```
 
 ## Load gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/grav.Rda")
+  load("../r_files/grav.Rda")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -31,7 +31,7 @@ output: html_document
 
 Load metadata
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/data_1.Rda")  # metadata
+  load("../r_files/data_1.Rda")  # metadata
 ```
 
 Extract gravimetric filter cartridge data
@@ -132,7 +132,7 @@ Merge differences
 Load notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")    # notes
   notes <- dplyr::filter(notes, grepl("^grav$|^all$", notes$inst) == TRUE)
 ```
 
@@ -230,7 +230,7 @@ The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_del
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(grav_merged, file="r_files/grav_merged.Rda")
+  save(grav_merged, file = "../r_files/grav_merged.Rda")
 ```
 
 ## Summary
