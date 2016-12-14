@@ -5,7 +5,7 @@ date: "11/21/2016"
 output: html_document
 ---
 
-## Librries
+## Libraries
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
@@ -42,7 +42,7 @@ output: html_document
 ## Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(test_times, file = "../test_times.Rda")
+  save(test_times, file = "../r_files/test_times.Rda")
 ```
 
 
