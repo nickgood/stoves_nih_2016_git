@@ -65,7 +65,7 @@ Merge with data
   scale_merged$qc <- as.factor(scale_merged$qc)
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # scale_merged$qc[scale_merged$id == ""] <- "bad"
@@ -75,7 +75,6 @@ Addtional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(scale_merged, file = "../r_files/scale_merged.Rda")
- 
 ```
 
 ## Summary
