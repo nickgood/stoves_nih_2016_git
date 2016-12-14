@@ -5,7 +5,6 @@ date: "11/21/2016"
 output: html_document
 ---
 
-
 ## Librries
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -15,17 +14,17 @@ output: html_document
 ## Source files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("R_load_data.R")
-  source("R_load_metadata.R")
-  source("R_tidy.R")
+  source("../R_scripts/R_load_data.R")
+  source("../R_scripts/R_load_metadata.R")
+  source("../R_scripts/R_tidy.R")
 ```
 
 ## Load sample, wood and batch test meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("r_files/samples.Rda")
-  load("r_files/batch_times.Rda")
-  load("r_files/wood_times.Rda")
+  load("../r_files/samples.Rda")
+  load("../r_files/batch_times.Rda")
+  load("../r_files/wood_times.Rda")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -43,6 +42,15 @@ output: html_document
 ## Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(test_times, file="test_times.Rda")
+  save(test_times, file = "../test_times.Rda")
 ```
 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file = "../r_files/samples.Rda") # load sample info
+  samples <- dplyr::select(samples, id, stove, fuel)
+```
+
+## Summary
+
+$test times$ were measured for `r length(unique(test_times$id))` experiments between `r min(test_times$date, na.rm = TRUE)` and `r max(test_times$date, na.rm = TRUE)`. There is no $test time$ data for tests: `r setdiff(levels(samples$id), levels(test_times$id))`.
