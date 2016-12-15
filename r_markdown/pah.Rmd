@@ -97,6 +97,3 @@ Merge pah with filter metadata
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   #save(pah_merged, file="../r_files/pah_merged.Rda")
 ```
-
-
-
