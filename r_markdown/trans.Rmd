@@ -92,7 +92,7 @@ Merge with data
   trans_merged$qc <- as.factor(trans_merged$qc)
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   trans_merged$qc[trans_merged$id == "G3"] <- "maybe"
