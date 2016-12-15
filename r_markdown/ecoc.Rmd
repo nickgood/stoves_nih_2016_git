@@ -174,4 +174,4 @@ Addtional bad tests
 
 ## Summary
 
-$ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no $ecoc$ data for tests: `r setdiff(levels(samples$id), levels(ecoc_merged$id))`.
+$ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no $ecoc$ data for tests: `r setdiff(as.character(samples$id), as.character(ecoc_merged$id))`.
