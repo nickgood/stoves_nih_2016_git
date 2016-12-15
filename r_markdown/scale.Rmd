@@ -79,4 +79,4 @@ Additional bad tests
 
 ## Summary
 
-$Scale$ data was collected during `r length(unique(scale_merged$id))` experiments between `r min(scale_merged$date, na.rm = TRUE)` and `r max(scale_merged$date, na.rm = TRUE)`. There is no $Scale$ data for tests: `r setdiff(levels(samples$id), levels(scale_merged$id))`.
+$Scale$ data was collected during `r length(unique(scale_merged$id))` experiments between `r min(scale_merged$date, na.rm = TRUE)` and `r max(scale_merged$date, na.rm = TRUE)`. There is no $Scale$ data for tests: `r setdiff(as.character(samples$id), as.character(scale_merged$id))`.
