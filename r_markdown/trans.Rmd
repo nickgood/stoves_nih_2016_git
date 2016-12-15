@@ -58,44 +58,6 @@ Make longer and remove missing values
   dplyr::mutate(lamda = sub("_.*", "", var)) %>%
   dplyr::mutate(pos = sub(".*_", "", var)) %>%
   dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
-
-
-```
-
-## QC
-
-Load notes.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^trans$|^all$", notes$inst) == TRUE)
-```
-
-Flag bad data from notes and plots
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
-  notes$qc[35] <- "maybe"
-  notes$qc[42] <- "maybe"
-```
-
-Merge with data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans_merged, select(notes, id, qc), by = "id")
-  trans_merged$id <- as.factor(trans_merged$id)
-  trans_merged$qc <- ifelse(is.na(trans_merged$qc), "ok", as.character(trans_merged$qc))
-  trans_merged$qc <- as.factor(trans_merged$qc)
-```
-
-Additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged$qc[trans_merged$id == "G3"] <- "maybe"
 ```
 
 ## Save merged file
