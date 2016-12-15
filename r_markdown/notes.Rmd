@@ -27,7 +27,7 @@ output: html_document
   load("../r_files/data_1.Rda")    
   load("../r_files/data_2.Rda")    
   load("../r_files/grav.Rda")    
-  load("../r_files/trans.Rda") 
+  load("../r_files/trans_merged.Rda") 
 ```
 
 ## Compile notes
@@ -61,7 +61,7 @@ notes_5 <- dplyr::select(grav, id, notes) %>%
           dplyr::left_join(test_id_date, by = "id") %>%
           dplyr::mutate(inst = "all")
 
-notes_6 <- dplyr::select(trans, id, notes) %>%
+notes_6 <- dplyr::select(trans_merged, id, notes) %>%
           dplyr::filter(!is.na(notes)) %>%
           dplyr::left_join(test_id_date, by = "id") %>%
           dplyr::mutate(inst = "trans")
