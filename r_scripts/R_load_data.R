@@ -476,7 +476,7 @@ load.trans.file <- function(file, sheet = "Transmissometer Log"){
 
 #________________________________________________________
 # Load vocs
-# file <- "data/voc/20161208_VOC.xlsx"
+# file <- "../data/voc/20161214_VOC.xlsx"
 load.voc.file <- function(file, sheet = "Sheet1"){
   
   # read file
@@ -520,8 +520,8 @@ load.voc.file <- function(file, sheet = "Sheet1"){
     # others types? Add code to remove others?
     
   # test id
-    df$id <- sub("^[A-Z][A-Z]-|^[A-Z][A-Z] - ", "", df$id_voc)
-    df$id[c(1,2,3,4,5,7,8,9)] <- "NA"
+    df$id_voc <- gsub(" ", "", df$id_voc)
+    df$id <- sub(".*-", "", df$id_voc)
     df$id <- as.factor(df$id)
     
   # datetime
