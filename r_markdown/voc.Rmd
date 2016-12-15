@@ -129,5 +129,4 @@ ggplot(voc_p, aes(id, val, colour = qc)) +
         theme_minimal()
 ```
 
-$VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(levels(samples$id), levels(voc_merged$id))`.
-
+$VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
