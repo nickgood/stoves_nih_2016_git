@@ -50,4 +50,4 @@ temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
 
 ## Summary
 
-$Temperature$ was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no $temperature$ data for tests: `r setdiff(levels(samples$id), levels(temp_merged$id))`.
+$Temperature$ was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no $temperature$ data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
