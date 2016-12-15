@@ -68,5 +68,4 @@ Make longer and remove missing values
 
 ## Data summary
 
-The $transmissometer$ measured during `r length(unique(trans_merged$id))` experiments between `r min(trans_merged$date, na.rm = TRUE)` and `r max(trans_merged$date, na.rm = TRUE)`. There is no $trans$ data for tests: `r setdiff(samples$id, trans_merged$id)`.
-
+The $transmissometer$ measured during `r length(unique(trans_merged$id))` experiments between `r min(trans_merged$date, na.rm = TRUE)` and `r max(trans_merged$date, na.rm = TRUE)`. There is no $trans$ data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
