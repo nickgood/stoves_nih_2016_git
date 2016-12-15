@@ -199,4 +199,4 @@ Plot
 
 ## Data summary
 
-The $SMPS$ measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(levels(samples$id), levels(smps_merged$id))`.
+The $SMPS$ measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
