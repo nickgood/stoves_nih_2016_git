@@ -23,7 +23,6 @@ output: html_document
   load("../r_files/fivegas_merged.Rda")
 ```
 
-
 ## Extract fivegas co2
 
 Extract, match naming conventions and drop implicit pollutant variable.
@@ -92,7 +91,6 @@ Extract, match naming conventions and drop implicit pollutant variable.
         samples <- rbind(samples, samples_tmp)
       }
   }
-
 ```
 
 ## Plot

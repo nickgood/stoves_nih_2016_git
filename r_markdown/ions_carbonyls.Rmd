@@ -152,6 +152,4 @@ Addtional bad tests
 
 ## Summary
 
-$Ion$ data was collected during `r length(unique(ions_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(levels(samples$id), levels(ions_merged$id))`.
-
-
+$Ion$ data was collected during `r length(unique(ions_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.

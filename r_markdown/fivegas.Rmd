@@ -317,6 +317,4 @@ Addtional bad tests
 
 ## Summary
 
-The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(levels(samples$id), levels(fivegas_merged$id))`.
-
-
+The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: ``r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.

@@ -164,6 +164,4 @@ Addtional bad tests
 
 ## Data summary
 
-The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(levels(samples$id), levels(pax_merged$id))`.
-
-
+The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
