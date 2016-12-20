@@ -91,23 +91,22 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^smps$|^all$", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("smps|all", notes$inst) == TRUE)
 ```
 
-Flag bad data from notes and plots
+Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps_merged, select(notes, id, qc), by = "id")
+  smps_merged <- dplyr::left_join(smps_merged, flags, by = "id")
   smps_merged$id <- as.factor(smps_merged$id)
   smps_merged$qc <- ifelse(is.na(smps_merged$qc), "ok", as.character(smps_merged$qc))
   smps_merged$qc <- as.factor(smps_merged$qc)
