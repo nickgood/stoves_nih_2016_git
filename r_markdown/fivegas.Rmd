@@ -250,23 +250,28 @@ Drop variables
 Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^fivegas$|^all$", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[23:24] <- "maybe"
   notes$qc[33:35] <- "ok"
+```
+
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::left_join(fivegas_merged, select(notes, id, qc), by = "id")
+  fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id")
   fivegas_merged$id <- as.factor(fivegas_merged$id)
   fivegas_merged$qc <- ifelse(is.na(fivegas_merged$qc), "ok", as.character(fivegas_merged$qc))
   fivegas_merged$qc <- as.factor(fivegas_merged$qc)
@@ -317,4 +322,4 @@ Addtional bad tests
 
 ## Summary
 
-The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: ``r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
+The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
