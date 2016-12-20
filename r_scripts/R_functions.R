@@ -117,7 +117,6 @@ convert_ppmv_ugpmc <- function(ppmv,mw,t,p){
 # filter data for time periods of interest only
 # requires df with time windows (id, start, end)
 # df with id, time
-
 filter_times <- function(times, df){
   # get ids for time windows
     ids <- unique(times$id)
@@ -141,7 +140,7 @@ filter_times <- function(times, df){
   # return
       return(out)
 }
-
+#________________________________________________________
 
 
   
