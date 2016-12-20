@@ -79,22 +79,22 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^ions$|^all$", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("ions|all", notes$inst) == TRUE)
 ```
 
-Flag bad data from notes and plots
+Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[23:27] <- "maybe"
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions_merged, select(notes, id, qc), by = "id")
+  ions_merged <- dplyr::left_join(ions_merged, flags, by = "id")
   ions_merged$id <- as.factor(ions_merged$id)
   ions_merged$qc <- ifelse(is.na(ions_merged$qc), "ok", as.character(ions_merged$qc))
   ions_merged$qc <- as.factor(ions_merged$qc)
