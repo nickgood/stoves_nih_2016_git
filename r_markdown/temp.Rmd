@@ -32,6 +32,39 @@ temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
           dplyr::arrange(id)
 ```
 
+## QC
+
+Load notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/notes.Rda")    # notes
+  notes <- dplyr::filter(notes, grepl("temp|all", notes$inst) == TRUE)
+```
+
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_merged <- dplyr::left_join(temp_merged, flags, by = "id")
+  temp_merged$id <- as.factor(temp_merged$id)
+  temp_merged$qc <- ifelse(is.na(temp_merged$qc), "ok", as.character(temp_merged$qc))
+  temp_merged$qc <- as.factor(temp_merged$qc)
+```
+
+Additional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # temp_merged$qc[temp_merged$id == ""] <- "bad"
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
