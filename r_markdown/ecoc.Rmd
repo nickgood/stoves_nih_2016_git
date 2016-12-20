@@ -78,18 +78,22 @@ Load notes
 Flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
   notes$qc[33:39] <- "maybe"
+```
+
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, select(notes, id, qc), by = "id")
+  ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id")
   ecoc_merged$id <- as.factor(ecoc_merged$id)
   ecoc_merged$qc <- ifelse(is.na(ecoc_merged$qc), "ok", as.character(ecoc_merged$qc))
   ecoc_merged$qc <- as.factor(ecoc_merged$qc)
@@ -98,7 +102,7 @@ Merge with data
 Addtional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # co2_merged$qc[co2_merged$id == ""] <- "bad"
+  # ecoc_merged$qc[ecoc_merged$id == ""] <- "bad"
 ```
 
 ## Save merged file
