@@ -43,23 +43,22 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^scale$|^all$", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("scale|all", notes$inst) == TRUE)
 ```
 
-Flag bad data from notes and plots
+Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  scale_merged <- dplyr::left_join(scale, select(notes, id, qc), by = "id")
+  scale_merged <- dplyr::left_join(scale, flags, by = "id")
   scale_merged$id <- as.factor(scale_merged$id)
   scale_merged$qc <- ifelse(is.na(scale_merged$qc), "ok", as.character(scale_merged$qc))
   scale_merged$qc <- as.factor(scale_merged$qc)
