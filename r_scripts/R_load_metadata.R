@@ -2,6 +2,7 @@
 # Libraries
   library(tidyverse)
   library(readxl)
+  library(forcats)
 #________________________________________________________
 
 #________________________________________________________
@@ -610,4 +611,23 @@ load.batch <- function(file, sheet = "Batch Fed Sampling Forms"){
     # return
     return(out)
 }
+#________________________________________________________   
+  
+#________________________________________________________
+# load kb qc data
+ load_qc_kb <- function(file , grep_str){
+  # read csv file
+    notes_kb <- read_csv(file)
+  # rename columns
+    notes_kb <- dplyr::rename(notes_kb, inst = instrument)
+  # filter for instrument
+    notes_kb <- dplyr::filter(notes_kb, grepl(grep_str, notes_kb$inst) == TRUE)
+  # classes
+    notes_kb <- dplyr::mutate(notes_kb, 
+                              id = factor(id),
+                              inst = factor(inst),
+                              qc = factor(qc, levels = c("bad", "maybe", "ok")))
+  # return
+    return(notes_kb)
+  }
 #________________________________________________________   
