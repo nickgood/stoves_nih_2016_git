@@ -16,6 +16,7 @@ output: html_document
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
+  source("../r_scripts/R_load_metadata.R")
 ```
 
 ## Load files
@@ -27,7 +28,7 @@ output: html_document
   load("../r_files/data_1.Rda")    
   load("../r_files/data_2.Rda")    
   load("../r_files/grav.Rda")    
-  load("../r_files/trans_merged.Rda") 
+  load("../r_files/trans_merged.Rda")
 ```
 
 ## Compile notes
@@ -72,6 +73,7 @@ notes <- dplyr::filter(notes, grepl("^[0-9]|^G[0-9]", notes$id)==TRUE)
 ```
 
 ## Break out instruments
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # fivegas
     notes$inst <- ifelse(grepl("5-Gas", notes$notes), "fivegas", notes$inst)
@@ -107,6 +109,32 @@ notes <- dplyr::filter(notes, grepl("^[0-9]|^G[0-9]", notes$id)==TRUE)
     
   # order
     notes <- dplyr::arrange(notes, inst)
+```
+
+## Create qc flag
+
+With default value `bad`.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  qc <- factor("bad", c("bad", "maybe", "ok"))
+  notes <- dplyr::mutate(notes, qc = qc)
+```
+
+## Combine with kb notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
+  notes <- dplyr::bind_rows(notes, notes_kb)
+```
+
+## Adjust some flags based on notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes$qc <- "bad"
+  notes$qc[1:9] <- "maybe"
+  notes$qc[15:16] <- "maybe"
+  notes$qc[17:22] <- "ok"
+  notes$qc[23:27] <- "maybe"
 ```
 
 ## Save notes
