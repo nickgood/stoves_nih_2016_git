@@ -103,7 +103,7 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")    # notes
-  notes <- dplyr::filter(notes, grepl("^pax$|^all$", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("pax|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
@@ -116,10 +116,19 @@ Flag bad data from notes and plots
   notes$qc[23:27] <- "maybe"
 ```
 
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+            group_by(id) %>%
+            arrange(qc) %>%
+            summarise(qc = first(qc))
+```
+
 Merge pax with qc flags
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_merged <- dplyr::left_join(pax_merged, select(notes, id, qc), by = "id")
+  pax_merged <- dplyr::left_join(pax_merged, flags, by = "id")
   pax_merged$id <- as.factor(pax_merged$id)
   pax_merged$qc <- ifelse(is.na(pax_merged$qc), "ok", as.character(pax_merged$qc))
   pax_merged$qc <- as.factor(pax_merged$qc)
