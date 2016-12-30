@@ -243,7 +243,7 @@ load.batch <- function(file, sheet = "Batch Fed Sampling Forms"){
     
 #________________________________________________________
 # Load fivegas and filter metadata
-# file <- "data/logs/Transcribed Emissions Tester 1 Data Sheets.xlsx"
+# file <- "../data/logs/Transcribed Emissions Tester 1 Data Sheets.xlsx"
 # df <- load.fivegas_filter_meta(file)
   load.fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
   
