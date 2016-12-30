@@ -476,7 +476,7 @@ load.trans.file <- function(file, sheet = "Transmissometer Log"){
 
 #________________________________________________________
 # Load vocs
-# file <- "../data/voc/20161214_VOC.xlsx"
+# file <- "../data/voc/20161215_VOC.xlsx"
 load.voc.file <- function(file, sheet = "Sheet1"){
   
   # read file
@@ -525,8 +525,8 @@ load.voc.file <- function(file, sheet = "Sheet1"){
     df$id <- as.factor(df$id)
     
   # datetime
-    df$datetime_start <- as.POSIXct(df$datetime_start*60*60*24 + 60*60*6, origin = "1899-12-30")
-    df$datetime_end <- as.POSIXct(df$datetime_end*60*60*24 + 60*60*6, origin = "1899-12-30")
+    df$datetime_start <- as.POSIXct(df$datetime_start*60*60*24, origin = "1899-12-30", tz = "GMT")
+    df$datetime_end <- as.POSIXct(df$datetime_end*60*60*24, origin = "1899-12-30", tz = "GMT")
   
   # date
     df$date_start <- as.Date(df$datetime_start)
