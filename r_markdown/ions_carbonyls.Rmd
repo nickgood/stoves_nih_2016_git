@@ -106,6 +106,16 @@ Addtional bad tests
   # ions_merged$qc[ions_merged$id == ""] <- "bad"
 ```
 
+## Convert to long format
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+ions_merged <- tidyr::gather(ions_merged, var, val, 
+                   -id, -id_ions, -post_flow,
+                   -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                    dplyr::filter(!is.na(val))  %>%
+                    dplyr::mutate(var = as.factor(var))
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -115,14 +125,7 @@ Addtional bad tests
 ## Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ions_p <- tidyr::gather(ions_merged, var, val, 
-                   -id, -id_ions, -post_flow,
-                   -pre_flow, -time_start, -time_end, -type, -qc) %>%
-            dplyr::filter(!is.na(val))
-
-  ions_p$var <- as.factor(ions_p$var)
-
-  ggplot(ions_p, aes(id, val, group = var, color = var)) +
+  ggplot(ions_merged, aes(id, val, group = var, color = var)) +
     geom_point() +
     geom_line() +
     scale_y_log10() +
@@ -134,14 +137,7 @@ Addtional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ions_p <- tidyr::gather(ions_merged, var, val, 
-                   -id, -id_ions, -post_flow,
-                   -pre_flow, -time_start, -time_end, -type, -qc) %>%
-            dplyr::filter(!is.na(val))
-
-  ions_p$var <- as.factor(ions_p$var)
-
-  ggplot(ions_p, aes(id, val, group = var, color = qc)) +
+  ggplot(ions_merged, aes(id, val, group = var, color = qc)) +
     geom_point() +
     geom_line() +
     scale_y_log10() +
