@@ -618,7 +618,7 @@ load.scale.file <- function(file, sheet = "Sheet1"){
 
 #________________________________________________________
 # Load pax file
-# file <- "data/pax/20160524_ALLDAY_PAX.csv"
+# file <- "../data/pax/20160105_ALLDAY_PAX.csv"
 load.pax.file <- function(file){
   
   # read file
@@ -636,7 +636,7 @@ load.pax.file <- function(file){
     df$time <- as.numeric(df$sec_local)
     
   # add datetime  
-    df$date <- as.Date(df$datetime)
+    df$date <- as.Date(as.character(df$datetime), format = "%Y-%m-%d %T")
 
   # convert to numeric
     df_num <- subset(df, select = c(-alarm, -local_date, -local_time, -date, -time, -datetime))
