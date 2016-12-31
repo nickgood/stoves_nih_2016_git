@@ -618,7 +618,7 @@ load.scale.file <- function(file, sheet = "Sheet1"){
 
 #________________________________________________________
 # Load pax file
-# file <- "../data/pax/20160105_ALLDAY_PAX.csv"
+# file <- "../data/pax/20160629_ALLDAY_PAX.csv"
 load.pax.file <- function(file){
   
   # read file
@@ -680,7 +680,6 @@ load.smps.file <- function(file){
     df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
     df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
     
-
   # merge df_vals and metadata
     df_meta_1 <- df_meta[,1:2]
     df_meta_2 <- df_meta[,3:4]
@@ -826,7 +825,7 @@ load.singlefiles <- function(log){
 load.multifile <- function(fldr, pattern, inst){
   
   # list of files to load
-  filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
+  filelist <- list.files(fldr, pattern = pattern, full.names = TRUE, ignore.case = TRUE)
   
   # loop files
   for(i in 1:length(filelist)){
