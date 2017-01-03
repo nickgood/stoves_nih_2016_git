@@ -48,12 +48,19 @@ output: html_document
   head(trans_merged, 2)
 ```
 
+## Filters without matches
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, id_filter), dplyr::select(trans, id_filter), "id_filter")
+  save(trans_no_match, file = "../r_files/trans_no_match.Rda")
+```
+
 ## Melt
 
 Make longer and remove missing values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged_ <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
+  trans_merged <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
   tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
   dplyr::mutate(lamda = sub("_.*", "", var)) %>%
   dplyr::mutate(pos = sub(".*_", "", var)) %>%
