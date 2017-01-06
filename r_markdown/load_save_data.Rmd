@@ -168,4 +168,3 @@ output: html_document
   data_2 <- load.singlefiles("data_2")  # meta data
     save(data_2, file = "../r_files/data_2.Rda")
 ```
-
