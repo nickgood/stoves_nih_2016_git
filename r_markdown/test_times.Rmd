@@ -27,12 +27,18 @@ output: html_document
   load("../r_files/wood_times.Rda")
 ```
 
+* Combine test types
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_times <- rbind(select(wood_times, -date), select(batch_times, -date))
   test_times <- dplyr::filter(inner_join(select(samples, id, date), test_times, by = "id"), is.na(value)==FALSE)
   test_times$id <- as.factor(test_times$id)
-  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown")
-  test_times <- tidyr::spread(test_times, var, value)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # old code to output ignition and shutdown times only
+  # times_ignite_shutdown <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
+  #                           tidyr::spread(var, value)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
