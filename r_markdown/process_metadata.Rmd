@@ -18,12 +18,12 @@ output: html_document
   
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=TRUE}
 # load time-resolved data data
-  load("../r_files/pax.Rda")         # pax data
-  load("../r_files/co2_lab.Rda")     # lab co2 levels
-  load("../r_files/co2_sample.Rda")    # sample co2 levels
-  load("../r_files/scale.Rda")       # scale data
-  load("../r_files/temp.Rda")        # temperature data
-  load("../r_files/smps.Rda")        # smps data
+  load("../r_files/pax.Rda")          # pax data
+  load("../r_files/co2_lab.Rda")      # lab co2 levels
+  load("../r_files/co2_sample.Rda")   # sample co2 levels
+  load("../r_files/scale.Rda")        # scale data
+  load("../r_files/temp.Rda")         # temperature data
+  load("../r_files/smps.Rda")         # smps data
   
 # load time-integrated data
   load("../r_files/ecoc.Rda")         # ecoc filter analysis
@@ -91,16 +91,16 @@ output: html_document
     save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
     
   fivegas_cal_times <- dplyr::filter(tidy.date(cal_1, "^time_", "time_"), !is.na(value))
-    fivegas_cal_times <- split.fivegascaltimes(fivegas_cal_times)
+    fivegas_cal_times <- split.fivegas.cal.times(fivegas_cal_times)
     save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
     
 # filters
   filter_flows <- dplyr::filter(tidy.date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
-    filter_flows <- split.filterflows(filter_flows)
+    filter_flows <- split.filter.flows(filter_flows)
     save(filter_flows, file="../r_files/filter_flows.Rda")
     
   filter_times <- dplyr::filter(tidy.date(data_1, "^time_.*cart", "time_"), !is.na(value))
-    filter_times <- split.filtertimes(filter_times)
+    filter_times <- split.filter.times(filter_times)
     save(filter_times, file="../r_files/filter_times.Rda")
     
 # co2
@@ -114,14 +114,13 @@ output: html_document
     
 # pax
   pax_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
-    pax_flows <- split.paxflows(pax_flows)
+    pax_flows <- split.pax.flows(pax_flows)
     save(pax_flows, file="../r_files/pax_flows.Rda")
     
 # smps
   smps_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
     smps_flows <- split.flows(smps_flows)
     save(smps_flows, file="../r_files/smps_flows.Rda")
-
 ```
 
 ## Stove-fuel combinations
@@ -224,7 +223,3 @@ A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))`
         facet_wrap(~var, ncol = 1, scales = "free")
   p
 ```
-
-
-
-
