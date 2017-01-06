@@ -19,7 +19,7 @@ output: html_document
   load("../r_files/samples.Rda")    # sample info
 ```
 
-## Load ions and organics
+## Load ions and carbonyls
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ions.Rda")    # ions and organics 
@@ -32,11 +32,13 @@ output: html_document
 ## Merge with filter meta data
 
 Load metadata
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/data_1.Rda")    # metadata
 ```
 
 Extract ions filter cartridge data
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   meta <- dplyr::select(data_1, matches("_green_|^id$|^date$"))
 
