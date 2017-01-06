@@ -35,6 +35,7 @@ Load metadata
 ```
 
 Extract gravimetric filter cartridge data
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   meta <- dplyr::select(data_1, matches("_white_|^id$|^date$"))
 
@@ -86,6 +87,7 @@ Merge with filter metadata and drop average values
 Split pre and post measurements
 
 Pre-weight average
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
               tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
@@ -95,6 +97,7 @@ Pre-weight average
 ```
 
 Post-weight average
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
               tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
