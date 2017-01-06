@@ -58,4 +58,4 @@ output: html_document
 
 ## Summary
 
-$test times$ were measured for `r length(unique(test_times$id))` experiments between `r min(test_times$date, na.rm = TRUE)` and `r max(test_times$date, na.rm = TRUE)`. There is no $test time$ data for tests: `r setdiff(levels(samples$id), levels(test_times$id))`.
+Test times were measured for `r length(unique(test_times$id))` experiments between `r min(test_times$date, na.rm = TRUE)` and `r max(test_times$date, na.rm = TRUE)`. There are times for tests: `r setdiff(levels(samples$id), levels(test_times$id))`.
