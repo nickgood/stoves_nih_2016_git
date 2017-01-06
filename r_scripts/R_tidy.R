@@ -48,7 +48,7 @@ tidy.date <- function(df, regex, namesub){
 
 #________________________________________________________
 # pax
-split.paxflows <- function(df){
+split.pax.flows <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
@@ -117,7 +117,7 @@ split.co2.cal <- function(df){
 
 #________________________________________________________
 # filter flows
-split.filterflows <- function(df){
+split.filter.flows <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
@@ -136,7 +136,7 @@ split.filterflows <- function(df){
 
 #________________________________________________________
 # filter times
-split.filtertimes <- function(df){
+split.filter.times <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("_.*", "", df$var)), 
@@ -161,7 +161,7 @@ split.filtertimes <- function(df){
 
 #________________________________________________________
 # fivegas cal times
-split.fivegascaltimes <- function(df){
+split.fivegas.cal.times <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("_.*", "", df$var)),
@@ -179,16 +179,13 @@ split.fivegascaltimes <- function(df){
 #________________________________________________________
 # Notes
 split.notes <- function(){
-  
- 
-  
   # return
-  return(out)
+    return(out)
 }
 #________________________________________________________
 
 #________________________________________________________
-# Map id, based on data and time
+# Map id, based on date and time
 map.id <- function(df, test_times){
   for(i in 1:nrow(test_times)){
     # extract data for time period
