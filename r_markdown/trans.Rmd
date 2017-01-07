@@ -109,4 +109,4 @@ Additional bad tests
 
 ## Data summary
 
-The $transmissometer$ measured during `r length(unique(trans_merged$id))` experiments. There is no $trans$ data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
+Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
