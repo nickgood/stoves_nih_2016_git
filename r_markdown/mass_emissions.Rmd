@@ -29,43 +29,44 @@ output: html_document
   flow_hood <- 4 # m^3/min
 ```
 
+___
 
 ## Co2
 
 * Load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/co2_merged.Rda")
 ```
 
 * select sample data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2 <- dplyr::filter(co2_merged, loc == "sample")
 ```
 
 * filter out data from outside emissions window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2 <- filter_times(times, co2)
 ```
 
 * calculate average for each test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2 <- dplyr::group_by(co2, id) %>%
           dplyr::summarise(ppm = mean(ppm))
 ```
 
 * convert mixing ratio to mass (assuming constant T and P)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2$conc <- convert_ppmv_ugpmc(co2$ppm, 28.01, 25, 84)
 ```
 
 * merge with sample time data and calculate test duration
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2 <- dplyr::left_join(co2, times, by = "id") %>%
           dplyr::mutate(dur = end - start) %>%
           dplyr::mutate(id = as.factor(id))
@@ -74,17 +75,66 @@ output: html_document
 * calculate micrograms of co2 emitted during test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- mutate(co2, mass_emitted = conc * flow_hood * (dur/60)) # ug/m^3 * m^3/min * (s / 60)
+  co2 <- mutate(co2, mass_emitted_co2 = conc * flow_hood * (dur/60)) # ug/m^3 * m^3/min * (s / 60)
 ```
 
-* Plot mass emitted per test
+* output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12,fig.height=8}
-  ggplot(co2, aes(id, mass_emitted)) +
-  geom_point() +
-  ylab("ug emitted") +
-  theme_minimal()
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2, 2)
 ```
 
-* Save 
+___
+
+## ecoc
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/ecoc_merged.Rda")
+```
+
+* filter area
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  area <- 11.8 # cm^2
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ecoc <- dplyr::select(ecoc_merged,
+                        id, cassette,
+                        start, end,
+                        pre_flow, post_flow,
+                        oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm)
+```
+
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
+                              dur = (end - start)/60,
+                              conc_oc = oc_ug_sq_cm * 11.8 * 1000 / (flow * dur),
+                              conc_ec = ec_ug_sq_cm * 11.8 * 1000 / (flow * dur),
+                              conc_tc = tc_ug_sq_cm * 11.8 * 1000 / (flow * dur))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::mutate(ecoc, 
+                        mass_emitted_oc = conc_oc * flow_hood * dur,
+                        mass_emitted_ec = conc_ec * flow_hood * dur,
+                        mass_emitted_tc = conc_tc * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ecoc, 2)
+```
+
+___
 
