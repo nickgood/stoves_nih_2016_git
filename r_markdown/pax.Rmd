@@ -34,6 +34,14 @@ output: html_document
   load("../r_files/test_times.Rda")    # test times and ids
 ```
 
+* extract start and end times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
+```
+
 Extract measured flows.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
