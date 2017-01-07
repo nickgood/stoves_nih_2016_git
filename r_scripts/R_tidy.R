@@ -189,7 +189,7 @@ split.notes <- function(){
 map.id <- function(df, test_times){
   for(i in 1:nrow(test_times)){
     # extract data for time period
-      tmp <- filter(df, (df$date == test_times$date[i] & df$time >= test_times$ignite[i] & df$time <= test_times$shutdown[i]))
+      tmp <- filter(df, (df$date == test_times$date[i] & df$time >= test_times$start[i] & df$time <= test_times$end[i]))
     # output in first instance
       if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
         tmp$id <- test_times$id[i]
