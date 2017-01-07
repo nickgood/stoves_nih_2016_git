@@ -55,7 +55,7 @@ Extract measured flows.
 Split variable to get measurement type, location and replicate information.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- split.paxflows(pax_flows)
+  pax_flows <- split.pax.flows(pax_flows)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
