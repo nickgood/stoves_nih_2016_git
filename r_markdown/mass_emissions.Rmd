@@ -1,0 +1,90 @@
+---
+title: "mass_emissions"
+author: "Nicholas Good"
+date: "1/6/2017"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
+```
+
+## Test time data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/test_times.Rda")
+  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+            tidyr::spread(var, value) %>%
+            dplyr::select(-date) %>%
+            dplyr::rename(start = start_1, end = shutdown)
+```
+
+## Constants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flow_hood <- 4 # m^3/min
+```
+
+
+## Co2
+
+* Load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/co2_merged.Rda")
+```
+
+* select sample data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- dplyr::filter(co2_merged, loc == "sample")
+```
+
+* filter out data from outside emissions window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- filter_times(times, co2)
+```
+
+* calculate average for each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- dplyr::group_by(co2, id) %>%
+          dplyr::summarise(ppm = mean(ppm))
+```
+
+* convert mixing ratio to mass (assuming constant T and P)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2$conc <- convert_ppmv_ugpmc(co2$ppm, 28.01, 25, 84)
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- dplyr::left_join(co2, times, by = "id") %>%
+          dplyr::mutate(dur = end - start) %>%
+          dplyr::mutate(id = as.factor(id))
+```
+
+* calculate micrograms of co2 emitted during test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- mutate(co2, mass_emitted = conc * flow_hood * (dur/60)) # ug/m^3 * m^3/min * (s / 60)
+```
+
+* Plot mass emitted per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12,fig.height=8}
+  ggplot(co2, aes(id, mass_emitted)) +
+  geom_point() +
+  ylab("ug emitted") +
+  theme_minimal()
+```
+
+* Save 
+
