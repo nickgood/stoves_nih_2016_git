@@ -61,7 +61,7 @@ ___
 * convert mixing ratio to mass (assuming constant T and P)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  co2$conc <- convert_ppmv_ugpmc(co2$ppm, 28.01, 25, 84)
+  co2$conc <- convert_ppmv_ugpmc(co2$ppm, 44.01, 25, 84)
 ```
 
 * merge with sample time data and calculate test duration
@@ -134,6 +134,68 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(ecoc, 2)
+```
+
+___
+
+## fivegas
+
+
+* Load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/fivegas_merged.Rda")
+```
+
+* select co and ch4
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "ch4")
+```
+
+* filter out data from outside emissions window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_ch4 <- filter_times(times, co_ch4)
+```
+
+* calculate average for each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_ch4 <- dplyr::group_by(co_ch4, id, pol) %>%
+            dplyr::summarise(ppm = mean(val)) %>%
+            dplyr::ungroup()
+```
+
+* convert mixing ratio to mass (assuming constant T and P)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  mw <- data_frame(pol = c("co", "ch4"), mw = c(28.01, 16.04))
+  co_ch4 <- dplyr::left_join(co_ch4, mw, by = "pol")
+  co_ch4$conc <- convert_ppmv_ugpmc(co_ch4$ppm, co_ch4$mw, 25, 84)
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_ch4 <- dplyr::left_join(co_ch4, times, by = "id") %>%
+          dplyr::mutate(dur = end - start) %>%
+          dplyr::mutate(id = as.factor(id))
+```
+
+* calculate micrograms emitted during tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_ch4 <- dplyr::mutate(co_ch4, 
+                          mass_emitted = conc * flow_hood * (dur/60)) %>%
+            tidyr::spread(pol, mass_emitted) %>%
+            dplyr::rename(mass_emitted_co = co, mass_emitted_ch4 = ch4)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co_ch4, 2)
 ```
 
 ___
