@@ -200,3 +200,43 @@ ___
 
 ___
 
+## grav
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/grav_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  grav <- dplyr::select(grav_merged,
+                        id,
+                        time_start, time_end,
+                        flow_pre, flow_post,
+                        wgt_delta)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post)/2,
+                              dur = (time_end - time_start)/60,
+                              conc_pm = wgt_delta * 1000 / (flow * dur))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::mutate(grav, 
+                        mass_emitted_pm = conc_pm * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(grav, 2)
+```
+
+___
