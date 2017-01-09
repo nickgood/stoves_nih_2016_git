@@ -240,3 +240,46 @@ ___
 ```
 
 ___
+
+## voc
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/voc_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  voc <- dplyr::select(voc_merged,
+                        id,
+                        time_start_voc, time_end_voc,
+                        pol, val) %>%
+        dplyr::rename(start = time_start_voc,
+                      end = time_end_voc)
+# flow
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+#  voc <- dplyr::mutate(voc, flow = (,
+#                              dur = (end - start)/60,
+#                              conc_voc = pol * 1000 / (flow * dur))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+#  voc <- dplyr::mutate(voc, 
+#                        mass_emitted_voc = conc_voc * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+#  head(voc, 2)
+```
+
+___
