@@ -241,6 +241,38 @@ ___
 
 ___
 
+## Smps
+
+* Load data
+
+Note data is test average from desired time window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/smps_ultrafine.Rda")
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ultrafine <- dplyr::left_join(smps_ultrafine, times, by = "id") %>%
+                dplyr::mutate(dur = end - start) %>%
+                dplyr::mutate(id = as.factor(id))
+```
+
+* calculate number of particles emitted during tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ultrafine <- mutate(ultrafine, emitted = mean_number_conc * 1e6 * flow_hood * (dur/60)) # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ultrafine, 2)
+```
+
+___
+
 ## voc
 
 * load data
