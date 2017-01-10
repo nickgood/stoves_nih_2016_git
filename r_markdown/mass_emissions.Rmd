@@ -247,6 +247,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/voc_merged.Rda")
+  flow <- 13.5 # L/min
 ```
 
 * select data
@@ -258,28 +259,26 @@ ___
                         pol, val) %>%
         dplyr::rename(start = time_start_voc,
                       end = time_end_voc)
-# flow
 ```
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-#  voc <- dplyr::mutate(voc, flow = (,
-#                              dur = (end - start)/60,
-#                              conc_voc = pol * 1000 / (flow * dur))
+  voc <- dplyr::mutate(voc, dur = (end - start)/60,
+                            conc_voc = val * 1000 / (flow * dur)) # ug * 1000 / ( L/min * min )
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-#  voc <- dplyr::mutate(voc, 
-#                        mass_emitted_voc = conc_voc * flow_hood * dur)
+  voc <- dplyr::mutate(voc, 
+                        mass_emitted_voc = conc_voc * flow_hood * dur)
 ```
 
 * output
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-#  head(voc, 2)
+  head(voc, 2)
 ```
 
 ___
