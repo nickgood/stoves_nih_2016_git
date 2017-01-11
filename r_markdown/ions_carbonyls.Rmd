@@ -43,36 +43,35 @@ Extract ions filter cartridge data
   meta <- dplyr::select(data_1, matches("_green_|^id$|^date$"))
 
   flows <- dplyr::select(meta, matches("flow_|^id$")) %>%
-            tidyr::gather("var", "value", -id) %>%
-            dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-            dplyr::mutate(type = sub("flow.*", "", var),
-                          rep = as.factor(gsub("[^0-9]", "", var))) %>%
-            dplyr::select(-var)  %>%
-            dplyr::filter(!is.na(id)) %>%
-            dplyr::group_by(id, type) %>%
-            dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
-            tidyr::spread(type, mean)
+           tidyr::gather("var", "value", -id) %>%
+           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+           dplyr::mutate(type = sub("flow.*", "", var),
+                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
+           dplyr::select(-var)  %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::group_by(id, type) %>%
+           dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
+           tidyr::spread(type, mean)
   
   times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
-            tidyr::gather("var", "value", -id, -date) %>%
-            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                          type = ifelse(grepl("_end_", var), "end", type)) %>%
-            dplyr::arrange(id) %>%
-            dplyr::filter(!is.na(id)) %>%
-            dplyr::select(-var, -date) %>%
-            tidyr::spread(type, value)
+           tidyr::gather("var", "value", -id, -date) %>%
+           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                         type = ifelse(grepl("_end_", var), "end", type)) %>%
+           dplyr::arrange(id) %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::select(-var, -date) %>%
+           tidyr::spread(type, value)
 ```
 
 Merge ion with filter metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions_merged <- dplyr::left_join(ions, flows, by = "id")  %>%  
-                  dplyr::left_join(times, by = "id") %>%  
-                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
-                  dplyr::rename(time_start = start, time_end = end)
-
-  ions_merged$id <- as.factor(ions_merged$id)
+                 dplyr::left_join(times, by = "id") %>%  
+                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
+                 dplyr::rename(time_start = start, time_end = end) %>%
+                 dplyr::mutate(id = as.factor(id))
 ```
 
 ## QC
@@ -88,18 +87,17 @@ Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-            group_by(id) %>%
-            arrange(qc) %>%
-            summarise(qc = first(qc))
+           group_by(id) %>%
+           arrange(qc) %>%
+           summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions_merged, flags, by = "id")
-  ions_merged$id <- as.factor(ions_merged$id)
-  ions_merged$qc <- ifelse(is.na(ions_merged$qc), "ok", as.character(ions_merged$qc))
-  ions_merged$qc <- as.factor(ions_merged$qc)
+  ions_merged <- dplyr::left_join(ions_merged, flags, by = "id") %>%
+                 dplyr::mutate(id = as.factor(id)) %>%
+                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 Addtional bad tests
@@ -111,11 +109,11 @@ Addtional bad tests
 ## Convert to long format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-ions_merged <- tidyr::gather(ions_merged, var, val, 
-                   -id, -id_ions, -post_flow,
-                   -pre_flow, -time_start, -time_end, -type, -qc) %>%
-                    dplyr::filter(!is.na(val))  %>%
-                    dplyr::mutate(var = as.factor(var))
+  ions_merged <- tidyr::gather(ions_merged, var, val, 
+                               -id, -id_ions, -post_flow,
+                               -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                 dplyr::filter(!is.na(val))  %>%
+                 dplyr::mutate(var = as.factor(var))
 ```
 
 ## Save merged file
@@ -128,24 +126,24 @@ ions_merged <- tidyr::gather(ions_merged, var, val,
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(ions_merged, aes(id, val, group = var, color = var)) +
-    geom_point() +
-    geom_line() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ug") +
-    theme(legend.position="top")
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
 ```
 
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(ions_merged, aes(id, val, group = var, color = qc)) +
-    geom_point() +
-    geom_line() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ug") +
-    theme(legend.position="top")
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
 ```
 
 ## Summary
