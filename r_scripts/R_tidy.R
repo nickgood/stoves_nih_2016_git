@@ -5,7 +5,7 @@
 
 #________________________________________________________
 # melts data preserving id and date
-tidy.id.date <- function(df, regex, namesub){
+tidy_id_date <- function(df, regex, namesub){
   # select weight
     out <- select(df, id, date, matches(regex)) %>%
       filter(is.na(id)==FALSE) # remove NaNs
@@ -26,7 +26,7 @@ tidy.id.date <- function(df, regex, namesub){
   
 #________________________________________________________
 # melts data preserving date
-tidy.date <- function(df, regex, namesub){
+tidy_date <- function(df, regex, namesub){
   
   # select weight
     out <- select(df, date, matches(regex)) %>%
@@ -48,7 +48,7 @@ tidy.date <- function(df, regex, namesub){
 
 #________________________________________________________
 # pax
-split.pax.flows <- function(df){
+split_pax_flows <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
@@ -67,7 +67,7 @@ split.pax.flows <- function(df){
 
 #________________________________________________________
 # smps, iso, carb
-split.flows <- function(df){
+split_flows <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
@@ -84,7 +84,7 @@ split.flows <- function(df){
 
 #________________________________________________________
 # carb
-split.times <- function(df){
+split_times <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("_.*", "", df$var)))
@@ -100,7 +100,7 @@ split.times <- function(df){
 #________________________________________________________
 # co2
 # split co2 calibration variable name into pollutant and type
-split.co2.cal <- function(df){
+split_co2_cal <- function(df){
   
   # split variable
     out <- mutate(df, pol=as.factor(sub("_.*", "", df$var)),
@@ -117,7 +117,7 @@ split.co2.cal <- function(df){
 
 #________________________________________________________
 # filter flows
-split.filter.flows <- function(df){
+split_filter_flows <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
@@ -136,7 +136,7 @@ split.filter.flows <- function(df){
 
 #________________________________________________________
 # filter times
-split.filter.times <- function(df){
+split_filter_times <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("_.*", "", df$var)), 
@@ -161,7 +161,7 @@ split.filter.times <- function(df){
 
 #________________________________________________________
 # fivegas cal times
-split.fivegas.cal.times <- function(df){
+split_fivegas_cal_times <- function(df){
   
   # split variable
     out <- mutate(df, type=as.factor(sub("_.*", "", df$var)),
@@ -178,7 +178,7 @@ split.fivegas.cal.times <- function(df){
 
 #________________________________________________________
 # Notes
-split.notes <- function(){
+split_notes <- function(){
   # return
     return(out)
 }
@@ -186,7 +186,7 @@ split.notes <- function(){
 
 #________________________________________________________
 # Map id, based on date and time
-map.id <- function(df, test_times){
+map_id <- function(df, test_times){
   for(i in 1:nrow(test_times)){
     # extract data for time period
       tmp <- filter(df, (df$date == test_times$date[i] & df$time >= test_times$start[i] & df$time <= test_times$end[i]))
