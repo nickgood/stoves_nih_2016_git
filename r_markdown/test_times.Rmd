@@ -30,15 +30,12 @@ output: html_document
 * Combine test types
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- rbind(select(wood_times, -date), select(batch_times, -date))
-  test_times <- dplyr::filter(inner_join(select(samples, id, date), test_times, by = "id"), is.na(value)==FALSE)
-  test_times$id <- as.factor(test_times$id)
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # old code to output ignition and shutdown times only
-  # times_ignite_shutdown <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
-  #                           tidyr::spread(var, value)
+  test_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
+                                 dplyr::select(batch_times, -date)) %>%
+                dplyr::inner_join(dplyr::select(samples, id, date),
+                                  test_times, by = "id") %>%
+                dplyr::filter(is.na(value)==FALSE) %>%
+                dplyr::mutate(id = as.factor(id))
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -51,11 +48,10 @@ output: html_document
   save(test_times, file = "../r_files/test_times.Rda")
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/samples.Rda") # load sample info
+## Summary
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
-
-## Summary
 
 Test times were measured for `r length(unique(test_times$id))` experiments between `r min(test_times$date, na.rm = TRUE)` and `r max(test_times$date, na.rm = TRUE)`. There are times for tests: `r setdiff(levels(samples$id), levels(test_times$id))`.
