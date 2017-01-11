@@ -16,7 +16,7 @@ output: html_document
 ## Load ecoc data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc.Rda")    # ecoc dataset
+  load("../r_files/ecoc.Rda")  # ecoc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -26,7 +26,7 @@ output: html_document
 ## Merge with filter meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")    # metadata
+  load("../r_files/data_1.Rda")  # metadata
 ```
 
 Extract metadata
@@ -34,37 +34,35 @@ Extract metadata
   meta <- dplyr::select(data_1, matches("_orange_|_white_|^id$|^date$"))
 
   flows <- dplyr::select(meta, matches("flow_|^id$|^date$")) %>%
-            tidyr::gather("var", "value", -id, -date) %>%
-            dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-            dplyr::mutate(type = sub("flow.*", "", var),
-                          cassette = as.factor(ifelse(grepl("_white_", var), "A", "E")),
-                          rep = as.factor(gsub("[^0-9]", "", var))) %>%
-            dplyr::select(-var)  %>%
-            dplyr::filter(!is.na(id)) %>%
-            dplyr::group_by(id, type, cassette) %>%
-            dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
-            tidyr::spread(type, mean)
-  
+           tidyr::gather("var", "value", -id, -date) %>%
+           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+           dplyr::mutate(type = sub("flow.*", "", var),
+                         cassette = as.factor(ifelse(grepl("_white_", var), "A", "E")),
+                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
+           dplyr::select(-var) %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::group_by(id, type, cassette) %>%
+           dplyr::summarise(mean = mean(value, na.rm = TRUE)) %>%
+           tidyr::spread(type, mean)
+
   times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
-            tidyr::gather("var", "value", -id, -date) %>%
-            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                          type = ifelse(grepl("_end_", var), "end", type)) %>%
-            dplyr::filter(!is.na(id)) %>%  
-            dplyr::select(-var, -date) %>%
+           tidyr::gather("var", "value", -id, -date) %>%
+           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                         type = ifelse(grepl("_end_", var), "end", type)) %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::select(-var, -date) %>%
             tidyr::spread(type, value)
 ```
 
 Merge ecoc with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette"))  %>%  
-                  dplyr::left_join(times, by = c("id")) %>%  
-                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                  dplyr::rename(pre_flow = pre, post_flow = post)  %>%
-                  dplyr::arrange(id)
-  # convert back to factor
-    ecoc_merged$id <- as.factor(ecoc_merged$id)
-  
+  ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
+                 dplyr::left_join(times, by = c("id")) %>%
+                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
+                 dplyr::arrange(id) %>%
+                 dplyr::mutate(id = as.factor(id))
 ```
 
 ## QC
@@ -72,6 +70,7 @@ Merge ecoc with metadata
 Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/notes.Rda")
+
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst)==TRUE)
 ```
 
@@ -85,18 +84,20 @@ Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-            group_by(id) %>%
-            arrange(qc) %>%
-            summarise(qc = first(qc))
+           group_by(id) %>%
+           arrange(qc) %>%
+           summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id")
-  ecoc_merged$id <- as.factor(ecoc_merged$id)
-  ecoc_merged$qc <- ifelse(is.na(ecoc_merged$qc), "ok", as.character(ecoc_merged$qc))
-  ecoc_merged$qc <- as.factor(ecoc_merged$qc)
+  ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id") %>%
+                 dplyr::mutate(id = as.factor(id)) %>%
+                 dplyr::mutate(qc = ifelse(is.na(qc),
+                                           "ok",
+                                           as.character(qc))) %>%
+                 dplyr::mutate(qc = as.factor(qc))
 ```
 
 Addtional bad tests
@@ -114,66 +115,66 @@ Addtional bad tests
 ## Load sample info
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda") # load sample info
+  load(file="../r_files/samples.Rda")  # load sample info
+
   samples <- dplyr::select(samples, id, stove, fuel)
-  
-# join ecoc with sample info data
-  ecoc_p <- left_join(ecoc_merged, samples, by = "id")
-  ecoc_p$id <- as.factor(ecoc_p$id)
+
+  ecoc_p <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
+            dplyr::mutate(id= as.factor(id))
 ```
 
 ## Plot by cassette (artifact)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
   ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = cassette)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ec ug/sq.cm") +
-    theme(legend.position = "top")
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ec ug/sq.cm") +
+         theme(legend.position = "top")
 
   ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = cassette)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("oc ug/sq.cm") +
-    theme(legend.position = "top")
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("oc ug/sq.cm") +
+         theme(legend.position = "top")
 ```
 
 ## Plot by fuel
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
   ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = fuel)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ec ug/sq.cm")+
-    theme(legend.position = "top")
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ec ug/sq.cm")+
+         theme(legend.position = "top")
 
   ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = fuel)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("oc ug/sq.cm") +
-    theme(legend.position = "top")
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("oc ug/sq.cm") +
+         theme(legend.position = "top")
 ```
 
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
   ggplot(ecoc_p, aes(id, ec_ug_sq_cm, color = qc)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ec ug/sq.cm")+
-    theme(legend.position = "top")
-    
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ec ug/sq.cm")+
+         theme(legend.position = "top")
+
   ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = qc)) +
-    geom_point() +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("oc ug/sq.cm") +
-    theme(legend.position = "top")
+         geom_point() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("oc ug/sq.cm") +
+         theme(legend.position = "top")
 ```
 
 ## Summary
