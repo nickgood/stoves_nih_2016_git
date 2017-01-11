@@ -14,7 +14,7 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")
 ```
 
 ## Load transmissometer data
@@ -31,6 +31,7 @@ output: html_document
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/grav.Rda") 
+
   filter_info <- dplyr::select(grav, id, id_filter)
 ```
 
@@ -41,8 +42,8 @@ output: html_document
 ## Merge data with id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- left_join(trans, filter_info, "id_filter") 
-  trans_merged$id <- as.factor(trans_merged$id)
+  trans_merged <- dplyr::left_join(trans, filter_info, "id_filter") %>%
+                  dplyr::mutate(id = as.factor(id))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -52,7 +53,10 @@ output: html_document
 ## Filters without matches
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, id_filter), dplyr::select(trans, id_filter), "id_filter")
+  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, id_filter),
+                                     dplyr::select(trans, id_filter),
+                                     by = "id_filter")
+
   save(trans_no_match, file = "../r_files/trans_no_match.Rda")
 ```
 
@@ -62,10 +66,10 @@ Make longer and remove missing values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   trans_merged <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
-  tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
-  dplyr::mutate(lamda = sub("_.*", "", var)) %>%
-  dplyr::mutate(pos = sub(".*_", "", var)) %>%
-  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
+                  tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
+                  dplyr::mutate(lamda = sub("_.*", "", var)) %>%
+                  dplyr::mutate(pos = sub(".*_", "", var)) %>%
+                  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
 ```
 
 ## QC
@@ -73,7 +77,8 @@ Make longer and remove missing values
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")
+
   notes <- dplyr::filter(notes, grepl("trans|all", notes$inst) == TRUE)
 ```
 
@@ -81,18 +86,17 @@ Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-            group_by(id) %>%
-            arrange(qc) %>%
-            summarise(qc = first(qc))
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans_merged, flags, by = "id")
-  trans_merged$id <- as.factor(trans_merged$id)
-  trans_merged$qc <- ifelse(is.na(trans_merged$qc), "ok", as.character(trans_merged$qc))
-  trans_merged$qc <- as.factor(trans_merged$qc)
+  trans_merged <- dplyr::left_join(trans_merged, flags, by = "id") %>%
+                  dplyr::mutate(id = as.factor(id)) %>%
+                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 Additional bad tests
