@@ -37,7 +37,7 @@ Make longer and remove n/a.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- tidyr::gather(voc, "pol", "val", starts_with("voc_")) %>%
-              dplyr::filter(!is.na(id) & id != "NA")
+         dplyr::filter(!is.na(id) & id != "NA")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -51,16 +51,17 @@ Make longer and remove n/a.
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # match voc metadata
-    meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
-  # merge
-    voc_merged <- dplyr::left_join(voc, meta)
+ # match voc metadata
+  meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
+ # merge
+  voc_merged <- dplyr::left_join(voc, meta)
 ```
 
 ## QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")
+
   notes <- dplyr::filter(notes, grepl("voc|all", notes$inst) == TRUE)
 ```
 
@@ -74,24 +75,23 @@ Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-            group_by(id) %>%
-            arrange(qc) %>%
-            summarise(qc = first(qc))
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::left_join(voc_merged, flags, by = "id")
-  voc_merged$id <- as.factor(voc_merged$id)
-  voc_merged$qc <- ifelse(is.na(voc_merged$qc), "ok", as.character(voc_merged$qc))
-  voc_merged$qc <- as.factor(voc_merged$qc)
+  voc_merged <- dplyr::left_join(voc_merged, flags, by = "id") %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #voc_merged$qc[grav_merged$id == ""] <- "bad"
+  # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
 ## Save merged file
@@ -103,34 +103,34 @@ Additional bad tests
 ## Plot (coloured by fuel type)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda") # load sample info
+  load(file="../r_files/samples.Rda")
+
   samples <- dplyr::select(samples, id, stove, fuel)
   
-# join voc with sample info data
-  voc_p <- left_join(voc_merged, samples, by = "id")
-  voc_p$pol <- sub("^voc_", "", voc_p$pol)
-  voc_p$id <- as.factor(voc_p$id)
+  voc_p <- dplyr::left_join(voc_merged, samples, by = "id") %>%
+           dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
+           dplyr::mutate(id = as.factor(id))
   
-# filter out background data and non-detects 
-  voc_p <- filter(voc_p, val > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+ # filter out background data and non-detects 
+  voc_p <- dplyr::filter(voc_p, val > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
   ggplot(voc_p, aes(id, val, colour = fuel)) + 
-        geom_point() +
-        facet_wrap(~pol, ncol = 1, scales = "free") +
-        theme_minimal() +
-        theme(legend.position = "top") +
-        ylab("ug/m3") + xlab("")
+         geom_point() +
+         facet_wrap(~pol, ncol = 1, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("ug/m3") + xlab("")
 ```
 
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-ggplot(voc_p, aes(id, val, colour = qc)) + 
-        geom_point() +
-        facet_wrap(~pol, ncol = 1, scales = "free") +
-        theme_minimal()
+  ggplot(voc_p, aes(id, val, colour = qc)) + 
+         geom_point() +
+         facet_wrap(~pol, ncol = 1, scales = "free") +
+         theme_minimal()
 ```
 
 $VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
