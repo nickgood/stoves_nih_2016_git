@@ -6,121 +6,129 @@ output: html_document
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
-# libraries
   library(tidyverse)
   library(GGally)
+```
 
-# source files
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_plots.R")
   source("../r_scripts/R_tidy.R")
 ```  
   
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=TRUE}
-# load time-resolved data data
-  load("../r_files/pax.Rda")          # pax data
-  load("../r_files/co2_lab.Rda")      # lab co2 levels
-  load("../r_files/co2_sample.Rda")   # sample co2 levels
-  load("../r_files/scale.Rda")        # scale data
-  load("../r_files/temp.Rda")         # temperature data
-  load("../r_files/smps.Rda")         # smps data
+ # time-resolved data data
+  load("../r_files/pax.Rda")         # pax data
+  load("../r_files/co2_lab.Rda")     # lab co2 levels
+  load("../r_files/co2_sample.Rda")  # sample co2 levels
+  load("../r_files/scale.Rda")       # scale data
+  load("../r_files/temp.Rda")        # temperature data
+  load("../r_files/smps.Rda")        # smps data
   
-# load time-integrated data
-  load("../r_files/ecoc.Rda")         # ecoc filter analysis
-  load("../r_files/ions.Rda")         # ion filter data
-  load("../r_files/trans.Rda")        # transmissometer data
-  load("../r_files/voc.Rda")          # voc canister data
-  load("../r_files/samples.Rda")      # sample info
-  load("../r_files/batch.Rda")        # batch sampling log
-  load("../r_files/wood.Rda")         # wood sampling log
-  load("../r_files/cal_1.Rda")        # meta data
-  load("../r_files/data_1.Rda")       # meta data
-  load("../r_files/cal_2.Rda")        # meta data
-  load("../r_files/data_2.Rda")       # meta data
+ # load time-integrated data
+  load("../r_files/ecoc.Rda")        # ecoc filter analysis
+  load("../r_files/ions.Rda")        # ion filter data
+  load("../r_files/trans.Rda")       # transmissometer data
+  load("../r_files/voc.Rda")         # voc canister data
+  load("../r_files/samples.Rda")     # sample info
+  load("../r_files/batch.Rda")       # batch sampling log
+  load("../r_files/wood.Rda")        # wood sampling log
+  load("../r_files/cal_1.Rda")       # meta data
+  load("../r_files/data_1.Rda")      # meta data
+  load("../r_files/cal_2.Rda")       # meta data
+  load("../r_files/data_2.Rda")      # meta data
 ```
 
 ## Clean and save metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=TRUE}
-# tidy by prefix and retain id and date
+  batch_wgts <- dplyr::filter(tidy_id_date(batch, "^wgt_", "wgt_"), !is.na(value))
 
-# batch test weights
-  batch_wgts <- dplyr::filter(tidy.id.date(batch, "^wgt_", "wgt_"), !is.na(value))
-    save(batch_wgts, file="../r_files/batch_wgts.Rda")
+  save(batch_wgts, file="../r_files/batch_wgts.Rda")
 
-# batch test times   
-  batch_times <- dplyr::filter(tidy.id.date(batch, "^time_", "time_"), !is.na(value))
-    save(batch_times, file="../r_files/batch_times.Rda")
-
-# lab pressure, temperature and relative humidity
-  batch_lab <- dplyr::filter(tidy.id.date(batch, "^lab_", "lab_"), !is.na(value))
-    save(batch_lab, file="../r_files/batch_lab.Rda")
-    
-# flow for ion and carbonyl filters
-  carb_flows <- dplyr::filter(tidy.id.date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
-    carb_flows <- split.flows(carb_flows)
-    save(carb_flows, file="../r_files/carb_flows.Rda")
+  batch_times <- dplyr::filter(tidy_id_date(batch, "^time_", "time_"), !is.na(value))
   
-# times for ion and carbonyl filters
-  carb_times <- dplyr::filter(tidy.id.date(data_2, "^time_.*carb$", "^time_"), !is.na(value))
-    carb_times <- split.times(carb_times)
-    save(carb_times, file="../r_files/carb_times.Rda")
+  save(batch_times, file="../r_files/batch_times.Rda")
+
+  batch_lab <- dplyr::filter(tidy_id_date(batch, "^lab_", "lab_"), !is.na(value))
+
+  save(batch_lab, file="../r_files/batch_lab.Rda")
+    
+  carb_flows <- dplyr::filter(tidy_id_date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
+  
+  carb_flows <- split_flows(carb_flows)
+  
+  save(carb_flows, file="../r_files/carb_flows.Rda")
+  
+  carb_times <- dplyr::filter(tidy_id_date(data_2, "^time_.*carb$", "^time_"), !is.na(value))
+  
+  carb_times <- split_times(carb_times)
+  
+  save(carb_times, file="../r_files/carb_times.Rda")
  
-# flow for isokinetic sampler
-  iso_flows <- dplyr::filter(tidy.id.date(data_2, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
-    iso_flows <- split.flows(iso_flows)
-    save(iso_flows, file="../r_files/iso_flows.Rda")
-    
-# wood test weights  
-  wood_wgts <- dplyr::filter(tidy.id.date(wood, "^wgt_", "wgt_"), !is.na(value))
-    save(wood_wgts, file="../r_files/wood_wgts.Rda")
+  iso_flows <- dplyr::filter(tidy_id_date(data_2, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
   
-# wood test times
-  wood_times <- dplyr::filter(tidy.id.date(wood, "^time_", "time_"), !is.na(value))
-    save(wood_times, file="../r_files/wood_times.Rda")
+  iso_flows <- split_flows(iso_flows)
+  
+  save(iso_flows, file="../r_files/iso_flows.Rda")
+    
+  wood_wgts <- dplyr::filter(tidy_id_date(wood, "^wgt_", "wgt_"), !is.na(value))
+  
+  save(wood_wgts, file="../r_files/wood_wgts.Rda")
+  
+  wood_times <- dplyr::filter(tidy_id_date(wood, "^time_", "time_"), !is.na(value))
+  
+  save(wood_times, file="../r_files/wood_times.Rda")
 
-# lab pressure, temperature and relative humidity
-  wood_lab <- dplyr::filter(tidy.id.date(wood, "^lab_", "lab_"), !is.na(value))
-    save(wood_lab, file="../r_files/wood_lab.Rda")
+  wood_lab <- dplyr::filter(tidy_id_date(wood, "^lab_", "lab_"), !is.na(value))
+  
+  save(wood_lab, file="../r_files/wood_lab.Rda")
     
-# Tidy by prefix and retain date
+  fivegas_cal_conc <- dplyr::filter(tidy_date(cal_1, "^conc_", "conc_"), !is.na(value))
+  
+  save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
     
-# fivegas calibration
+  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"), !is.na(value))
+  
+  fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
+  
+  save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
     
-  fivegas_cal_conc <- dplyr::filter(tidy.date(cal_1, "^conc_", "conc_"), !is.na(value))
-    save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
+  filter_flows <- dplyr::filter(tidy_date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
+  
+  filter_flows <- split_filter_flows(filter_flows)
+
+  save(filter_flows, file="../r_files/filter_flows.Rda")
     
-  fivegas_cal_times <- dplyr::filter(tidy.date(cal_1, "^time_", "time_"), !is.na(value))
-    fivegas_cal_times <- split.fivegas.cal.times(fivegas_cal_times)
-    save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
+  filter_times <- dplyr::filter(tidy_date(data_1, "^time_.*cart", "time_"), !is.na(value))
+  
+  filter_times <- split_filter_times(filter_times)
+  
+  save(filter_times, file="../r_files/filter_times.Rda")
     
-# filters
-  filter_flows <- dplyr::filter(tidy.date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
-    filter_flows <- split.filter.flows(filter_flows)
-    save(filter_flows, file="../r_files/filter_flows.Rda")
+  co2_lab_cal <- dplyr::filter(tidy_date(cal_2, "^sensor_1", "sensor_1_"), !is.na(value))
+
+  co2_lab_cal <- split_co2_cal(co2_lab_cal)
+
+  save(co2_lab_cal, file="../r_files/co2_lab_cal.Rda")
     
-  filter_times <- dplyr::filter(tidy.date(data_1, "^time_.*cart", "time_"), !is.na(value))
-    filter_times <- split.filter.times(filter_times)
-    save(filter_times, file="../r_files/filter_times.Rda")
+  co2_sample_cal <- dplyr::filter(tidy_date(cal_2, "^sensor_2", "sensor_2_"), !is.na(value))
+  
+  co2_sample_cal <- split_co2_cal(co2_sample_cal)
+  
+  save(co2_sample_cal, file="../r_files/co2_sample_cal.Rda")
     
-# co2
-  co2_lab_cal <- dplyr::filter(tidy.date(cal_2, "^sensor_1", "sensor_1_"), !is.na(value))
-    co2_lab_cal <- split.co2.cal(co2_lab_cal)
-    save(co2_lab_cal, file="../r_files/co2_lab_cal.Rda")
-    
-  co2_sample_cal <- dplyr::filter(tidy.date(cal_2, "^sensor_2", "sensor_2_"), !is.na(value))
-    co2_sample_cal <- split.co2.cal(co2_sample_cal)
-    save(co2_sample_cal, file="../r_files/co2_sample_cal.Rda")
-    
-# pax
-  pax_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
-    pax_flows <- split.pax.flows(pax_flows)
-    save(pax_flows, file="../r_files/pax_flows.Rda")
-    
-# smps
-  smps_flows <- dplyr::filter(tidy.date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
-    smps_flows <- split.flows(smps_flows)
-    save(smps_flows, file="../r_files/smps_flows.Rda")
+  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
+  
+  pax_flows <- split_pax_flows(pax_flows)
+  
+  save(pax_flows, file="../r_files/pax_flows.Rda")
+
+  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
+  
+  smps_flows <- split_flows(smps_flows)
+  
+  save(smps_flows, file="../r_files/smps_flows.Rda")
 ```
 
 ## Stove-fuel combinations
@@ -136,37 +144,39 @@ output: html_document
 A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested using `r nrow(count_fuels)` fuels. The graphic below, shows the stove-fuel combinations tested. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=20, fig.height=14}
-    # remove columns
-      stove_fuel_list <- subset(complete(subset(samples, select = c(stove,fuel, id)), stove, fuel),
+ # update to dplyr
+  stove_fuel_list <- subset(complete(subset(samples, select = c(stove,fuel, id)), stove, fuel),
                               stove != "Background" & fuel != "Background")
 
-    # remove deplicate combinations
-      stove_fuel_combos <- distinct(select(stove_fuel_list, -id))
-      stove_fuel_combos$id <- NA
-        for(i in 1:nrow(stove_fuel_combos)){
-          reps <- subset(stove_fuel_list, 
-                    fuel == stove_fuel_combos$fuel[i] &
-                    stove  == stove_fuel_combos$stove[i],
-                    select = id)
-          stove_fuel_combos$id[i] <- paste0(reps$id,collapse="", sep = ".")
-        }
-    # type
-      stove_fuel_combos$id <- as.factor(stove_fuel_combos$id)
-      
-    # relevel NAs
-      levels(stove_fuel_combos$id)[levels(stove_fuel_combos$id)=="NA."] <- NA
-      
-    # plot
-      p <- ggplot(stove_fuel_combos, aes(y=stove, x=fuel)) + 
-            geom_tile(colour="white",width=.9, height=.9,aes(fill = id)) +
-            scale_fill_discrete(na.value = 'grey95') +
-            theme_minimal() +
-            theme(legend.position="none") +
-            theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
-            theme(axis.text = element_text(size = 18)) +
-            geom_text(aes(label = stove_fuel_combos$id)) +
-            xlab("") + ylab("")
-      p
+  stove_fuel_combos <- dplyr::distinct(select(stove_fuel_list, -id)) %>%
+                       dplyr::mutate(id = NA)
+
+  for(i in 1:nrow(stove_fuel_combos)){
+    
+    reps <- dplyr::filter(stove_fuel_list, fuel == fuel[i] & stove == stove[i]) %>%
+            dplyr::select(id)
+
+    stove_fuel_combos$id[i] <- paste0(reps$id,collapse="", sep = ".")
+  }
+
+  stove_fuel_combos <- dplyr::mutate(stove_fuel_combos, id = as.factor(id))
+
+  levels(stove_fuel_combos$id)[levels(stove_fuel_combos$id)=="NA."] <- NA
+```
+
+### Plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=20, fig.height=14}      
+  p <- ggplot(stove_fuel_combos, aes(y=stove, x=fuel)) + 
+              geom_tile(colour="white",width=.9, height=.9,aes(fill = id)) +
+              scale_fill_discrete(na.value = 'grey95') +
+              theme_minimal() +
+              theme(legend.position="none") +
+              theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
+              theme(axis.text = element_text(size = 18)) +
+              geom_text(aes(label = stove_fuel_combos$id)) +
+              xlab("") + ylab("")
+  p
 ``` 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
@@ -175,51 +185,62 @@ A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))`
 
 ## Batch sample weights
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   df <- batch_wgts
   df <- filter(df, !is.na(value))
   df <- dplyr::group_by(df, var) %>% 
         dplyr::mutate(outlier = ifelse(is_outlier(value), as.character(id), NA))
-  
+```
+
+### Plot
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
   p <-  ggplot(df, aes(x = var, y = value)) +
-        geom_boxplot() +
-        theme_bw() +
-        theme(axis.text = element_text(size = 14)) +
-        geom_text(aes(label = outlier), na.rm = TRUE, nudge_y = 0, nudge_x = 0.3, size = 4) +
-        xlab("") + ylab("")
-  
+               geom_boxplot() +
+               theme_bw() +
+               theme(axis.text = element_text(size = 14)) +
+               geom_text(aes(label = outlier), na.rm = TRUE, nudge_y = 0, nudge_x = 0.3, size = 4) +
+               xlab("") + ylab("")
   p
 ```
 
 ## Batch fuel schedule
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
-  df <- subset(batch_times, grepl("[a-z]$", batch_times$var))
-  df$value <- df$value/60
-  ggplot(df, aes(x=id, y=value, fill=var)) +
-          geom_bar(stat = "identity") +
-          xlab("") + ylab("duration (minutes") +
-          theme(axis.text = element_text(size = 14))
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df <- dplyr::filter(batch_times, grepl("[a-z]$", var) == TRUE) %>%
+        dplyr::mutate(value = value/60)
+```
 
+### Plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
+  ggplot(df, aes(x=id, y=value, fill=var)) +
+         geom_bar(stat = "identity") +
+         xlab("") + ylab("duration (minutes") +
+         theme(axis.text = element_text(size = 14))
 ```
 
 ## Batch pot schedule
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df <- dplyr::filter(batch_times, grepl("[0-9]$", var) == TRUE) %>%
+        dplyr::mutate(value = value/60)
+```
+
+### Plot
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
-  df <- subset(batch_times, grepl("[0-9]$", batch_times$var))
-  df$value <- df$value/60
   ggplot(df, aes(x=id, y=value, fill=var)) +
-          geom_bar(stat = "identity") +
-          xlab("") + ylab("duration (minutes") +
-          theme(axis.text = element_text(size = 14))
+         geom_bar(stat = "identity") +
+         xlab("") + ylab("duration (minutes") +
+         theme(axis.text = element_text(size = 14))
 ```
 
 ## Batch lab conditions
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', fig.width=20, fig.height=10, cache=FALSE}
   p <- ggplot(batch_lab, aes(x=date, y=value)) + 
-        geom_line() +
-        geom_point() +
-        facet_wrap(~var, ncol = 1, scales = "free")
+              geom_line() +
+              geom_point() +
+              facet_wrap(~var, ncol = 1, scales = "free")
   p
 ```
