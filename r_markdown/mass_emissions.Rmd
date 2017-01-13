@@ -296,8 +296,9 @@ ___
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  voc <- dplyr::mutate(voc, dur = (end - start)/60,
-                            conc_voc = val * 1000 / (flow * dur)) # ug * 1000 / ( L/min * min )
+  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+                            ppm = val / 1000,
+                            conc = convert_ppmv_ugpmc(ppm, mw, 25, 85))
 ```
 
 * calculate mass emitted
