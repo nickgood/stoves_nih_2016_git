@@ -32,7 +32,7 @@ output: html_document
 
 ___
 
-## Co2
+## co2
 
 * Load data
 
