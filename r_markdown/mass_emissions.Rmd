@@ -357,6 +357,8 @@ ___
             dplyr::mutate(mw = ifelse(pol == "voc_1_3_diethylbenzene", 120.19, mw)) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_1_4_diethylbenzene", 134.222, mw)) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_1_2_diethylbenzene", 134.222, mw))
+
+  voc <- dplyr::left_join(voc, mw_voc, by = "pol")
 ```
 
 * calculate concentrations
