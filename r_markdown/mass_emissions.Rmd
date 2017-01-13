@@ -279,6 +279,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/voc_merged.Rda")
+
   flow <- 13.5 # L/min
 ```
 
@@ -286,11 +287,76 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   voc <- dplyr::select(voc_merged,
-                        id,
-                        time_start_voc, time_end_voc,
-                        pol, val) %>%
-        dplyr::rename(start = time_start_voc,
-                      end = time_end_voc)
+                       id,
+                       time_start_voc, time_end_voc,
+                       pol, val) %>%
+         dplyr::rename(start = time_start_voc,
+                       end = time_end_voc)
+```
+
+* moleculer weight data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  mw_voc <- data_frame(pol = unique(voc$pol)) %>%
+            dplyr::mutate(mw = NA) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethane", 30.07, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethene", 28.05, mw)) %>%  
+            dplyr::mutate(mw = ifelse(pol == "voc_propane", 44.1, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_propene", 42.08, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_butane", 58.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_butane", 58.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethyne", 26.04, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_t_2_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_cyclopentane", 70.1, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_pentane", 72.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_pentane", 72.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_t_2_pentene", 70.1329, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methyl_2_butene", 70.1329, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_pentene", 70.135, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_pentene", 70.135, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_cyclohexane", 84.16, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_hexane", 86.178, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_isoprene", 68.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_hexene", 84.1608, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_hexene", 84.162, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_4_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_methylcyclohexane", 98.186, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_heptane", 100.21, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_benzene", 78.11, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylpentane", 86.178, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_3_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "2_methylhexane", 100.2, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "3_methylpentane", 86.18, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "2_3_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methylhexane", 100.2, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylhexane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_2_4_trimethylpentane", 114.232, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_3_4_trimethylpentane", 114.232, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_toluene", 92.14, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methylheptane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylheptane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_octane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethylbenzene", 106.17, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_m_p_xylene", 106.168, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_styrene", 104.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_o_xylene", 106.16, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_no_8888ne", NA, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_propylbenzene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_a_pinene", 136.24, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_propylbenzene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_4_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_3_5_trimethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_4_trimethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_decane", 142.29, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_3_trimethylbenzene", 30.07, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_3_diethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_4_diethylbenzene", 134.222, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_diethylbenzene", 134.222, mw))
 ```
 
 * calculate concentrations
