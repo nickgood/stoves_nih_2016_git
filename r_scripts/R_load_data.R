@@ -89,44 +89,43 @@ load_ecoc_file <- function(file){
                  rep("numeric",4),
                  rep("character",3))
 
-    df <- read.csv(file, header = TRUE, colClasses = classes, 
+    ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
                    fill = TRUE, na.strings = c("-", "na"))
 
-    df <- dplyr::rename(df, time = Time) %>%
+    ecoc <- dplyr::rename(ecoc, time = Time) %>%
           dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
           dplyr::mutate(as.numeric(substr(time,12,13))*60*60 + 
                           as.numeric(substr(time,15,16))*60 +
                           as.numeric(substr(time,18,19)))
 
-    df <- dplyr::rename(df, date = Date) %>%
-          dplyr::mutate(date = as.Date(df$date, "%m/%d/%Y"))
+    ecoc <- dplyr::rename(ecoc, date = Date)
+    ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
+          dplyr::mutate(datetime = as.POSIXct(as.character(date)))
     
-    df <- dplyr::mutate(datetime = as.POSIXct(as.character(date)))
-    
-    df <- dplyr::rename(df, ecoc_id = Sample.ID)
+    ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
   
-    df <- dplyr::mutate(df, type = ifelse(grepl("^[0-9]",df$ecoc_id),"test", "NA")) %>%
+    ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
           dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
           dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
 
-    df <- dplyr::mutate(df, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
+    ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
           dplyr::mutate(cassette <- ifelse(grepl("-E$", ecoc_id),"E", cassette))
     
-    df <- dplyr::mutate(df, id = sub("-.*", "", ecoc))
+    ecoc <- dplyr::mutate(ecoc, id = sub("-.*", "", ecoc_id))
     
   # rename columns
-  names(df) <- gsub("\\.$", "", colnames(df))
-  names(df) <- tolower(gsub("\\.\\.", "_", colnames(df)))
-  names(df) <- tolower(gsub("\\.", "_", colnames(df)))
+  names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
+  names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
+  names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
   
   # set class
-    df$ecoc_id <- as.factor(df$ecoc_id)
-    df$id <- as.factor(df$id)
-    df$type <- as.factor(df$type)
-    df$cassette <- as.factor(df$cassette)
+    ecoc$ecoc_id <- as.factor(ecoc$ecoc_id)
+    ecoc$id <- as.factor(ecoc$id)
+    ecoc$type <- as.factor(ecoc$type)
+    ecoc$cassette <- as.factor(ecoc$cassette)
  
   # return
-    return(df)
+    return(ecoc)
 }
 #________________________________________________________
 
