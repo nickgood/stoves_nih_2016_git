@@ -23,6 +23,54 @@ output: html_document
   colnames(ecoc)
 ```
 
+## Fix filter names
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# delete filters from different study
+  ecoc <- dplyr::filter(ecoc, ecoc_id != "INDIA BAKE BLANK") %>%
+          dplyr::filter(ecoc_id != "INDIA BAKE BLANK 2" )
+
+# rename blanks and ambigious ids and filter out pilot tests
+  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("Blank$|BLANK$|^BLANK|^Start",
+                                   id),"blank",as.character(id))) %>%
+          dplyr::mutate(type = ifelse(grepl("blank", id), "analysis_bk",
+                               as.character(type))) %>%
+          dplyr::filter(!grepl("^P|^BK|^JAV|^BG|^B6", id))
+
+  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("^[A-Z]-|^[A-Z] ", ecoc_id),
+                                   gsub( "^.* |-A|-E|-BQ|-BA", "", ecoc_id),
+                                   as.character(id)))
+
+# naming exceptions 
+  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("23A-E repeat", ecoc_id),
+                                         "E",as.character(cassette))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("28B-E repeat", ecoc_id), "E",
+                                    as.character(cassette))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("30A-3", ecoc_id), "E",
+                                    as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("A-2016-2-15|06-07-2016", id), "NA",
+                             as.character(id))) %>%
+          dplyr::mutate(type = ifelse(grepl("NA", id), "NA",
+                             as.character(type))) %>%
+          dplyr::mutate(id = ifelse(grepl("C11", id), "11C",
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("G7E", id), "E",
+                             as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("G7E", id), "G7",
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("^G3-E", ecoc_id), "E",
+                                   as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("5L",id), "5C",
+                             as.character(id)))
+  
+  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]", id),"test",
+                                     as.character(type))) %>%
+          dplyr::mutate(type = ifelse(grepl("^[B]", id),"lab_bk",
+                               as.character(type))) %>%
+          dplyr::mutate(type = ifelse(grepl("^G", id),"bg",
+                               as.character(type)))
+```
+
 ## Merge with filter meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
