@@ -93,23 +93,22 @@ load_ecoc_file <- function(file){
                    fill = TRUE, na.strings = c("-", "na"))
 
     ecoc <- dplyr::rename(ecoc, time = Time) %>%
-          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
-          dplyr::mutate(as.numeric(substr(time,12,13))*60*60 + 
+            dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
+            dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 + 
                           as.numeric(substr(time,15,16))*60 +
                           as.numeric(substr(time,18,19)))
 
     ecoc <- dplyr::rename(ecoc, date = Date)
     ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
-          dplyr::mutate(datetime = as.POSIXct(as.character(date)))
+            dplyr::mutate(datetime = as.POSIXct(as.character(date)))
     
     ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
-  
     ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
-          dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
-          dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+            dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
+            dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
 
     ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
-          dplyr::mutate(cassette <- ifelse(grepl("-E$", ecoc_id),"E", cassette))
+            dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
     
     ecoc <- dplyr::mutate(ecoc, id = sub("-.*", "", ecoc_id))
     
