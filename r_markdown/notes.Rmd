@@ -65,8 +65,13 @@ output: html_document
              dplyr::filter(!is.na(notes)) %>%
              dplyr::left_join(test_id_date, by = "id") %>%
              dplyr::mutate(inst = "grav:trans")
+  
+  notes_7 <- dplyr::select(samples, id, notes) %>%
+             dplyr::filter(!is.na(notes)) %>%
+             dplyr::left_join(test_id_date, by = 'id') %>%
+             dplyr::mutate(inst = "all")
 
-  notes <- dplyr::bind_rows(notes_1, notes_2, notes_3, notes_4, notes_5, notes_6) %>%
+  notes <- dplyr::bind_rows(notes_1, notes_2, notes_3, notes_4, notes_5, notes_6, notes_7) %>%
            dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
            dplyr::mutate(id = as.factor(id))
 ```
@@ -74,9 +79,16 @@ output: html_document
 ## Break out instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::mutate(notes, inst = ifelse(grepl("5-Gas", notes), "fivegas",
+  notes <- dplyr::mutate(notes, inst = ifelse(grepl("5-Gas|5-gas", notes), "fivegas",
                                        inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("CO2 sensors", notes), "co2", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Missing", notes), "fivegas:smps", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^P ", notes), "pah|ions", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Filter ruptured$|^Teflon|^Flow dropped",
+                                notes), "trans:grav:ecoc:ions:pah", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Filter ruptured;", notes),
+                                "trans:grav:ecoc:ions:pah:fivegas", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^No 5Gas", notes), "fivegas:carb", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("Out of CO2", notes), "fivegas:co2", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("^Clock", notes), "all", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("E filter ruptured", notes), "smps:ecoc", inst)) %>%
@@ -128,13 +140,14 @@ With default value `maybe`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                     12.12$|^Size range|Charcoal test in Thing 2", notes), "ok",
-                                     as.character(qc))) %>%
+                                    12.12$|^Size range|Charcoal test in Thing 2|Charcoal test running"
+                                    , notes), "ok", as.character(qc))) %>%
            dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|^Bleed|^CO2
-                              |^5-Gas|^Out of CO2|^KF|^3", notes), "ok",
+                              |^5-Gas|^Out of CO2|^KF|^3|^New", notes), "ok",
                               as.character(qc))) %>%
            dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-                              |^Dilution|^SMPS Malfunction", notes), "bad", as.character(qc)))
+                              |^Dilution|^SMPS Malfunction|^No SMPS data.|^No 5-gas",
+                              notes), "bad", as.character(qc)))
 ```
 
 ## Save notes
