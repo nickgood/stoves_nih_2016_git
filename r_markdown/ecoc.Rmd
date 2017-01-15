@@ -61,7 +61,9 @@ output: html_document
           dplyr::mutate(cassette = ifelse(grepl("^G3-E", ecoc_id), "E",
                                    as.character(cassette))) %>%
           dplyr::mutate(id = ifelse(grepl("5L",id), "5C",
-                             as.character(id)))
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("^4C",ecoc$id) & grepl("^8",ecoc$oc_ug_sq_cm),
+                                   "A",as.character(cassette)))
   
   ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]", id),"test",
                                      as.character(type))) %>%
@@ -122,12 +124,6 @@ Load notes
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst)==TRUE)
 ```
 
-Flag bad data from notes and plots
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33:39] <- "maybe"
-```
-
 Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -148,10 +144,12 @@ Merge with data
                  dplyr::mutate(qc = as.factor(qc))
 ```
 
-Addtional bad tests
+Flag additional bad data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # ecoc_merged$qc[ecoc_merged$id == ""] <- "bad"
+  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok",fid2), as.character(qc),
+                                    "bad"))
+
 ```
 
 ## Save merged file
@@ -160,18 +158,44 @@ Addtional bad tests
   save(ecoc_merged, file="../r_files/ecoc_merged.Rda")
 ```
 
+## Remove unnecessary columns
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged_2 <- dplyr::select(ecoc_merged, id, type, cassette, oc_ug_sq_cm, ec_ug_sq_cm, 
+                               post_flow, pre_flow, end, start, qc, time)
+```
+
+## Remove duplicate analyses
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged_2$filter_id <- with(ecoc_merged_2, interaction(id,  cassette))
+  ecoc_merged_2 <- dplyr::arrange(ecoc_merged_2, qc) %>%
+                   dplyr::arrange(qc, desc(time))
+  ecoc_merged_2 <- ecoc_merged_2[order(nrow(ecoc_merged_2):1),]
+  ecoc_merged_2 <- ecoc_merged_2[!duplicated(ecoc_merged_2$filter_id),]
+  ecoc_merged_2 <- dplyr::select(ecoc_merged_2, id, type, cassette, oc_ug_sq_cm,
+                                 ec_ug_sq_cm, post_flow, pre_flow, end, start, qc) %>%
+                   dplyr::arrange(id)
+```
+  
+## Save cleaner merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(ecoc_merged_2, file="../r_files/ecoc_merged_2.Rda")
+```
+  
 ## Load sample info
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/samples.Rda")  # load sample info
 
-  samples <- dplyr::select(samples, id, stove, fuel)
+  samples <- dplyr::select(samples, id, stove, fuel, date)
 
-  ecoc_p <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
+  ecoc_p <- dplyr::left_join(ecoc_merged_2, samples, by = "id") %>%
             dplyr::mutate(id= as.factor(id))
 ```
 
-## Plot by cassette (artifact)
+## Plot by cassette
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
   ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = cassette)) +
