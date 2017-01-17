@@ -86,7 +86,6 @@ Additional bad tests
 
 $Temperature$ was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no $temperature$ data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
 
-
 $Temperature$ data is expected to be missing for: 
 All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated. 
 
