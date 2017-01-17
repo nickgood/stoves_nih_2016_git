@@ -215,7 +215,3 @@ G1, 23A: test date 1/7/2016: data lost from this day.
 28A: test date 6/23/2016; file is there with correct naming convention…only 9 scans from 9:46 through 10:13; log sheet says test time was from 10:02 through 11:28…suspect an issue occurred with SMPS?
 
 11A: test date 7/19/2016; file is there with correct naming convention…42 scans from 9:53 to 12:09 - but test time in log listed as 12:12 through 13:43…suspect an issue occurred with SMPS?
-
-
-
-
