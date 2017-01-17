@@ -247,4 +247,4 @@ $CO2$ data is expected to be missing for:
 
 All "G" tests: dilution system was not run during backgrounds.
 
-17C: test date 4/1/2016. Appears, based on timing of tests and the dilution file for the study day, that we just were not logging dilution C02 data on this day even though the system was runnng. Can probably apply the dilution ratio from other tests of the day to this test.  
+17C: test date 4/1/2016. Appears, based on timing of tests and the dilution file for the study day, that we just were not logging dilution C02 data on this day even though the system was runnng. Can probably apply the dilution ratio from other tests of the day to this test.
