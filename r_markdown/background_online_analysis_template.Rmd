@@ -30,20 +30,20 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
 * First we'll load the sample info data.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda") 
+  load("../r_files/samples.Rda")
 ```
 
 * Next we'll load the sample times file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/test_times.Rda") 
+  load("../r_files/test_times.Rda")
 ```
 
 * Next we'll load the pollutant data we're interested in. In this case we're going to look at the CO2 data:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/co2_merged.Rda")
-  pol_data <- co2_merged
+  load("../r_files/fivegas_merged.Rda")
+  pol_data <- dplyr::filter(fivegas_merged, pol == "co2")
 ```
 
 # Extract data
