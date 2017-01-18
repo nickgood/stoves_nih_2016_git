@@ -1,5 +1,5 @@
 ---
-title: "experiment metadata"
+title: "test times"
 author: "Nicholas Good"
 date: "11/21/2016"
 output: html_document
