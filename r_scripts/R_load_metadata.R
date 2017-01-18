@@ -422,7 +422,7 @@ load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
                  "preflow_iso_2",
                  "preflow_iso_3",
                  "time_start_smps_pax_bg_pre",
-                 "time_start_smps_pax_bg_post",
+                 "time_end_smps_pax_bg_pre",
                  "time_start_smps_pax",
                  "time_end_smps_pax",
                  "time_start_carb",
