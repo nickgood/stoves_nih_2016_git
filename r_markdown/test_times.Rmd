@@ -19,12 +19,21 @@ output: html_document
   source("../R_scripts/R_tidy.R")
 ```
 
-## Load sample, wood and batch test meta data
+## Load data
+
+Load sample, wood and batch test meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
   load("../r_files/batch_times.Rda")
   load("../r_files/wood_times.Rda")
+```
+
+Load pre and post experiment background times for online instruments
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/data_1.Rda")
+  load("../r_files/data_2.Rda")
 ```
 
 * Combine test types
