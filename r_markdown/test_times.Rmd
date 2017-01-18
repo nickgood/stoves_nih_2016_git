@@ -68,7 +68,24 @@ Load pre and post experiment background times for online instruments
                       dplyr::mutate(id = as.factor(id))
 ```
 
+* pax/smps background times
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg_pax_smps <- dplyr::select(data_2, id, 
+                                     time_start_smps_pax_bg_pre,
+                                     time_end_smps_pax_bg_pre,
+                                     time_start_smps_pax_bg_post,
+                                     time_end_smps_pax_bg_post) %>%
+                       dplyr::rename(bg_pre_start_pax_smps = time_start_smps_pax_bg_pre,
+                                     bg_pre_end_pax_smps = time_end_smps_pax_bg_pre,
+                                     bg_post_start_pax_smps = time_start_smps_pax_bg_post,
+                                     bg_post_end_pax_smps = time_end_smps_pax_bg_post) %>%
+                      tidyr::gather("var", "value", 2:5) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                        by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(test_times)
