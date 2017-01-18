@@ -41,12 +41,12 @@ Load pre and post experiment background times for online instruments
 * wood and batch times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
-                                 dplyr::select(batch_times, -date)) %>%
-                dplyr::inner_join(dplyr::select(samples, id, date),
-                                  test_times, by = "id") %>%
-                dplyr::filter(is.na(value)==FALSE) %>%
-                dplyr::mutate(id = as.factor(id))
+  wood_batch_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
+                                       dplyr::select(batch_times, -date)) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                                      test_times, by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
 ```
 
 * fivegas background times
@@ -85,6 +85,17 @@ Load pre and post experiment background times for online instruments
                                         by = "id") %>%
                       dplyr::filter(is.na(value)==FALSE) %>%
                       dplyr::mutate(id = as.factor(id))
+```
+
+* combine times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- dplyr::bind_rows(wood_batch_times,
+                                 times_bg_fivegas,
+                                 times_bg_pax_smps) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(var = as.factor(var)) %>%
+                tibble::as_data_frame()
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
