@@ -243,3 +243,8 @@ Addtional bad tests
 
 $CO_{2}$ was measured during `r length(unique(co2_merged$id))` experiments between `r min(co2_merged$date, na.rm = TRUE)` and `r max(co2_merged$date, na.rm = TRUE)`. There is no $CO_{2}$ data for tests: `r setdiff(as.character(samples$id), as.character(co2_merged$id))`.
 
+$CO2$ data is expected to be missing for: 
+
+All "G" tests: dilution system was not run during backgrounds.
+
+17C: test date 4/1/2016. Appears, based on timing of tests and the dilution file for the study day, that we just were not logging dilution C02 data on this day even though the system was runnng. Can probably apply the dilution ratio from other tests of the day to this test.

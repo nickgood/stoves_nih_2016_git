@@ -134,3 +134,5 @@ Additional bad tests
 ```
 
 $VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
+
+$VOCs$ data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.

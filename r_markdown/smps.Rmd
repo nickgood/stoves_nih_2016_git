@@ -203,3 +203,15 @@ Plot
 ## Data summary
 
 The $SMPS$ measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
+
+
+
+$SMPS$ data is expected to be missing for: 
+13A, 17A, 18A, 19A, 20A, G3, G4. "no data" was noted on QC log for these tests. 
+
+G1, 23A: test date 1/7/2016: data lost from this day. 
+29B: test date 6/29/2016; for some reason there are 2 files, part 1 and 2, where file name is 20160622_29B(1)_SMPS and 20160622_29B(2)_SMPS. Part 1 only contains 24 scans, start times from 13:14 through 14:06. Part 2 starts at 14:22, only 8 scans through 14:45 start. Test start, according to log sheet, was 13:33 - electrical problem with stove at 14:14:00 forced test shutdown early. Need to combine files, or it's possible that this whole test should be scrapped? 
+
+28A: test date 6/23/2016; file is there with correct naming convention…only 9 scans from 9:46 through 10:13; log sheet says test time was from 10:02 through 11:28…suspect an issue occurred with SMPS?
+
+11A: test date 7/19/2016; file is there with correct naming convention…42 scans from 9:53 to 12:09 - but test time in log listed as 12:12 through 13:43…suspect an issue occurred with SMPS?
