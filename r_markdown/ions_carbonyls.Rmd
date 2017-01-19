@@ -52,7 +52,7 @@ Extract ions filter cartridge data
            dplyr::group_by(id, type) %>%
            dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
            tidyr::spread(type, mean)
-  
+
   times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
            tidyr::gather("var", "value", -id, -date) %>%
            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
