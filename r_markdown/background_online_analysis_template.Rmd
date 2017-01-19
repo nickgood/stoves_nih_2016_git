@@ -81,7 +81,7 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
                 dplyr::select(-date) %>%
                 dplyr::rename(start = end) %>%
                 dplyr::mutate(end = start + 5*60)
-```  
+```
 
 * join time data with precedence for the logged times over estimated times
 
@@ -117,19 +117,23 @@ Append type column with "pre", "post" and "sample"
   df_sample <- filter_times(times_sample, pol_data)
   df_sample <- dplyr::mutate(df_sample, type = "sample")
 
-  df <- dplyr::bind_rows(df_pre, df_post, df_sample)
+  background_data <- dplyr::bind_rows(df_pre, df_post, df_sample)
 ```
 
 ## Analyze
 
+Calculate mean pollutant value for each period
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out <- dplyr::group_by(df, id, type) %>%
-         dplyr::summarise(mean = mean(ppm)) %>%
+         background_means <- dplyr::group_by(background_data, id, type) %>%
+         dplyr::summarise(mean = mean(val)) %>%
          dplyr::ungroup()
 ```
 
+* Plot
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(out, aes(id, mean, colour = type)) +
+  ggplot(background_means, aes(id, mean, colour = type)) +
   geom_point() +
   ggtitle("CO2") +
   theme_minimal()
