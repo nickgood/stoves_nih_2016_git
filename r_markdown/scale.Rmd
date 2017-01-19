@@ -79,3 +79,11 @@ Additional bad tests
 ## Summary
 
 $Scale$ data was collected during `r length(unique(scale_merged$id))` experiments between `r min(scale_merged$date, na.rm = TRUE)` and `r max(scale_merged$date, na.rm = TRUE)`. There is no $Scale$ data for tests: `r setdiff(as.character(samples$id), as.character(scale_merged$id))`.
+
+$scale$ data is expected to be missing for:
+
+All "G" background tests: no scale needed as no stove used.
+
+Non-batchfed stoves (e.g., wood stoves): tests 1-15, 24, and 25 (A, B, and C reps)
+
+21A, 22A: these are batch-fed stoves. However, data is known missing. Possible that we did not use the real-time scale on these tests due to conflict with other teams- as long as weight data is available at critical time points as recorded on the transcribed testing logs, the "scale" data is OK to be missing. 
