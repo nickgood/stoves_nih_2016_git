@@ -331,4 +331,4 @@ All "G" tests: five gas not run during backgrounds.
 
 1B, 2A: "no data" noted on QC log
 
-4A: only calibration file for this test day was found (2/24/2016); five gas file is lost. 
+4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
