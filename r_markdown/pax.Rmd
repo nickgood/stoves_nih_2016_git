@@ -158,7 +158,7 @@ Addtional bad tests
   ggplot(p_data) +
          geom_line(mapping = aes(datetime, babs_1_mm), colour = "black") +
          geom_line(mapping = aes(datetime, bscat_1_mm), colour = "royalblue2") +
-         facet_wrap(~id, ncol = 2, scales = "free") + 
+         facet_wrap(~id, ncol = 2, scales = "free") +
          theme_minimal() +
          labs(x = "", y = expression(Mm^{-1}))
 ```
@@ -172,7 +172,7 @@ Addtional bad tests
   ggplot(p_data) +
          geom_line(mapping = aes(datetime, babs_1_mm, colour = qc)) +
          geom_line(mapping = aes(datetime, bscat_1_mm, colour = qc)) +
-        facet_wrap(~id, ncol = 2, scales = "free") + 
+        facet_wrap(~id, ncol = 2, scales = "free") +
         theme_minimal() +
         labs(x = "", y = expression(Mm^{-1}))
 ```
@@ -180,3 +180,11 @@ Addtional bad tests
 ## Data summary
 
 The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
+
+
+$PAX$ data is expected to be missing for:
+
+All "G" background tests. PAX was not run during backgrounds.
+
+26A: PAX stopped at 3pm this day, and this test was in late afternoon (after 3pm)
+29A, 2A: there is a file for these days, but looks like there is an issue with the wood log times that is causing them not to line up?
