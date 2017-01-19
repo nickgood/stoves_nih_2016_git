@@ -25,15 +25,15 @@ output: html_document
 ## CO2
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  co2_lab <- load.multifile(fldr = "../data/co2", pattern = "DILUTION1.csv$", inst = "co2")
+  co2_lab <- load_multifile(fldr = "../data/co2", pattern = "DILUTION1.csv$", inst = "co2")
 
   save(co2_lab, file = "../r_files/co2_lab.Rda")
   
-  co2_sample <- load.multifile(fldr = "../data/co2", pattern = "DILUTION2.csv$", inst = "co2")
+  co2_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION2.csv$", inst = "co2")
   
   save(co2_sample, file = "../r_files/co2_sample.Rda")
     
-  co2_lab_sample <- load.multifile(fldr = "../data/co2", pattern = "DILUTION.csv$", inst = "co2")
+  co2_lab_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION.csv$", inst = "co2")
 
   save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
 ```
@@ -41,7 +41,7 @@ output: html_document
 ## ECOC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ecoc <- load.singlefiles("ecoc")  # ecoc filter analysis
+  ecoc <- load_singlefiles("ecoc")  # ecoc filter analysis
 
   save(ecoc, file = "../r_files/ecoc.Rda")
 ```  
@@ -49,15 +49,15 @@ output: html_document
 ## Fivegas
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_conc <- load.fivegas(type = "conc")
+  fivegas_conc <- load_fivegas(type = "conc")
 
   save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
     
-  fivegas_volts <- load.fivegas(type = "volts")
+  fivegas_volts <- load_fivegas(type = "volts")
 
   save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
     
-  fivegas_calibration <- load.fivegas(pattern = "_CALIBRATION_",type = "volts")
+  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",type = "volts")
 
   save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
 ```
@@ -65,7 +65,7 @@ output: html_document
 ## Gravimetric
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav <- load.singlefiles("grav")
+  grav <- load_singlefiles("grav")
 
   save(grav, file = "../r_files/grav.Rda")
 ```
@@ -73,7 +73,7 @@ output: html_document
 ## IONS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ions <- load.singlefiles("ions")  # ion filter data
+  ions <- load_singlefiles("ions")  # ion filter data
 
   save(ions, file = "../r_files/ions.Rda")
 ```
@@ -81,7 +81,7 @@ output: html_document
 ## PAHS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
-  pah <- load.singlefiles("pah")  # pah data
+  pah <- load_singlefiles("pah")  # pah data
 
   save(pah, file = "../r_files/pah.Rda")
 ```
@@ -89,7 +89,7 @@ output: html_document
 ## PAX
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- load.multifile(fldr = "../data/pax", pattern = "ALLDAY_PAX.csv$", inst = "pax")
+  pax <- load_multifile(fldr = "../data/pax", pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
   save(pax, file = "../r_files/pax.Rda")
 ```
@@ -97,7 +97,7 @@ output: html_document
 ## SCALE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  scale <- load.multifile(fldr = "../data/scale", pattern = "_SCALE.xlsx$", inst = "scale")
+  scale <- load_multifile(fldr = "../data/scale", pattern = "_SCALE.xlsx$", inst = "scale")
 
   save(scale, file = "../r_files/scale.Rda")
 ```
@@ -105,7 +105,7 @@ output: html_document
 ## SMPS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  smps <- load.multifile(fldr = "../data/smps", pattern = "_SMPS.csv$", inst = "smps")
+  smps <- load_multifile(fldr = "../data/smps", pattern = "_SMPS.csv$", inst = "smps")
 
   save(smps, file = "../r_files/smps.Rda")
 ```
@@ -113,7 +113,7 @@ output: html_document
 ## TEMP
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  temp <- load.multifile(fldr = "../data/temp", pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
+  temp <- load_multifile(fldr = "../data/temp", pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
 
   save(temp, file = "../r_files/temp.Rda")
 ```
@@ -121,7 +121,7 @@ output: html_document
 ## TRANS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  trans <- load.singlefiles("trans")
+  trans <- load_singlefiles("trans")
 
   save(trans, file = "../r_files/trans.Rda")
 ```
@@ -129,7 +129,7 @@ output: html_document
 ## VOC
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  voc <- load.singlefiles("voc")
+  voc <- load_singlefiles("voc")
 
   save(voc, file = "../r_files/voc.Rda")
 ```
@@ -139,7 +139,7 @@ output: html_document
 ## Sample logs
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  samples <- load.singlefiles("sample")
+  samples <- load_singlefiles("sample")
 
   save(samples, file = "../r_files/samples.Rda")
 ```
@@ -147,7 +147,7 @@ output: html_document
 ## Batch sample meta data
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-  batch <- load.singlefiles("batch")
+  batch <- load_singlefiles("batch")
 
   save(batch, file = "../r_files/batch.Rda")
 ```
@@ -155,7 +155,7 @@ output: html_document
 ## Wood sample meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  wood <- load.singlefiles("wood")
+  wood <- load_singlefiles("wood")
 
   save(wood, file = "../r_files/wood.Rda")
 ```
@@ -163,7 +163,7 @@ output: html_document
 ## Calibration log 1
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  cal_1 <- load.singlefiles("cal_1")
+  cal_1 <- load_singlefiles("cal_1")
 
   save(cal_1, file = "../r_files/cal_1.Rda")
 ```
@@ -171,7 +171,7 @@ output: html_document
 ## Calibration log 2
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-  cal_2 <- load.singlefiles("cal_2")
+  cal_2 <- load_singlefiles("cal_2")
 
   save(cal_2, file = "../r_files/cal_2.Rda")
 ```
@@ -179,7 +179,7 @@ output: html_document
 ## Data log 1
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  data_1 <- load.singlefiles("data_1")
+  data_1 <- load_singlefiles("data_1")
 
   save(data_1, file = "../r_files/data_1.Rda")
 ```
@@ -187,7 +187,7 @@ output: html_document
 ## Data log 2
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  data_2 <- load.singlefiles("data_2")
+  data_2 <- load_singlefiles("data_2")
 
   save(data_2, file = "../r_files/data_2.Rda")
 ```
