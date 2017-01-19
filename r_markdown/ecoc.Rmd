@@ -34,9 +34,9 @@ output: html_document
 
 # rename blanks and ambigious ids and filter out pilot tests
   ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("Blank$|BLANK$|^BLANK|^Start",
-                                   id),"blank",as.character(id))) %>%
+                        id),"blank",as.character(id))) %>%
           dplyr::mutate(type = ifelse(grepl("blank", id), "analysis_bk",
-                               as.character(type))) %>%
+                        as.character(type))) %>%
           dplyr::filter(!grepl("^P|^BK|^JAV|^BG|^B6", id))
 
   ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("^[A-Z]-|^[A-Z] ", ecoc_id),
@@ -187,6 +187,18 @@ Flag additional bad data
 
   ecoc_merged_2 <- dplyr::left_join(ecoc_merged_2, samples, by = "id") %>%
             dplyr::mutate(id= as.factor(id))
+  
+    samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
+                               "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
+                               "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
+                               "Metal Charcoal (Burn, Jikokoa)", "Gasifier (Philips, HD4012)", "Gasifer (Mimi Moto, Mimi Moto)",
+                               "Gasifier (Envirofit, Prototype)", "Wick Kerosene (Cook 'n Lite, 82)", 
+                               "Pressurized Kerosene (Butterfly, 2412)", "Pressurized LPG (WokSmith, WS-C1-25K)"))
+    
+    samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
+                           "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
+                           "Kerosene", "Liquefied Petroleum Gas"))
+  
 ```
   
 ## Separate blank filters
@@ -400,7 +412,6 @@ $ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, , fig.height=8}
 
-  ecoc_summary$stove_fuel <- factor(ecoc_summary$stove_fuel, levels = ecoc_summary$stove_fuel[order(ecoc_summary$id)])
   ggplot(ecoc_summary, aes(x= stove_fuel, y = ec_conc_avg, ymax = ec_conc_max, ymin = ec_conc_min, colour = stove_fuel), na.rm = TRUE) +
     geom_crossbar(fatten = 2) +
     scale_y_log10() +
@@ -428,13 +439,15 @@ $ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `
     ggtitle("oc concentrations with errorbars that represent the min and max values") +
     theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
   
+  ## Re-order stove/fuels
   ggplot(ecoc_summary, aes(x = stove, y = ec_oc_ratio_avg, group = fuel, fill = fuel)) +   
-    geom_col(position = "dodge") +
+    geom_col(position = position_dodge(width=0.75)) +
+    geom_errorbar(aes(ymin = ec_oc_ratio_min, ymax = ec_oc_ratio_max, group = fuel), position = position_dodge(0.75), width=0.25) +
     scale_y_log10() +
     theme_minimal() +
     ylab("ec oc ratio") +
     xlab("") +
-    ggtitle("ec oc ratios grouped by stove and fuel types") +
+    ggtitle("ec oc ratios grouped by stove and fuel types (error bars show min and max)") +
     theme(axis.text.x = element_text(angle=90, hjust=1))
 ```
   
