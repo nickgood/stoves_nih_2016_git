@@ -19,10 +19,11 @@ output: html_document
   load("../r_files/samples.Rda")  # sample info
 ```
 
-## Load ions and carbonyls
+## Load carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")  # ions and organics 
+  load("../r_files/ions.Rda")  # loads carbonyls
+  carbonyls <- ions
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -37,7 +38,7 @@ Load metadata
   load("../r_files/data_1.Rda")  # metadata
 ```
 
-Extract ions filter cartridge data
+Extract carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   meta <- dplyr::select(data_1, matches("_green_|^id$|^date$"))
@@ -66,7 +67,7 @@ Extract ions filter cartridge data
 Merge ion with filter metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions, flows, by = "id") %>%
+  carbonyls_merged <- dplyr::left_join(carbonyls, flows, by = "id") %>%
                  dplyr::left_join(times, by = "id") %>%
                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
@@ -80,7 +81,7 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")  # notes
-  notes <- dplyr::filter(notes, grepl("ions|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE) # update notes for carbs/ions?
 ```
 
 Set one flag per test
@@ -95,37 +96,37 @@ Set one flag per test
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+  carbonyls_merged <- dplyr::left_join(carbonyls_merged, flags, by = "id") %>%
+                      dplyr::mutate(id = as.factor(id)) %>%
+                      dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 Addtional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # ions_merged$qc[ions_merged$id == ""] <- "bad"
+  # carbonyls_merged$qc[carbonyls_merged$id == ""] <- "bad"
 ```
 
 ## Convert to long format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ions_merged <- tidyr::gather(ions_merged, var, val,
-                               -id, -id_ions, -post_flow,
-                               -pre_flow, -time_start, -time_end, -type, -qc) %>%
-                 dplyr::filter(!is.na(val)) %>%
-                 dplyr::mutate(var = as.factor(var))
+  carbonyls_merged <- tidyr::gather(carbonyls_merged, var, val,
+                                    -id, -id_ions, -post_flow,
+                                     -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                      dplyr::filter(!is.na(val)) %>%
+                      dplyr::mutate(var = as.factor(var))
 ```
 
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ions_merged, file = "../r_files/ions_merged.Rda")
+  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
 ```
 
 ## Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = var)) +
+  ggplot(carbonyls_merged, aes(id, val, group = var, color = var)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -137,7 +138,7 @@ Addtional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = qc)) +
+  ggplot(carbonyls_merged, aes(id, val, group = var, color = qc)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -148,4 +149,4 @@ Addtional bad tests
 
 ## Summary
 
-$Ion$ data was collected during `r length(unique(ions_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
+Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.
