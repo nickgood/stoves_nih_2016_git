@@ -242,3 +242,5 @@ The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_del
 ## Summary
 
 $Gravimetric$ data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+
+$PAX$ data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 

@@ -114,3 +114,5 @@ Additional bad tests
 ## Data summary
 
 Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
+
+$transmissometer$ data is expected to be missing for: 17A only. This filter ruptured during the test so was not able to be transmissometer-ed.

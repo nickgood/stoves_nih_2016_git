@@ -1,5 +1,5 @@
 ---
-title: "experiment metadata"
+title: "test times"
 author: "Nicholas Good"
 date: "11/21/2016"
 output: html_document
@@ -19,7 +19,9 @@ output: html_document
   source("../R_scripts/R_tidy.R")
 ```
 
-## Load sample, wood and batch test meta data
+## Load data
+
+Load sample, wood and batch test meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
@@ -27,15 +29,73 @@ output: html_document
   load("../r_files/wood_times.Rda")
 ```
 
-* Combine test types
+Load pre and post experiment background times for online instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
-                                 dplyr::select(batch_times, -date)) %>%
-                dplyr::inner_join(dplyr::select(samples, id, date),
-                                  test_times, by = "id") %>%
-                dplyr::filter(is.na(value)==FALSE) %>%
-                dplyr::mutate(id = as.factor(id))
+  load("../r_files/data_1.Rda")
+  load("../r_files/data_2.Rda")
+```
+
+# Combine time data
+
+* wood and batch times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  wood_batch_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
+                                       dplyr::select(batch_times, -date)) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                                      test_times, by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* fivegas background times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg_fivegas <- dplyr::select(data_1, id, 
+                                    time_start_fivegas_prebg,
+                                    time_end_fivegas_prebg,
+                                    time_start_fivegas_post_bg,
+                                    time_end_fivegas_post_bg) %>%
+                      dplyr::rename(bg_pre_start_fivegas = time_start_fivegas_prebg,
+                                    bg_pre_end_fivegas = time_end_fivegas_prebg,
+                                    bg_post_start_fivegas = time_start_fivegas_post_bg,
+                                    bg_post_end_fivegas = time_end_fivegas_post_bg) %>%
+                      tidyr::gather("var", "value", 2:5) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                        by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* pax/smps background times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg_pax_smps <- dplyr::select(data_2, id, 
+                                     time_start_smps_pax_bg_pre,
+                                     time_end_smps_pax_bg_pre,
+                                     time_start_smps_pax_bg_post,
+                                     time_end_smps_pax_bg_post) %>%
+                       dplyr::rename(bg_pre_start_pax_smps = time_start_smps_pax_bg_pre,
+                                     bg_pre_end_pax_smps = time_end_smps_pax_bg_pre,
+                                     bg_post_start_pax_smps = time_start_smps_pax_bg_post,
+                                     bg_post_end_pax_smps = time_end_smps_pax_bg_post) %>%
+                      tidyr::gather("var", "value", 2:5) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                        by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* combine times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- dplyr::bind_rows(wood_batch_times,
+                                 times_bg_fivegas,
+                                 times_bg_pax_smps) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(var = as.factor(var)) %>%
+                tibble::as_data_frame()
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}

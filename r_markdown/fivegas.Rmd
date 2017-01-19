@@ -323,3 +323,11 @@ Addtional bad tests
 ## Summary
 
 The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
+
+$Fivegas$ data is expected to be missing for: 
+
+All "G" tests: five gas not run during backgrounds.
+
+1B, 2A: "no data" noted on QC log
+
+4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.

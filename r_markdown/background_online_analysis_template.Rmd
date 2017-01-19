@@ -30,70 +30,111 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
 * First we'll load the sample info data.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda") 
+  load("../r_files/samples.Rda")
 ```
 
 * Next we'll load the sample times file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/test_times.Rda") 
+  load("../r_files/test_times.Rda")
 ```
 
 * Next we'll load the pollutant data we're interested in. In this case we're going to look at the CO2 data:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/co2_merged.Rda")
-  pol_data <- co2_merged
+  load("../r_files/fivegas_merged.Rda")
+  pol_data <- dplyr::filter(fivegas_merged, pol == "co2")
 ```
 
 # Extract data
 
-* 10 minutes before and after each test
+* by fivegas background log times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-  times_pre <- dplyr::filter(test_times, var == "ignite") %>%
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_pre <- dplyr::filter(test_times,
+                             var == "bg_pre_start_fivegas" | var == "bg_pre_end_fivegas") %>%
+               tidyr::spread(var, value) %>%
+               dplyr::select(-date) %>%
+               dplyr::rename(start = bg_pre_start_fivegas,
+                             end = bg_pre_end_fivegas)
+
+  times_post <- dplyr::filter(test_times,
+                             var == "bg_post_start_fivegas" | var == "bg_post_end_fivegas") %>%
+               tidyr::spread(var, value) %>%
+               dplyr::select(-date) %>%
+               dplyr::rename(start = bg_post_start_fivegas,
+                             end = bg_post_end_fivegas)
+
+```
+
+* 5 minutes before and after each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_pre_5 <- dplyr::filter(test_times, var == "ignite") %>%
                 tidyr::spread(var, value) %>%
                 dplyr::select(-date) %>%
                 dplyr::rename(end = ignite) %>%
-                dplyr::mutate(start = end - 10*60)
+                dplyr::mutate(start = end - 5*60)
 
-  times_post <- dplyr::filter(test_times, var == "end") %>%
+  times_post_5 <- dplyr::filter(test_times, var == "end") %>%
                 tidyr::spread(var, value) %>%
                 dplyr::select(-date) %>%
                 dplyr::rename(start = end) %>%
-                dplyr::mutate(end = start + 10*60)
-  
+                dplyr::mutate(end = start + 5*60)
+```
+
+* join time data with precedence for the logged times over estimated times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_pre <- dplyr::anti_join(times_pre_5, times_pre, by = "id") %>%
+               dplyr::bind_rows(times_pre)
+
+  times_post <- dplyr::anti_join(times_post_5, times_pre, by = "id") %>%
+               dplyr::bind_rows(times_post)
+```
+
+* sample times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times_sample <- dplyr::filter(test_times,
-                          var == "start_1" | var == "shutdown") %>%
+                                var == "start_1" | var == "shutdown") %>%
                   tidyr::spread(var, value) %>%
                   dplyr::select(-date) %>%
                   dplyr::rename(start = start_1, end = shutdown)
 ```
 
+* extract data for times windows
+
+Append type column with "pre", "post" and "sample"
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   df_pre <- filter_times(times_pre, pol_data)
   df_pre <- dplyr::mutate(df_pre, type = "pre")
-  
+
   df_post <- filter_times(times_post, pol_data)
   df_post <- dplyr::mutate(df_post, type = "post")
-  
+
   df_sample <- filter_times(times_sample, pol_data)
   df_sample <- dplyr::mutate(df_sample, type = "sample")
-  
-  df <- rbind(df_pre, df_post, df_sample)
+
+  background_data <- dplyr::bind_rows(df_pre, df_post, df_sample)
 ```
 
 ## Analyze
 
+Calculate mean pollutant value for each period
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out <- dplyr::group_by(df, id, type) %>%
-          dplyr::summarise(mean = mean(ppm)) %>%
-          dplyr::ungroup()
+         background_means <- dplyr::group_by(background_data, id, type) %>%
+         dplyr::summarise(mean = mean(val)) %>%
+         dplyr::ungroup()
 ```
 
+* Plot
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(out, aes(id, mean, colour = type)) +
-  geom_point() + 
+  ggplot(background_means, aes(id, mean, colour = type)) +
+  geom_point() +
   ggtitle("CO2") +
   theme_minimal()
 ```
