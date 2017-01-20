@@ -43,7 +43,7 @@ Load metadata
 Extract carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  meta <- dplyr::select(data_1, matches("_green_|^id$|^date$"))
+  meta <- dplyr::select(data_2, matches("_carb|_carb_|^id$|^date$"))
 
   flows <- dplyr::select(meta, matches("flow_|^id$")) %>%
            tidyr::gather("var", "value", -id) %>%
@@ -66,7 +66,7 @@ Extract carbonyl data
            tidyr::spread(type, value)
 ```
 
-Merge ion with filter metadata
+Merge carbonyls with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls_merged <- dplyr::left_join(carbonyls, flows, by = "id") %>%
