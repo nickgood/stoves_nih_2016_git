@@ -1,7 +1,7 @@
 ---
-title: "filter extraction"
+title: "ions"
 author: "Nicholas Good"
-date: "11/20/2016"
+date: "1/19/2017"
 output: html_document
 ---
 
@@ -22,7 +22,9 @@ output: html_document
 ## Load ions and carbonyls
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")  # ions and organics 
+  load("../r_files/ions.Rda")  # ions
+
+  ions <- dplyr::select(ions, 1:23, type, id)  # selction ions only
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -148,4 +150,4 @@ Addtional bad tests
 
 ## Summary
 
-$Ion$ data was collected during `r length(unique(ions_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
+Ion data was collected during `r length(unique(ions_merged$id))` experiments. There is no ion data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
