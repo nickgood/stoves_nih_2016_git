@@ -152,4 +152,4 @@ Additional bad tests
 
 ## Summary
 
-Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.
+Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no carbonyl data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.
