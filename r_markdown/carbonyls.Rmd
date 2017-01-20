@@ -25,11 +25,11 @@ output: html_document
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ions.Rda")  # loads carbonyls file
 
-  carbonlys <- dplyr::select(ions, 24:39, type, id, id_ions)  # select carbonlys only
+  carbonyls <- dplyr::select(ions, 24:39, type, id, id_ions)  # select carbonlys only
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(carbonlys)
+  colnames(carbonyls)
 ```
 
 ## Merge with filter meta data
@@ -70,11 +70,11 @@ Merge carbonyls with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls_merged <- dplyr::left_join(carbonyls, flows, by = "id") %>%
-                 dplyr::left_join(times, by = "id") %>%
-                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
-                 dplyr::rename(time_start = start, time_end = end) %>%
-                 dplyr::mutate(id = as.factor(id))
+                      dplyr::left_join(times, by = "id") %>%
+                      dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                      dplyr::rename(pre_flow = pre, post_flow = post) %>%
+                      dplyr::rename(time_start = start, time_end = end) %>%
+                      dplyr::mutate(id = as.factor(id))
 ```
 
 ## QC
@@ -83,6 +83,7 @@ Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")  # notes
+
   notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE) # update notes for carbs/ions?
 ```
 
@@ -103,7 +104,7 @@ Merge with data
                       dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # carbonyls_merged$qc[carbonyls_merged$id == ""] <- "bad"
