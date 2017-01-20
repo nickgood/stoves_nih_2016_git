@@ -18,14 +18,14 @@ output: html_document
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")  # sample info
 
-  ions <- dplyr::select(ions, 24:39, type, id, id_ions)  # select carbonlys only
 ```
 
 ## Load carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ions.Rda")  # loads carbonyls
-  carbonyls <- ions
+
+  carbonlys <- dplyr::select(ions, 24:39, type, id, id_ions)  # select carbonlys only
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
