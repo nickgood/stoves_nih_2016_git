@@ -165,13 +165,22 @@ Addtional bad tests
                          n = n())
 ```
 
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, var, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge
+  ions_merged <- dplyr::left_join(ions_merged, bg, by = "var")
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(ions_merged, file = "../r_files/ions_merged.Rda")
 ```
-
-
 
 ## Summary
 
