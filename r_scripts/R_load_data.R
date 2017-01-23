@@ -264,7 +264,7 @@ load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
 #________________________________________________________
 
 #________________________________________________________
-# Load ions file
+# Load ions and carbonyls file
 # file <- "data/ions/20161210_IONS.xls"
 # set sheet to "ug" or "ug_m3"
 load_ions_file <- function(file, sheet = "ug"){
