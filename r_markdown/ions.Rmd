@@ -118,12 +118,6 @@ Addtional bad tests
                  dplyr::mutate(var = as.factor(var))
 ```
 
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ions_merged, file = "../r_files/ions_merged.Rda")
-```
-
 ## Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
@@ -147,6 +141,37 @@ Addtional bad tests
          ylab("ug") +
          theme(legend.position="top")
 ```
+
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(ions_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+        na.omit() %>%
+        dplyr::select(-id_ions) %>%
+        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
+        dplyr::mutate(dur = time_end - time_start) %>%
+        dplyr::mutate(conc = (val * 1000 * 60) /(flow * dur)) %>%  # ug * 1000 * 60/ (L/min * s) = ug/m^3
+        dplyr::group_by(var) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n())
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(ions_merged, file = "../r_files/ions_merged.Rda")
+```
+
+
 
 ## Summary
 
