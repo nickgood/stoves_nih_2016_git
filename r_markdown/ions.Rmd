@@ -157,7 +157,7 @@ Addtional bad tests
         dplyr::select(-id_ions) %>%
         dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = time_end - time_start) %>%
-        dplyr::mutate(conc = (val * 1000 * 60) /(flow * dur)) %>%  # ug * 1000 * 60/ (L/min * s) = ug/m^3
+        dplyr::mutate(conc = (val * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
         dplyr::group_by(var) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
