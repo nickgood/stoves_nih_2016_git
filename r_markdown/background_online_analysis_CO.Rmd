@@ -1,5 +1,5 @@
 ---
-title: "background analysis template"
+title: "background analysis CO"
 author: "Kristen Fedak following template from Nicholas Good"
 date: "1/24/17"
 output: html_document
