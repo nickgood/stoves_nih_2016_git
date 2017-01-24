@@ -202,14 +202,16 @@ Assume filter areas is `r area <- 11.8` cm^2.
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
   ggplot(oc_p, aes(id, val, color = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Plot by fuel
@@ -220,14 +222,16 @@ Assume filter areas is `r area <- 11.8` cm^2.
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
   ggplot(oc_p, aes(id, val, color = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Plot QC
@@ -238,14 +242,16 @@ Assume filter areas is `r area <- 11.8` cm^2.
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
   ggplot(oc_p, aes(id, val, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Summary
