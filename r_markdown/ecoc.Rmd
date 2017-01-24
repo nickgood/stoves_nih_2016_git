@@ -130,8 +130,6 @@ Select columns of interest (others?)
 
 * need to identify and include blanks in previous analysis
 
-## Calculate background
-
 ## Background analysis
 
 * extract background data
