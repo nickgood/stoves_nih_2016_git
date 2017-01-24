@@ -109,6 +109,23 @@ Additional bad tests
 
 ## Convert to longer format
 
+Select columns of interest (others?)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged_ <- dplyr::select(ecoc_merged, id, 
+                                             oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
+                                             datetime, date, time,
+                                             pre_flow, post_flow,
+                                             start, end,
+                                             qc,
+                                             type, cassette,
+                                             punch_area,
+                                             analyst) %>%
+                  tidyr::gather(pol, val, oc_ug_sq_cm,
+                                          ec_ug_sq_cm,
+                                          tc_ug_sq_cm)
+```
+
 ## Calcualte LOD
 
 ## Calculate background
