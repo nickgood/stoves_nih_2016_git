@@ -264,8 +264,8 @@ load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
 #________________________________________________________
 
 #________________________________________________________
-# Load ions file
-# file <- "data/ions/20161210_IONS.xls"
+# Load ions and carbonyls file
+# file <- "../data/ions/20161230_IONS.xls"
 # set sheet to "ug" or "ug_m3"
 load_ions_file <- function(file, sheet = "ug"){
 
@@ -286,6 +286,7 @@ load_ions_file <- function(file, sheet = "ug"){
     
   # id
     df$id <- as.factor(ifelse(grepl("^[0-9]|^G[0-9]",df$id_ions), sub("-.*","",df$id_ions),"NA"))
+    df <- dplyr::mutate(df, id = sub("F$","",id))  # remove trailing "F" from id
     
   # return 
     return(df)
