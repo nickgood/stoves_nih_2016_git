@@ -30,6 +30,7 @@ output: html_document
 ```
 
 Extract metadata
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   meta <- dplyr::select(data_1, matches("_orange_|_white_|^id$|^date$"))
 
@@ -51,7 +52,7 @@ Extract metadata
                          type = ifelse(grepl("_end_", var), "end", type)) %>%
            dplyr::filter(!is.na(id)) %>%
            dplyr::select(-var, -date) %>%
-            tidyr::spread(type, value)
+           tidyr::spread(type, value)
 ```
 
 Merge ecoc with metadata
@@ -59,7 +60,7 @@ Merge ecoc with metadata
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
                  dplyr::left_join(times, by = c("id")) %>%
-                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                 dplyr::filter(grepl("^[0-9]", id) == TRUE | grepl("^G[0-9]", id) == TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
                  dplyr::arrange(id) %>%
                  dplyr::mutate(id = as.factor(id))
@@ -71,7 +72,7 @@ Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/notes.Rda")
 
-  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst)==TRUE)
+  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
@@ -100,16 +101,23 @@ Merge with data
                  dplyr::mutate(qc = as.factor(qc))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # ecoc_merged$qc[ecoc_merged$id == ""] <- "bad"
 ```
 
+## Convert to longer format
+
+## Calcualte LOD
+
+## Calculate background
+
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ecoc_merged, file="../r_files/ecoc_merged.Rda")
+  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
 ## Load sample info
