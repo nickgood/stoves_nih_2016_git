@@ -84,7 +84,7 @@ Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")  # notes
 
-  notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE) # update notes for carbs/ions?
+  notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE)  # update notes for carbs/ions?
 ```
 
 Set one flag per test
@@ -118,12 +118,6 @@ Additional bad tests
                                      -pre_flow, -time_start, -time_end, -type, -qc) %>%
                       dplyr::filter(!is.na(val)) %>%
                       dplyr::mutate(var = as.factor(var))
-```
-
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
 ```
 
 ## Plot
@@ -186,6 +180,12 @@ Additional bad tests
 
  # merge
   carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "var")
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
 ```
 
 ## Summary
