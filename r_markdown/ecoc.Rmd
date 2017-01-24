@@ -135,19 +135,18 @@ Select columns of interest (others?)
 ## Background analysis
 
 * extract background data
-* deal with LOD (not implemented)
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 
+Assume filter areas is `r area <- 11.8` cm^2.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(carbonyls_merged, type == "bg", qc == "ok") %>%
-        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+  bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
         na.omit() %>%
-        dplyr::select(-id_ions) %>%
         dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
-        dplyr::mutate(dur = time_end - time_start) %>%
-        dplyr::mutate(conc = (val * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
-        dplyr::group_by(var) %>%
+        dplyr::mutate(dur = end - start) %>%
+        dplyr::mutate(conc = val * area * 1000 / (flow * dur)) %>%
+        dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
@@ -163,15 +162,12 @@ Select columns of interest (others?)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # extract data for merge
-  bg <- dplyr::select(bg, var, mean) %>%
+  bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(conc_bg = mean)
 
  # merge
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "var")
+  ecoc_merged <- dplyr::left_join(ecoc_merged, bg, by = "pol")
 ```
-
-
-
 
 ## Save merged file
 
@@ -179,9 +175,9 @@ Select columns of interest (others?)
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-## Load sample info
+## Load sample info and merge with ecoc data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/samples.Rda")  # load sample info
 
   samples <- dplyr::select(samples, id, stove, fuel)
@@ -190,17 +186,25 @@ Select columns of interest (others?)
             dplyr::mutate(id= as.factor(id))
 ```
 
+* create data objects for ec and oc plots.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec_p <- dplyr::filter(ecoc_p, pol == "ec_ug_sq_cm")
+
+  oc_p <- dplyr::filter(ecoc_p, pol == "oc_ug_sq_cm")
+```
+
 ## Plot by cassette (artifact)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = cassette)) +
+  ggplot(ec_p, aes(id, val, colour = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm") +
          theme(legend.position = "top")
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = cassette)) +
+  ggplot(oc_p, aes(id, val, color = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -211,14 +215,14 @@ Select columns of interest (others?)
 ## Plot by fuel
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = fuel)) +
+  ggplot(ec_p, aes(id, val, colour = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
          theme(legend.position = "top")
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = fuel)) +
+  ggplot(oc_p, aes(id, val, color = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -229,14 +233,14 @@ Select columns of interest (others?)
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, color = qc)) +
+  ggplot(ec_p, aes(id, val, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
          theme(legend.position = "top")
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = qc)) +
+  ggplot(oc_p, aes(id, val, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
