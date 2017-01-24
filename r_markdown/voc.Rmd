@@ -133,11 +133,11 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # extract data for merge
-  bg <- dplyr::select(bg, var, mean) %>%
-        dplyr::rename(conc_bg = mean)
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(ppb_bg = mean)
 
  # merge
-  voc_merged <- dplyr::left_join(voc_merged, bg, by = "var")
+  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol")
 ```
 
 ## Save merged file
