@@ -18,7 +18,7 @@ output: html_document
 The $VOC$ data is contain in one file. Units are $ppbv$. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")    # voc dataset
+  load("../r_files/voc.Rda")  # voc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -92,6 +92,41 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
+```
+
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate mean ppbv emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+        na.omit() %>%
+        dplyr::select(-id_can, -id_voc) %>%
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(val),
+                         sd = sd(val),
+                         min = min(val),
+                         max = max(val),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, var, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge
+  voc_merged <- dplyr::left_join(voc_merged, bg, by = "var")
 ```
 
 ## Save merged file
