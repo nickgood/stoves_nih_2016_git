@@ -350,6 +350,53 @@ Note data is test average from desired time window
 
 ___
 
+## ions
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/ions_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::select(ions_merged,
+                        id, qc,
+                        pre_flow, post_flow,
+                        time_start, time_end,
+                        var, val,
+                        conc_bg) %>%
+          dplyr::rename(start = time_start,
+                        end = time_end)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
+                            flow = (pre_flow + post_flow) / 2,
+                            conc = (val * 1000 / (flow * dur)) - conc_bg)
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = conc * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ions, 2)
+```
+
+## carbonyls
+
+
+## pah
+
 ## voc
 
 * load data
