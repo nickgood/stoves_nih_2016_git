@@ -187,27 +187,22 @@ ___
                         id, cassette,
                         start, end,
                         pre_flow, post_flow,
-                        oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm)
+                        pol, val)
 ```
-
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
                               dur = (end - start)/60,
-                              conc_oc = oc_ug_sq_cm * 11.8 * 1000 / (flow * dur),
-                              conc_ec = ec_ug_sq_cm * 11.8 * 1000 / (flow * dur),
-                              conc_tc = tc_ug_sq_cm * 11.8 * 1000 / (flow * dur))
+                              conc = val * area * 1000 / (flow * dur))
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
-                        mass_emitted_oc = conc_oc * flow_hood * dur,
-                        mass_emitted_ec = conc_ec * flow_hood * dur,
-                        mass_emitted_tc = conc_tc * flow_hood * dur)
+                        mass_emitted = conc * flow_hood * dur)
 ```
 
 * output
