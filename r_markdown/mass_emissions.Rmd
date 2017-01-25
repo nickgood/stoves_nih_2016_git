@@ -90,7 +90,7 @@ output: html_document
 
 * plot
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id)) %>%
             dplyr::filter(grepl("^[0-9]", id) == TRUE)
@@ -101,6 +101,12 @@ output: html_document
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
         ylab("fuel burnt (g)")
 
+```
+
+* save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+ save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
 ```
 
 ___
