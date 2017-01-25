@@ -33,7 +33,7 @@ output: html_document
 ## Constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flow_hood <- 4 # m^3/min
+  flow_hood <- 4  # m^3/min
 ```
 
 ## Mass of fuel burnt
@@ -99,6 +99,7 @@ output: html_document
         geom_point() +
         theme_minimal() + 
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        theme(legend.position = "top")
         ylab("fuel burnt (g)")
 
 ```
@@ -214,7 +215,6 @@ ___
 ___
 
 ## fivegas
-
 
 * Load data
 
