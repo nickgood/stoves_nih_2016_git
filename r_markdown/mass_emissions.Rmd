@@ -24,10 +24,90 @@ output: html_document
            dplyr::rename(start = start_1, end = shutdown)
 ```
 
+## Sample info
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")
+```
+
 ## Constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flow_hood <- 4 # m^3/min
+  flow_hood <- 4  # m^3/min
+```
+
+## Mass of fuel burnt
+
+* Load fuel mass data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/batch_wgts.Rda")
+  load("../r_files/wood_wgts.Rda")
+```
+
+### Extract mass of fuel burnt during sampling periods
+
+* batch stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
+                                          var == "refueled" |
+                                          var == "preshutdown") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_refuel = refueled,
+                              wgt_shutdown = preshutdown) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
+```
+
+* wood stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
+                                        var == "ashpot_unusedfuel" |
+                                        var == "ashpot_char_ash" |
+                                        var == "ashpot_lid") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_pot_unusedfuel = ashpot_unusedfuel,
+                              wgt_pot_char_ash = ashpot_char_ash,
+                             wgt_pot = ashpot_lid) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel -
+                                          wgt_pot_unusedfuel -
+                                          wgt_pot_char_ash +
+                                          2 * wgt_pot)
+```
+
+* merge test types
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_wgts, id, mass_fuel),
+                                 dplyr::select(wood_wgts, id, mass_fuel)) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+```
+
+* plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+  p_data <- dplyr::left_join(samples, fuel_burnt) %>%
+            dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+  ggplot(p_data, aes(x = id, y = mass_fuel, colour = stove)) +
+        geom_point() +
+        theme_minimal() + 
+        theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        theme(legend.position = "top")
+        ylab("fuel burnt (g)")
+
+```
+
+* save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+ save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
 ```
 
 ___
@@ -108,27 +188,22 @@ ___
                         id, cassette,
                         start, end,
                         pre_flow, post_flow,
-                        oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm)
+                        pol, val)
 ```
-
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
                               dur = (end - start)/60,
-                              conc_oc = oc_ug_sq_cm * 11.8 * 1000 / (flow * dur),
-                              conc_ec = ec_ug_sq_cm * 11.8 * 1000 / (flow * dur),
-                              conc_tc = tc_ug_sq_cm * 11.8 * 1000 / (flow * dur))
+                              conc = val * area * 1000 / (flow * dur))
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
-                        mass_emitted_oc = conc_oc * flow_hood * dur,
-                        mass_emitted_ec = conc_ec * flow_hood * dur,
-                        mass_emitted_tc = conc_tc * flow_hood * dur)
+                        mass_emitted = conc * flow_hood * dur)
 ```
 
 * output
@@ -140,7 +215,6 @@ ___
 ___
 
 ## fivegas
-
 
 * Load data
 
@@ -275,6 +349,94 @@ Note data is test average from desired time window
 ```
 
 ___
+
+## ions
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/ions_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::select(ions_merged,
+                        id, qc,
+                        pre_flow, post_flow,
+                        time_start, time_end,
+                        var, val,
+                        conc_bg) %>%
+          dplyr::rename(start = time_start,
+                        end = time_end)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
+                              flow = (pre_flow + post_flow) / 2,
+                              conc = (val * 1000 / (flow * dur)) - conc_bg)
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = conc * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ions, 2)
+```
+
+## carbonyls
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/carbonyls_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             pre_flow, post_flow,
+                             time_start, time_end,
+                             var, val,
+                             conc_bg) %>%
+               dplyr::rename(start = time_start,
+                             end = time_end)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             flow = (pre_flow + post_flow) / 2,
+                             conc = (val * 1000 / (flow * dur)) - conc_bg)
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = conc * flow_hood * dur)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(carbonyls, 2)
+```
+
+## pah
+
+* waiting on data
 
 ## voc
 
