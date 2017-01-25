@@ -24,10 +24,83 @@ output: html_document
            dplyr::rename(start = start_1, end = shutdown)
 ```
 
+## Sample info
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")
+```
+
 ## Constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flow_hood <- 4 # m^3/min
+```
+
+## Mass of fuel burnt
+
+* Load fuel mass data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/batch_wgts.Rda")
+  load("../r_files/wood_wgts.Rda")
+```
+
+### Extract mass of fuel burnt during sampling periods
+
+* batch stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
+                                          var == "refueled" |
+                                          var == "preshutdown") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_refuel = refueled,
+                              wgt_shutdown = preshutdown) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
+```
+
+* wood stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
+                                        var == "ashpot_unusedfuel" |
+                                        var == "ashpot_char_ash" |
+                                        var == "ashpot_lid") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_pot_unusedfuel = ashpot_unusedfuel,
+                              wgt_pot_char_ash = ashpot_char_ash,
+                             wgt_pot = ashpot_lid) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel -
+                                          wgt_pot_unusedfuel -
+                                          wgt_pot_char_ash +
+                                          2 * wgt_pot)
+```
+
+* merge test types
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_wgts, id, mass_fuel),
+                                 dplyr::select(wood_wgts, id, mass_fuel)) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+```
+
+* plot
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+  p_data <- dplyr::left_join(samples, fuel_burnt) %>%
+            dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+  ggplot(p_data, aes(x = id, y = mass_fuel, colour = stove)) +
+        geom_point() +
+        theme_minimal() + 
+        theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        ylab("fuel burnt (g)")
+
 ```
 
 ___
