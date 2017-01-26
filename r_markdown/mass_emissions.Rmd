@@ -297,8 +297,8 @@ ___
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post)/2,
-                              dur = (time_end - time_start)/60,
+  grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post) / 2,
+                              dur = (time_end - time_start) / 60,
                               conc_pm = wgt_delta * 1000 / (flow * dur))
 ```
 
@@ -317,7 +317,7 @@ ___
 
 ___
 
-## Smps
+## smps
 
 * Load data
 
