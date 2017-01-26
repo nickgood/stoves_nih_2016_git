@@ -7,6 +7,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -25,6 +26,12 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   colnames(grav)
+```
+
+## Set levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  levels_type <- c("test", "bg")
 ```
 
 ## Merge with filter metadata
@@ -127,6 +134,11 @@ Merge differences
 
   grav_merged <- dplyr::mutate(grav_merged,
                                wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)  # blank change
+  
+  grav_merged <- dplyr::mutate(grav_merged,
+                               type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "")) %>%
+                 dplyr::mutate(type = ifelse(grepl("^G", id) == TRUE, "bg", type)) %>%
+                 dplyr::mutate(type = as.factor(type))
 ```
 
 ## QC
@@ -231,6 +243,47 @@ Blank weights
 ## LOD
 
 The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
+
+## Background analysis
+
+* extract background data
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
+        dplyr::select(id,
+                         flow_pre, flow_post,
+                         time_end, time_start,
+                         wgt_delta) %>%
+        dplyr::mutate(flow_pre = ifelse(is.na(flow_pre) == TRUE, flow_post,
+                                                                 flow_pre)) %>%
+        na.omit() %>%
+        dplyr::mutate(flow = (flow_pre + flow_post) / 2,
+                      dur = (time_end - time_start) / 60,
+                      conc = wgt_delta * 1000 / (flow * dur)) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n()) %>%
+        dplyr::mutate(type = factor("test", levels_type))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, type, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge
+  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type")
+```
 
 ## Save merged file
 
