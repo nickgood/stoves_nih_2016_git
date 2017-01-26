@@ -1,5 +1,5 @@
 ---
-title: "background analysis CH4"
+title: "background analysis methane"
 author: "Kristen Fedak following template from Nicholas Good"
 date: "1/24/17"
 output: html_document
@@ -136,5 +136,6 @@ Calculate mean pollutant value for each period
   ggplot(background_means, aes(id, mean, colour = type)) +
   geom_point() +
   ggtitle("CH4") +
-  theme_minimal()
+  theme_minimal() +
+	theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
