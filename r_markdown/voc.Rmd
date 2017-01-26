@@ -7,6 +7,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -18,7 +19,7 @@ output: html_document
 The $VOC$ data is contain in one file. Units are $ppbv$. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")    # voc dataset
+  load("../r_files/voc.Rda")  # voc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -47,7 +48,7 @@ Make longer and remove n/a.
 ## Merge with meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/data_1.Rda")
+  load(file = "../r_files/data_1.Rda")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -55,6 +56,16 @@ Make longer and remove n/a.
   meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
  # merge
   voc_merged <- dplyr::left_join(voc, meta)
+```
+
+## LOD
+
+* Add LOD flag
+* Replace pollutant values below LOD with `NA`.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(val == -8888, "below", "above"))) %>%
+                dplyr::mutate(val = ifelse(val == -8888, NA, val))
 ```
 
 ## QC
@@ -92,6 +103,41 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
+```
+
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate mean ppbv emitted (and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+        na.omit() %>%
+        dplyr::select(-id_can, -id_voc) %>%
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(val),
+                         sd = sd(val),
+                         min = min(val),
+                         max = max(val),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(ppb_bg = mean)
+
+ # merge
+  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol")
 ```
 
 ## Save merged file
