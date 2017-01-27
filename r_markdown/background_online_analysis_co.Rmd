@@ -125,17 +125,32 @@ Append type column with "pre", "post" and "sample"
 Calculate mean pollutant value for each period
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-         background_means <- dplyr::group_by(background_data, id, type) %>%
-         dplyr::summarise(mean = mean(val)) %>%
-         dplyr::ungroup()
+  background_means <- dplyr::group_by(background_data, id, type) %>%
+                      dplyr::summarise(mean = mean(val), 
+                      								 qc_val = mean(as.numeric(qc))) %>%
+                      dplyr::ungroup() %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
+	                    dplyr::mutate(qc = as.factor(qc))
 ```
 
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
   ggplot(background_means, aes(id, mean, colour = type)) +
-  geom_point() +
-  ggtitle("CO") +
-  theme_minimal() +
-	theme(axis.text.x = element_text(angle = 60, hjust = 1))
+    geom_point() +
+    ggtitle("CO") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+* Plot
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
+  ggplot(background_means, aes(id, mean, colour = qc)) +
+    geom_point() +
+    ggtitle("CO") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
