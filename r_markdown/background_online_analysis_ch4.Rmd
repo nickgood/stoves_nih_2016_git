@@ -125,33 +125,32 @@ Append type column with "pre", "post" and "sample"
 Calculate mean pollutant value for each period
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-         background_means <- dplyr::group_by(background_data, id, type) %>%
-         dplyr::summarise(mean = mean(val)) %>%
-         dplyr::ungroup()
-```
-
-Merge with stove/fuel data to allow better plotting.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples_sf <- dplyr::select(samples, id, stove, fuel)%>%
-            dplyr::mutate(id= as.factor(id))
-
-  background_means_p <- dplyr::left_join(background_means, samples_sf, by = "id") %>%
-            dplyr::mutate(id= as.factor(id))
-
+  background_means <- dplyr::group_by(background_data, id, type) %>%
+                      dplyr::summarise(mean = mean(val), 
+                                       qc_val = mean(as.numeric(qc))) %>%
+                      dplyr::ungroup() %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
+	                    dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
+	                    dplyr::mutate(qc = as.factor(qc))
 ```
 
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_means_p, aes(id, mean, colour = type)) +
-  geom_point() +
-  ggtitle("CH4") +
-  theme_minimal()
+  ggplot(background_means, aes(id, mean, colour = type)) +
+    geom_point() +
+    ggtitle("CH4") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
 
-  ggplot(background_means_p, aes(x= interaction(stove, fuel), mean, colour = type)) +
-  geom_point() +
-  ggtitle("CH4") +
-  theme_minimal() +
-	theme(axis.text.x = element_text(angle = 60, hjust = 1))
+* Plot
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
+  ggplot(background_means, aes(id, mean, colour = qc)) +
+    geom_point() +
+    ggtitle("CH4") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
