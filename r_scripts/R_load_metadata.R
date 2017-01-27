@@ -473,7 +473,7 @@ load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
   
 #________________________________________________________
 # Load wood stove log
-# file <- "//.data/logs/Transcribed Wood Stove Sampling Forms.xlsx"
+# file <- "../data/logs/Transcribed Wood Stove Sampling Forms.xlsx"
 # df <- load_wood(file)
 load_wood <- function(file, sheet = "Wood Sampling Form"){
 

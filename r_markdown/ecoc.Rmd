@@ -30,6 +30,7 @@ output: html_document
 ```
 
 Extract metadata
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   meta <- dplyr::select(data_1, matches("_orange_|_white_|^id$|^date$"))
 
@@ -51,7 +52,7 @@ Extract metadata
                          type = ifelse(grepl("_end_", var), "end", type)) %>%
            dplyr::filter(!is.na(id)) %>%
            dplyr::select(-var, -date) %>%
-            tidyr::spread(type, value)
+           tidyr::spread(type, value)
 ```
 
 Merge ecoc with metadata
@@ -59,7 +60,7 @@ Merge ecoc with metadata
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
                  dplyr::left_join(times, by = c("id")) %>%
-                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                 dplyr::filter(grepl("^[0-9]", id) == TRUE | grepl("^G[0-9]", id) == TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
                  dplyr::arrange(id) %>%
                  dplyr::mutate(id = as.factor(id))
@@ -71,7 +72,7 @@ Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/notes.Rda")
 
-  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst)==TRUE)
+  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
@@ -100,21 +101,81 @@ Merge with data
                  dplyr::mutate(qc = as.factor(qc))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # ecoc_merged$qc[ecoc_merged$id == ""] <- "bad"
 ```
 
+## Convert to longer format
+
+Select columns of interest (others?)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged <- dplyr::select(ecoc_merged, id, 
+                                            oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
+                                            datetime, date, time,
+                                            pre_flow, post_flow,
+                                            start, end,
+                                            qc,
+                                            type, cassette,
+                                            punch_area,
+                                            analyst) %>%
+                  tidyr::gather(pol, val, oc_ug_sq_cm,
+                                          ec_ug_sq_cm,
+                                          tc_ug_sq_cm)
+```
+
+## Calcualte LOD
+
+* need to identify and include blanks in previous analysis
+
+## Background analysis
+
+* extract background data
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+Assume filter areas is `r area <- 11.8` cm^2.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
+        na.omit() %>%
+        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
+        dplyr::mutate(dur = end - start) %>%
+        dplyr::mutate(conc = val * area * 1000 / (flow * dur)) %>%
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge
+  ecoc_merged <- dplyr::left_join(ecoc_merged, bg, by = "pol")
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ecoc_merged, file="../r_files/ecoc_merged.Rda")
+  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-## Load sample info
+## Load sample info and merge with ecoc data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/samples.Rda")  # load sample info
 
   samples <- dplyr::select(samples, id, stove, fuel)
@@ -123,58 +184,72 @@ Addtional bad tests
             dplyr::mutate(id= as.factor(id))
 ```
 
+* create data objects for ec and oc plots.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec_p <- dplyr::filter(ecoc_p, pol == "ec_ug_sq_cm")
+
+  oc_p <- dplyr::filter(ecoc_p, pol == "oc_ug_sq_cm")
+```
+
 ## Plot by cassette (artifact)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = cassette)) +
+  ggplot(ec_p, aes(id, val, colour = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = cassette)) +
+  ggplot(oc_p, aes(id, val, color = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Plot by fuel
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, colour = fuel)) +
+  ggplot(ec_p, aes(id, val, colour = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = fuel)) +
+  ggplot(oc_p, aes(id, val, color = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ecoc_p, aes(id, ec_ug_sq_cm, color = qc)) +
+  ggplot(ec_p, aes(id, val, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("ec ug/sq.cm")+
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(ecoc_p, aes(id, oc_ug_sq_cm, color = qc)) +
+  ggplot(oc_p, aes(id, val, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
          ylab("oc ug/sq.cm") +
-         theme(legend.position = "top")
+         theme(legend.position = "top") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## Summary

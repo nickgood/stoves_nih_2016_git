@@ -208,7 +208,7 @@ Merge with data
                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2_merged$qc[co2_merged$id == "G3"] <- "maybe"
