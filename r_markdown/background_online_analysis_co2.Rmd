@@ -127,7 +127,7 @@ Calculate mean pollutant value for each period
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_means <- dplyr::group_by(background_data, id, type) %>%
                       dplyr::summarise(mean = mean(val), 
-                      								 qc_val = mean(as.numeric(qc))) %>%
+                                       qc_val = mean(as.numeric(qc))) %>%
                       dplyr::ungroup() %>%
 	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
 	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
@@ -142,7 +142,7 @@ Calculate mean pollutant value for each period
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
-	  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 * Plot
@@ -152,5 +152,5 @@ Calculate mean pollutant value for each period
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
-	  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
