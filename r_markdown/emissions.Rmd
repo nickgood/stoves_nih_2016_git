@@ -188,14 +188,15 @@ ___
                         id, cassette,
                         start, end,
                         pre_flow, post_flow,
-                        pol, val)
+                        pol, val,
+                        conc_bg)
 ```
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
-                              dur = (end - start)/60,
+                              dur = (end - start) / 60,
                               conc = val * area * 1000 / (flow * dur))
 ```
 
