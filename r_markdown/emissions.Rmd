@@ -219,7 +219,7 @@ ___
 
 ## fivegas
 
-* Load data
+### Load fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/fivegas_merged.Rda")
@@ -240,11 +240,16 @@ ___
   bg_ch4 <- background_means
 ```
 
-* select co , co2 and ch4
+### Select fivegas pollutants
+
+Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4")
+  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
+	              dplyr::filter(qc != "bad")
 ```
+
+### Process fivegas
 
 * filter out data from outside emissions window
 
@@ -277,17 +282,34 @@ ___
                 dplyr::mutate(id = as.factor(id))
 ```
 
-* merge background data
+### Background
+
+* merge background files
+* calculate pre/post experiment average (ppm)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  bg <- dplyr::mutate(bg_co, pol = "co") %>%
+	      dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
+	      dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
+	      dplyr::filter(type == "pre"| type == "post") %>%
+	      dplyr::group_by(id, pol) %>%
+	      dplyr::summarise(bg_ppm = mean(mean, na.rm = TRUE)) %>%
+	      dplyr::ungroup() %>%
+	      dplyr::left_join(mw, by = "pol") %>%
+        dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
+```
+
+* merge background with fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
+  																dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
+```
 
 * calculate micrograms emitted during tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                                         mass_emitted = conc * flow_hood * (dur / 60)) %>%
-                tidyr::spread(pol, mass_emitted) %>%
-                dplyr::rename(mass_emitted_co = co,
-                              mass_emitted_co2 = co2,
-                              mass_emitted_ch4 = ch4)
+  co_co2_ch4 <- dplyr::mutate(co_co2_ch4, mass_emitted = (conc - bg_conc) * flow_hood * (dur / 60))
 ```
 
 * output
