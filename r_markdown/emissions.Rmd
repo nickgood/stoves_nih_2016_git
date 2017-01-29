@@ -188,7 +188,7 @@ ___
                         id, cassette,
                         start, end,
                         pre_flow, post_flow,
-                        pol, val,
+                        pol, ug_sq_cm,
                         conc_bg)
 ```
 
@@ -197,7 +197,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
                               dur = (end - start) / 60,
-                              conc = val * area * 1000 / (flow * dur))
+                              conc = ug_sq_cm * area * 1000 / (flow * dur))
 ```
 
 * calculate mass emitted
@@ -261,7 +261,7 @@ Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(val)) %>%
+                dplyr::summarise(ppm = mean(ppm)) %>%
                 dplyr::ungroup()
 ```
 
@@ -411,7 +411,7 @@ ___
                         id, qc,
                         pre_flow, post_flow,
                         time_start, time_end,
-                        var, val,
+                        pol, mass_ug,
                         conc_bg) %>%
           dplyr::rename(start = time_start,
                         end = time_end) %>%
@@ -423,7 +423,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ions <- dplyr::mutate(ions, dur = (end - start) / 60,
                               flow = (pre_flow + post_flow) / 2,
-                              conc = (val * 1000 / (flow * dur)) - conc_bg)
+                              conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
 ```
 
 * calculate mass emitted
@@ -454,7 +454,7 @@ ___
                              id, qc,
                              pre_flow, post_flow,
                              time_start, time_end,
-                             var, val,
+                             pol, mass_ug,
                              conc_bg) %>%
                dplyr::rename(start = time_start,
                              end = time_end)
@@ -465,7 +465,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
                              flow = (pre_flow + post_flow) / 2,
-                             conc = (val * 1000 / (flow * dur)) - conc_bg)
+                             conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
 ```
 
 * calculate mass emitted
@@ -501,7 +501,7 @@ ___
   voc <- dplyr::select(voc_merged,
                        id,
                        time_start_voc, time_end_voc,
-                       pol, val,
+                       pol, ppb,
   										 ppb_bg) %>%
          dplyr::rename(start = time_start_voc,
                        end = time_end_voc)
@@ -510,7 +510,7 @@ ___
 * moleculer weight data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  mw_voc <- data_frame(pol = unique(voc$pol)) %>%
+  mw_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
             dplyr::mutate(mw = NA) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_ethane", 30.07, mw)) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_ethene", 28.05, mw)) %>%  
@@ -578,7 +578,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   voc <- dplyr::mutate(voc, dur = (end - start) / 60,
-                            ppm = val / 1000,
+                            ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
   										      conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
 ```
@@ -596,3 +596,15 @@ ___
 ```
 
 ___
+
+## Combine pollutants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+ emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted) %>%
+	            dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted)) %>%
+              dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted)) %>%
+              dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted)) %>%
+              dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted)) %>%
+	            dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted))
+```
+
