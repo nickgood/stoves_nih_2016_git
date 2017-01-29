@@ -37,7 +37,7 @@ The $VOC$ data is contain in one file. Units are $ppbv$.
 Make longer and remove n/a.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(voc, "pol", "val", starts_with("voc_")) %>%
+  voc <- tidyr::gather(voc, "pol", "ppb", starts_with("voc_")) %>%
          dplyr::filter(!is.na(id) & id != "NA")
 ```
 
@@ -64,8 +64,8 @@ Make longer and remove n/a.
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(val == -8888, "below", "above"))) %>%
-                dplyr::mutate(val = ifelse(val == -8888, NA, val))
+  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(ppb == -8888, "below", "above"))) %>%
+                dplyr::mutate(ppb = ifelse(ppb == -8888, NA, ppb))
 ```
 
 ## QC
@@ -114,14 +114,14 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
-        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+        dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
         na.omit() %>%
         dplyr::select(-id_can, -id_voc) %>%
         dplyr::group_by(pol) %>%
-        dplyr::summarise(mean = mean(val),
-                         sd = sd(val),
-                         min = min(val),
-                         max = max(val),
+        dplyr::summarise(mean = mean(ppb),
+                         sd = sd(ppb),
+                         min = min(ppb),
+                         max = max(ppb),
                          n = n())
 ```
 
@@ -159,11 +159,11 @@ Additional bad tests
            dplyr::mutate(id = as.factor(id))
   
  # filter out background data and non-detects 
-  voc_p <- dplyr::filter(voc_p, val > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+  voc_p <- dplyr::filter(voc_p, ppb > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, val, colour = fuel)) + 
+  ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal() +
@@ -174,7 +174,7 @@ Additional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, val, colour = qc)) + 
+  ggplot(voc_p, aes(id, ppb, colour = qc)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal()
