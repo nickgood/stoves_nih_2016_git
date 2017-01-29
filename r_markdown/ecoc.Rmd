@@ -121,9 +121,12 @@ Select columns of interest (others?)
                                             type, cassette,
                                             punch_area,
                                             analyst) %>%
-                  tidyr::gather(pol, val, oc_ug_sq_cm,
-                                          ec_ug_sq_cm,
-                                          tc_ug_sq_cm)
+                  tidyr::gather("pol", "ug_sq_cm", ec_ug_sq_cm,
+                                                   oc_ug_sq_cm,
+                                                   tc_ug_sq_cm) %>%
+	                dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
+                                pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
+                                pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
 ```
 
 ## Calcualte LOD
@@ -143,7 +146,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
         na.omit() %>%
         dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = end - start) %>%
-        dplyr::mutate(conc = val * area * 1000 / (flow * dur)) %>%
+        dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
         dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
@@ -187,15 +190,15 @@ Assume filter areas is `r area <- 11.8` cm^2.
 * create data objects for ec and oc plots.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ec_p <- dplyr::filter(ecoc_p, pol == "ec_ug_sq_cm")
+  ec_p <- dplyr::filter(ecoc_p, pol == "ec")
 
-  oc_p <- dplyr::filter(ecoc_p, pol == "oc_ug_sq_cm")
+  oc_p <- dplyr::filter(ecoc_p, pol == "oc")
 ```
 
 ## Plot by cassette (artifact)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ec_p, aes(id, val, colour = cassette)) +
+  ggplot(ec_p, aes(id, ug_sq_cm, colour = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -203,7 +206,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
          theme(legend.position = "top") +
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(oc_p, aes(id, val, color = cassette)) +
+  ggplot(oc_p, aes(id, ug_sq_cm, color = cassette)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -215,7 +218,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Plot by fuel
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ec_p, aes(id, val, colour = fuel)) +
+  ggplot(ec_p, aes(id, ug_sq_cm, colour = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -223,7 +226,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
          theme(legend.position = "top") +
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(oc_p, aes(id, val, color = fuel)) +
+  ggplot(oc_p, aes(id, ug_sq_cm, color = fuel)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -235,7 +238,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
-  ggplot(ec_p, aes(id, val, color = qc)) +
+  ggplot(ec_p, aes(id, ug_sq_cm, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
@@ -243,7 +246,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
          theme(legend.position = "top") +
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-  ggplot(oc_p, aes(id, val, color = qc)) +
+  ggplot(oc_p, aes(id, ug_sq_cm, color = qc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() +
