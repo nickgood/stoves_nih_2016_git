@@ -414,7 +414,8 @@ ___
                         var, val,
                         conc_bg) %>%
           dplyr::rename(start = time_start,
-                        end = time_end)
+                        end = time_end) %>%
+	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
