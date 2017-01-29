@@ -5,17 +5,17 @@ date: "1/6/2017"
 output: html_document
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   library(tidyverse)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   source("../r_scripts/R_functions.R")
 ```
 
 ## Test time data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/test_times.Rda")
 
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
@@ -26,13 +26,13 @@ output: html_document
 
 ## Sample info
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   load("../r_files/samples.Rda")
 ```
 
 ## Constants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   flow_hood <- 4  # m^3/min
 ```
 
@@ -155,13 +155,13 @@ ___
 
 * calculate micrograms of co2 emitted during test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co2 <- dplyr::mutate(co2, mass_emitted_co2 = conc * flow_hood * (dur/60))  # ug/m^3 * m^3/min * (s / 60)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(co2, 2)
 ```
 
@@ -189,7 +189,8 @@ ___
                         start, end,
                         pre_flow, post_flow,
                         pol, ug_sq_cm,
-                        conc_bg)
+                        conc_bg) %>%
+          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
@@ -204,14 +205,14 @@ ___
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(ecoc, 2)
 ```
 
@@ -308,13 +309,13 @@ Select co , co2 and ch4.
 
 * calculate micrograms emitted during tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4, mass_emitted = (conc - bg_conc) * flow_hood * (dur / 60))
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(co_co2_ch4, 2)
 ```
 
@@ -350,14 +351,14 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(grav, 2)
 ```
 
@@ -383,14 +384,14 @@ Note data is test average from desired time window
 
 * calculate number of particles emitted during tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- mutate(ultrafine, emitted = mean_number_conc * 1e6 * flow_hood * (dur/60))
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(ultrafine, 2)
 ```
 
@@ -428,14 +429,14 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(ions, 2)
 ```
 
@@ -456,6 +457,7 @@ ___
                              time_start, time_end,
                              pol, mass_ug,
                              conc_bg) %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
                dplyr::rename(start = time_start,
                              end = time_end)
 ```
@@ -470,14 +472,14 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(carbonyls, 2)
 ```
 
@@ -503,6 +505,7 @@ ___
                        time_start_voc, time_end_voc,
                        pol, ppb,
   										 ppb_bg) %>%
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
          dplyr::rename(start = time_start_voc,
                        end = time_end_voc)
 ```
@@ -585,13 +588,13 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   head(voc, 2)
 ```
 
