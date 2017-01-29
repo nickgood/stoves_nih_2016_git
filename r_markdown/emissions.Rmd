@@ -1,5 +1,5 @@
 ---
-title: "mass_emissions"
+title: "emissions"
 author: "Nicholas Good"
 date: "1/6/2017"
 output: html_document
