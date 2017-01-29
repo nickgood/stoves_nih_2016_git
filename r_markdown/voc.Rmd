@@ -136,8 +136,9 @@ Additional bad tests
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
- # merge
-  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol")
+ # merge and add zeros for missing values
+  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
+                dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
 ## Save merged file
