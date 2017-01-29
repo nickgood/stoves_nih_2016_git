@@ -177,8 +177,9 @@ Additional bad tests
   bg <- dplyr::select(bg, var, mean) %>%
         dplyr::rename(conc_bg = mean)
 
- # merge
-  ions_merged <- dplyr::left_join(ions_merged, bg, by = "var")
+ # merge and add zeros for missing values
+  ions_merged <- dplyr::left_join(ions_merged, bg, by = "var") %>%
+                 dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
 
 ## Save merged file
