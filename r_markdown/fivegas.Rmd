@@ -53,8 +53,8 @@ Voltage calibration files
 ## Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_conc <- as_tibble(dplyr::select(fivegas_conc, -datetime_secs, -time_str) %>%
-                    tidyr::gather(pol, val, ch4:co))
+  fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas_conc, -datetime_secs, -time_str) %>%
+                  tidyr::gather("pol", "ppm", ch4:co))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -62,7 +62,7 @@ Voltage calibration files
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, val, co2:ch4))
+  fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -70,7 +70,7 @@ Voltage calibration files
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, val, co2:ch4))
+  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, ppm, co2:ch4))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -92,7 +92,7 @@ Voltage calibration files
 Calibration concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_conc <- tidy.date(cal_1, "^conc_", "conc_")
+  fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -102,8 +102,8 @@ Calibration concentrations
 Calibration time periods
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_times <- tidy.date(cal_1, "^time_", "time_")
-  fivegas_cal_times <- split.fivegascaltimes(fivegas_cal_times)
+  fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
+  fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -116,10 +116,10 @@ Calculate calibration voltages
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                        dplyr::filter(!is.na(start) & pol != "zero")  %>%
-                        dplyr::rowwise() %>%
-                        dplyr::mutate(v_mean = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "mean"))  %>%
-                        dplyr::mutate(v_sd = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "sd"))
+                 dplyr::filter(!is.na(start) & pol != "zero")  %>%
+                 dplyr::rowwise() %>%
+                 dplyr::mutate(v_mean = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "mean"))  %>%
+                 dplyr::mutate(v_sd = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "sd"))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -198,14 +198,10 @@ Merge voltage data and calibration data, then apply calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_volts <- dplyr::left_join(fivegas_volts, 
-                      select(fivegas_cal, date, pol, cal_beta, cal_int),
-                      by = c("cal_date" = "date", "pol" = "pol")) %>%
-                      
-                      dplyr::rename(volts = val) %>%
-  
-                      mutate(val = volts*cal_beta + cal_int)
-
-  fivegas_volts$pol <- as.factor(fivegas_volts$pol)
+                   dplyr::select(fivegas_cal, date, pol, cal_beta, cal_int),
+                                 by = c("cal_date" = "date", "pol" = "pol")) %>%
+                   dplyr::mutate(ppm = volts * cal_beta + cal_int) %>%
+	                 dplyr::mutate(pol = as.factor(pol))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -215,7 +211,7 @@ Merge voltage data and calibration data, then apply calibration
 Drop variables
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- dplyr::select(fivegas_volts, datetime, date, time, id, pol, val)
+  fivegas_volts <- dplyr::select(fivegas_volts, datetime, date, time, id, pol, ppm)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -237,8 +233,8 @@ Drop variables
 ## Plot data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
-  df <- dplyr::filter(fivegas_merged, !is.na(val) & pol != "o2" & pol != "nox")  # filter out NAs, o2 and nox
-  ggplot(df, aes(datetime, val, colour = pol)) + 
+  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox")  # filter out NAs, o2 and nox
+  ggplot(df, aes(datetime, ppm, colour = pol)) + 
         geom_line() +
         scale_y_log10(limits = c(1, 10^5)) +
         facet_wrap(~id, ncol = 3, scale = "free") +
@@ -295,24 +291,24 @@ Addtional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  df <- dplyr::filter(fivegas_merged, !is.na(val) & pol == "co")  # filter
-  ggplot(df,  aes(datetime, val, colour = qc, group = pol)) +
+  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co")  # filter
+  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
         geom_line() +
         scale_y_log10(limits = c(1, 10^5)) +
         facet_wrap(~id, ncol = 3, scale = "free") +
         theme_minimal() +
         xlab("") + ylab("co ppm")
   
-  df <- dplyr::filter(fivegas_merged, !is.na(val) & pol == "co2")  # filter
-  ggplot(df,  aes(datetime, val, colour = qc, group = pol)) +
+  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co2")  # filter
+  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
         geom_line() +
         scale_y_log10(limits = c(1, 10^5)) +
         facet_wrap(~id, ncol = 3, scale = "free") +
         theme_minimal() +
         xlab("") + ylab("co2 ppm")
   
-  df <- dplyr::filter(fivegas_merged, !is.na(val) & pol == "ch4")  # filter
-  ggplot(df,  aes(datetime, val, colour = qc, group = pol)) +
+  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "ch4")  # filter
+  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
         geom_line() +
         scale_y_log10(limits = c(1, 10^5)) +
         facet_wrap(~id, ncol = 3, scale = "free") +

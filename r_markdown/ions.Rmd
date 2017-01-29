@@ -112,17 +112,17 @@ Additional bad tests
 ## Convert to long format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ions_merged <- tidyr::gather(ions_merged, var, val,
+  ions_merged <- tidyr::gather(ions_merged, "pol", "mass_ug",
                                -id, -id_ions, -post_flow,
                                -pre_flow, -time_start, -time_end, -type, -qc) %>%
-                 dplyr::filter(!is.na(val)) %>%
-                 dplyr::mutate(var = as.factor(var))
+                 dplyr::filter(!is.na(mass_ug)) %>%
+                 dplyr::mutate(pol = as.factor(pol))
 ```
 
 ## Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = var)) +
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = pol)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -134,7 +134,7 @@ Additional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = qc)) +
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = qc)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -152,13 +152,13 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(ions_merged, type == "bg", qc == "ok") %>%
-        dplyr::mutate(val = ifelse(is.na(val), 0, val)) %>%
+        dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
         dplyr::select(-id_ions) %>%
         dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = time_end - time_start) %>%
-        dplyr::mutate(conc = (val * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
-        dplyr::group_by(var) %>%
+        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
+        dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
@@ -174,11 +174,12 @@ Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # extract data for merge
-  bg <- dplyr::select(bg, var, mean) %>%
+  bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(conc_bg = mean)
 
- # merge
-  ions_merged <- dplyr::left_join(ions_merged, bg, by = "var")
+ # merge and add zeros for missing values
+  ions_merged <- dplyr::left_join(ions_merged, bg, by = "pol") %>%
+                 dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
 
 ## Save merged file

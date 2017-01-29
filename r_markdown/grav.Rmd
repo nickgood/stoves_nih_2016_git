@@ -281,8 +281,9 @@ The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_del
   bg <- dplyr::select(bg, type, mean) %>%
         dplyr::rename(conc_bg = mean)
 
- # merge
-  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type")
+ # merge and add pollutant variable
+  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type") %>%
+                 dplyr::mutate(pol = as.factor("grav"))
 ```
 
 ## Save merged file
