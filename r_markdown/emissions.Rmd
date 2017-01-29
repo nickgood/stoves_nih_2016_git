@@ -332,12 +332,12 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   grav <- dplyr::select(grav_merged,
-                        id,
+                        id, pol,
                         time_start, time_end,
                         flow_pre, flow_post,
                         wgt_delta,
   											conc_bg) %>%
-	       dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
