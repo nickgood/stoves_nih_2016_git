@@ -335,7 +335,9 @@ ___
                         id,
                         time_start, time_end,
                         flow_pre, flow_post,
-                        wgt_delta)
+                        wgt_delta,
+  											conc_bg) %>%
+	       dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
@@ -343,14 +345,14 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post) / 2,
                               dur = (time_end - time_start) / 60,
-                              conc_pm = wgt_delta * 1000 / (flow * dur))
+                              conc = wgt_delta * 1000 / (flow * dur))
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
-                        mass_emitted_pm = conc_pm * flow_hood * dur)
+                        mass_emitted = (conc - conc_bg) * flow_hood * dur)
 ```
 
 * output
