@@ -179,7 +179,8 @@ Additional bad tests
         dplyr::rename(conc_bg = mean)
 
  # merge
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "var")
+  carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "var") %>%
+                      dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
 
 ## Save merged file
