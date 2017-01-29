@@ -107,7 +107,7 @@ output: html_document
 * save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
- save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
+  save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
 ```
 
 ___
@@ -247,7 +247,7 @@ Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
-	              dplyr::filter(qc != "bad")
+                dplyr::filter(qc != "bad")
 ```
 
 ### Process fivegas
@@ -290,13 +290,13 @@ Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   bg <- dplyr::mutate(bg_co, pol = "co") %>%
-	      dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
-	      dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
-	      dplyr::filter(type == "pre"| type == "post") %>%
-	      dplyr::group_by(id, pol) %>%
-	      dplyr::summarise(bg_ppm = mean(mean, na.rm = TRUE)) %>%
-	      dplyr::ungroup() %>%
-	      dplyr::left_join(mw, by = "pol") %>%
+        dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
+        dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
+        dplyr::filter(type == "pre"| type == "post") %>%
+        dplyr::group_by(id, pol) %>%
+        dplyr::summarise(bg_ppm = mean(mean, na.rm = TRUE)) %>%
+        dplyr::ungroup() %>%
+        dplyr::left_join(mw, by = "pol") %>%
         dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
 ```
 
@@ -304,7 +304,7 @@ Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-  																dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
+                dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
 ```
 
 * calculate micrograms emitted during tests
@@ -337,8 +337,8 @@ ___
                         time_start, time_end,
                         flow_pre, flow_post,
                         wgt_delta,
-  											conc_bg) %>%
-	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                        conc_bg) %>%
+          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
@@ -504,7 +504,7 @@ ___
                        id,
                        time_start_voc, time_end_voc,
                        pol, ppb,
-  										 ppb_bg) %>%
+                       ppb_bg) %>%
          dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
          dplyr::rename(start = time_start_voc,
                        end = time_end_voc)
@@ -604,10 +604,9 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
  emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted) %>%
-	            dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted)) %>%
+              dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted)) %>%
               dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted)) %>%
               dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted)) %>%
               dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted)) %>%
-	            dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted))
+              dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted))
 ```
-
