@@ -16,7 +16,7 @@ output: html_document
 ## Load data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")         # sample info
+  load("../r_files/samples.Rda")  # sample info
   load("../r_files/batch_times.Rda")
   load("../r_files/wood_times.Rda")
   load("../r_files/co2_merged.Rda")
@@ -76,23 +76,23 @@ Extract, match naming conventions and drop implicit pollutant variable.
     time >= times$start[i],
     time <= times$end[i])
 
-    if(exists("co2_test", inherits = FALSE) == FALSE & nrow(co2_tmp) > 0){
-      co2_test <- co2_tmp
-      
-      samples <- tibble::data_frame(id = times$id[i],
-                                    dur = (times$end[i]-times$start[i]),
-                                    n = nrow(co2_tmp))
-    }
+  if(exists("co2_test", inherits = FALSE) == FALSE & nrow(co2_tmp) > 0){
+    co2_test <- co2_tmp
 
-    if(exists("co2_test", inherits = FALSE) == TRUE & nrow(co2_tmp) > 0){
-        co2_test <- dplyr::bind_rows(co2_test, co2_tmp)
-        
-        samples_tmp <- tibble::data_frame(id = times$id[i],
-                                          dur = times$end[i]-times$start[i],
-                                          n = nrow(co2_tmp))
+    samples <- tibble::data_frame(id = times$id[i],
+                                  dur = (times$end[i] - times$start[i]),
+                                  n = nrow(co2_tmp))
+  }
 
-        samples <- dplyr::bind_rows(samples, samples_tmp)
-    }
+  if(exists("co2_test", inherits = FALSE) == TRUE & nrow(co2_tmp) > 0){
+    co2_test <- dplyr::bind_rows(co2_test, co2_tmp)
+
+    samples_tmp <- tibble::data_frame(id = times$id[i],
+                                      dur = times$end[i]-times$start[i],
+                                      n = nrow(co2_tmp))
+
+    samples <- dplyr::bind_rows(samples, samples_tmp)
+  }
   }
 ```
 
@@ -106,4 +106,3 @@ Extract, match naming conventions and drop implicit pollutant variable.
          xlab("") + ylab("ppm") +
          theme(legend.position = "top")
 ```
-

@@ -24,6 +24,8 @@ output: html_document
 
 ## CO2
 
+Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   co2_lab <- load_multifile(fldr = "../data/co2", pattern = "DILUTION1.csv$", inst = "co2")
 
@@ -40,6 +42,8 @@ output: html_document
 
 ## ECOC
 
+Loads ecoc data file and resaves as .Rda.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   ecoc <- load_singlefiles("ecoc")  # ecoc filter analysis
 
@@ -48,15 +52,17 @@ output: html_document
 
 ## Fivegas
 
+The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_conc <- load_fivegas(type = "conc")
 
   save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
-    
+
   fivegas_volts <- load_fivegas(type = "volts")
 
   save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
-    
+
   fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",type = "volts")
 
   save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
@@ -64,21 +70,27 @@ output: html_document
 
 ## Gravimetric
 
+Loads filter weight data and resaves as .Rda.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- load_singlefiles("grav")
 
   save(grav, file = "../r_files/grav.Rda")
 ```
 
-## IONS
+## Ions and carbonyls
+
+Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ions <- load_singlefiles("ions")  # ion filter data
+  ions <- load_singlefiles("ions")
 
   save(ions, file = "../r_files/ions.Rda")
 ```
 
 ## PAHS
+
+Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
   pah <- load_singlefiles("pah")  # pah data
@@ -88,6 +100,8 @@ output: html_document
 
 ## PAX
 
+Loads and resaves data as .Rda.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax <- load_multifile(fldr = "../data/pax", pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
@@ -95,6 +109,8 @@ output: html_document
 ```
 
 ## SCALE
+
+Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   scale <- load_multifile(fldr = "../data/scale", pattern = "_SCALE.xlsx$", inst = "scale")
@@ -104,6 +120,8 @@ output: html_document
 
 ## SMPS
 
+Loads and resaves data as an .Rda.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   smps <- load_multifile(fldr = "../data/smps", pattern = "_SMPS.csv$", inst = "smps")
 
@@ -111,6 +129,8 @@ output: html_document
 ```
 
 ## TEMP
+
+Loads and resaves data as an .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   temp <- load_multifile(fldr = "../data/temp", pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
@@ -120,6 +140,8 @@ output: html_document
 
 ## TRANS
 
+Loads and resaves data as an .Rda.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   trans <- load_singlefiles("trans")
 
@@ -127,6 +149,8 @@ output: html_document
 ```
  
 ## VOC
+
+Loads the microgram sheet  and resaves data as an .Rda.
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   voc <- load_singlefiles("voc")
@@ -138,6 +162,8 @@ output: html_document
 
 ## Sample logs
 
+Reference for test id, stove and fuel types.
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   samples <- load_singlefiles("sample")
 
@@ -145,6 +171,8 @@ output: html_document
 ```
 
 ## Batch sample meta data
+
+Weights, times, notes...
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   batch <- load_singlefiles("batch")
@@ -154,6 +182,8 @@ output: html_document
 
 ## Wood sample meta data
 
+Weights, times, notes...
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   wood <- load_singlefiles("wood")
 
@@ -161,6 +191,8 @@ output: html_document
 ```
 
 ## Calibration log 1
+
+Fivegas calibration mixing ratios and timestamps.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   cal_1 <- load_singlefiles("cal_1")
@@ -170,6 +202,9 @@ output: html_document
 
 ## Calibration log 2
 
+* CO2 calibration information
+* Pax and smps flow measurements
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   cal_2 <- load_singlefiles("cal_2")
 
@@ -178,6 +213,11 @@ output: html_document
 
 ## Data log 1
 
+* Filter cartridge flows and times
+* Voc times
+* Fivegas backgriund times
+* Notes
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_1 <- load_singlefiles("data_1")
 
@@ -185,6 +225,9 @@ output: html_document
 ```
  
 ## Data log 2
+
+* Carbonyls and isokinetic sampler times and flows
+* Smps and pax times (including background)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_2 <- load_singlefiles("data_2")
