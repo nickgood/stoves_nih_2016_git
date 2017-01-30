@@ -1,12 +1,13 @@
 ---
-title: "filter extraction"
+title: "ions"
 author: "Nicholas Good"
-date: "11/20/2016"
+date: "1/19/2017"
 output: html_document
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(knitr)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -16,13 +17,15 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")  # sample info
 ```
 
-## Load ions and carbonyls
+## Load ions
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")    # ions and organics 
+  load("../r_files/ions.Rda")  # ions
+
+  ions <- dplyr::select(ions, 1:23, type, id)  # selction ions only
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -34,7 +37,7 @@ output: html_document
 Load metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")    # metadata
+  load("../r_files/data_1.Rda")  # metadata
 ```
 
 Extract ions filter cartridge data
@@ -52,7 +55,7 @@ Extract ions filter cartridge data
            dplyr::group_by(id, type) %>%
            dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
            tidyr::spread(type, mean)
-  
+
   times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
            tidyr::gather("var", "value", -id, -date) %>%
            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
@@ -66,8 +69,8 @@ Extract ions filter cartridge data
 Merge ion with filter metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions, flows, by = "id")  %>%  
-                 dplyr::left_join(times, by = "id") %>%  
+  ions_merged <- dplyr::left_join(ions, flows, by = "id") %>%
+                 dplyr::left_join(times, by = "id") %>%
                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
                  dplyr::rename(time_start = start, time_end = end) %>%
@@ -79,7 +82,7 @@ Merge ion with filter metadata
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")  # notes
   notes <- dplyr::filter(notes, grepl("ions|all", notes$inst) == TRUE)
 ```
 
@@ -100,7 +103,7 @@ Merge with data
                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # ions_merged$qc[ions_merged$id == ""] <- "bad"
@@ -109,23 +112,17 @@ Addtional bad tests
 ## Convert to long format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ions_merged <- tidyr::gather(ions_merged, var, val, 
+  ions_merged <- tidyr::gather(ions_merged, "pol", "mass_ug",
                                -id, -id_ions, -post_flow,
                                -pre_flow, -time_start, -time_end, -type, -qc) %>%
-                 dplyr::filter(!is.na(val))  %>%
-                 dplyr::mutate(var = as.factor(var))
-```
-
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ions_merged, file = "../r_files/ions_merged.Rda")
+                 dplyr::filter(!is.na(mass_ug)) %>%
+                 dplyr::mutate(pol = as.factor(pol))
 ```
 
 ## Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = var)) +
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = pol)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -137,7 +134,7 @@ Addtional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, val, group = var, color = qc)) +
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = qc)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -146,6 +143,51 @@ Addtional bad tests
          theme(legend.position="top")
 ```
 
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(ions_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
+        na.omit() %>%
+        dplyr::select(-id_ions) %>%
+        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
+        dplyr::mutate(dur = time_end - time_start) %>%
+        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge and add zeros for missing values
+  ions_merged <- dplyr::left_join(ions_merged, bg, by = "pol") %>%
+                 dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(ions_merged, file = "../r_files/ions_merged.Rda")
+```
+
 ## Summary
 
-$Ion$ data was collected during `r length(unique(ions_merged$id))` experiments. There is no $ion$ data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
+Ion data was collected during `r length(unique(ions_merged$id))` experiments. There is no ion data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.

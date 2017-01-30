@@ -24,7 +24,7 @@ output: html_document
   load("../r_files/scale.Rda")       # scale data
   load("../r_files/temp.Rda")        # temperature data
   load("../r_files/smps.Rda")        # smps data
-  
+
  # load time-integrated data
   load("../r_files/ecoc.Rda")        # ecoc filter analysis
   load("../r_files/ions.Rda")        # ion filter data
@@ -152,7 +152,6 @@ A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))`
                        dplyr::mutate(id = NA)
 
   for(i in 1:nrow(stove_fuel_combos)){
-    
     reps <- dplyr::filter(stove_fuel_list, fuel == fuel[i] & stove == stove[i]) %>%
             dplyr::select(id)
 

@@ -7,6 +7,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -14,7 +15,7 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")    # sample info
+  load("../r_files/samples.Rda")  # sample info
 ```
 
 ## Load gravimetric data
@@ -25,6 +26,12 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   colnames(grav)
+```
+
+## Set levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  levels_type <- c("test", "bg")
 ```
 
 ## Merge with filter metadata
@@ -69,17 +76,16 @@ Merge with filter metadata and drop average values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav, flows, by = "id")  %>%  
-                  dplyr::left_join(times, by = "id") %>%  
-                  dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                  dplyr::rename(flow_pre = pre, flow_post = post) %>%
-                  dplyr::rename(time_start = start, time_end = end) %>%
-                  dplyr::select(-wgt_pre_avg,
+                 dplyr::left_join(times, by = "id") %>%  
+                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                 dplyr::rename(flow_pre = pre, flow_post = post) %>%
+                 dplyr::rename(time_start = start, time_end = end) %>%
+                 dplyr::select(-wgt_pre_avg,
                                 -wgt_post_avg,
                                 -lod, 
                                 -wgt_dif) %>%
-                  dplyr::arrange(id)
-
-  grav_merged$id <- as.factor(grav_merged$id)
+                 dplyr::arrange(id) %>%
+                 dplyr::mutate(id = as.factor(id))
 ```
 
 ## Melt and clean
@@ -100,10 +106,10 @@ Post-weight average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
-              tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
-              dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(id) %>%
-              dplyr::summarise(wgt_post = mean(val))
+               tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
+               dplyr::filter(!is.na(val)) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise(wgt_post = mean(val))
 ```
 
 Weight difference
@@ -117,17 +123,22 @@ Merge differences
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged, grav_dif, by = "id") %>%
-                  dplyr::ungroup()
+                 dplyr::ungroup()
 ```
 
 ## Add variables
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged, 
-                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre) # calibration weight change
+                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)  # calibration weight change
 
   grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre) # blank change
+                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)  # blank change
+  
+  grav_merged <- dplyr::mutate(grav_merged,
+                               type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "")) %>%
+                 dplyr::mutate(type = ifelse(grepl("^G", id) == TRUE, "bg", type)) %>%
+                 dplyr::mutate(type = as.factor(type))
 ```
 
 ## QC
@@ -135,7 +146,8 @@ Merge differences
 Load notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")    # notes
+  load("../r_files/notes.Rda")  # notes
+
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
 
@@ -150,21 +162,20 @@ Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-            group_by(id) %>%
-            arrange(qc) %>%
-            summarise(qc = first(qc))
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, flags, by = "id")
-  grav_merged$id <- as.factor(grav_merged$id)
-  grav_merged$qc <- ifelse(is.na(grav_merged$qc), "ok", as.character(grav_merged$qc))
-  grav_merged$qc <- as.factor(grav_merged$qc)
+  grav_merged <- dplyr::left_join(grav_merged, flags, by = "id") %>%
+                 dplyr::mutate(id = as.factor(id)) %>%
+                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged$qc[grav_merged$id == "28A"] <- "bad"
@@ -233,6 +244,48 @@ Blank weights
 
 The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
 
+## Background analysis
+
+* extract background data
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
+        dplyr::select(id,
+                         flow_pre, flow_post,
+                         time_end, time_start,
+                         wgt_delta) %>%
+        dplyr::mutate(flow_pre = ifelse(is.na(flow_pre) == TRUE, flow_post,
+                                                                 flow_pre)) %>%
+        na.omit() %>%
+        dplyr::mutate(flow = (flow_pre + flow_post) / 2,
+                      dur = (time_end - time_start) / 60,
+                      conc = wgt_delta * 1000 / (flow * dur)) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n()) %>%
+        dplyr::mutate(type = factor("test", levels_type))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, type, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge and add pollutant variable
+  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type") %>%
+                 dplyr::mutate(pol = as.factor("grav"))
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -241,6 +294,6 @@ The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_del
 
 ## Summary
 
-$Gravimetric$ data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
 
-$PAX$ data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
+Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 

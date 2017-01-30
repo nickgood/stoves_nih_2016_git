@@ -1,0 +1,193 @@
+---
+title: "carbonyls"
+author: "Nicholas Good"
+date: "1/19/2017"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_load_data.R")
+  source("../r_scripts/R_load_metadata.R")
+  source("../r_scripts/R_tidy.R")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")  # sample info
+```
+
+## Load carbonyl data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/ions.Rda")  # loads carbonyls file
+
+  carbonyls <- dplyr::select(ions, 24:39, type, id, id_ions)  # select carbonlys only
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(carbonyls)
+```
+
+## Merge with filter meta data
+
+Load metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/data_2.Rda")  # metadata
+```
+
+Extract carbonyl data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  meta <- dplyr::select(data_2, matches("_carb|_carb_|^id$|^date$"))
+
+  flows <- dplyr::select(meta, matches("flow_|^id$")) %>%
+           tidyr::gather("var", "value", -id) %>%
+           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+           dplyr::mutate(type = sub("flow.*", "", var),
+                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
+           dplyr::select(-var)  %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::group_by(id, type) %>%
+           dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
+           tidyr::spread(type, mean)
+
+  times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
+           tidyr::gather("var", "value", -id, -date) %>%
+           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                         type = ifelse(grepl("_end_", var), "end", type)) %>%
+           dplyr::arrange(id) %>%
+           dplyr::filter(!is.na(id)) %>%
+           dplyr::select(-var, -date) %>%
+           tidyr::spread(type, value)
+```
+
+Merge carbonyls with metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls_merged <- dplyr::left_join(carbonyls, flows, by = "id") %>%
+                      dplyr::left_join(times, by = "id") %>%
+                      dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
+                      dplyr::rename(pre_flow = pre, post_flow = post) %>%
+                      dplyr::rename(time_start = start, time_end = end) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+## QC
+
+Load notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/notes.Rda")  # notes
+
+  notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE)  # update notes for carbs/ions?
+```
+
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+           group_by(id) %>%
+           arrange(qc) %>%
+           summarise(qc = first(qc))
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls_merged <- dplyr::left_join(carbonyls_merged, flags, by = "id") %>%
+                      dplyr::mutate(id = as.factor(id)) %>%
+                      dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+Additional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # carbonyls_merged$qc[carbonyls_merged$id == ""] <- "bad"
+```
+
+## Convert to long format
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  carbonyls_merged <- tidyr::gather(carbonyls_merged, "pol", "mass_ug",
+                                    -id, -id_ions, -post_flow,
+                                     -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                      dplyr::filter(!is.na(pol)) %>%
+                      dplyr::mutate(pol = as.factor(pol))
+```
+
+## Plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = pol)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
+```
+
+## Plot QC
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = qc)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
+```
+
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(carbonyls_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
+        na.omit() %>%
+        dplyr::select(-id_ions) %>%
+        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
+        dplyr::mutate(dur = time_end - time_start) %>%
+        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge
+  carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "pol") %>%
+                      dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
+```
+
+## Summary
+
+Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no carbonyl data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.

@@ -1,0 +1,709 @@
+---
+title: "emissions"
+author: "Nicholas Good"
+date: "1/6/2017"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  library(tidyverse)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  source("../r_scripts/R_functions.R")
+```
+
+## Test time data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/test_times.Rda")
+
+  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::select(-date) %>%
+           dplyr::rename(start = start_1, end = shutdown)
+```
+
+## Sample info
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/samples.Rda")
+```
+
+## Constants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  flow_hood <- 4  # m^3/min
+```
+
+## Mass of fuel burnt
+
+* Load fuel mass data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/batch_wgts.Rda")
+  load("../r_files/wood_wgts.Rda")
+```
+
+### Extract mass of fuel burnt during sampling periods
+
+* batch stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
+                                          var == "refueled" |
+                                          var == "preshutdown") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_refuel = refueled,
+                              wgt_shutdown = preshutdown) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
+```
+
+* wood stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
+                                        var == "ashpot_unusedfuel" |
+                                        var == "ashpot_char_ash" |
+                                        var == "ashpot_lid") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(wgt_fuel = fuel,
+                              wgt_pot_unusedfuel = ashpot_unusedfuel,
+                              wgt_pot_char_ash = ashpot_char_ash,
+                             wgt_pot = ashpot_lid) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel -
+                                          wgt_pot_unusedfuel -
+                                          wgt_pot_char_ash +
+                                          2 * wgt_pot)
+```
+
+* merge test types
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_wgts, id, mass_fuel),
+                                 dplyr::select(wood_wgts, id, mass_fuel)) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+```
+
+* plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+  p_data <- dplyr::left_join(samples, fuel_burnt) %>%
+            dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::filter(grepl("^[0-9]", id) == TRUE)
+
+  ggplot(p_data, aes(x = id, y = mass_fuel, colour = stove)) +
+        geom_point() +
+        theme_minimal() + 
+        theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        theme(legend.position = "top")
+        ylab("fuel burnt (g)")
+
+```
+
+* save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
+```
+
+___
+
+## co2
+
+* Load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/co2_merged.Rda")
+```
+
+* select sample data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- dplyr::filter(co2_merged, loc == "sample")
+```
+
+* filter out data from outside emissions window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- filter_times(times, co2)
+```
+
+* calculate average for each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- dplyr::group_by(co2, id) %>%
+         dplyr::summarise(ppm = mean(ppm)) %>%
+         dplyr::ungroup() %>%
+         dplyr::mutate(mw = 44.01) %>%
+         dplyr::mutate(num_c = 1)
+```
+
+* convert mixing ratio to mass (assuming constant T and P)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- dplyr::mutate(co2, conc = convert_ppmv_ugpmc(co2$ppm, mw, 25, 84))
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- dplyr::left_join(co2, times, by = "id") %>%
+         dplyr::mutate(dur = end - start) %>%
+         dplyr::mutate(id = as.factor(id))
+```
+
+* calculate micrograms of co2 emitted during test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co2 <- dplyr::mutate(co2, mass_emitted = conc * flow_hood * (dur / 60),  # ug/m^3 * m^3/min * (s / 60)
+                            mass_carbon = mass_emitted * 12 * num_c / mw)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(co2, 2)
+```
+
+___
+
+## ecoc
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/ecoc_merged.Rda")
+```
+
+* filter area
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  area <- 11.8  # cm^2
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ecoc <- dplyr::select(ecoc_merged,
+                        id, cassette,
+                        start, end,
+                        pre_flow, post_flow,
+                        pol, ug_sq_cm,
+                        conc_bg) %>%
+          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
+                              dur = (end - start) / 60,
+                              conc = ug_sq_cm * area * 1000 / (flow * dur))
+```
+
+* calculate mass emitted
+
+Concentration is corrected for background by removing background test average concentration from each test.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ecoc <- dplyr::mutate(ecoc, 
+                        mass_emitted = (conc - conc_bg) * flow_hood * dur,
+                        mass_carbon = mass_emitted)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(ecoc, 2)
+```
+
+___
+
+## fivegas
+
+### Load fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/fivegas_merged.Rda")
+
+ # background co
+  load("../r_files/background_co.Rda")
+
+  bg_co <- background_means
+
+ # background co2
+  load("../r_files/background_co2.Rda")
+
+  bg_co2 <- background_means
+  
+ # background ch4
+  load("../r_files/background_ch4.Rda")
+
+  bg_ch4 <- background_means
+```
+
+### Select fivegas pollutants
+
+Select co , co2 and ch4.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
+                dplyr::filter(qc != "bad")
+```
+
+### Process fivegas
+
+* filter out data from outside emissions window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- filter_times(times, co_co2_ch4)
+```
+
+* calculate average for each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
+                dplyr::summarise(ppm = mean(ppm)) %>%
+                dplyr::ungroup()
+```
+
+* convert mixing ratio to mass (assuming constant T and P)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  mw <- data_frame(pol = c("co", "co2", "ch4"), mw = c(28.01, 44.01, 16.04))
+
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, mw, by = "pol") %>%
+                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, times, by = "id") %>%
+                dplyr::mutate(dur = end - start) %>%
+                dplyr::mutate(id = as.factor(id))
+```
+
+### Background
+
+* merge background files
+* calculate pre/post experiment average (ppm)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  bg <- dplyr::mutate(bg_co, pol = "co") %>%
+        dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
+        dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
+        dplyr::filter(type == "pre"| type == "post") %>%
+        dplyr::group_by(id, pol) %>%
+        dplyr::summarise(bg_ppm = mean(mean, na.rm = TRUE)) %>%
+        dplyr::ungroup() %>%
+        dplyr::left_join(mw, by = "pol") %>%
+        dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
+```
+
+* merge background with fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
+                dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
+```
+
+* calculate micrograms emitted during tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
+                              mass_emitted = (conc - bg_conc) * flow_hood * (dur / 60),
+                              num_c = 1,
+                              mass_carbon = mass_emitted * 12 * num_c / mw)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(co_co2_ch4, 2)
+```
+
+___
+
+## grav
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/grav_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  grav <- dplyr::select(grav_merged,
+                        id, pol,
+                        time_start, time_end,
+                        flow_pre, flow_post,
+                        wgt_delta,
+                        conc_bg) %>%
+          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post) / 2,
+                              dur = (time_end - time_start) / 60,
+                              conc = wgt_delta * 1000 / (flow * dur))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  grav <- dplyr::mutate(grav, 
+                        mass_emitted = (conc - conc_bg) * flow_hood * dur,
+                        mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(grav, 2)
+```
+
+___
+
+## smps
+
+* Load data
+
+Note data is test average from desired time window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/smps_ultrafine.Rda")
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ultrafine <- dplyr::left_join(smps_ultrafine, times, by = "id") %>%
+               dplyr::mutate(dur = end - start) %>%
+               dplyr::mutate(id = as.factor(id))
+```
+
+* calculate number of particles emitted during tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+ # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
+  ultrafine <- dplyr::mutate(ultrafine, emitted = mean_number_conc * 1e6 * flow_hood * (dur/60))
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(ultrafine, 2)
+```
+
+___
+
+## ions
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/ions_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::select(ions_merged,
+                        id, qc,
+                        pre_flow, post_flow,
+                        time_start, time_end,
+                        pol, mass_ug,
+                        conc_bg) %>%
+          dplyr::rename(start = time_start,
+                        end = time_end) %>%
+	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
+                              flow = (pre_flow + post_flow) / 2,
+                              conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = (conc - conc_bg) * flow_hood * dur,
+                        mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(ions, 2)
+```
+
+## carbonyls
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/carbonyls_merged.Rda")
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             pre_flow, post_flow,
+                             time_start, time_end,
+                             pol, mass_ug,
+                             conc_bg) %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
+               dplyr::rename(start = time_start,
+                             end = time_end)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             flow = (pre_flow + post_flow) / 2,
+                             conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * flow_hood * dur,
+                             mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(carbonyls, 2)
+```
+
+## pah
+
+* waiting on data
+
+## voc
+
+* load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  load("../r_files/voc_merged.Rda")
+
+  flow <- 13.5 # L/min
+```
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  voc <- dplyr::select(voc_merged,
+                       id,
+                       time_start_voc, time_end_voc,
+                       pol, ppb,
+                       ppb_bg) %>%
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
+         dplyr::rename(start = time_start_voc,
+                       end = time_end_voc)
+```
+
+* moleculer weight data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  mw_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
+            dplyr::mutate(mw = NA) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethane", 30.07, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethene", 28.05, mw)) %>%  
+            dplyr::mutate(mw = ifelse(pol == "voc_propane", 44.1, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_propene", 42.08, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_butane", 58.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_butane", 58.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethyne", 26.04, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_t_2_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_butene", 56.108, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_cyclopentane", 70.1, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_pentane", 72.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_pentane", 72.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_t_2_pentene", 70.1329, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methyl_2_butene", 70.1329, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_pentene", 70.135, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_pentene", 70.135, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_cyclohexane", 84.16, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_hexane", 86.178, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_isoprene", 68.12, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_hexene", 84.1608, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_c_2_hexene", 84.162, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_4_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_methylcyclohexane", 98.186, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_heptane", 100.21, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_benzene", 78.11, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylpentane", 86.178, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_3_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "2_methylhexane", 100.2, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "3_methylpentane", 86.18, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "2_3_dimethylpentane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methylhexane", 100.2, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylhexane", 100.205, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_2_4_trimethylpentane", 114.232, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_3_4_trimethylpentane", 114.232, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_toluene", 92.14, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_methylheptane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_methylheptane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_octane", 114.23, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_ethylbenzene", 106.17, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_m_p_xylene", 106.168, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_styrene", 104.15, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_o_xylene", 106.16, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_no_8888ne", NA, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_i_propylbenzene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_a_pinene", 136.24, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_propylbenzene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_3_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_4_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_3_5_trimethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_2_ethyltoluene", 120.195, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_4_trimethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_n_decane", 142.29, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_3_trimethylbenzene", 30.07, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_3_diethylbenzene", 120.19, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_4_diethylbenzene", 134.222, mw)) %>%
+            dplyr::mutate(mw = ifelse(pol == "voc_1_2_diethylbenzene", 134.222, mw))
+
+  voc <- dplyr::left_join(voc, mw_voc, by = "pol")
+```
+
+* number of carbon atoms data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  num_carbon_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
+                    dplyr::mutate(num_c = NA) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_ethane", 2, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_ethene", 2, num_c)) %>%  
+                    dplyr::mutate(num_c = ifelse(pol == "voc_propane", 3, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_propene", 3, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_i_butane", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_butane", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_ethyne", 2, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_t_2_butene", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_butene", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_i_butene", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_c_2_butene", 4, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_cyclopentane", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_i_pentane", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_pentane", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_t_2_pentene", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_methyl_2_butene", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_pentene", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_c_2_pentene", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_cyclohexane", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_hexane", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_isoprene", 5, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_hexene", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_c_2_hexene", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_4_dimethylpentane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_methylcyclohexane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_heptane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_benzene", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_3_methylpentane", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_3_dimethylpentane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "2_methylhexane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "3_methylpentane", 6, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "2_3_dimethylpentane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_methylhexane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_3_methylhexane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_2_4_trimethylpentane", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_3_4_trimethylpentane", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_toluene", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_methylheptane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_3_methylheptane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_octane", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_ethylbenzene", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_m_p_xylene", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_styrene", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_o_xylene", 7, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_no_8888ne", NA, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_i_propylbenzene", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_a_pinene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_propylbenzene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_3_ethyltoluene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_4_ethyltoluene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_3_5_trimethylbenzene", 10, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_2_ethyltoluene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_2_4_trimethylbenzene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_n_decane", 10, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_2_3_trimethylbenzene", 2, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_3_diethylbenzene", 8, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_4_diethylbenzene", 9, num_c)) %>%
+                    dplyr::mutate(num_c = ifelse(pol == "voc_1_2_diethylbenzene", 9, num_c))
+
+  voc <- dplyr::left_join(voc, num_carbon_voc, by = "pol")
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+                            ppm = ppb / 1000,
+                            conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
+                            conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur,
+                            mass_carbon = mass_emitted * 12 * num_c / mw)
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  head(voc, 2)
+```
+
+___
+
+## Combine pollutants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon) %>%
+               dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon)) %>%
+               dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon)) %>%
+               dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon)) %>%
+               dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon)) %>%
+               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon))
+```
+
+## Mass carbon per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  mass_carbon <- dplyr::group_by(emissions, id) %>%
+                dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+```
+
+* Plot carbon emitted
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+  ggplot(mass_carbon, aes(x = id, y = ug)) +
+    geom_point() +
+    theme_minimal() +
+    scale_y_log10() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```

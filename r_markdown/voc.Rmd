@@ -7,6 +7,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -18,7 +19,7 @@ output: html_document
 The $VOC$ data is contain in one file. Units are $ppbv$. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")    # voc dataset
+  load("../r_files/voc.Rda")  # voc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -36,7 +37,7 @@ The $VOC$ data is contain in one file. Units are $ppbv$.
 Make longer and remove n/a.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(voc, "pol", "val", starts_with("voc_")) %>%
+  voc <- tidyr::gather(voc, "pol", "ppb", starts_with("voc_")) %>%
          dplyr::filter(!is.na(id) & id != "NA")
 ```
 
@@ -47,7 +48,7 @@ Make longer and remove n/a.
 ## Merge with meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/data_1.Rda")
+  load(file = "../r_files/data_1.Rda")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -55,6 +56,16 @@ Make longer and remove n/a.
   meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
  # merge
   voc_merged <- dplyr::left_join(voc, meta)
+```
+
+## LOD
+
+* Add LOD flag
+* Replace pollutant values below LOD with `NA`.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(ppb == -8888, "below", "above"))) %>%
+                dplyr::mutate(ppb = ifelse(ppb == -8888, NA, ppb))
 ```
 
 ## QC
@@ -94,6 +105,42 @@ Additional bad tests
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
+## Background analysis
+
+* extract background data
+* deal with LOD (not implemented)
+* remove missing data
+* calculate mean ppbv emitted (and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
+        dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
+        na.omit() %>%
+        dplyr::select(-id_can, -id_voc) %>%
+        dplyr::group_by(pol) %>%
+        dplyr::summarise(mean = mean(ppb),
+                         sd = sd(ppb),
+                         min = min(ppb),
+                         max = max(ppb),
+                         n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, pol, mean) %>%
+        dplyr::rename(ppb_bg = mean)
+
+ # merge and add zeros for missing values
+  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
+                dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
+```
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -112,11 +159,11 @@ Additional bad tests
            dplyr::mutate(id = as.factor(id))
   
  # filter out background data and non-detects 
-  voc_p <- dplyr::filter(voc_p, val > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+  voc_p <- dplyr::filter(voc_p, ppb > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, val, colour = fuel)) + 
+  ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal() +
@@ -127,7 +174,7 @@ Additional bad tests
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, val, colour = qc)) + 
+  ggplot(voc_p, aes(id, ppb, colour = qc)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal()
