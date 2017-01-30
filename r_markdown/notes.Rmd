@@ -28,7 +28,6 @@ output: html_document
   load("../r_files/data_1.Rda")
   load("../r_files/data_2.Rda")
   load("../r_files/grav.Rda")
-  load("../r_files/trans_merged.Rda")
 ```
 
 ## Compile notes
@@ -61,17 +60,12 @@ output: html_document
              dplyr::left_join(test_id_date, by = "id") %>%
              dplyr::mutate(inst = "grav:trans")
 
-  notes_6 <- dplyr::select(trans_merged, id, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "id") %>%
-             dplyr::mutate(inst = "grav:trans")
-  
-  notes_7 <- dplyr::select(samples, id, notes) %>%
+  notes_6 <- dplyr::select(samples, id, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
 
-  notes <- dplyr::bind_rows(notes_1, notes_2, notes_3, notes_4, notes_5, notes_6, notes_7) %>%
+  notes <- dplyr::bind_rows(notes_1, notes_2, notes_3, notes_4, notes_5, notes_6) %>%
            dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
            dplyr::mutate(id = as.factor(id))
 ```
