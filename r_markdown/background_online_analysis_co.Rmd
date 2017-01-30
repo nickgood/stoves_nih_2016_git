@@ -126,7 +126,7 @@ Calculate mean pollutant value for each period
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_means <- dplyr::group_by(background_data, id, type) %>%
-                      dplyr::summarise(mean = mean(val), 
+                      dplyr::summarise(mean = mean(ppm), 
                       								 qc_val = mean(as.numeric(qc))) %>%
                       dplyr::ungroup() %>%
 	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
