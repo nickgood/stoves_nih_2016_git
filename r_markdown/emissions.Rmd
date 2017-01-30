@@ -36,6 +36,28 @@ output: html_document
   flow_hood <- 4  # m^3/min
 ```
 
+## Fuel properties
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
+                                                  "Eucalyptus",
+                                                  "Oak",
+                                                  "Coconut Charcoal",
+                                                  "Lump Hardwood (Med.)",
+                                                  "Lump Hardwood (Sm.)",
+                                                  "Eucalyptus Pellets",
+                                                  "West Slope Pellets",
+                                                  "Kerosene",
+                                                  "Liquefied Petroleum Gas"),
+                                         lhv = c(18658, 19427, 18658, 16628,
+                                                 28611, 28611, 17501, 17501,
+                                                 43100, 46100),
+                                         carbon_fraction = c(0.497733333, 0.521166667,
+                                                             0.5, 0.488, 0.840833333,
+                                                             0.840833333, 0.4852,
+                                                             0.4852, 0.82, 0.82))
+```
+
 ## Mass of fuel burnt
 
 * Load fuel mass data
@@ -104,10 +126,17 @@ output: html_document
 
 ```
 
-* save
+### Merge fuel burnt with fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  save(fuel_burnt, file="../r_files/fuel_burnt.Rda")
+  fuel_burnt_ <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
+	               dplyr::left_join(fuel_properties, by = "fuel")
+```
+
+### Save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
 ```
 
 ___
@@ -690,11 +719,23 @@ ___
                dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon))
 ```
 
+* Save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  save(emissions, file = "../r_files/emissions.Rda")
+```
+
 ## Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
   mass_carbon <- dplyr::group_by(emissions, id) %>%
                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+```
+
+* Save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+  save(mass_carbon, file = "../r_files/mass_carbon.Rda")
 ```
 
 * Plot carbon emitted
