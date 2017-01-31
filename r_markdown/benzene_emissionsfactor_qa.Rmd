@@ -61,4 +61,16 @@ benzene <- filter(emissions,  pol == "voc_benzene")
 
 ```
 
+# Merge with fuel/stove info and mass of fuel burned 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+
+  benzene <- left_join(benzene, select(samples, id, fuel, stove, fuelcat, stovecat), by = "id")
+  benzene <- left_join(benzene, select(fuel_burnt, id, mass_fuel), by = "id")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(benzene)
+```
+
 
