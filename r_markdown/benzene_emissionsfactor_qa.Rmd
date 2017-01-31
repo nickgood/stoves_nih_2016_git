@@ -14,6 +14,8 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
+# Setup
+
 ## Load data
 
 **The `emissions.Rda` file contains total emissions for all pollutants.** 
@@ -51,26 +53,25 @@ output: html_document
   colnames(fuel_burnt)
 ```
 
-* This column `mass_fuel` is needed to create an emissions factor of $mass$ $of$ $emissions$ $per$ $mass$ $of$ $fuel$ $burned$.**
+* This column `mass_fuel` is needed to create an emissions factor of $mass$ $of$ $emissions$ $per$ $mass$ $of$ $fuel$ $burned$.
 
-## Select pollutant of interest
+## Select pollutant of interest and merge with fuel burnt and metadata 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
 benzene <- filter(emissions,  pol == "voc_benzene")
-
 ```
 
-# Merge with fuel/stove info and mass of fuel burned 
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   benzene <- left_join(benzene, select(samples, id, fuel, stove, fuelcat, stovecat), by = "id")
   benzene <- left_join(benzene, select(fuel_burnt, id, mass_fuel), by = "id")
 ```
 
+* The `benzene` dataframe now contains a subset of the emissions data for only the pollutant benzene. A summary of the dataset is below:  
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(benzene)
+  summary(benzene)
 ```
+
+
 
 
