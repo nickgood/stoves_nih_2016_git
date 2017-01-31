@@ -1,7 +1,7 @@
 ---
 title: "Load and save data"
 author: "Nicholas Good"
-date: "11/20/2016"
+date: "1/31/2017"
 output: html_document
 ---
 
@@ -166,6 +166,36 @@ Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   samples <- load_singlefiles("sample")
+
+  samples$fuelcat <- fct_collapse(samples$fuel,
+  wood = c("Oak", "Eucalyptus", "Douglas Fir"),
+  charcoal = c("Coconut Charcoal", "Lump Hardwood (Med.)", 
+               "Lump Hardwood (Sm.)"),
+  pellets = c("Eucalyptus Pellets", "West Slope Pellets"),
+  advanced = c("Kerosene", "Liquefied Petroleum Gas"),
+  none = c("Background")
+  )
+  samples$fuelcat <- lvls_revalue(samples$fuelcat, c("wood", "charcoal", 
+                                  "pellets", "advanced", "none"))
+
+  samples$stovecat <- fct_collapse(samples$stove,
+  traditional = c("Clay Ring (Artisan)", 
+                  "Three Stone Fire (Artisan)", 
+                  "Ceramic Charcoal (Artisan)"),
+  improved = c("Fan Rocket Elbow (Biolite, HomeStove)", 
+               "Metal Charcoal (Burn, Jikokoa)", 
+               "Rocket Elbow (Envirofit, G3300)",
+               "Built-in Justa (Envirofit, HM5000)"),
+  gasifiers = c("Gasifier (Envirofit, Prototype)", 
+                "Gasifier (Philips, HD4012)",
+                "Gasifer (Mimi Moto, Mimi Moto)"),
+  advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)", 
+               "Wick Kerosene (Cook 'n Lite, 82)", 
+               "Pressurized Kerosene (Butterfly, 2412)"),
+  none = c("Background")
+  )
+  samples$stovecat <- lvls_revalue(samples$stovecat, c("traditional", "improved",
+                                   "gasifiers", "advanced", "none"))
 
   save(samples, file = "../r_files/samples.Rda")
 ```
