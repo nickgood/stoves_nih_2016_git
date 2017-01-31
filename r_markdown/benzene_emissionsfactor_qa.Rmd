@@ -53,4 +53,12 @@ output: html_document
 
 * This column `mass_fuel` is needed to create an emissions factor of $mass$ $of$ $emissions$ $per$ $mass$ $of$ $fuel$ $burned$.**
 
+## Select pollutant of interest
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+benzene <- filter(emissions,  pol == "voc_benzene")
+
+```
+
 
