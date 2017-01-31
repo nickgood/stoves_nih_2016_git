@@ -167,6 +167,14 @@ Reference for test id, stove and fuel types.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   samples <- load_singlefiles("sample")
 
+samples$fuelcat <- fct_collapse(samples$fuel,
+  wood = c("Oak", "Eucalyptus", "Douglas Fir"),
+  charcoal = c("Coconut Charcoal", "Lump Hardwood (Med.)", "Lump Hardwood (Sm.)"),
+  pellets = c("Eucalyptus Pellets", "West Slope Pellets"),
+  advanced = c("Kerosene", "Liquefied Petroleum Gas"),
+  none = c("Background")
+)
+
   save(samples, file = "../r_files/samples.Rda")
 ```
 
