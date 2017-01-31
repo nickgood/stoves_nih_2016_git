@@ -1,0 +1,56 @@
+---
+title: "VOCs Emissions Factor QA/QC"
+author: "Kristen Fedak"
+date: "1/31/2017"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(forcats)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_tidy.R")
+```
+
+## Load data
+
+**The `emissions.Rda` file contains total emissions for all pollutants.** 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/emissions.Rda")  # load pollutant emissions data
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(emissions)
+```
+
+* The column `pol` contains the individual pollutant names. The column `mass_emitted` contains the total mass of each pollutant emitted per firepower sweep test (excluding startup and shutdown periods). Units are $micrograms$ $of$ $total$ $mass$ $emitted$
+
+
+**The `samples.Rda` file contains metadata related to the test IDs, such as what stove and fuel type was burned.**
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")  # load sample meta data
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(samples)
+```
+
+* The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes a fourth replicate, D, is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
+
+**The `fuel_burnt.Rda` file contains data on the total mass of fuel burned during each test.**
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(fuel_burnt)
+```
+
+* This column `mass_fuel` is needed to create an emissions factor of $mass$ $of$ $emissions$ $per$ $mass$ $of$ $fuel$ $burned$.**
+
+
