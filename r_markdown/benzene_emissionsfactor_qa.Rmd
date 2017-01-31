@@ -81,3 +81,15 @@ benzene <- filter(emissions,  pol == "voc_benzene")
 
 * units: micrgrams of pollutant emitted per kilogram of fuel burned **NOTE: VERIFY UNITS**
 
+# Plots
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(benzene, aes(x= id, EFmassfuel, colour = fuelcat)) +
+  geom_point() +
+  ggtitle("Benzene EFs") +
+  xlab("Test ID") +
+  ylab("ug emitted / kg fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
