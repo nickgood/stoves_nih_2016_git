@@ -86,10 +86,19 @@ benzene <- filter(emissions,  pol == "voc_benzene")
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
 ggplot(benzene, aes(x= id, EFmassfuel, colour = fuelcat)) +
   geom_point() +
-  ggtitle("Benzene EFs") +
+  ggtitle("Benzene EFs by Test ID") +
   xlab("Test ID") +
   ylab("ug emitted / kg fuel burned") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45))
 ```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(benzene, aes(x= stove, EFmassfuel, colour = fuel)) +
+  geom_point() +
+  ggtitle("Benzene EFs by Stove") +
+  xlab("Stove type") +
+  ylab("ug emitted / kg fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
