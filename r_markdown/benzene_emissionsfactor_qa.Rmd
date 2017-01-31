@@ -72,6 +72,12 @@ benzene <- filter(emissions,  pol == "voc_benzene")
   summary(benzene)
 ```
 
+## Calculate Emissions Factor
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  benzene$EFmassfuel <- benzene$mass_emitted / benzene$mass_fuel
+  summary(benzene$EFmassfuel)
+```
 
+* units: micrgrams of pollutant emitted per kilogram of fuel burned **NOTE: VERIFY UNITS**
 
