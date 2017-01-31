@@ -93,7 +93,7 @@ ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuelcat)) +
   geom_point() +
   ggtitle("Benzene EFs by Test ID") +
   xlab("Test ID") +
-  ylab("ug emitted / kg fuel burned") +
+  ylab("g emitted / g fuel burned") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45))
 ```
@@ -103,7 +103,7 @@ ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuelcat)) +
   geom_point() +
   ggtitle("Benzene EFs by Stove") +
   xlab("Stove type") +
-  ylab("ug emitted / kg fuel burned") +
+  ylab("g emitted / g fuel burned") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 ```
