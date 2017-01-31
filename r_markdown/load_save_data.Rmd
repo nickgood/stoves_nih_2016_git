@@ -175,8 +175,7 @@ Reference for test id, stove and fuel types.
   advanced = c("Kerosene", "Liquefied Petroleum Gas"),
   none = c("Background")
   )
-  samples$fuelcat <- lvls_revalue(samples$fuelcat, c("wood", "charcoal", 
-                                  "pellets", "advanced", "none"))
+  samples$fuelcat <- factor(samples$fuelcat,levels(samples$fuelcat)[c(3,2,4,5,1)])
 
   samples$stovecat <- fct_collapse(samples$stove,
   traditional = c("Clay Ring (Artisan)", 
@@ -194,8 +193,7 @@ Reference for test id, stove and fuel types.
                "Pressurized Kerosene (Butterfly, 2412)"),
   none = c("Background")
   )
-  samples$stovecat <- lvls_revalue(samples$stovecat, c("traditional", "improved",
-                                   "gasifiers", "advanced", "none"))
+  samples$stovecat <- factor(samples$stovecat,levels(samples$stovecat)[c(3,2,4,5,1)])
 
   save(samples, file = "../r_files/samples.Rda")
 ```
