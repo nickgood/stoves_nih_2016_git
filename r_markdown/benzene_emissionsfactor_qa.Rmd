@@ -144,5 +144,3 @@ ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
 ```
 
 
-
-
