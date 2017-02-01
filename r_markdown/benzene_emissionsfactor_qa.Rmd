@@ -84,7 +84,7 @@ output: html_document
   summary(benzene$pol_fuel_mass_ratio)
 ```
 
-* units: micrgrams of pollutant emitted per kilogram of fuel burned **NOTE: VERIFY UNITS**
+* units: grams of pollutant emitted per gram of fuel burned **NOTE: VERIFY UNITS**
 
 # Plots
 
