@@ -58,12 +58,14 @@ output: html_document
 ## Select pollutant of interest and merge with fuel burnt and metadata 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-benzene <- filter(emissions,  pol == "voc_benzene")
+  benzene <- dplyr::filter(emissions,  pol == "voc_benzene")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-  benzene <- left_join(benzene, select(samples, id, fuel, stove, fuelcat, stovecat), by = "id")
-  benzene <- left_join(benzene, select(fuel_burnt, id, mass_fuel), by = "id")
+  benzene <- dplyr::left_join(benzene, 
+                              dplyr::select(samples, id, fuel, stove, fuelcat, stovecat),
+                              by = "id") %>%
+             dplyr::left_join(fuel_burnt, by = "id")
 ```
 
 * The `benzene` dataframe now contains a subset of the emissions data for only the pollutant benzene. A summary of the dataset is below:  
@@ -74,9 +76,12 @@ benzene <- filter(emissions,  pol == "voc_benzene")
 
 ## Calculate Emissions Factor
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  benzene <- dplyr::mutate(benzene, pol_fuel_mass_ratio = mass_emitted * 1e-6 / mass_fuel)  # ug * 1e-6 / g
+```
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  benzene$EFmassfuel <- benzene$mass_emitted / benzene$mass_fuel
-  summary(benzene$EFmassfuel)
+  summary(benzene$pol_fuel_mass_ratio)
 ```
 
 * units: micrgrams of pollutant emitted per kilogram of fuel burned **NOTE: VERIFY UNITS**
@@ -84,21 +89,21 @@ benzene <- filter(emissions,  pol == "voc_benzene")
 # Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12}
-ggplot(benzene, aes(x= id, EFmassfuel, colour = fuelcat)) +
+ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuelcat)) +
   geom_point() +
   ggtitle("Benzene EFs by Test ID") +
   xlab("Test ID") +
-  ylab("ug emitted / kg fuel burned") +
+  ylab("g emitted / g fuel burned") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-ggplot(benzene, aes(x= stove, EFmassfuel, colour = fuelcat)) +
+ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuelcat)) +
   geom_point() +
   ggtitle("Benzene EFs by Stove") +
   xlab("Stove type") +
-  ylab("ug emitted / kg fuel burned") +
+  ylab("g emitted / g fuel burned") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 ```
