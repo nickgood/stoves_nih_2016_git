@@ -146,3 +146,28 @@ ggplot(toluene, aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
 ```
 
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(filter(toluene, fuelcat == 'wood'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+  geom_point() +
+  facet_grid( ~ stove, scales = 'free') +
+  ggtitle("Benzene EFs by Stove Type - Wood Stoves Only") +
+  xlab("Stove type") +
+  ylab("g emitted / g fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(filter(toluene, fuelcat == 'charcoal'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+  geom_point() +
+  facet_grid( ~ stove, scales = 'free') +
+  ggtitle("Benzene EFs by Stove Type - Charcoal Stoves Only") +
+  xlab("Stove type") +
+  ylab("g emitted / g fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
