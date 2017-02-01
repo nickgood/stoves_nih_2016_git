@@ -99,7 +99,7 @@ ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuelcat)) +
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuelcat)) +
+ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
   geom_point() +
   ggtitle("Benzene EFs by Stove") +
   xlab("Stove type") +
@@ -107,3 +107,42 @@ ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuelcat)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
+  geom_point() +
+  facet_grid( ~ stovecat, scales = 'free') +
+  ggtitle("Benzene EFs by Stove Type") +
+  xlab("Stove type") +
+  ylab("g emitted / g fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = stovecat)) +
+  geom_point() +
+  facet_grid( ~ fuelcat, scales = 'free') +
+  ggtitle("Benzene EFs by Fuel Type and Stove Type") +
+  xlab("Stove type") +
+  ylab("g emitted / g fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45,  hjust = 0.9))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+  geom_point() +
+  facet_wrap(fuelcat ~ stovecat) +
+  ggtitle("Benzene EFs by Stove and Fuel categories") +
+  xlab("Stove type") +
+  ylab("g emitted / g fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+
+
+
