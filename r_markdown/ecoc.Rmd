@@ -7,20 +7,72 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(knitr)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ## Load ecoc data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ecoc.Rda")  # ecoc dataset
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(ecoc)
+  #colnames(ecoc)
+```
+
+## Fix filter names
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# delete filters from different study
+  ecoc <- dplyr::filter(ecoc, ecoc_id != "INDIA BAKE BLANK") %>%
+          dplyr::filter(ecoc_id != "INDIA BAKE BLANK 2" )
+
+# rename blanks and ambigious ids and filter out pilot tests
+  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("Blank$|BLANK$|^BLANK|^Start",
+                        id),"blank",as.character(id))) %>%
+          dplyr::mutate(type = ifelse(grepl("blank", id), "analysis_bk",
+                        as.character(type))) %>%
+          dplyr::filter(!grepl("^P|^BK|^JAV|^BG|^B6", id))
+
+  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("^[A-Z]-|^[A-Z] ", ecoc_id),
+                                   gsub( "^.* |-A|-E|-BQ|-BA", "", ecoc_id),
+                                   as.character(id)))
+
+# naming exceptions 
+  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("23A-E repeat", ecoc_id),
+                                         "E",as.character(cassette))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("28B-E repeat", ecoc_id), "E",
+                                    as.character(cassette))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("30A-3", ecoc_id), "E",
+                                    as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("A-2016-2-15|06-07-2016", id), "NA",
+                             as.character(id))) %>%
+          dplyr::mutate(type = ifelse(grepl("NA", id), "NA",
+                             as.character(type))) %>%
+          dplyr::mutate(id = ifelse(grepl("C11", id), "11C",
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("G7E", id), "E",
+                             as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("G7E", id), "G7",
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("^G3-E", ecoc_id), "E",
+                                   as.character(cassette))) %>%
+          dplyr::mutate(id = ifelse(grepl("5L",id), "5C",
+                             as.character(id))) %>%
+          dplyr::mutate(cassette = ifelse(grepl("^4C",ecoc$id) & grepl("^8",ecoc$oc_ug_sq_cm),
+                                   "A",as.character(cassette)))
+  
+  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]", id),"test",
+                                     as.character(type))) %>%
+          dplyr::mutate(type = ifelse(grepl("^[B]", id),"lab_bk",
+                               as.character(type))) %>%
+          dplyr::mutate(type = ifelse(grepl("^G", id),"bg",
+                               as.character(type)))
 ```
 
 ## Merge with filter meta data
@@ -57,7 +109,7 @@ Extract metadata
 
 Merge ecoc with metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
                  dplyr::left_join(times, by = c("id")) %>%
                  dplyr::filter(grepl("^[0-9]", id) == TRUE | grepl("^G[0-9]", id) == TRUE) %>%
@@ -69,21 +121,16 @@ Merge ecoc with metadata
 ## QC
 
 Load notes
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/notes.Rda")
 
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
-```
 
-Flag bad data from notes and plots
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33:39] <- "maybe"
 ```
 
 Set one flag per test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
            group_by(id) %>%
            arrange(qc) %>%
@@ -92,19 +139,30 @@ Set one flag per test
 
 Merge with data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
                  dplyr::mutate(qc = ifelse(is.na(qc),
-                                           "ok",
-                                           as.character(qc))) %>%
+                                    "ok", as.character(qc))) %>%
                  dplyr::mutate(qc = as.factor(qc))
 ```
 
 Additional bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # ecoc_merged$qc[ecoc_merged$id == ""] <- "bad"
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok",fid2), 
+                                                 as.character(qc), "bad"))
+```
+
+## Remove duplicate analyses
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged$filter_id <- with(ecoc_merged, interaction(id,  cassette))
+  ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
+                   dplyr::arrange(qc, desc(time))
+  ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged_2):1),]
+  ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged_2$filter_id),]
+  ecoc_merged <- dplyr::arrange(id)
 ```
 
 ## Convert to longer format
@@ -129,7 +187,7 @@ Select columns of interest (others?)
                                 pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
 ```
 
-## Calcualte LOD
+## Calculate LOD
 
 * need to identify and include blanks in previous analysis
 
@@ -181,10 +239,121 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/samples.Rda")  # load sample info
 
+  samples <- dplyr::select(samples, id, stove, fuel, date)
+
+  ecoc_merged_2 <- dplyr::left_join(ecoc_merged_2, samples, by = "id") %>%
+            dplyr::mutate(id= as.factor(id))
+  
+    samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
+                               "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
+                               "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
+                               "Metal Charcoal (Burn, Jikokoa)", "Gasifier (Philips, HD4012)", "Gasifer (Mimi Moto, Mimi Moto)",
+                               "Gasifier (Envirofit, Prototype)", "Wick Kerosene (Cook 'n Lite, 82)", 
+                               "Pressurized Kerosene (Butterfly, 2412)", "Pressurized LPG (WokSmith, WS-C1-25K)"))
+    
+    samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
+                           "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
+                           "Kerosene", "Liquefied Petroleum Gas"))
+  
+```
+  
+## Separate blank filters
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  blanks <- dplyr::filter(ecoc_merged_2, grepl("^B", id)) %>%
+            dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm)
+```
+
+There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r round(mean(blanks$oc_ug_sq_cm), 3)` [ug/sq.cm] the average blank ec was `r round(mean(blanks$ec_ug_sq_cm), 3)` [ug/sq.cm]. For OC the limit of detection was `r round(sd(blanks$oc_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$oc_ug_sq_cm)*10, 3)` [ug/sq.cm]. For EC the limit of detection was `r round(sd(blanks$ec_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$ec_ug_sq_cm)*10, 3)` [ug/sq.cm].
+
+
+## Add a LOD and LOQ flag
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged_2 <- dplyr::filter(ecoc_merged_2, grepl("^[0-9]", id)) %>% #remove bkgds
+                   dplyr::mutate(oc_lod = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*3,
+                                       "ok","low")) %>%
+                   dplyr::mutate(oc_loq = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*10,
+                                       "ok","low")) %>%
+                   dplyr::mutate(ec_lod = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*3,
+                                       "ok","low")) %>%
+                   dplyr::mutate(ec_loq = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*10,
+                                       "ok","low"))
+  lod_flags <- dplyr::select(ecoc_merged_2, date, id, cassette, qc, oc_lod, oc_loq, ec_lod, ec_loq)
+```
+
+## Plot blanks
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  blanks <- tidyr::gather(blanks, "pol", "val", c(ec_ug_sq_cm, oc_ug_sq_cm))
+  ggplot(blanks, aes(pol, val)) +
+         geom_boxplot() +
+         theme_minimal() +
+         ylab("pollutant [ug/sq.cm]")+
+         theme(legend.position = "top")
+```
+
+## LOD/LOQ table
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec_lod <- dplyr::filter(ecoc_merged_2, ec_lod == "low") %>%
+            dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
+  kable(ec_lod, align = 'c', caption = "Filters below LOD for EC")
+  
+  oc_lod <- dplyr::filter(ecoc_merged_2, oc_lod == "low") %>%
+            dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
+ # kable(oc_lod, align = 'c', caption = "Filters below LOD for OC")
+  
+  ec_loq <- dplyr::filter(ecoc_merged_2, ec_loq == "low") %>%
+            dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
+  kable(ec_loq, align = 'c', caption = "Filters below LOQ for EC")
+  
+  oc_loq <- dplyr::filter(ecoc_merged_2, oc_loq == "low") %>%
+            dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
+  kable(oc_loq, align = 'c', caption = "Filters below LOQ for OC")
+```
+
+There were `r nrow(ec_lod)` filters below the limit of detection for ec and `r nrow(oc_lod)` filters below the limit detection for oc. There were `r nrow(ec_loq)` filters below the limit of quantification for ec and `r nrow(oc_loq)` filters below the limit quantification for oc.
+
+## Calculations
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_calcs <- dplyr::mutate(ecoc_merged_2, ec_ug = ec_ug_sq_cm * 11.79) %>%
+                dplyr::mutate(oc_ug = oc_ug_sq_cm * 11.79) %>%
+                dplyr::mutate(time = (end - start)/ 60) %>% #min
+                dplyr::mutate(flow = ((post_flow + pre_flow)/2)/1000) %>% #m3/min
+                dplyr::mutate(ec_conc = (ec_ug*time)/(flow)) %>%
+                dplyr::mutate(oc_conc = (oc_ug*time)/(flow))
+
+  oc_artifacts <- dplyr::filter(ecoc_calcs, cassette == "A") %>%
+                  dplyr::select(id, oc_conc) %>%
+                  dplyr::rename(artifact_oc_conc = oc_conc)
+
+  ecoc_calcs <- dplyr::filter(ecoc_calcs, cassette == "E") %>%
+                dplyr::select(date, id, ec_ug_sq_cm, ec_ug, ec_conc,
+                                 oc_ug_sq_cm, oc_ug, oc_conc)
+                  
+  ecoc_calcs <- dplyr::left_join(ecoc_calcs, oc_artifacts, by = "id")
+  
+  ecoc_calcs <- dplyr::mutate(ecoc_calcs, oc_conc_corr = oc_conc - artifact_oc_conc) %>%
+                dplyr::mutate(ec_oc_ratio = ec_conc / oc_conc_corr)
+```
+
+## Re-add sample information
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::select(samples, id, stove, fuel)
 
-  ecoc_p <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
-            dplyr::mutate(id= as.factor(id))
+  ecoc_calcs <- dplyr::left_join(ecoc_calcs, samples, by = "id")
+  
+  ecoc_calcs <- dplyr::mutate(ecoc_calcs, stove_fuel = paste(as.character(stove), ":", as.character(fuel)))
+  
+```
+
+## Save calculation merged file
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(ecoc_calcs, file="../r_files/ecoc_calcs.Rda")
 ```
 
 * create data objects for ec and oc plots.
@@ -218,6 +387,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Plot by fuel
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
+
   ggplot(ec_p, aes(id, ug_sq_cm, colour = fuel)) +
          geom_point() +
          scale_y_log10() +
@@ -238,6 +408,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12}
+
   ggplot(ec_p, aes(id, ug_sq_cm, color = qc)) +
          geom_point() +
          scale_y_log10() +
@@ -255,6 +426,131 @@ Assume filter areas is `r area <- 11.8` cm^2.
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
+## Plot ec oc ratio
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height= 8}  
+  ggplot(ecoc_calcs, aes(x=stove_fuel, y = ec_oc_ratio, color = stove_fuel), na.rm = TRUE) +
+    geom_point() +
+    theme_minimal() +
+    ylab("ec/oc ratio") +
+    xlab("") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
+```
+
+ List A and E filters that have been analyzed
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  A_filters <- dplyr::filter(ecoc_merged, cassette == "A")
+  E_filters <- dplyr::filter(ecoc_merged, cassette == "E")
+```
+
 ## Summary
 
-$ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no $ecoc$ data for tests: `r setdiff(as.character(samples$id), as.character(ecoc_merged$id))`.
+$ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no "A" filters from tests: `r setdiff(as.character(samples$id), as.character(A_filters$id))` and there is no "E" filters from tests: `r setdiff(as.character(samples$id), as.character(E_filters$id))`.
+
+## Data visualization (averaged replicates)
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  ecoc_calcs_2 <- dplyr::select(ecoc_calcs, id, ec_conc, oc_conc, ec_oc_ratio) %>%
+                  dplyr::mutate(id = gsub("[A-Z]$", "", id)) 
+
+  ecoc_avg <- dplyr::group_by(ecoc_calcs_2, id) %>%
+              dplyr::summarise_each(funs(mean)) %>%
+              dplyr::rename(ec_conc_avg = ec_conc, oc_conc_avg = oc_conc,
+                            ec_oc_ratio_avg = ec_oc_ratio)
+  
+  ecoc_min <- dplyr::group_by(ecoc_calcs_2, id) %>%
+              dplyr::summarise_each(funs(min)) %>%
+              dplyr::rename(ec_conc_min = ec_conc, oc_conc_min = oc_conc,
+                            ec_oc_ratio_min = ec_oc_ratio)
+  
+  ecoc_max <- dplyr::group_by(ecoc_calcs_2, id) %>%
+              dplyr::summarise_each(funs(max)) %>%
+              dplyr::rename(ec_conc_max = ec_conc, oc_conc_max = oc_conc,
+                            ec_oc_ratio_max = ec_oc_ratio)
+  
+  ecoc_summary <- dplyr::left_join(ecoc_avg, ecoc_min, by = "id") %>%
+                  dplyr::left_join(ecoc_max, by = "id") 
+  
+  ## Add back stove and fuel info
+  
+  ecoc_summary <- dplyr::mutate(ecoc_summary, id = gsub("$", "A", id)) %>%
+                  dplyr::left_join(samples, by = "id") %>%
+                  dplyr::mutate(id = gsub("[A-Z]$", "", id)) %>%
+                  dplyr::mutate(stove_fuel = paste(as.character(stove), ":", as.character(fuel)))
+  
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, , fig.height=8}
+
+  ggplot(ecoc_summary, aes(x= stove_fuel, y = ec_conc_avg, ymax = ec_conc_max, ymin = ec_conc_min, colour = stove_fuel), na.rm = TRUE) +
+    geom_crossbar(fatten = 2) +
+    scale_y_log10() +
+    theme_minimal() +
+    xlab("") +
+    ylab("ec concentration") +
+    ggtitle("ec concentrations with errorbars that represent the min and max values") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
+
+  ggplot(ecoc_summary, aes(x = stove_fuel, y = oc_conc_avg, ymax = oc_conc_max, ymin = oc_conc_min, colour = stove_fuel), na.rm = TRUE) +
+    geom_crossbar(fatten = 2) +
+    scale_y_log10() +
+    theme_minimal() +
+    ylab("oc concentration") +
+    xlab("") +
+    ggtitle("oc concentrations with errorbars that represent the min and max values") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
+  
+  ggplot(ecoc_summary, aes(x = stove_fuel, y = ec_oc_ratio_avg, ymax = ec_oc_ratio_max, ymin = ec_oc_ratio_min, colour = stove_fuel), na.rm = TRUE) +
+    geom_crossbar(fatten = 2) +
+    scale_y_log10() +
+    theme_minimal() +
+    ylab("ec oc ratio") +
+    xlab("") +
+    ggtitle("oc concentrations with errorbars that represent the min and max values") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
+  
+  ## Re-order stove/fuels
+  ggplot(ecoc_summary, aes(x = stove, y = ec_oc_ratio_avg, group = fuel, fill = fuel)) +   
+    geom_col(position = position_dodge(width=0.75)) +
+    geom_errorbar(aes(ymin = ec_oc_ratio_min, ymax = ec_oc_ratio_max, group = fuel), position = position_dodge(0.75), width=0.25) +
+    scale_y_log10() +
+    theme_minimal() +
+    ylab("ec oc ratio") +
+    xlab("") +
+    ggtitle("ec oc ratios grouped by stove and fuel types (error bars show min and max)") +
+    theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+  
+# Data visualization (including all test points)
+  
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6, , fig.height=4}
+  ggplot(ecoc_calcs, aes(x= ec_conc, y = oc_conc, colour = ec_oc_ratio), na.rm = TRUE) +
+    scale_colour_gradient(high = "black", low = "gray") +
+    geom_point(size = 2) +
+    scale_y_log10() +
+    scale_x_log10() +
+    theme_minimal() +
+    ylab("oc concentration") +
+    xlab("ec concentration") +
+    ggtitle("ec vs. oc with point color indicating ec/oc ratio") 
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10}
+  ggplot(ecoc_calcs, aes(x = fuel, y = ec_oc_ratio, fill = fuel), na.rm = TRUE) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    theme_minimal() +
+    ylab("ec/oc ratio") +
+    xlab("") +
+    ggtitle("ec/oc ratio by fuel type") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=45, hjust=1))
+
+  ggplot(ecoc_calcs, aes(x = stove, y = ec_oc_ratio, fill = stove), na.rm = TRUE) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    theme_minimal() +
+    ylab("ec/oc ratio") +
+    xlab("") +
+    ggtitle("ec/oc ratio by stove type") +
+    theme(legend.position = "none", axis.text.x = element_text(angle=45, hjust=1))
+```
