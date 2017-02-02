@@ -156,7 +156,7 @@ Additional bad tests
 
 ## Remove duplicate analyses
 
-** What is the aim here? I'd suugest leaving this step until the data is in an easier format to deal with.
+** What is the aim here? I'd suggest leaving this step until the data is in an easier format to deal with.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
@@ -265,12 +265,17 @@ Assume filter areas is `r area <- 11.8` cm^2.
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
+* merge ecoc data with sample info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
   ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
-            dplyr::mutate(id= as.factor(id))
-  
+                 dplyr::mutate(id= as.factor(id))
+```
+
+* redefine stove levels (no e moved to samples.Rda creation file)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
     samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
                                "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
                                "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
@@ -281,9 +286,9 @@ Assume filter areas is `r area <- 11.8` cm^2.
     samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
                            "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
                            "Kerosene", "Liquefied Petroleum Gas"))
-  
+
 ```
-  
+
 ## Separate blank filters
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -571,7 +576,7 @@ $ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `
     ylab("ec/oc ratio") +
     xlab("") +
     ggtitle("ec/oc ratio by fuel type") +
-    theme(legend.position = "none", axis.text.x = element_text(angle=45, hjust=1))
+    theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1))
 
   ggplot(ecoc_calcs, aes(x = stove, y = ec_oc_ratio, fill = stove), na.rm = TRUE) +
     geom_dotplot(binaxis = "y", stackdir = "center") +
@@ -579,5 +584,5 @@ $ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `
     ylab("ec/oc ratio") +
     xlab("") +
     ggtitle("ec/oc ratio by stove type") +
-    theme(legend.position = "none", axis.text.x = element_text(angle=45, hjust=1))
+    theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1))
 ```
