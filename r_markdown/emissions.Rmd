@@ -748,3 +748,5 @@ ___
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     ggtitle("mass carbon emitted")
 ```
+
+* Plot carbon emitted vs fuel burned
