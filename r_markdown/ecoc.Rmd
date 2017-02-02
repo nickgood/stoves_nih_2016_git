@@ -186,7 +186,7 @@ Select columns of interest (others?)
                   tidyr::gather("pol", "ug_sq_cm", ec_ug_sq_cm,
                                                    oc_ug_sq_cm,
                                                    tc_ug_sq_cm) %>%
-	                dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
+                  dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
                                 pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
                                 pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
 ```
@@ -197,9 +197,12 @@ Select columns of interest (others?)
 
 ## Background analysis
 
-* extract background data
+* extract "ok" background data
 * remove missing data
 * calculate average concentration emitted ( and other stats)
+* average any repeat measurements (non in G8-G14)
+* Note G12 missing measurement data
+* calculate averge backgoround by pollutant / type
 
 Assume filter areas is `r area <- 11.8` cm^2.
 
@@ -209,12 +212,27 @@ Assume filter areas is `r area <- 11.8` cm^2.
         dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
-        dplyr::group_by(pol) %>%
-        dplyr::summarise(mean = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
+        dplyr::group_by(pol, id, cassette) %>%
+        dplyr::summarise(rep_mean = mean(conc)) %>%
+        dplyr::ungroup() %>%
+        dplyr::group_by(pol, cassette) %>%
+        dplyr::summarise(mean = mean(rep_mean),
+                         sd = sd(rep_mean),
+                         min = min(rep_mean),
+                         max = max(rep_mean),
                          n = n())
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* account for artifact
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::select(bg, pol, cassette, mean) %>%
+         tidyr::spread(cassette, mean) %>%
+         dplyr::mutate(conc_bg = E - A)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -224,12 +242,9 @@ Assume filter areas is `r area <- 11.8` cm^2.
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
-  bg <- dplyr::select(bg, pol, mean) %>%
-        dplyr::rename(conc_bg = mean)
-
- # merge
-  ecoc_merged <- dplyr::left_join(ecoc_merged, bg, by = "pol")
+  ecoc_merged <- dplyr::left_join(ecoc_merged, 
+                                  dplyr::select(bg, pol, conc_bg),
+                                  by = "pol")
 ```
 
 ## Save merged file
