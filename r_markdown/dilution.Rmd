@@ -30,7 +30,7 @@ Extract, match naming conventions and drop implicit pollutant variable.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2_fivegas <- dplyr::filter(fivegas_merged, pol == "co2") %>%
                  dplyr::select(-pol) %>%
-                 dplyr::rename(ppm = val) %>%
+                 dplyr::rename(ppm = ppm) %>%
                  dplyr::mutate(loc = "flue")
 ```
 
