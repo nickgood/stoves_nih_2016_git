@@ -257,10 +257,16 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 ** The level definitions should be made when the samples file is created
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")  # load sample info
+* Load sample info
 
-  samples <- dplyr::select(samples, id, stove, fuel, date)
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file="../r_files/samples.Rda")
+
+  samples <- dplyr::select(samples, id, stove, fuel)
+```
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
   ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
             dplyr::mutate(id= as.factor(id))
