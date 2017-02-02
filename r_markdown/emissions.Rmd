@@ -129,7 +129,7 @@ output: html_document
 ### Merge fuel burnt with fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
-  fuel_burnt_ <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
+  fuel_burnt <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
 	               dplyr::left_join(fuel_properties, by = "fuel")
 ```
 
