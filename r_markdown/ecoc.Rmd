@@ -164,8 +164,8 @@ Additional bad tests
 
   #ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
   #                 dplyr::arrange(qc, desc(time))
-  #ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged_2):1),]
-  #ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged_2$filter_id),]
+  #ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged):1),]
+  #ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged$filter_id),]
   #ecoc_merged <- dplyr::arrange(id)
 ```
 
@@ -262,7 +262,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
   samples <- dplyr::select(samples, id, stove, fuel, date)
 
-  ecoc_merged_2 <- dplyr::left_join(ecoc_merged_2, samples, by = "id") %>%
+  ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
             dplyr::mutate(id= as.factor(id))
   
     samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
@@ -281,7 +281,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Separate blank filters
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <- dplyr::filter(ecoc_merged_2, grepl("^B", id)) %>%
+  blanks <- dplyr::filter(ecoc_merged, grepl("^B", id)) %>%
             dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm)
 ```
 
@@ -291,7 +291,7 @@ There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r rou
 ## Add a LOD and LOQ flag
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged_2 <- dplyr::filter(ecoc_merged_2, grepl("^[0-9]", id)) %>% #remove bkgds
+  ecoc_merged <- dplyr::filter(ecoc_merged, grepl("^[0-9]", id)) %>% #remove bkgds
                    dplyr::mutate(oc_lod = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*3,
                                        "ok","low")) %>%
                    dplyr::mutate(oc_loq = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*10,
@@ -300,7 +300,7 @@ There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r rou
                                        "ok","low")) %>%
                    dplyr::mutate(ec_loq = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*10,
                                        "ok","low"))
-  lod_flags <- dplyr::select(ecoc_merged_2, date, id, cassette, qc, oc_lod, oc_loq, ec_lod, ec_loq)
+  lod_flags <- dplyr::select(ecoc_merged, date, id, cassette, qc, oc_lod, oc_loq, ec_lod, ec_loq)
 ```
 
 ## Plot blanks
@@ -317,19 +317,19 @@ There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r rou
 ## LOD/LOQ table
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ec_lod <- dplyr::filter(ecoc_merged_2, ec_lod == "low") %>%
+  ec_lod <- dplyr::filter(ecoc_merged, ec_lod == "low") %>%
             dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
   kable(ec_lod, align = 'c', caption = "Filters below LOD for EC")
   
-  oc_lod <- dplyr::filter(ecoc_merged_2, oc_lod == "low") %>%
+  oc_lod <- dplyr::filter(ecoc_merged, oc_lod == "low") %>%
             dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
  # kable(oc_lod, align = 'c', caption = "Filters below LOD for OC")
   
-  ec_loq <- dplyr::filter(ecoc_merged_2, ec_loq == "low") %>%
+  ec_loq <- dplyr::filter(ecoc_merged, ec_loq == "low") %>%
             dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
   kable(ec_loq, align = 'c', caption = "Filters below LOQ for EC")
   
-  oc_loq <- dplyr::filter(ecoc_merged_2, oc_loq == "low") %>%
+  oc_loq <- dplyr::filter(ecoc_merged, oc_loq == "low") %>%
             dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
   kable(oc_loq, align = 'c', caption = "Filters below LOQ for OC")
 ```
@@ -339,7 +339,7 @@ There were `r nrow(ec_lod)` filters below the limit of detection for ec and `r n
 ## Calculations
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_calcs <- dplyr::mutate(ecoc_merged_2, ec_ug = ec_ug_sq_cm * 11.79) %>%
+  ecoc_calcs <- dplyr::mutate(ecoc_merged, ec_ug = ec_ug_sq_cm * 11.79) %>%
                 dplyr::mutate(oc_ug = oc_ug_sq_cm * 11.79) %>%
                 dplyr::mutate(time = (end - start)/ 60) %>% #min
                 dplyr::mutate(flow = ((post_flow + pre_flow)/2)/1000) %>% #m3/min
