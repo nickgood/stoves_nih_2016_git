@@ -132,9 +132,9 @@ Set one flag per test
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
-           group_by(id) %>%
-           arrange(qc) %>%
-           summarise(qc = first(qc))
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
 ```
 
 Merge with data
@@ -150,7 +150,7 @@ Merge with data
 Additional bad tests
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok",fid2), 
+  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
                                                  as.character(qc), "bad"))
 ```
 
@@ -158,6 +158,7 @@ Additional bad tests
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged$filter_id <- with(ecoc_merged, interaction(id,  cassette))
+
   ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
                    dplyr::arrange(qc, desc(time))
   ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged_2):1),]
