@@ -156,14 +156,17 @@ Additional bad tests
 
 ## Remove duplicate analyses
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged$filter_id <- with(ecoc_merged, interaction(id,  cassette))
+** What is the aim here? I'd suugest leaving this step until the data is in an easier format to deal with.
 
-  ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
-                   dplyr::arrange(qc, desc(time))
-  ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged_2):1),]
-  ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged_2$filter_id),]
-  ecoc_merged <- dplyr::arrange(id)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  #ecoc_merged_$filter_id <- with(ecoc_merged, interaction(id,  cassette))
+
+  #ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
+  #                 dplyr::arrange(qc, desc(time))
+  #ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged_2):1),]
+  #ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged_2$filter_id),]
+  #ecoc_merged <- dplyr::arrange(id)
 ```
 
 ## Convert to longer format
@@ -236,6 +239,8 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ```
 
 ## Load sample info and merge with ecoc data
+
+** The level definitions should be made when the samples file is created
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/samples.Rda")  # load sample info
