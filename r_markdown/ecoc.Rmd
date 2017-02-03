@@ -112,7 +112,10 @@ Merge ecoc with metadata
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
                  dplyr::left_join(times, by = c("id")) %>%
-                 dplyr::filter(grepl("^[0-9]", id) == TRUE | grepl("^G[0-9]", id) == TRUE) %>%
+                 dplyr::filter(grepl("^[0-9]", id) == TRUE |
+                               grepl("^G[0-9]", id) == TRUE |
+                               grepl("^analysis_bk", id) == TRUE |
+                               grepl("^lab_bk", id) == TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
                  dplyr::arrange(id) %>%
                  dplyr::mutate(id = as.factor(id))
@@ -152,21 +155,6 @@ Additional bad tests
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
                                                  as.character(qc), "bad"))
-```
-
-## Remove duplicate analyses
-
-** What is the aim here? I'd suggest leaving this step until the data is in an easier format to deal with.
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  #ecoc_merged_$filter_id <- with(ecoc_merged, interaction(id,  cassette))
-
-  #ecoc_merged <- dplyr::arrange(ecoc_merged, qc) %>%
-  #                 dplyr::arrange(qc, desc(time))
-  #ecoc_merged <- ecoc_merged[order(nrow(ecoc_merged):1),]
-  #ecoc_merged <- ecoc_merged[!duplicated(ecoc_merged$filter_id),]
-  #ecoc_merged <- dplyr::arrange(id)
 ```
 
 ## Convert to longer format
@@ -273,27 +261,11 @@ Assume filter areas is `r area <- 11.8` cm^2.
                  dplyr::mutate(id= as.factor(id))
 ```
 
-* redefine stove levels (no e moved to samples.Rda creation file)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-    samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
-                               "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
-                               "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
-                               "Metal Charcoal (Burn, Jikokoa)", "Gasifier (Philips, HD4012)", "Gasifer (Mimi Moto, Mimi Moto)",
-                               "Gasifier (Envirofit, Prototype)", "Wick Kerosene (Cook 'n Lite, 82)", 
-                               "Pressurized Kerosene (Butterfly, 2412)", "Pressurized LPG (WokSmith, WS-C1-25K)"))
-    
-    samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
-                           "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
-                           "Kerosene", "Liquefied Petroleum Gas"))
-
-```
-
 ## Separate blank filters
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   blanks <- dplyr::filter(ecoc_merged, grepl("^B", id)) %>%
-            dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm)
+            dplyr::select(id, pol, ug_sq_cm)
 ```
 
 There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r round(mean(blanks$oc_ug_sq_cm), 3)` [ug/sq.cm] the average blank ec was `r round(mean(blanks$ec_ug_sq_cm), 3)` [ug/sq.cm]. For OC the limit of detection was `r round(sd(blanks$oc_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$oc_ug_sq_cm)*10, 3)` [ug/sq.cm]. For EC the limit of detection was `r round(sd(blanks$ec_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$ec_ug_sq_cm)*10, 3)` [ug/sq.cm].
