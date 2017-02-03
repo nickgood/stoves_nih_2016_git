@@ -211,25 +211,24 @@ ___
 * filter area
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  area <- 11.8  # cm^2
+  area <- 11.79  # cm^2
 ```
 
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::select(ecoc_merged,
-                        id, cassette,
+  ecoc <- dplyr::filter(ecoc_merged, type == "test") %>%
+          dplyr::select(id, cassette,
                         start, end,
                         pre_flow, post_flow,
                         pol, ug_sq_cm,
-                        conc_bg) %>%
-          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                        conc_bg, type)
 ```
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
+  ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow) / 2,
                               dur = (end - start) / 60,
                               conc = ug_sq_cm * area * 1000 / (flow * dur))
 ```
