@@ -295,7 +295,7 @@ ___
 
 ### Select fivegas pollutants
 
-Select co , co2 and ch4.
+Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
