@@ -201,7 +201,7 @@ Select columns of interest (others?)
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 * average any repeat measurements (non in G8-G14)
-* Note G12 missing measurement data
+* note G12 missing measurement data
 * calculate averge backgoround by pollutant / type
 
 Assume filter areas is `r area <- 11.8` cm^2.
