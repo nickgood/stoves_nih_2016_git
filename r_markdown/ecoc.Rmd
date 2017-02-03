@@ -339,53 +339,88 @@ There were `r ec_lod_loq$n` blank ecoc filter analyzed. The average blank oc was
                                             loq))
 ```
 
-
-#  lod_flags <- dplyr::select(ecoc_merged, date, id, cassette,
-#                                          qc, oc_lod, oc_loq,
-#                                          ec_lod, ec_loq)
-```
-
 ## Plot blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <- tidyr::gather(blanks, "pol", "val", c(ec_ug_sq_cm, oc_ug_sq_cm))
-  ggplot(blanks, aes(pol, val)) +
-         geom_boxplot() +
-         theme_minimal() +
-         ylab("pollutant [ug/sq.cm]")+
-         theme(legend.position = "top")
+  ggplot(blanks, aes(pol, ug_sq_cm)) +
+    geom_boxplot() +
+    theme_minimal() +
+    ylab("pollutant [ug/sq.cm]")+
+    theme(legend.position = "top")
 ```
 
 ## LOD/LOQ table
 
+* ec lod
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ec_lod <- dplyr::filter(ecoc_merged, ec_lod == "low") %>%
-            dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
-  kable(ec_lod, align = 'c', caption = "Filters below LOD for EC")
-  
-  oc_lod <- dplyr::filter(ecoc_merged, oc_lod == "low") %>%
-            dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
- # kable(oc_lod, align = 'c', caption = "Filters below LOD for OC")
-  
-  ec_loq <- dplyr::filter(ecoc_merged, ec_loq == "low") %>%
-            dplyr::select(id, ec_ug_sq_cm, cassette, stove, fuel, qc)
-  kable(ec_loq, align = 'c', caption = "Filters below LOQ for EC")
-  
-  oc_loq <- dplyr::filter(ecoc_merged, oc_loq == "low") %>%
-            dplyr::select(id, oc_ug_sq_cm, cassette, stove, fuel, qc)
-  kable(oc_loq, align = 'c', caption = "Filters below LOQ for OC")
+  lod_ec <- dplyr::select(ecoc_merged, id,
+                                       ug_sq_cm,
+                                       cassette,
+                                       stove,
+                                       fuel,
+                                       qc, pol,
+                                       lod) %>%
+             dplyr::filter(lod == "low" & pol == "ec")
+
+  kable(loq_ec, align = 'c', caption = "Filters below LOD for EC")
 ```
 
-There were `r nrow(ec_lod)` filters below the limit of detection for ec and `r nrow(oc_lod)` filters below the limit detection for oc. There were `r nrow(ec_loq)` filters below the limit of quantification for ec and `r nrow(oc_loq)` filters below the limit quantification for oc.
+* ec loq
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  loq_ec <- dplyr::select(ecoc_merged, id,
+                                       ug_sq_cm,
+                                       cassette,
+                                       stove,
+                                       fuel,
+                                       qc, pol,
+                                       loq) %>%
+             dplyr::filter(loq == "low" & pol == "ec")
+
+  kable(loq_ec, align = 'c', caption = "Filters below LOQ for EC")
+```
+
+* oc lod
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  lod_oc <- dplyr::select(ecoc_merged, id,
+                                       ug_sq_cm,
+                                       cassette,
+                                       stove,
+                                       fuel,
+                                       qc, pol,
+                                       lod) %>%
+             dplyr::filter(lod == "low" & pol == "oc")
+
+  kable(lod_oc, align = 'c', caption = "Filters below LOD for OC")
+```
+
+* oc loq
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  loq_oc <- dplyr::select(ecoc_merged, id,
+                                       ug_sq_cm,
+                                       cassette,
+                                       stove,
+                                       fuel,
+                                       qc, pol,
+                                       loq) %>%
+             dplyr::filter(loq == "low" & pol == "oc")
+
+  kable(loq_oc, align = 'c', caption = "Filters below LOQ for OC")
+``` 
+
+There were `r nrow(lod_ec)` filters below the limit of detection for ec and `r nrow(lod_oc)` filters below the limit detection for oc. There were `r nrow(loq_ec)` filters below the limit of quantification for ec and `r nrow(loq_oc)` filters below the limit quantification for oc.
 
 ## Calculations
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_calcs <- dplyr::mutate(ecoc_merged, ec_ug = ec_ug_sq_cm * 11.79) %>%
-                dplyr::mutate(oc_ug = oc_ug_sq_cm * 11.79) %>%
-                dplyr::mutate(time = (end - start)/ 60) %>% #min
-                dplyr::mutate(flow = ((post_flow + pre_flow)/2)/1000) %>% #m3/min
-                dplyr::mutate(ec_conc = (ec_ug*time)/(flow)) %>%
+  ecoc_calcs <- dplyr::mutate(ecoc_merged, ec_ug = ec_ug_sq_cm * area) %>%
+                dplyr::mutate(oc_ug = oc_ug_sq_cm * area) %>%
+                dplyr::mutate(time = (end - start) / 60) %>%
+                dplyr::mutate(flow = ((post_flow + pre_flow) / 2) / 1000) %>%
+                dplyr::mutate(ec_conc = (ec_ug * time) / (flow)) %>%
                 dplyr::mutate(oc_conc = (oc_ug*time)/(flow))
 
   oc_artifacts <- dplyr::filter(ecoc_calcs, cassette == "A") %>%
@@ -510,110 +545,3 @@ There were `r nrow(ec_lod)` filters below the limit of detection for ec and `r n
 ## Summary
 
 $ECOC$ was measured for `r length(unique(ecoc_merged$id))` experiments between `r min(ecoc_merged$date, na.rm = TRUE)` and `r max(ecoc_merged$date, na.rm = TRUE)`. There is no "A" filters from tests: `r setdiff(as.character(samples$id), as.character(A_filters$id))` and there is no "E" filters from tests: `r setdiff(as.character(samples$id), as.character(E_filters$id))`.
-
-## Data visualization (averaged replicates)
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  ecoc_calcs_2 <- dplyr::select(ecoc_calcs, id, ec_conc, oc_conc, ec_oc_ratio) %>%
-                  dplyr::mutate(id = gsub("[A-Z]$", "", id)) 
-
-  ecoc_avg <- dplyr::group_by(ecoc_calcs_2, id) %>%
-              dplyr::summarise_each(funs(mean)) %>%
-              dplyr::rename(ec_conc_avg = ec_conc, oc_conc_avg = oc_conc,
-                            ec_oc_ratio_avg = ec_oc_ratio)
-  
-  ecoc_min <- dplyr::group_by(ecoc_calcs_2, id) %>%
-              dplyr::summarise_each(funs(min)) %>%
-              dplyr::rename(ec_conc_min = ec_conc, oc_conc_min = oc_conc,
-                            ec_oc_ratio_min = ec_oc_ratio)
-  
-  ecoc_max <- dplyr::group_by(ecoc_calcs_2, id) %>%
-              dplyr::summarise_each(funs(max)) %>%
-              dplyr::rename(ec_conc_max = ec_conc, oc_conc_max = oc_conc,
-                            ec_oc_ratio_max = ec_oc_ratio)
-  
-  ecoc_summary <- dplyr::left_join(ecoc_avg, ecoc_min, by = "id") %>%
-                  dplyr::left_join(ecoc_max, by = "id") 
-  
-  ## Add back stove and fuel info
-  
-  ecoc_summary <- dplyr::mutate(ecoc_summary, id = gsub("$", "A", id)) %>%
-                  dplyr::left_join(samples, by = "id") %>%
-                  dplyr::mutate(id = gsub("[A-Z]$", "", id)) %>%
-                  dplyr::mutate(stove_fuel = paste(as.character(stove), ":", as.character(fuel)))
-  
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, , fig.height=8}
-
-  ggplot(ecoc_summary, aes(x= stove_fuel, y = ec_conc_avg, ymax = ec_conc_max, ymin = ec_conc_min, colour = stove_fuel), na.rm = TRUE) +
-    geom_crossbar(fatten = 2) +
-    scale_y_log10() +
-    theme_minimal() +
-    xlab("") +
-    ylab("ec concentration") +
-    ggtitle("ec concentrations with errorbars that represent the min and max values") +
-    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
-
-  ggplot(ecoc_summary, aes(x = stove_fuel, y = oc_conc_avg, ymax = oc_conc_max, ymin = oc_conc_min, colour = stove_fuel), na.rm = TRUE) +
-    geom_crossbar(fatten = 2) +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("oc concentration") +
-    xlab("") +
-    ggtitle("oc concentrations with errorbars that represent the min and max values") +
-    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
-  
-  ggplot(ecoc_summary, aes(x = stove_fuel, y = ec_oc_ratio_avg, ymax = ec_oc_ratio_max, ymin = ec_oc_ratio_min, colour = stove_fuel), na.rm = TRUE) +
-    geom_crossbar(fatten = 2) +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ec oc ratio") +
-    xlab("") +
-    ggtitle("oc concentrations with errorbars that represent the min and max values") +
-    theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust=1))
-  
-  ## Re-order stove/fuels
-  ggplot(ecoc_summary, aes(x = stove, y = ec_oc_ratio_avg, group = fuel, fill = fuel)) +   
-    geom_col(position = position_dodge(width=0.75)) +
-    geom_errorbar(aes(ymin = ec_oc_ratio_min, ymax = ec_oc_ratio_max, group = fuel), position = position_dodge(0.75), width=0.25) +
-    scale_y_log10() +
-    theme_minimal() +
-    ylab("ec oc ratio") +
-    xlab("") +
-    ggtitle("ec oc ratios grouped by stove and fuel types (error bars show min and max)") +
-    theme(axis.text.x = element_text(angle=90, hjust=1))
-```
-  
-# Data visualization (including all test points)
-  
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6, , fig.height=4}
-  ggplot(ecoc_calcs, aes(x= ec_conc, y = oc_conc, colour = ec_oc_ratio), na.rm = TRUE) +
-    scale_colour_gradient(high = "black", low = "gray") +
-    geom_point(size = 2) +
-    scale_y_log10() +
-    scale_x_log10() +
-    theme_minimal() +
-    ylab("oc concentration") +
-    xlab("ec concentration") +
-    ggtitle("ec vs. oc with point color indicating ec/oc ratio") 
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10}
-  ggplot(ecoc_calcs, aes(x = fuel, y = ec_oc_ratio, fill = fuel), na.rm = TRUE) +
-    geom_dotplot(binaxis = "y", stackdir = "center") +
-    theme_minimal() +
-    ylab("ec/oc ratio") +
-    xlab("") +
-    ggtitle("ec/oc ratio by fuel type") +
-    theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1))
-
-  ggplot(ecoc_calcs, aes(x = stove, y = ec_oc_ratio, fill = stove), na.rm = TRUE) +
-    geom_dotplot(binaxis = "y", stackdir = "center") +
-    theme_minimal() +
-    ylab("ec/oc ratio") +
-    xlab("") +
-    ggtitle("ec/oc ratio by stove type") +
-    theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust=1))
-```
