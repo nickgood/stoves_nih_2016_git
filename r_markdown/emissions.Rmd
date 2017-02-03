@@ -749,4 +749,20 @@ ___
     ggtitle("mass carbon emitted")
 ```
 
-* Plot carbon emitted vs fuel burned
+# Calculate fuel burned using carbon balance approach
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE} 
+  mass_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
+            dplyr::mutate(mass_fuel_c = ug*(1e-9)*(1/carbon_fraction)) %>%
+            dplyr::mutate(mass_fuel_kg = mass_fuel*(1e-3))
+```
+
+# Compare fuel mass burned using carbon balance approach
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10} 
+  ggplot(mass_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
+    geom_point() +
+    theme_minimal() +
+    xlab("mass of fuel (measured) [kg]") +
+    ylab("mass of fuel (carbon balance) [kg]")
+```
