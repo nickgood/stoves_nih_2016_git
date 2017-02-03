@@ -163,7 +163,7 @@ Additional bad tests
                                                  as.character(qc), "bad")) %>%
                   dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 42234 & id == "6D", 
                                             "bad", as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 52209 & id == "8D", 
+                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 53318 & id == "8D", 
                                             "bad", as.character(qc)))
 ```
 
