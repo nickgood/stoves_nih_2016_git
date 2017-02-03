@@ -263,16 +263,31 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ## Separate blank filters
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec_lod_loq <- dplyr::filter(ecoc_merged, type == "lab_bk" & pol == "ec") %>%
+                dplyr::summarise(mean_ug_sq_cm = mean(ug_sq_cm),
+                                sd_ug_sq_cm = sd(ug_sq_cm),
+                                lod = sd_ug_sq_cm * 3 + mean_ug_sq_cm,
+                                loq = sd_ug_sq_cm * 10 + mean_ug_sq_cm,
+                                n = n())
+
+  oc_lod_loq <- dplyr::filter(ecoc_merged, type == "lab_bk" & pol == "oc") %>%
+                dplyr::summarise(mean_ug_sq_cm = mean(ug_sq_cm),
+                                sd_ug_sq_cm = sd(ug_sq_cm),
+                                lod = sd_ug_sq_cm * 3 + mean_ug_sq_cm,
+                                loq = sd_ug_sq_cm * 10 + mean_ug_sq_cm)
+
   blanks <- dplyr::filter(ecoc_merged, grepl("^B", id)) %>%
             dplyr::select(id, pol, ug_sq_cm)
 ```
 
-There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r round(mean(blanks$oc_ug_sq_cm), 3)` [ug/sq.cm] the average blank ec was `r round(mean(blanks$ec_ug_sq_cm), 3)` [ug/sq.cm]. For OC the limit of detection was `r round(sd(blanks$oc_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$oc_ug_sq_cm)*10, 3)` [ug/sq.cm]. For EC the limit of detection was `r round(sd(blanks$ec_ug_sq_cm)*3, 3)` [ug/sq.cm] and the limit of quantification was `r round(sd(blanks$ec_ug_sq_cm)*10, 3)` [ug/sq.cm].
-
+There were `r ec_lod_loq$n` blank ecoc filter analyzed. The average blank oc was `r round(oc_lod_loq$mean, 3)` [ug/sq.cm] the average blank ec was `r round(ec_lod_loq$mean), 3)` [ug/sq.cm]. For OC the limit of detection was `r round(oc_lod_loq$lod, 3)` [ug/sq.cm] and the limit of quantification was `r round(oc_lod_loq$loq, 3)` [ug/sq.cm]. For EC the limit of detection was `r round(ec_lod_loq$lod, 3)` [ug/sq.cm] and the limit of quantification was `r round(ec_lod_loq$loq, 3)` [ug/sq.cm].
 
 ## Add a LOD and LOQ flag
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  ecoc_merged <- dplyr::mutate(loq = NA, lod = NA) %>%
+	
   ecoc_merged <- dplyr::filter(ecoc_merged, grepl("^[0-9]", id)) %>%
                  dplyr::mutate(oc_lod = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*3,
                                                "ok",
