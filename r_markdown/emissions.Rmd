@@ -757,12 +757,33 @@ ___
             dplyr::mutate(mass_fuel_kg = mass_fuel*(1e-3))
 ```
 
+Filter out bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  emissions_p <- dplyr::filter(emissions, grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%
+                 dplyr::mutate(mass_emitted_log = log10(mass_emitted))
+```
+
 # Compare fuel mass burned using carbon balance approach
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10} 
   ggplot(mass_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
     geom_point() +
     theme_minimal() +
+    ylim(0, 2) +
     xlab("mass of fuel (measured) [kg]") +
     ylab("mass of fuel (carbon balance) [kg]")
+```
+
+# Bar plot of mass emitted by test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_emitted_log, fill = pol), na.rm = TRUE) +
+    geom_col() +
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("log(mass emitted)") + 
+    scale_y_log10() +
+    theme(legend.position = "top")
 ```
