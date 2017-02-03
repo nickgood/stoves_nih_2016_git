@@ -20,11 +20,24 @@ The $VOC$ data is contain in one file. Units are $ppbv$.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/voc.Rda")  # voc dataset
+  load("../r_files/emissions.Rda")  # load pollutant emissions data
 ```
+
+* The column `pol` contains the individual pollutant names. The column `mass_emitted` contains the total mass of each pollutant emitted per firepower sweep test (excluding startup and shutdown periods). Units are $micrograms$ $of$ $total$ $mass$ $emitted$
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   colnames(voc)
+  colnames(emissions)
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")  # load sample meta data
+  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
+```
+
+**The `samples.Rda` file contains metadata related to the test IDs, such as what stove and fuel type was burned. The `fuel_burnt.Rda` file contains data on the total mass of fuel burned during each test.**
+
+* The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
 
 ## Remove non-study data
 
@@ -105,6 +118,12 @@ Additional bad tests
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
+Filter out bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::filter(voc_merged, qc != "bad")
+```
+
 ## Background analysis
 
 * extract background data
@@ -123,6 +142,17 @@ Additional bad tests
                          min = min(ppb),
                          max = max(ppb),
                          n = n())
+```
+
+#Plot background
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20}
+    ggplot(bg, aes(pol, mean, ymin = min, ymax = max)) + 
+         geom_pointrange(size = 0.5) +
+         theme_minimal() +
+         theme(axis.text.x = element_text(angle=45, hjust=1)) +
+         ylab("ppb") + xlab("pollutant")
+         
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -153,7 +183,20 @@ Additional bad tests
   load(file="../r_files/samples.Rda")
 
   samples <- dplyr::select(samples, id, stove, fuel)
-  
+
+# change factor order
+  samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
+                          "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
+                          "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
+                          "Metal Charcoal (Burn, Jikokoa)", "Gasifier (Philips, HD4012)",
+                          "Gasifer (Mimi Moto, Mimi Moto)",
+                          "Gasifier (Envirofit, Prototype)", "Wick Kerosene (Cook 'n Lite, 82)",
+                          "Pressurized Kerosene (Butterfly, 2412)", "Pressurized LPG (WokSmith, WS-C1-25K)"))
+    
+  samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
+                        "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
+                        "Kerosene", "Liquefied Petroleum Gas"))
+
   voc_p <- dplyr::left_join(voc_merged, samples, by = "id") %>%
            dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
            dplyr::mutate(id = as.factor(id))
@@ -163,23 +206,142 @@ Additional bad tests
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
-         geom_point() +
-         facet_wrap(~pol, ncol = 1, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("ug/m3") + xlab("")
+  #ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
+         #geom_point() +
+         #facet_wrap(~pol, ncol = 1, scales = "free") +
+         #theme_minimal() +
+         #theme(legend.position = "top") +
+         #ylab("ug/m3") + xlab("")
 ```
 
 ## Plot QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, ppb, colour = qc)) + 
-         geom_point() +
-         facet_wrap(~pol, ncol = 1, scales = "free") +
-         theme_minimal()
+  #ggplot(voc_p, aes(id, ppb, colour = qc)) + 
+         #geom_point() +
+         #facet_wrap(~pol, ncol = 1, scales = "free") +
+         #theme_minimal()
+```
+
+## Select pollutant of interest and merge with fuel burnt and metadata 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  benzene <- dplyr::filter(emissions,  pol == "voc_benzene")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  benzene <- dplyr::left_join(benzene, 
+                              dplyr::select(samples, id, fuel, stove, fuelcat, stovecat),
+                              by = "id") %>%
+             dplyr::left_join(fuel_burnt, by = "id")
+```
+
+* The `benzene` dataframe now contains a subset of the emissions data for only the pollutant benzene. A summary of the dataset is below:  
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  summary(benzene)
+```
+
+## Calculate Emissions Factor
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  benzene <- dplyr::mutate(benzene, pol_fuel_mass_ratio = (mass_emitted * 1e-3) / (mass_fuel*1e-3))  # ug * 1e-6 / g
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  summary(benzene$pol_fuel_mass_ratio)
+```
+
+* units: miligram of pollutant emitted per kilogram of fuel burned 
+
+# Plots
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12}
+  ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuelcat)) +
+    geom_point() +
+    ggtitle("Benzene EFs by Test ID") +
+    xlab("Test ID") +
+    ylab("g emitted / g fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
+    geom_point() +
+    ggtitle("Benzene EFs by Stove") +
+    xlab("Stove type") +
+    ylab("mg emitted / kg fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
+    geom_point() +
+    facet_grid( ~ stovecat, scales = 'free') +
+    ggtitle("Benzene EFs by Stove Type") +
+    xlab("Stove type") +
+    ylab("mg emitted / kg fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = stovecat)) +
+    geom_point() +
+    facet_grid( ~ fuelcat, scales = 'free') +
+    ggtitle("Benzene EFs by Fuel Type and Stove Type") +
+    xlab("Stove type") +
+    ylab("mg emitted / kg fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45,  hjust = 0.9))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+  ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+    geom_point() +
+    facet_wrap(fuelcat ~ stovecat) +
+    ggtitle("Benzene EFs by Stove and Fuel categories") +
+    xlab("Stove type") +
+    ylab("mg emitted / kg fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+  ggplot(filter(benzene, fuelcat == 'wood'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+    geom_point() +
+    facet_grid( ~ stove, scales = 'free') +
+    ggtitle("Benzene EFs by Stove Type - Wood Stoves Only") +
+    xlab("Stove type") +
+    ylab("mg emitted / kg fuel burned") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
+ggplot(filter(benzene, fuelcat == 'charcoal'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
+  geom_point() +
+  facet_grid( ~ stove, scales = 'free') +
+  ggtitle("Benzene EFs by Stove Type - Charcoal Stoves Only") +
+  xlab("Stove type") +
+  ylab("mg emitted / kg fuel burned") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 $VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
 
 $VOCs$ data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
+
+# Flag additional bad tests based on qaqc
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # voc_merged$qc[grav_merged$id == ""] <- "bad"
+```
