@@ -114,8 +114,8 @@ Merge ecoc with metadata
                  dplyr::left_join(times, by = c("id")) %>%
                  dplyr::filter(grepl("^[0-9]", id) == TRUE |
                                grepl("^G[0-9]", id) == TRUE |
-                               grepl("^analysis_bk", id) == TRUE |
-                               grepl("^lab_bk", id) == TRUE) %>%
+                               grepl("^analysis_bk", type) == TRUE |
+                               grepl("^lab_bk", type) == TRUE) %>%
                  dplyr::rename(pre_flow = pre, post_flow = post) %>%
                  dplyr::arrange(id) %>%
                  dplyr::mutate(id = as.factor(id))
@@ -232,7 +232,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged, 
                                   dplyr::select(bg, pol, conc_bg),
-                                  by = "pol")
+                                                by = "pol")
 ```
 
 ## Save merged file
@@ -256,7 +256,6 @@ Assume filter areas is `r area <- 11.8` cm^2.
 * merge ecoc data with sample info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
   ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
                  dplyr::mutate(id= as.factor(id))
 ```
@@ -274,16 +273,23 @@ There were `r nrow(blanks)` blank ecoc analyzed. The average blank oc was `r rou
 ## Add a LOD and LOQ flag
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::filter(ecoc_merged, grepl("^[0-9]", id)) %>% #remove bkgds
-                   dplyr::mutate(oc_lod = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*3,
-                                       "ok","low")) %>%
-                   dplyr::mutate(oc_loq = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*10,
-                                       "ok","low")) %>%
-                   dplyr::mutate(ec_lod = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*3,
-                                       "ok","low")) %>%
-                   dplyr::mutate(ec_loq = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*10,
-                                       "ok","low"))
-  lod_flags <- dplyr::select(ecoc_merged, date, id, cassette, qc, oc_lod, oc_loq, ec_lod, ec_loq)
+  ecoc_merged <- dplyr::filter(ecoc_merged, grepl("^[0-9]", id)) %>%
+                 dplyr::mutate(oc_lod = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*3,
+                                               "ok",
+                                               "low")) %>%
+                 dplyr::mutate(oc_loq = ifelse(oc_ug_sq_cm > sd(blanks$oc_ug_sq_cm)*10,
+                                               "ok",
+                                               "low")) %>%
+                 dplyr::mutate(ec_lod = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*3,
+                                               "ok",
+                                               "low")) %>%
+                 dplyr::mutate(ec_loq = ifelse(ec_ug_sq_cm > sd(blanks$ec_ug_sq_cm)*10,
+                                               "ok",
+                                               "low"))
+
+  lod_flags <- dplyr::select(ecoc_merged, date, id, cassette,
+                                          qc, oc_lod, oc_loq,
+                                          ec_lod, ec_loq)
 ```
 
 ## Plot blanks
