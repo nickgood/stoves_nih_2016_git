@@ -99,7 +99,7 @@ Load pre and post experiment background times for online instruments
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(test_times)
+  head(test_times, 2)
 ```
 
 ## Save data
@@ -114,4 +114,22 @@ Load pre and post experiment background times for online instruments
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
-Test times were measured for `r length(unique(test_times$id))` experiments between `r min(test_times$date, na.rm = TRUE)` and `r max(test_times$date, na.rm = TRUE)`. There are times for tests: `r setdiff(levels(samples$id), levels(test_times$id))`.
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::mutate(dur = (shutdown - start_1) / 60)  # extract test sample durations (minutes)
+
+  times <- dplyr::left_join(dplyr::select(samples, id) %>%
+  													dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+  													times,
+  													by = "id")  # join with sample list
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ggplot(times, aes(x = dur)) +
+    geom_histogram(binwidth = 15) +
+    theme_minimal() +
+    xlab("test duration (min)")
+```
+
+There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are tests: `r times$id[is.na(times$dur)]`.
