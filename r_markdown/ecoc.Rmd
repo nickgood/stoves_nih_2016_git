@@ -157,6 +157,7 @@ Additional bad tests
 * tests where fid2 is out of range
 * first 6D measurement, that produced very high value (repeated)
 * 8D, very high value
+* 9B, artifact gives very high values.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
@@ -164,7 +165,8 @@ Additional bad tests
                   dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 42234 & id == "6D", 
                                             "bad", as.character(qc))) %>%
                   dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 53318 & id == "8D", 
-                                            "bad", as.character(qc)))
+                                            "bad", as.character(qc))) %>%
+	                dplyr::mutate(qc = ifelse(id == "9B", "bad", as.character(qc)))
 ```
 
 ## Convert to longer format
