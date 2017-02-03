@@ -217,7 +217,7 @@ ___
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test") %>%
+  ecoc <- dplyr::filter(ecoc_merged, type == "test" & qc == "ok") %>%
           dplyr::select(id, cassette,
                         start, end,
                         pre_flow, post_flow,
