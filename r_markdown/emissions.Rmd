@@ -5,17 +5,17 @@ date: "1/6/2017"
 output: html_document
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_functions.R")
 ```
 
 ## Test time data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/test_times.Rda")
 
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
@@ -26,19 +26,19 @@ output: html_document
 
 ## Sample info
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
 ```
 
 ## Constants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flow_hood <- 4  # m^3/min
 ```
 
 ## Fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
                                                   "Eucalyptus",
                                                   "Oak",
@@ -62,7 +62,7 @@ output: html_document
 
 * Load fuel mass data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/batch_wgts.Rda")
   load("../r_files/wood_wgts.Rda")
 ```
@@ -71,7 +71,7 @@ output: html_document
 
 * batch stoves
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
                                           var == "refueled" |
                                           var == "preshutdown") %>%
@@ -84,7 +84,7 @@ output: html_document
 
 * wood stoves
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
                                         var == "ashpot_unusedfuel" |
                                         var == "ashpot_char_ash" |
@@ -102,7 +102,7 @@ output: html_document
 
 * merge test types
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_wgts, id, mass_fuel),
                                  dplyr::select(wood_wgts, id, mass_fuel)) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
@@ -112,7 +112,7 @@ output: html_document
 
 * plot
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id)) %>%
             dplyr::filter(grepl("^[0-9]", id) == TRUE)
@@ -128,14 +128,14 @@ output: html_document
 
 ### Merge fuel burnt with fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fuel_burnt_ <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
 	               dplyr::left_join(fuel_properties, by = "fuel")
 ```
 
 ### Save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
 ```
 
@@ -145,25 +145,25 @@ ___
 
 * Load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/co2_merged.Rda")
 ```
 
 * select sample data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- dplyr::filter(co2_merged, loc == "sample")
 ```
 
 * filter out data from outside emissions window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- filter_times(times, co2)
 ```
 
 * calculate average for each test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- dplyr::group_by(co2, id) %>%
          dplyr::summarise(ppm = mean(ppm)) %>%
          dplyr::ungroup() %>%
@@ -173,13 +173,13 @@ ___
 
 * convert mixing ratio to mass (assuming constant T and P)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- dplyr::mutate(co2, conc = convert_ppmv_ugpmc(co2$ppm, mw, 25, 84))
 ```
 
 * merge with sample time data and calculate test duration
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- dplyr::left_join(co2, times, by = "id") %>%
          dplyr::mutate(dur = end - start) %>%
          dplyr::mutate(id = as.factor(id))
@@ -187,14 +187,14 @@ ___
 
 * calculate micrograms of co2 emitted during test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co2 <- dplyr::mutate(co2, mass_emitted = conc * flow_hood * (dur / 60),  # ug/m^3 * m^3/min * (s / 60)
                             mass_carbon = mass_emitted * 12 * num_c / mw)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(co2, 2)
 ```
 
@@ -204,19 +204,19 @@ ___
 
 * load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ecoc_merged.Rda")
 ```
 
 * filter area
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   area <- 11.8  # cm^2
 ```
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::select(ecoc_merged,
                         id, cassette,
                         start, end,
@@ -228,7 +228,7 @@ ___
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow)/2,
                               dur = (end - start) / 60,
                               conc = ug_sq_cm * area * 1000 / (flow * dur))
@@ -238,7 +238,7 @@ ___
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
                         mass_carbon = mass_emitted)
@@ -246,7 +246,7 @@ Concentration is corrected for background by removing background test average co
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(ecoc, 2)
 ```
 
@@ -256,7 +256,7 @@ ___
 
 ### Load fivegas data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_merged.Rda")
 
  # background co
@@ -279,7 +279,7 @@ ___
 
 Select co , co2 and ch4.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
                 dplyr::filter(qc != "bad")
 ```
@@ -288,13 +288,13 @@ Select co , co2 and ch4.
 
 * filter out data from outside emissions window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- filter_times(times, co_co2_ch4)
 ```
 
 * calculate average for each test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
                 dplyr::summarise(ppm = mean(ppm)) %>%
                 dplyr::ungroup()
@@ -302,7 +302,7 @@ Select co , co2 and ch4.
 
 * convert mixing ratio to mass (assuming constant T and P)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mw <- data_frame(pol = c("co", "co2", "ch4"), mw = c(28.01, 44.01, 16.04))
 
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, mw, by = "pol") %>%
@@ -311,7 +311,7 @@ Select co , co2 and ch4.
 
 * merge with sample time data and calculate test duration
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, times, by = "id") %>%
                 dplyr::mutate(dur = end - start) %>%
                 dplyr::mutate(id = as.factor(id))
@@ -322,7 +322,7 @@ Select co , co2 and ch4.
 * merge background files
 * calculate pre/post experiment average (ppm)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::mutate(bg_co, pol = "co") %>%
         dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
         dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
@@ -336,14 +336,14 @@ Select co , co2 and ch4.
 
 * merge background with fivegas data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
                 dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
 ```
 
 * calculate micrograms emitted during tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
                               mass_emitted = (conc - bg_conc) * flow_hood * (dur / 60),
                               num_c = 1,
@@ -352,7 +352,7 @@ Select co , co2 and ch4.
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(co_co2_ch4, 2)
 ```
 
@@ -362,13 +362,13 @@ ___
 
 * load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/grav_merged.Rda")
 ```
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::select(grav_merged,
                         id, pol,
                         time_start, time_end,
@@ -380,7 +380,7 @@ ___
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post) / 2,
                               dur = (time_end - time_start) / 60,
                               conc = wgt_delta * 1000 / (flow * dur))
@@ -388,7 +388,7 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
                         mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
@@ -396,7 +396,7 @@ ___
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(grav, 2)
 ```
 
@@ -408,13 +408,13 @@ ___
 
 Note data is test average from desired time window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/smps_ultrafine.Rda")
 ```
 
 * merge with sample time data and calculate test duration
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ultrafine <- dplyr::left_join(smps_ultrafine, times, by = "id") %>%
                dplyr::mutate(dur = end - start) %>%
                dplyr::mutate(id = as.factor(id))
@@ -422,14 +422,14 @@ Note data is test average from desired time window
 
 * calculate number of particles emitted during tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- dplyr::mutate(ultrafine, emitted = mean_number_conc * 1e6 * flow_hood * (dur/60))
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(ultrafine, 2)
 ```
 
@@ -439,13 +439,13 @@ ___
 
 * load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/ions_merged.Rda")
 ```
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::select(ions_merged,
                         id, qc,
                         pre_flow, post_flow,
@@ -459,7 +459,7 @@ ___
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, dur = (end - start) / 60,
                               flow = (pre_flow + post_flow) / 2,
                               conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
@@ -467,7 +467,7 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
                         mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
@@ -475,7 +475,7 @@ ___
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(ions, 2)
 ```
 
@@ -483,13 +483,13 @@ ___
 
 * load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/carbonyls_merged.Rda")
 ```
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::select(carbonyls_merged,
                              id, qc,
                              pre_flow, post_flow,
@@ -503,7 +503,7 @@ ___
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
                              flow = (pre_flow + post_flow) / 2,
                              conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
@@ -511,7 +511,7 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
                              mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
@@ -519,7 +519,7 @@ ___
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(carbonyls, 2)
 ```
 
@@ -531,7 +531,7 @@ ___
 
 * load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/voc_merged.Rda")
 
   flow <- 13.5 # L/min
@@ -539,7 +539,7 @@ ___
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::select(voc_merged,
                        id,
                        time_start_voc, time_end_voc,
@@ -552,7 +552,7 @@ ___
 
 * moleculer weight data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mw_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
             dplyr::mutate(mw = NA) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_ethane", 30.07, mw)) %>%
@@ -619,7 +619,7 @@ ___
 
 * number of carbon atoms data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   num_carbon_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
                     dplyr::mutate(num_c = NA) %>%
                     dplyr::mutate(num_c = ifelse(pol == "voc_ethane", 2, num_c)) %>%
@@ -686,7 +686,7 @@ ___
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, dur = (end - start) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
@@ -695,14 +695,14 @@ ___
 
 * calculate mass emitted
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur,
                             mass_carbon = mass_emitted * 12 * num_c / mw)
 ```
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(voc, 2)
 ```
 
@@ -710,7 +710,7 @@ ___
 
 ## Combine pollutants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon) %>%
                dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon)) %>%
                dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon)) %>%
@@ -721,26 +721,26 @@ ___
 
 * Save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(emissions, file = "../r_files/emissions.Rda")
 ```
 
 ## Mass carbon per test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mass_carbon <- dplyr::group_by(emissions, id) %>%
                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
 * Save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(mass_carbon, file = "../r_files/mass_carbon.Rda")
 ```
 
 * Plot carbon emitted
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(mass_carbon, aes(x = id, y = ug)) +
     geom_point() +
     theme_minimal() +
