@@ -233,6 +233,25 @@ ___
                               conc = ug_sq_cm * area * 1000 / (flow * dur))
 ```
 
+* account for artifact
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
+            dplyr::summarise(rep_mean = mean(conc)) %>%
+            dplyr::ungroup() %>%
+            tidyr::spread(cassette, rep_mean) %>%
+            dplyr::mutate(A = ifelse(is.na(A), 0, A)) %>%
+            dplyr::mutate(conc_cor = E - A)
+```
+
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::filter(ecoc, cassette == "E") %>%
+           dplyr::left_join(dplyr::select(ecoc_a, id, pol, conc_cor),
+                            by = c("id", "pol"))
+```
+
 * calculate mass emitted
 
 Concentration is corrected for background by removing background test average concentration from each test.
