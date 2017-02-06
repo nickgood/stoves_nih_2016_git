@@ -246,6 +246,7 @@ Drop variables
   fivegas_merged <- dplyr::arrange(rbind(fivegas_volts, fivegas_conc), datetime)
 ```
 
+
 ## Save merged data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -255,7 +256,11 @@ Drop variables
 ## Plot data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
-  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox")  # filter out NAs, o2 and nox
+  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox") %>%
+        dplyr::mutate(id = as.character(id)) %>%
+        dplyr::arrange(id) %>%
+        dplyr::mutate(id = as.factor(id))
+
   ggplot(df, aes(datetime, ppm, colour = pol)) + 
         geom_line() +
         scale_y_log10(limits = c(1, 10^5)) +
