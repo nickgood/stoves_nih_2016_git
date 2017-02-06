@@ -125,14 +125,41 @@ Append type column with "pre", "post" and "sample"
 Calculate mean pollutant value for each period
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  background_means <- dplyr::group_by(background_data, id, type) %>%
-                      dplyr::summarise(mean = mean(ppm), 
-                      								 qc_val = mean(as.numeric(qc))) %>%
+  background_pre_post <- dplyr::group_by(background_data, id, type) %>%
+                         dplyr::summarise(mean = mean(ppm), 
+                                          qc_val = mean(as.numeric(qc))) %>%
+                         dplyr::ungroup() %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
+	                       dplyr::mutate(qc = as.factor(qc)) %>%
+	                       dplyr::ungroup() %>%
+	                       dplyr::select(-qc_val)
+```
+
+* Average pre and post (good tests only)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post", qc == "ok") %>%
+                      dplyr::group_by(id) %>%
+                      dplyr::summarise(ppm = mean(mean, na.rm = TRUE)) %>%
                       dplyr::ungroup() %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
-	                    dplyr::mutate(qc = as.factor(qc))
+                      dplyr::mutate(mw = 28.01) %>%
+                      dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
+```
+
+Calculate mean background over all good tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  mean_bg <- dplyr::summarise(background_means,
+                              ppm = mean(ppm, na.rm = TRUE,
+	           									conc = mean(conc, na.rm = TRUE)))
+```
+
+* List outputs
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  background <- list(bg = background_means, mean = mean_bg)
 ```
 
 ## Save to file
@@ -144,7 +171,7 @@ Calculate mean pollutant value for each period
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_means, aes(id, mean, colour = type)) +
+  ggplot(background_pre_post, aes(id, mean, colour = type)) +
     geom_point() +
     ggtitle("CO") +
     theme_minimal() +
@@ -154,7 +181,7 @@ Calculate mean pollutant value for each period
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_means, aes(id, mean, colour = qc)) +
+  ggplot(background_pre_post, aes(id, mean, colour = qc)) +
     geom_point() +
     ggtitle("CO") +
     theme_minimal() +
