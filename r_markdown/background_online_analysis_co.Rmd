@@ -165,7 +165,7 @@ Calculate mean background over all good tests
 ## Save to file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(background_means, file = "../r_files/background_co.Rda")
+  save(background, file = "../r_files/background_co.Rda")
 ```
 
 * Plot
