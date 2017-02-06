@@ -125,35 +125,47 @@ Append type column with "pre", "post" and "sample"
 Calculate mean pollutant value for each period
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  background_means <- dplyr::group_by(background_data, id, type) %>%
-                      dplyr::summarise(mean = mean(ppm), 
-                                       qc_val = mean(as.numeric(qc))) %>%
+  background_pre_post <- dplyr::group_by(background_data, id, type) %>%
+                         dplyr::summarise(mean = mean(ppm), 
+                                          qc_val = mean(as.numeric(qc))) %>%
+                         dplyr::ungroup() %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
+	                       dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
+	                       dplyr::mutate(qc = as.factor(qc)) %>%
+	                       dplyr::ungroup() %>%
+	                       dplyr::select(-qc_val)
+```
+
+* Average pre and post (good tests only)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post", qc == "ok") %>%
+                      dplyr::group_by(id) %>%
+                      dplyr::summarise(ppm = mean(mean, na.rm = TRUE)) %>%
                       dplyr::ungroup() %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
-	                    dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
-	                    dplyr::mutate(qc = as.factor(qc)) %>%
-	                    dplyr::ungroup() %>%
-	                    dplyr::select(-qc_val)
+                      dplyr::mutate(mw = 44.01) %>%
+                      dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
 ```
 
 Calculate mean background over all good tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mean_bg <- dplyr::filter(background_means, qc == "ok" & type != "sample") %>%
-	           dplyr::group_by(id) %>%
-	           dplyr::summarise(mean = mean(mean, na.rm = TRUE)) %>%
-	           dplyr::ungroup() %>%
-             dplyr::summarise(mean = mean(mean, na.rm = TRUE)) %>%
-	           dplyr::mutate(id = NA, type = "avg", qc = NA)
+  mean_bg <- dplyr::summarise(background_means,
+                              ppm = mean(ppm, na.rm = TRUE,
+	           									conc = mean(conc, na.rm = TRUE)))
+```
 
-  background_means <- dplyr::bind_rows(background_means, mean_bg)
+* List outputs
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  background <- list(bg = background_means, mean = mean_bg)
 ```
 
 ## Save to file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(background_means, file = "../r_files/background_co2.Rda")
+  save(background, file = "../r_files/background_co2.Rda")
 ```
 
 ## Plots
