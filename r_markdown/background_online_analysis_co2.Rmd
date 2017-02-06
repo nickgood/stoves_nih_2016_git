@@ -173,7 +173,7 @@ Calculate mean background over all good tests
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_means, aes(id, mean, colour = type)) +
+  ggplot(background_pre_post, aes(id, mean, colour = type)) +
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
@@ -183,7 +183,7 @@ Calculate mean background over all good tests
 * Plot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_means, aes(id, mean, colour = qc)) +
+  ggplot(background_pre_post, aes(id, mean, colour = qc)) +
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
