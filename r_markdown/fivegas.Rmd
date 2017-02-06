@@ -43,7 +43,7 @@ Voltage files
 Voltage calibration files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_calibration.Rda")    # fivegas voltage calibration data files
+  load("../r_files/fivegas_calibration.Rda")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -57,7 +57,7 @@ Voltage calibration files
                   tidyr::gather("pol", "ppm", ch4:co))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, results='markup'}
   head(fivegas_conc, 2)
 ```
 
@@ -70,7 +70,7 @@ Voltage calibration files
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, ppm, co2:ch4))
+  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, volts, co2:ch4))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -80,7 +80,7 @@ Voltage calibration files
 ## Load calibration metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_1.Rda")        # meta data
+  load("../r_files/cal_1.Rda")  # meta data
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -140,7 +140,7 @@ Calculate zero voltages
   head(fivegas_cal_zero, 2)
 ```
 
-## Append zero times to cal data
+### Append zero times to cal data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_zero, by = "date")
@@ -150,7 +150,7 @@ Calculate zero voltages
   head(fivegas_cal, 2)
 ```
  
-## Append zero voltages to cal data
+### Append zero voltages to cal data
     
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- dplyr::mutate(fivegas_cal,
