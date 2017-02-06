@@ -178,7 +178,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
-            dplyr::summarise(rep_mean = mean(conc)) %>%
+            dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
             tidyr::spread(cassette, rep_mean) %>%
             dplyr::mutate(A = ifelse(is.na(A), 0, A)) %>%
@@ -261,7 +261,7 @@ Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
 ```
 
@@ -289,23 +289,22 @@ Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg_co <- dplyr::mutate(bg_co,
- 										 		bg_ppm = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
- 											 	bg_conc = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
-  											pol = "co")
+                         bg_ppm = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
+                         pol = "co")
 
   bg_co2 <- dplyr::mutate(bg_co2,
- 										 		bg_ppm = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
- 											 	bg_conc = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
-  											pol = "co2")
+                         bg_ppm = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
+                         pol = "co2")
  
   bg_ch4 <- dplyr::mutate(bg_ch4,
- 												bg_ppm = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
- 												bg_conc = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
-                        pol = "ch4")
-  
+                         bg_ppm = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
+                         pol = "ch4")
+
   bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
 ```
-
 
 * merge background with fivegas data
 
@@ -714,9 +713,7 @@ ___
 * Plot carbon emitted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  mass_c_co2 <- dplyr::filter(emissions, pol = "co2")
-
-ggplot(mass_carbon, aes(x = id, y = ug)) +
+  ggplot(mass_carbon, aes(x = id, y = ug)) +
     geom_point() +
     theme_minimal() +
     scale_y_log10() +
@@ -727,10 +724,11 @@ ggplot(mass_carbon, aes(x = id, y = ug)) +
 * plot carbon from CO2
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(mass_carbon, aes(x = id, y = ug)) +
+  mass_c_co2 <- dplyr::filter(emissions, pol == "co2")
+
+  ggplot(mass_c_co2, aes(x = id, y = mass_carbon)) +
     geom_point() +
     theme_minimal() +
-    scale_y_log10() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     ggtitle("mass carbon emitted")
 ```
