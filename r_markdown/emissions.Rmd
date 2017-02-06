@@ -141,65 +141,6 @@ output: html_document
 
 ___
 
-## co2
-
-* Load data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/co2_merged.Rda")
-```
-
-* select sample data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::filter(co2_merged, loc == "sample")
-```
-
-* filter out data from outside emissions window
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- filter_times(times, co2)
-```
-
-* calculate average for each test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::group_by(co2, id) %>%
-         dplyr::summarise(ppm = mean(ppm)) %>%
-         dplyr::ungroup() %>%
-         dplyr::mutate(mw = 44.01) %>%
-         dplyr::mutate(num_c = 1)
-```
-
-* convert mixing ratio to mass (assuming constant T and P)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::mutate(co2, conc = convert_ppmv_ugpmc(co2$ppm, mw, 25, 84))
-```
-
-* merge with sample time data and calculate test duration
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::left_join(co2, times, by = "id") %>%
-         dplyr::mutate(dur = end - start) %>%
-         dplyr::mutate(id = as.factor(id))
-```
-
-* calculate micrograms of co2 emitted during test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::mutate(co2, mass_emitted = conc * flow_hood * (dur / 60),  # ug/m^3 * m^3/min * (s / 60)
-                            mass_carbon = mass_emitted * 12 * num_c / mw)
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(co2, 2)
-```
-
-___
-
 ## ecoc
 
 * load data
@@ -761,7 +702,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mass_carbon <- dplyr::group_by(emissions, id) %>%
-                dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
 * Save
@@ -773,6 +714,19 @@ ___
 * Plot carbon emitted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  mass_c_co2 <- dplyr::filter(emissions, pol = "co2")
+
+ggplot(mass_carbon, aes(x = id, y = ug)) +
+    geom_point() +
+    theme_minimal() +
+    scale_y_log10() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
+* plot carbon from CO2
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(mass_carbon, aes(x = id, y = ug)) +
     geom_point() +
     theme_minimal() +
@@ -780,6 +734,7 @@ ___
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     ggtitle("mass carbon emitted")
 ```
+
 
 # Calculate fuel burned using carbon balance approach
 
