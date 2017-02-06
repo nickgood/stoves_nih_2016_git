@@ -274,13 +274,13 @@ Set one flag per test
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id")
-  fivegas_merged$id <- as.factor(fivegas_merged$id)
-  fivegas_merged$qc <- ifelse(is.na(fivegas_merged$qc), "ok", as.character(fivegas_merged$qc))
-  fivegas_merged$qc <- as.factor(fivegas_merged$qc)
+  fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
+                    dplyr::mutate(id = as.factor(id),
+                                  qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+
 ```
 
-Addtional bad tests
+Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
