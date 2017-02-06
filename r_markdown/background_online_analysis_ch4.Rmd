@@ -152,8 +152,8 @@ Calculate mean background over all good tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mean_bg <- dplyr::summarise(background_means,
-                              ppm = mean(ppm, na.rm = TRUE,
-	           									conc = mean(conc, na.rm = TRUE)))
+                              ppm = mean(ppm, na.rm = TRUE),
+	           									conc = mean(conc, na.rm = TRUE))
 ```
 
 * List outputs
