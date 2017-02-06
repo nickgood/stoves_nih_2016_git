@@ -34,7 +34,7 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
   co2_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION2.csv$", inst = "co2")
   
   save(co2_sample, file = "../r_files/co2_sample.Rda")
-    
+
   co2_lab_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION.csv$", inst = "co2")
 
   save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
@@ -63,7 +63,7 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 
   save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
 
-  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",type = "volts")
+  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_", type = "volts")
 
   save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
 ```
