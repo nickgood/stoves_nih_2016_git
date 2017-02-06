@@ -343,9 +343,28 @@ Select co, co2 and ch4.
 
 ### Background
 
+* replace NaN with between test mean values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg_co_ <- dplyr::mutate(bg_co,
+ 										 		ppm = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+ 											 	conc = ifelse(is.na(conc), bg_co_mean$conc[1], conc))
+
+  bg_co2_ <- dplyr::mutate(bg_co2,
+ 										 		ppm = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+ 											 	conc = ifelse(is.na(conc), bg_co2_mean$conc[1], conc))
+ 
+  bg_ch4_ <- dplyr::mutate(bg_ch4,
+ 												ppm = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+ 												conc = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc))
+```
+
+
 * merge background with fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
                 dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
 ```
