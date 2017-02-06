@@ -118,8 +118,14 @@ Calculate calibration voltages
   fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
                  dplyr::filter(!is.na(start) & pol != "zero")  %>%
                  dplyr::rowwise() %>%
-                 dplyr::mutate(v_mean = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "mean"))  %>%
-                 dplyr::mutate(v_sd = time_window_stats(fivegas_calibration, date, start, end, pol, stat_var = "sd"))
+                 dplyr::mutate(v_mean = time_window_stats(fivegas_calibration, date,
+                                                          start, end,
+                                                          pol_var = pol, val_var = "volts",
+                                                          stat_var = "mean")) %>%
+                 dplyr::mutate(v_sd = time_window_stats(fivegas_calibration, date,
+                                                        start, end,
+                                                        pol_var = pol, val_var = "volts",
+                                                        stat_var = "sd"))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -156,11 +162,20 @@ Calculate zero voltages
   fivegas_cal <- dplyr::mutate(fivegas_cal,
                         v_zero_mean = time_window_stats(fivegas_calibration,
                                                         date, start_zero, end_zero,
-                                                        pol, stat_var = "mean")) %>%
+                                                        pol_var = pol, val_var = "volts",
+                                                        stat_var = "mean")) %>%
                  dplyr::mutate(v_zero_sd = time_window_stats(fivegas_calibration,
                                                              date, start_zero, end_zero,
-                                                             pol, stat_var = "sd"))
+                                                             pol_var = pol, val_var = "volts",
+                                                             stat_var = "sd"))
 ```
+
+* remove NaN values from calibration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  fivegas_cal <- na.omit(fivegas_cal)
+```
+
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(fivegas_cal, 2)
@@ -181,8 +196,8 @@ Merge calibration voltages with standard mixing ratios
 Calculate calibration factors
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- dplyr::mutate(fivegas_cal, cal_beta = (standard / v_mean - v_zero_mean)) %>%
-                 dplyr::mutate(cal_int = -(standard * v_zero_mean) / (v_mean - v_zero_mean))
+  fivegas_cal <- dplyr::mutate(fivegas_cal, cal_beta = (standard / (v_mean - v_zero_mean))) %>%
+                 dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -334,3 +349,5 @@ All "G" tests: five gas not run during backgrounds.
 1B, 2A: "no data" noted on QC log
 
 4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
+
+NG: Calibration files for 2016/03/09 and 2016/04/01 missing?
