@@ -132,7 +132,22 @@ Calculate mean pollutant value for each period
 	                    dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
 	                    dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
 	                    dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
-	                    dplyr::mutate(qc = as.factor(qc))
+	                    dplyr::mutate(qc = as.factor(qc)) %>%
+	                    dplyr::ungroup() %>%
+	                    dplyr::select(-qc_val)
+```
+
+Calculate mean background over all good tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  mean_bg <- dplyr::filter(background_means, qc == "ok" & type != "sample") %>%
+	           dplyr::group_by(id) %>%
+	           dplyr::summarise(mean = mean(mean, na.rm = TRUE)) %>%
+	           dplyr::ungroup() %>%
+             dplyr::summarise(mean = mean(mean, na.rm = TRUE)) %>%
+	           dplyr::mutate(id = NA, type = "avg", qc = NA)
+
+  background_means <- dplyr::bind_rows(background_means, mean_bg)
 ```
 
 ## Save to file
