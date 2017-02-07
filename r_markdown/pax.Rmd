@@ -172,7 +172,7 @@ Addtional bad tests
   ggplot(p_data) +
          geom_line(mapping = aes(datetime, babs_1_mm, colour = qc)) +
          geom_line(mapping = aes(datetime, bscat_1_mm, colour = qc)) +
-        facet_wrap(~id, ncol = 2, scales = "free") +
+         facet_wrap(~id, ncol = 2, scales = "free") +
         theme_minimal() +
         labs(x = "", y = expression(Mm^{-1}))
 ```
