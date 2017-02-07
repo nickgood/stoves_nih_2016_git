@@ -32,40 +32,42 @@
   
 #________________________________________________________
 # stats for last 30 seconds of a time window
-  time_window_stats <- function(df, date_var, start_time_var, end_time_var, pol_var, stat_var = "mean", plot = FALSE) {
-    
-    df_win <- dplyr::filter(df, date == date_var &
+  time_window_stats <- function(df, date_var, start_time_var, end_time_var, pol_var, val_var, stat_var = "mean", plot = FALSE) {
+
+  df_win <- dplyr::filter(df, date == date_var &
                               time >= (start_time_var) &
                               time >= (end_time_var - 60) &
                               time <= (end_time_var - 30) &
                               pol == pol_var)
 
-  # stat
-    if(stat_var == "mean"){
-      out <- mean(df_win$val, na.rm = TRUE)
-    }
+ # stat
+  if(stat_var == "mean"){
+    out <- dplyr::summarise_(df_win, val = paste0("mean(", as.character(val_var), ")"))
+    out <- out$val[1]
+  }
     
   # stat  
-    if(stat_var == "sd"){
-      out <- sd(df_win$val, na.rm = TRUE)
-    }
-    
-  # plot
-    if(plot == TRUE){
-      head(df_win)
-      
-      p <- ggplot(df_win, aes(datetime, val)) +
-                  geom_point()
-      
-      filename <- paste0("fivegascal_",pol_var,"_", as.character(date_var),".jpeg")
-      
-      ggsave(filename, p)
-      
-      print(filename)
-    }
-    
-  # return
-    return(out)
+  if(stat_var == "sd"){
+    out <- dplyr::summarise_(df_win, val = paste0("sd(", as.character(val_var), ")"))
+    out <- out$val[1]
+  }
+
+ # plot
+  if(plot == TRUE){
+    head(df_win)
+
+    p <- ggplot(df_win, aes(datetime, val)) +
+                geom_point()
+
+    filename <- paste0("fivegascal_", pol_var,"_", as.character(date_var),".jpeg")
+
+    ggsave(filename, p)
+
+    print(filename)
+  }
+
+ # return
+  return(out)
 }
 #________________________________________________________
   
