@@ -486,7 +486,9 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                             mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
+                             mass_carbon = mass_emitted)  # carbonyls are gases
+  sum_carb <- dplyr::group_by(carbonyls, id) %>%
+              dplyr::summarise(total_carb = sum())
 ```
 
 * output
@@ -689,6 +691,14 @@ ___
                dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc))
+
+  emissions_cat <- dplyr::summarise(co_co2_ch4 = )
+    dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon, qc) %>%
+                   dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon, qc)) %>%
+                   dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon, qc)) %>%
+                   dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon, qc)) %>%
+                   dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon, qc)) %>%
+                   dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc))
 ```
 
 * Save
@@ -749,13 +759,6 @@ Filter out bad tests
                  dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
 ```
 
-Sort emissions by 
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
-                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
-```
-
 # Compare fuel mass burned using carbon balance approach
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10} 
@@ -770,8 +773,8 @@ Sort emissions by
 # Bar plot of mass emitted by test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
-    geom_col() +
+  ggplot(emissions_p, aes(x = id, fill = pol), na.rm = TRUE) +
+    geom_bar(position = "fill") +
     coord_flip() +
     theme_minimal() +
     ylab("test id") + 
