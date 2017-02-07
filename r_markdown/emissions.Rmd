@@ -1,6 +1,6 @@
 ---
 title: "emissions"
-author: "Nicholas Good"
+author: "Nicholas Good and Kelsey Bilsback"
 date: "1/6/2017"
 output: html_document
 ---
@@ -190,8 +190,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::filter(ecoc, cassette == "E") %>%
            dplyr::left_join(dplyr::select(ecoc_a, id, pol, conc_cor),
-                            by = c("id", "pol")) %>%
-           dplyr::left_join()
+                            by = c("id", "pol"))
 ```
 
 * calculate mass emitted
@@ -246,8 +245,7 @@ ___
 Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
-                dplyr::filter(qc != "bad")
+  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4")
 ```
 
 ### Process fivegas
@@ -262,7 +260,7 @@ Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE), qc = first(qc)) %>%
                 dplyr::ungroup()
 ```
 
@@ -747,8 +745,15 @@ ___
 Filter out bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  emissions_p <- dplyr::filter(emissions, grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%
-                 dplyr::mutate(mass_emitted_log = log10(mass_emitted))
+  emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
+                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
+```
+
+Sort emissions by 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
+                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
 ```
 
 # Compare fuel mass burned using carbon balance approach
@@ -765,12 +770,11 @@ Filter out bad tests
 # Bar plot of mass emitted by test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  ggplot(emissions_p, aes(x = id, y = mass_emitted_log, fill = pol), na.rm = TRUE) +
+  ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
     geom_col() +
     coord_flip() +
     theme_minimal() +
     ylab("test id") + 
-    ylab("log(mass emitted)") + 
-    scale_y_log10() +
+    ylab("mass emitted") + 
     theme(legend.position = "top")
 ```
