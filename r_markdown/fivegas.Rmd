@@ -1,8 +1,10 @@
 ---
-title: "fivegas"
-author: "Nicholas Good"
-date: "11/20/2016"
-output: html_document
+title: "Fivegas Data Processing"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -14,43 +16,45 @@ output: html_document
   source("../r_scripts/R_functions.R")
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")    
-```
+# Load data
 
-## Load fivegas data
-
-Mixing ratio files
+Mixing ratio
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_conc.Rda")    
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_conc, 2)
 ```
 
-Voltage files
+Voltage
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_volts.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_volts, 2)
 ```
 
-Voltage calibration files
+Voltage calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_calibration.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_calibration, 2)
 ```
 
-## Convert to longer format
+Sample information
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")    
+```
+
+# Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas_conc, -datetime_secs, -time_str) %>%
@@ -255,7 +259,7 @@ Drop variables
 
 ## Plot data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=FALSE}
   df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox") %>%
         dplyr::mutate(id = as.character(id)) %>%
         dplyr::arrange(id) %>%
@@ -317,7 +321,7 @@ Additional bad tests
 
 ## Plot QC
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
   df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co")  # filter
   ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
         geom_line() +
