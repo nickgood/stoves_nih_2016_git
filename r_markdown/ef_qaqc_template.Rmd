@@ -35,7 +35,6 @@ output: html_document
   pol_name <- "benzene"
 ```
 
-
 ## QAQC
 
 * Add QAQC flag
