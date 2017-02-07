@@ -158,12 +158,12 @@ ___
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test" & qc == "ok") %>%
+  ecoc <- dplyr::filter(ecoc_merged, type == "test") %>%
           dplyr::select(id, cassette,
                         start, end,
                         pre_flow, post_flow,
                         pol, ug_sq_cm,
-                        conc_bg, type)
+                        conc_bg, type, qc)
 ```
 
 * calculate concentrations
@@ -190,7 +190,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::filter(ecoc, cassette == "E") %>%
            dplyr::left_join(dplyr::select(ecoc_a, id, pol, conc_cor),
-                            by = c("id", "pol"))
+                            by = c("id", "pol")) %>%
+           dplyr::left_join()
 ```
 
 * calculate mass emitted
@@ -346,7 +347,7 @@ ___
                         time_start, time_end,
                         flow_pre, flow_post,
                         wgt_delta,
-                        conc_bg) %>%
+                        conc_bg, qc) %>%
           dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
@@ -355,7 +356,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, flow = (flow_pre + flow_post) / 2,
                               dur = (time_end - time_start) / 60,
-                              conc = wgt_delta * 1000 / (flow * dur))
+                              conc = wgt_delta * 1000 / (flow * dur), 
+                              qc = as.factor(qc))
 ```
 
 * calculate mass emitted
@@ -381,7 +383,7 @@ ___
 Note data is test average from desired time window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/smps_ultrafine.Rda")
+  load("../r_files/smps_ultrafine.Rda") #missing qc data
 ```
 
 * merge with sample time data and calculate test duration
@@ -516,7 +518,7 @@ ___
                        id,
                        time_start_voc, time_end_voc,
                        pol, ppb,
-                       ppb_bg) %>%
+                       ppb_bg, qc) %>%
          dplyr::filter(grepl("^[A-Z]", id) == FALSE) %>%
          dplyr::rename(start = time_start_voc,
                        end = time_end_voc)
@@ -683,12 +685,12 @@ ___
 ## Combine pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon) %>%
-               dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon)) %>%
-               dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon)) %>%
-               dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon)) %>%
-               dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon)) %>%
-               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon))
+  emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon, qc) %>%
+               dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc))
 ```
 
 * Save
