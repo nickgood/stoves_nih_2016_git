@@ -18,7 +18,9 @@ output:
 
 # Load data
 
-Mixing ratio
+### mixing ratio
+
+Data logged in ppm units.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_conc.Rda")    
@@ -28,7 +30,9 @@ Mixing ratio
   head(fivegas_conc, 2)
 ```
 
-Voltage
+### voltage
+
+Data logged in voltage units
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_volts.Rda")
@@ -38,7 +42,7 @@ Voltage
   head(fivegas_volts, 2)
 ```
 
-Voltage calibration
+### Voltage calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_calibration.Rda")
@@ -48,22 +52,40 @@ Voltage calibration
   head(fivegas_calibration, 2)
 ```
 
-Sample information
+### Calibration metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/cal_1.Rda")  # meta data
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  head(cal_1, 2)
+```
+
+### Sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")    
 ```
 
-# Convert to longer format
+# Reformat data
+
+### Concentration data
+
+Convert concentration data to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas_conc, -datetime_secs, -time_str) %>%
                   tidyr::gather("pol", "ppm", ch4:co))
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, results='markup'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, results='hide'}
   head(fivegas_conc, 2)
 ```
+
+### Voltage data
+
+Convert voltage data to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
@@ -73,7 +95,11 @@ Sample information
   head(fivegas_volts, 2)
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+### Voltage calibration data
+
+Convert voltage calibration data to longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, volts, co2:ch4))
 ```
 
@@ -81,42 +107,35 @@ Sample information
   head(fivegas_calibration, 2)
 ```
 
-## Load calibration metadata
+# Extract data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_1.Rda")  # meta data
-```
+## Calibration standards
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(cal_1, 2)
-```
-
-## Split calibration data
-
-Calibration concentrations
+Calibration standard mixing ratios
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_cal_conc, 2)
 ```
 
-Calibration time periods
+## Calibration timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
+
   fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_cal_times, 2)
 ```
 
-## Apply calibration
+# Apply calibration
 
-Calculate calibration voltages
+Calculate mean voltage over last 30 seconds of each calibration window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
@@ -132,21 +151,20 @@ Calculate calibration voltages
                                                         stat_var = "sd"))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_cal, 2)
 ```
 
-Calculate zero voltages
+Extract zero time periods
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # extract zero times
-    fivegas_cal_zero <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                        dplyr::filter(!is.na(start) & pol == "zero") %>%
-                        dplyr::select(-pol) %>%
-                        dplyr::rename(start_zero = start, end_zero = end)
+  fivegas_cal_zero <- tidyr::spread(fivegas_cal_times, type, value) %>%
+                      dplyr::filter(!is.na(start) & pol == "zero") %>%
+                      dplyr::select(-pol) %>%
+                      dplyr::rename(start_zero = start, end_zero = end)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_cal_zero, 2)
 ```
 
