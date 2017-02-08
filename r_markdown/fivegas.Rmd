@@ -85,7 +85,7 @@ Convert concentration data to longer format
                   tidyr::gather("pol", "ppm", ch4:co))
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, results='hide'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide', cache=FALSE}
   head(fivegas_conc, 2)
 ```
 
@@ -97,7 +97,7 @@ Convert voltage data to longer format
   fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_volts, 2)
 ```
 
@@ -109,7 +109,7 @@ Convert voltage calibration data to longer format
   fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration, pol, volts, co2:ch4))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_calibration, 2)
 ```
 
@@ -245,7 +245,7 @@ Calculate the calibration coefficients
   head(fivegas_cal, 2)
 ```
 
-## Add calibration date
+## add calibration date
 
 Add calibration date to voltage data
 
@@ -255,11 +255,11 @@ Add calibration date to voltage data
   fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   head(fivegas_volts, 2)
 ```
 
-### Apply calibration
+## apply calibration
 
 Merge voltage data and calibration data, then apply calibration
 
@@ -275,7 +275,7 @@ Merge voltage data and calibration data, then apply calibration
   head(fivegas_volts, 2)
 ```
 
-### Clean data
+# Combine file types
 
 Drop variables prior to merge with mixing ration data
 
@@ -287,7 +287,7 @@ Drop variables prior to merge with mixing ration data
   head(fivegas_volts, 2)
 ```
 
-### Merge voltage and mixing ratio data
+Merge voltage and mixing ratio data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_merged <- dplyr::arrange(rbind(fivegas_volts, fivegas_conc), datetime)
@@ -356,7 +356,7 @@ NG: Calibration files for 2016/03/09 and 2016/04/01 missing?
 
 Plot QC
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
   df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co")  # filter
   ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
         geom_line() +
@@ -382,10 +382,9 @@ Plot QC
         xlab("") + ylab("ch4 ppm")
 ```
 
-
 Plot data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=FALSE}
   df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox") %>%
         dplyr::mutate(id = as.character(id)) %>%
         dplyr::arrange(id) %>%
