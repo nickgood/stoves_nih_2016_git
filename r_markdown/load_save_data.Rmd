@@ -283,8 +283,8 @@ Fivegas calibration mixing ratios and timestamps.
 
 ## calibration log 2
 
-* CO2 calibration information
-* Pax and smps flow measurements
+* co2 calibration information
+* pax and smps flow measurements
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   cal_2 <- load_singlefiles("cal_2")
@@ -294,10 +294,10 @@ Fivegas calibration mixing ratios and timestamps.
 
 ## data log 1
 
-* Filter cartridge flows and times
-* Voc times
-* Fivegas backgriund times
-* Notes
+* vilter cartridge flows and times
+* voc times
+* fivegas background times
+* notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_1 <- load_singlefiles("data_1")
@@ -307,8 +307,8 @@ Fivegas calibration mixing ratios and timestamps.
  
 ## data log 2
 
-* Carbonyls and isokinetic sampler times and flows
-* Smps and pax times (including background)
+* carbonyls and isokinetic sampler times and flows
+* smps and pax times (including background)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_2 <- load_singlefiles("data_2")
