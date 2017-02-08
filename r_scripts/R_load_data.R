@@ -15,8 +15,7 @@ load_co2_file <- function(file){
                  fill = TRUE, na.strings = c("NAN"), colClasses = "character")
 
   type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-  
-  print(type)
+
   
   # load based on type
     
@@ -726,35 +725,35 @@ load_multifile <- function(fldr, pattern, inst){
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE, ignore.case = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
+ # loop files
+  for(i in 1:length(filelist)){
 
-      print(filelist[i])
+  # print(filelist[i])
 
-      # co2
-        if(inst == "co2"){
-          ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
-        }
+ # co2
+  if(inst == "co2"){
+    ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
+  }
 
-      # pax
-        if(inst == "pax"){
-          ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
-        }
+ # pax
+  if(inst == "pax"){
+    ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
+  }
+
+ # scale
+  if(inst == "scale"){
+    ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
+  }
     
-      # scale
-        if(inst == "scale"){
-          ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
-        }
-    
-      # temp
-        if(inst == "temp"){
-          ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
-        }
+ # temp
+  if(inst == "temp"){
+    ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+  }
 
-      # smps
-        if(inst == "smps"){
-          ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
-        }
+ # smps
+  if(inst == "smps"){
+    ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
+  }
   }
 
  # return
