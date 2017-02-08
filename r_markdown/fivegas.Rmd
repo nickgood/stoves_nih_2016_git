@@ -259,6 +259,28 @@ Add calibration date to voltage data
   head(fivegas_volts, 2)
 ```
 
+## plot results
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=6}
+ p_df <- tidyr::gather(fivegas_cal, "type", "volts", v_mean, v_zero_mean) %>%
+         dplyr::mutate(sd = ifelse(type == "v_mean", v_sd, v_zero_sd)) %>%
+         dplyr::select(-v_sd, -v_zero_sd)
+
+ # standard response voltage error bars
+  v_limits <- aes(ymax = volts + sd, ymin = volts - sd)  # error bars
+
+ # plot
+  ggplot(p_df, aes(x = date, y = volts, group = type, colour = type)) +
+    geom_point() +
+    geom_errorbar(v_limits, width = 0.2) +
+    facet_wrap(~pol, 1, scales = "free") +
+    theme_minimal() +
+    xlab("") +
+    ylab("span") +
+    theme(legend.position="top")
+
+```
+
 ## apply calibration
 
 Merge voltage data and calibration data, then apply calibration
