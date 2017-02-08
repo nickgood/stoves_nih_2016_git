@@ -339,6 +339,13 @@ Merge voltage and mixing ratio data
                                    datetime)
 ```
 
+Remove ozone and nox rows (channels not used)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  fivegas_merged <- dplyr::filter(fivegas_merged, pol != "o2" & pol != "nox")
+```
+
+
 # QC
 
 Extract notes relevant to  fivegas analyzer
@@ -380,6 +387,26 @@ Additional bad tests
   fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
   fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
 ```
+
+## plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=FALSE}
+  df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
+        dplyr::arrange(id) %>%
+        dplyr::mutate(id = as.factor(id))
+
+  ggplot(df, aes(datetime, ppm, colour = qc, group = pol)) + 
+    geom_line() +
+    scale_y_log10(limits = c(1, 10^5)) +
+    scale_colour_manual(values = 
+                        c("ok" = "springgreen4", "maybe" = "orange3", "bad" = "firebrick2")) +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position="top")
+```
+
+
 
 # Save merged file
 
