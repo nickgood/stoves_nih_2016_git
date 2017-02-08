@@ -390,7 +390,7 @@ Additional bad tests
 
 ## plot
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
         dplyr::arrange(id) %>%
         dplyr::mutate(id = as.factor(id))
@@ -405,8 +405,6 @@ Additional bad tests
     xlab("") +
     theme(legend.position="top")
 ```
-
-
 
 # Save merged file
 
