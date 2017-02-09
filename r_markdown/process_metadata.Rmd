@@ -310,7 +310,9 @@ output:
 ## filter cartridge flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_flows <- dplyr::filter(tidy_id_date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
+  filter_flows <- dplyr::filter(tidy_id_date(data_1,
+                                  "^preflow_.*[^avg]$|postflow.*[^avg]$", ""),
+                                  !is.na(value))
 
   filter_flows <- split_filter_flows(filter_flows)
 
@@ -346,7 +348,8 @@ output:
  * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(filter_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+  outliers <- dplyr::filter(filter_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -406,7 +409,8 @@ output:
 ## pax flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
+  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""),
+                             !is.na(value))
   
   pax_flows <- split_pax_flows(pax_flows)
   
@@ -433,7 +437,8 @@ output:
 ## smps flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
+  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""),
+                              !is.na(value))
   
   smps_flows <- split_flows(smps_flows)
   
