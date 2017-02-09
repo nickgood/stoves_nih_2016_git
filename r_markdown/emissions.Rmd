@@ -141,65 +141,6 @@ output: html_document
 
 ___
 
-## co2
-
-* Load data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/co2_merged.Rda")
-```
-
-* select sample data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::filter(co2_merged, loc == "sample")
-```
-
-* filter out data from outside emissions window
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- filter_times(times, co2)
-```
-
-* calculate average for each test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::group_by(co2, id) %>%
-         dplyr::summarise(ppm = mean(ppm)) %>%
-         dplyr::ungroup() %>%
-         dplyr::mutate(mw = 44.01) %>%
-         dplyr::mutate(num_c = 1)
-```
-
-* convert mixing ratio to mass (assuming constant T and P)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::mutate(co2, conc = convert_ppmv_ugpmc(co2$ppm, mw, 25, 84))
-```
-
-* merge with sample time data and calculate test duration
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::left_join(co2, times, by = "id") %>%
-         dplyr::mutate(dur = end - start) %>%
-         dplyr::mutate(id = as.factor(id))
-```
-
-* calculate micrograms of co2 emitted during test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co2 <- dplyr::mutate(co2, mass_emitted = conc * flow_hood * (dur / 60),  # ug/m^3 * m^3/min * (s / 60)
-                            mass_carbon = mass_emitted * 12 * num_c / mw)
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(co2, 2)
-```
-
-___
-
 ## ecoc
 
 * load data
@@ -237,7 +178,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
-            dplyr::summarise(rep_mean = mean(conc)) %>%
+            dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
             tidyr::spread(cassette, rep_mean) %>%
             dplyr::mutate(A = ifelse(is.na(A), 0, A)) %>%
@@ -280,22 +221,28 @@ ___
  # background co
   load("../r_files/background_co.Rda")
 
-  bg_co <- background_means
+  bg_co <- background$bg
+  
+  bg_co_mean <- background$mean
 
  # background co2
   load("../r_files/background_co2.Rda")
-
-  bg_co2 <- background_means
+  
+  bg_co2 <- background$bg
+  
+  bg_co2_mean <- background$mean
   
  # background ch4
   load("../r_files/background_ch4.Rda")
 
-  bg_ch4 <- background_means
+  bg_ch4 <- background$bg
+  
+  bg_ch4_mean <- background$mean
 ```
 
 ### Select fivegas pollutants
 
-Select co , co2 and ch4.
+Select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4") %>%
@@ -314,7 +261,7 @@ Select co , co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
 ```
 
@@ -337,26 +284,33 @@ Select co , co2 and ch4.
 
 ### Background
 
-* merge background files
-* calculate pre/post experiment average (ppm)
+* replace NaN with between test mean value
+* combine pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::mutate(bg_co, pol = "co") %>%
-        dplyr::bind_rows(dplyr::mutate(bg_co2, pol = "co2")) %>%
-        dplyr::bind_rows(dplyr::mutate(bg_ch4, pol = "ch4")) %>%
-        dplyr::filter(type == "pre"| type == "post") %>%
-        dplyr::group_by(id, pol) %>%
-        dplyr::summarise(bg_ppm = mean(mean, na.rm = TRUE)) %>%
-        dplyr::ungroup() %>%
-        dplyr::left_join(mw, by = "pol") %>%
-        dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
+  bg_co <- dplyr::mutate(bg_co,
+                         bg_ppm = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
+                         pol = "co")
+
+  bg_co2 <- dplyr::mutate(bg_co2,
+                         bg_ppm = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
+                         pol = "co2")
+ 
+  bg_ch4 <- dplyr::mutate(bg_ch4,
+                         bg_ppm = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+                         bg_conc = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
+                         pol = "ch4")
+
+  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
 ```
 
 * merge background with fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))  # remove "NaNs"
+                dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))
 ```
 
 * calculate micrograms emitted during tests
@@ -747,7 +701,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mass_carbon <- dplyr::group_by(emissions, id) %>%
-                dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
 * Save
@@ -766,6 +720,19 @@ ___
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     ggtitle("mass carbon emitted")
 ```
+
+* plot carbon from CO2
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  mass_c_co2 <- dplyr::filter(emissions, pol == "co2")
+
+  ggplot(mass_c_co2, aes(x = id, y = mass_carbon)) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
 
 # Calculate fuel burned using carbon balance approach
 

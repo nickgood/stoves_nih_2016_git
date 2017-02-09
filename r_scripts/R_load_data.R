@@ -15,8 +15,7 @@ load_co2_file <- function(file){
                  fill = TRUE, na.strings = c("NAN"), colClasses = "character")
 
   type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-  
-  print(type)
+
   
   # load based on type
     
@@ -70,58 +69,73 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
-# file <- "data/ecoc/20161102_ECOC.csv"
+# file <- "../data/ecoc/20161208_ECOC.csv"
 load_ecoc_file <- function(file){
 
-    classes <- c("character",
-                 "factor",
-                 rep("numeric",20),
-                 "character",
-                 "character",
-                 rep("numeric",2),
-                 rep("factor",2),
-                 rep("numeric",3),
-                 "character",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",4),
-                 rep("character",3))
+  classes <- c("character",
+                "factor",
+                rep("numeric",20),
+                "character",
+                "character",
+                rep("numeric",2),
+                rep("factor",2),
+                rep("numeric",3),
+                "character",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",4),
+                rep("character",3))
 
-    ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
+  ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
                    fill = TRUE, na.strings = c("-", "na"))
 
-    ecoc <- dplyr::rename(ecoc, time = Time) %>%
-            dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
-            dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 + 
-                          as.numeric(substr(time,15,16))*60 +
-                          as.numeric(substr(time,18,19)))
+  ecoc <- dplyr::rename(ecoc, time = Time) %>%
+          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
+          dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 +
+                               as.numeric(substr(time,15,16))*60 +
+                               as.numeric(substr(time,18,19)))
 
-    ecoc <- dplyr::rename(ecoc, date = Date)
-    ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
-            dplyr::mutate(datetime = as.POSIXct(as.character(date)))
-    
-    ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
-    ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
-            dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
-            dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+  ecoc <- dplyr::rename(ecoc, date = Date)
+  ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
+          dplyr::mutate(datetime = as.POSIXct(as.character(date)))
 
-    ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
-            dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
-    
-    ecoc <- dplyr::mutate(ecoc, id = sub("-.*", "", ecoc_id))
-    
-  # rename columns
+  ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
+  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
+          dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
+          dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+
+  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
+          dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
+
+ # extract ids
+  ecoc_ <- dplyr::mutate(ecoc,
+                         id_old = as.character(ecoc_id),
+                         id = as.character(ecoc_id),
+                         id = gsub("Blank$|BLANK$|^BLANK|^Start.*", "blank", id),
+                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] |-[A-Z]$", "", id))
+  											 )
+  D 06-24-2016
+  											 ,
+                         id = sub("-.*", "", id))
+
+
+ # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
   names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
   names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
   
-  # set class
+ # set class
     ecoc$ecoc_id <- as.factor(ecoc$ecoc_id)
     ecoc$id <- as.factor(ecoc$id)
     ecoc$type <- as.factor(ecoc$type)
-    ecoc$cassette <- as.factor(ecoc$cassette)
+  ecoc$cassette <- as.factor(ecoc$cassette)
  
   # return
     return(ecoc)
@@ -554,11 +568,11 @@ load_pax_file <- function(file){
   
   df_other <- subset(df, select = c(alarm, local_date, local_time, date, time, datetime))
    
-  # combine dataframes
+ # combine dataframes
     df <- dplyr::bind_cols(df_other, df_num)
-    
-  # return
-    return(df)
+
+ # return
+  return(df)
 }
 #________________________________________________________
 
@@ -567,11 +581,12 @@ load_pax_file <- function(file){
 # file <- "../data/smps/20160330_16C_SMPS.csv"
 # df <- load_smps_file(file)
 load_smps_file <- function(file){
-  
-    df <- read.csv(file, header = TRUE, fill = TRUE,
-                   stringsAsFactors = FALSE, skip = 25)
 
-  df_meta <- read.csv(file, header = FALSE, fill = TRUE, stringsAsFactors = FALSE, nrows = 25)
+  df <- read.csv(file, header = TRUE, fill = TRUE,
+                       stringsAsFactors = FALSE, skip = 25)
+
+  df_meta <- read.csv(file, header = FALSE, fill = TRUE,
+                       stringsAsFactors = FALSE, nrows = 25)
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
@@ -580,7 +595,7 @@ load_smps_file <- function(file){
   names(df) <- gsub("\\.\\.", "_", colnames(df))
   names(df) <- gsub("\\.", "_", colnames(df))
   names(df) <- gsub("_$", "", colnames(df))
-     
+
   df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
   df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
 
@@ -627,9 +642,9 @@ load_smps_file <- function(file){
               as.numeric(substr(out$start_time,7,8))
 
   out$datetime <- as.POSIXct(paste(as.character(out$date), out$start_time), 
-                              format = "%Y-%m-%d %H:%M:%S")
+                             format = "%Y-%m-%d %H:%M:%S")
 
-  # return
+ # return
   return(out)
 }
 #________________________________________________________
@@ -726,35 +741,37 @@ load_multifile <- function(fldr, pattern, inst){
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE, ignore.case = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
+ # loop files
+  for(i in 1:length(filelist)){
 
-      print(filelist[i])
+  # print(filelist[i])
 
-      # co2
-        if(inst == "co2"){
-          ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
-        }
+ # co2
+  if(inst == "co2"){
+    ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
+  }
 
-      # pax
-        if(inst == "pax"){
-          ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
-        }
+ # pax
+  if(inst == "pax"){
+    ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
+  }
+
+ # scale
+  if(inst == "scale"){
+    ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
+  }
     
-      # scale
-        if(inst == "scale"){
-          ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
-        }
-    
-      # temp
-        if(inst == "temp"){
-          ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
-        }
+ # temp
+  if(inst == "temp"){
+    ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+  }
 
-      # smps
-        if(inst == "smps"){
-          ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
-        }
+ # smps
+  if(inst == "smps"){
+    ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
+  }
+
+ # end for loop
   }
 
  # return
@@ -773,30 +790,29 @@ load_fivegas <- function(fldr = "../data/fivegas",
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
-    
-  # determine file type
-    df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
+ # loop files
+  for(i in 1:length(filelist)){
 
-  # check type
-    filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
+ # determine file type
+  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
 
-  # load 
-    if(filetype == type){
+ # check type
+  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
 
-      if(exists("out", inherits = FALSE)==FALSE){
-        
-        out <- load_fivegas_file(filelist[i])
-        
-      }else{
-        
-        out <- rbind(out, load_fivegas_file(filelist[i]))
-      }
-     }
-    }
+ # load 
+  if(filetype == type){
 
-  # return
-    return(out)
+  if(exists("out", inherits = FALSE)==FALSE){
+    out <- load_fivegas_file(filelist[i])
+  }else{
+    out <- rbind(out, load_fivegas_file(filelist[i]))
+  }
+ # end if
+  }
+ # end for
+  }
+
+ # return
+  return(out)
 }
-#________________________________________________________  
+#________________________________________________________

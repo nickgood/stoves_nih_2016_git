@@ -21,13 +21,13 @@ output: html_document
   load("../r_files/ecoc.Rda")  # ecoc dataset
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #colnames(ecoc)
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(ecoc)
 ```
 
 ## Fix filter names
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 # delete filters from different study
   ecoc <- dplyr::filter(ecoc, ecoc_id != "INDIA BAKE BLANK") %>%
           dplyr::filter(ecoc_id != "INDIA BAKE BLANK 2" )
@@ -77,7 +77,7 @@ output: html_document
 
 ## Merge with filter meta data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/data_1.Rda")  # metadata
 ```
 
@@ -109,7 +109,7 @@ Extract metadata
 
 Merge ecoc with metadata
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
                  dplyr::left_join(times, by = c("id")) %>%
                  dplyr::filter(grepl("^[0-9]", id) == TRUE |
@@ -121,10 +121,12 @@ Merge ecoc with metadata
                  dplyr::mutate(id = as.factor(id))
 ```
 
+
 ## QC
 
 Load notes
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file="../r_files/notes.Rda")
 
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
@@ -133,7 +135,7 @@ Load notes
 
 Set one flag per test
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
@@ -142,7 +144,7 @@ Set one flag per test
 
 Merge with data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
                  dplyr::mutate(qc = ifelse(is.na(qc),
@@ -152,9 +154,19 @@ Merge with data
 
 Additional bad tests
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+* tests where fid2 is out of range
+* first 6D measurement, that produced very high value (repeated)
+* 8D, very high value
+* 9B, artifact gives very high values.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
-                                                 as.character(qc), "bad"))
+                                                 as.character(qc), "bad")) %>%
+                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 42234 & id == "6D", 
+                                            "bad", as.character(qc))) %>%
+                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 53318 & id == "8D", 
+                                            "bad", as.character(qc))) %>%
+	                dplyr::mutate(qc = ifelse(id == "9B", "bad", as.character(qc)))
 ```
 
 ## Convert to longer format
@@ -189,7 +201,7 @@ Select columns of interest (others?)
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 * average any repeat measurements (non in G8-G14)
-* Note G12 missing measurement data
+* note G12 missing measurement data
 * calculate averge backgoround by pollutant / type
 
 Assume filter areas is `r area <- 11.8` cm^2.
@@ -287,7 +299,6 @@ There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc 
 * ec
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
   ecoc_merged <- dplyr::mutate(ecoc_merged,
                                 loq = NA,
                                 lod = NA) %>%
