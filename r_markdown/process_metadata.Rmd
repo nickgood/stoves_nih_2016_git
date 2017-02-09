@@ -308,7 +308,7 @@ output:
 ## filter cartridge flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_flows <- dplyr::filter(tidy_date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
+  filter_flows <- dplyr::filter(tidy_id_date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
 
   filter_flows <- split_filter_flows(filter_flows)
 
