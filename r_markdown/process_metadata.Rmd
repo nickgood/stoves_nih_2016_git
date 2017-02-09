@@ -290,17 +290,19 @@ output:
 ## fivegas calibration times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"), !is.na(value))
-  
+  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"),
+                                     !is.na(value))
+
   fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
-  
+
   save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
 ```
 
  * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(fivegas_cal_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+  outliers <- dplyr::filter(fivegas_cal_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
