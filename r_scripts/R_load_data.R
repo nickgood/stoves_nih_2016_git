@@ -15,8 +15,7 @@ load_co2_file <- function(file){
                  fill = TRUE, na.strings = c("NAN"), colClasses = "character")
 
   type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-  
-  print(type)
+
   
   # load based on type
     
@@ -554,11 +553,11 @@ load_pax_file <- function(file){
   
   df_other <- subset(df, select = c(alarm, local_date, local_time, date, time, datetime))
    
-  # combine dataframes
+ # combine dataframes
     df <- dplyr::bind_cols(df_other, df_num)
-    
-  # return
-    return(df)
+
+ # return
+  return(df)
 }
 #________________________________________________________
 
@@ -567,11 +566,12 @@ load_pax_file <- function(file){
 # file <- "../data/smps/20160330_16C_SMPS.csv"
 # df <- load_smps_file(file)
 load_smps_file <- function(file){
-  
-    df <- read.csv(file, header = TRUE, fill = TRUE,
-                   stringsAsFactors = FALSE, skip = 25)
 
-  df_meta <- read.csv(file, header = FALSE, fill = TRUE, stringsAsFactors = FALSE, nrows = 25)
+  df <- read.csv(file, header = TRUE, fill = TRUE,
+                       stringsAsFactors = FALSE, skip = 25)
+
+  df_meta <- read.csv(file, header = FALSE, fill = TRUE,
+                       stringsAsFactors = FALSE, nrows = 25)
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
@@ -580,7 +580,7 @@ load_smps_file <- function(file){
   names(df) <- gsub("\\.\\.", "_", colnames(df))
   names(df) <- gsub("\\.", "_", colnames(df))
   names(df) <- gsub("_$", "", colnames(df))
-     
+
   df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
   df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
 
@@ -627,9 +627,9 @@ load_smps_file <- function(file){
               as.numeric(substr(out$start_time,7,8))
 
   out$datetime <- as.POSIXct(paste(as.character(out$date), out$start_time), 
-                              format = "%Y-%m-%d %H:%M:%S")
+                             format = "%Y-%m-%d %H:%M:%S")
 
-  # return
+ # return
   return(out)
 }
 #________________________________________________________
@@ -726,35 +726,37 @@ load_multifile <- function(fldr, pattern, inst){
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE, ignore.case = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
+ # loop files
+  for(i in 1:length(filelist)){
 
-      print(filelist[i])
+  # print(filelist[i])
 
-      # co2
-        if(inst == "co2"){
-          ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
-        }
+ # co2
+  if(inst == "co2"){
+    ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
+  }
 
-      # pax
-        if(inst == "pax"){
-          ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
-        }
+ # pax
+  if(inst == "pax"){
+    ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
+  }
+
+ # scale
+  if(inst == "scale"){
+    ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
+  }
     
-      # scale
-        if(inst == "scale"){
-          ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
-        }
-    
-      # temp
-        if(inst == "temp"){
-          ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
-        }
+ # temp
+  if(inst == "temp"){
+    ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+  }
 
-      # smps
-        if(inst == "smps"){
-          ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
-        }
+ # smps
+  if(inst == "smps"){
+    ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
+  }
+
+ # end for loop
   }
 
  # return
@@ -773,30 +775,29 @@ load_fivegas <- function(fldr = "../data/fivegas",
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
-    
-  # determine file type
-    df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
+ # loop files
+  for(i in 1:length(filelist)){
 
-  # check type
-    filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
+ # determine file type
+  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
 
-  # load 
-    if(filetype == type){
+ # check type
+  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
 
-      if(exists("out", inherits = FALSE)==FALSE){
-        
-        out <- load_fivegas_file(filelist[i])
-        
-      }else{
-        
-        out <- rbind(out, load_fivegas_file(filelist[i]))
-      }
-     }
-    }
+ # load 
+  if(filetype == type){
 
-  # return
-    return(out)
+  if(exists("out", inherits = FALSE)==FALSE){
+    out <- load_fivegas_file(filelist[i])
+  }else{
+    out <- rbind(out, load_fivegas_file(filelist[i]))
+  }
+ # end if
+  }
+ # end for
+  }
+
+ # return
+  return(out)
 }
-#________________________________________________________  
+#________________________________________________________
