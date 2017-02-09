@@ -113,11 +113,11 @@ split_filter_flows <- function(df){
 # filter times
 split_filter_times <- function(df){
  # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("_.*", "", df$var)), 
-                           colour_1=gsub("[^_]*_[^_]*_|_[^_]*$", "", df$var),
-                           colour_2=gsub("[^_]*_[^_]*_[^_]*_|_[^_]*$", "", df$var)) %>%
+  out <- dplyr::mutate(df, type = as.factor(sub("_.*", "", var)), 
+                           colour_1=gsub("[^_]*_[^_]*_|_[^_]*$", "", var),
+                           colour_2=gsub("[^_]*_[^_]*_[^_]*_|_[^_]*$", "", var)) %>%
          dplyr::select(-var) %>%
-         tidyr::gather(col_var, color, -date, -value, -type) %>%
+         tidyr::gather(col_var, color, -id, -date, -value, -type) %>%
          dplyr::select(-col_var) %>%
          dplyr::mutate(color = as.factor(color))
              
