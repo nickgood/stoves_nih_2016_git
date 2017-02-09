@@ -69,58 +69,73 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
-# file <- "data/ecoc/20161102_ECOC.csv"
+# file <- "../data/ecoc/20161208_ECOC.csv"
 load_ecoc_file <- function(file){
 
-    classes <- c("character",
-                 "factor",
-                 rep("numeric",20),
-                 "character",
-                 "character",
-                 rep("numeric",2),
-                 rep("factor",2),
-                 rep("numeric",3),
-                 "character",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",4),
-                 rep("character",3))
+  classes <- c("character",
+                "factor",
+                rep("numeric",20),
+                "character",
+                "character",
+                rep("numeric",2),
+                rep("factor",2),
+                rep("numeric",3),
+                "character",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",4),
+                rep("character",3))
 
-    ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
+  ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
                    fill = TRUE, na.strings = c("-", "na"))
 
-    ecoc <- dplyr::rename(ecoc, time = Time) %>%
-            dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
-            dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 + 
-                          as.numeric(substr(time,15,16))*60 +
-                          as.numeric(substr(time,18,19)))
+  ecoc <- dplyr::rename(ecoc, time = Time) %>%
+          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
+          dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 +
+                               as.numeric(substr(time,15,16))*60 +
+                               as.numeric(substr(time,18,19)))
 
-    ecoc <- dplyr::rename(ecoc, date = Date)
-    ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
-            dplyr::mutate(datetime = as.POSIXct(as.character(date)))
-    
-    ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
-    ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
-            dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
-            dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+  ecoc <- dplyr::rename(ecoc, date = Date)
+  ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
+          dplyr::mutate(datetime = as.POSIXct(as.character(date)))
 
-    ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
-            dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
-    
-    ecoc <- dplyr::mutate(ecoc, id = sub("-.*", "", ecoc_id))
-    
-  # rename columns
+  ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
+  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
+          dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
+          dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+
+  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
+          dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
+
+ # extract ids
+  ecoc_ <- dplyr::mutate(ecoc,
+                         id_old = as.character(ecoc_id),
+                         id = as.character(ecoc_id),
+                         id = gsub("Blank$|BLANK$|^BLANK|^Start.*", "blank", id),
+                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] |-[A-Z]$", "", id),
+  											 id = gsub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] |-[A-Z]$", "", id))
+  											 )
+  D 06-24-2016
+  											 ,
+                         id = sub("-.*", "", id))
+
+
+ # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
   names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
   names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
   
-  # set class
+ # set class
     ecoc$ecoc_id <- as.factor(ecoc$ecoc_id)
     ecoc$id <- as.factor(ecoc$id)
     ecoc$type <- as.factor(ecoc$type)
-    ecoc$cassette <- as.factor(ecoc$cassette)
+  ecoc$cassette <- as.factor(ecoc$cassette)
  
   # return
     return(ecoc)
