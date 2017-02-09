@@ -382,7 +382,7 @@ ___
 Note data is test average from desired time window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/smps_ultrafine.Rda") #missing qc data
+  load("../r_files/smps_ultrafine.Rda")  # missing qc data
 ```
 
 * merge with sample time data and calculate test duration
@@ -443,7 +443,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)  # all particle carbon in 
+                        mass_carbon = mass_emitted * 0)
+
   ions_g <- dplyr::group_by(ions, id) %>%
             dplyr::summarise(mass_emitted = sum(mass_emitted),
                              mass_carbon = sum(mass_carbon),
@@ -492,7 +493,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                             mass_carbon = mass_emitted)  # carbonyls are gases
+                             mass_carbon = mass_emitted * 0)  # carbonyls are gases
+
   carbonyls_g <- dplyr::group_by(carbonyls, id) %>%
                  dplyr::summarise(mass_emitted = sum(mass_emitted),
                                   mass_carbon = sum(mass_carbon),
@@ -517,7 +519,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/voc_merged.Rda")
 
-  flow <- 13.5 # L/min
+  flow <- 13.5  # L/min
 ```
 
 * select data
@@ -681,6 +683,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur,
                             mass_carbon = mass_emitted * 12 * num_c / mw)
+
   voc_g <- dplyr::group_by(voc, id) %>%
            dplyr::summarise(mass_emitted = sum(mass_emitted),
                             mass_carbon = sum(mass_carbon),
@@ -701,17 +704,13 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon, qc) %>%
                dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(carbonyls_g, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted, mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc))
-
-  emissions_g <- dplyr::select(co_co2_ch4, id, pol, mass_emitted, mass_carbon, qc) %>%
-                 dplyr::bind_rows(dplyr::select(carbonyls_g, id, pol, mass_emitted, mass_carbon, qc)) %>%
-                 dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted, mass_carbon, qc)) %>%
-                 dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted, mass_carbon, qc)) %>%
-                 dplyr::bind_rows(dplyr::select(ions_g, id, pol, mass_emitted, mass_carbon, qc)) %>%
-                 dplyr::bind_rows(dplyr::select(voc_g, id, pol, mass_emitted, mass_carbon, qc))
+               dplyr::bind_rows(dplyr::select(ions_g, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc)) %>%
+               dplyr::bind_rows(dplyr::select(voc_g, id, pol, mass_emitted, mass_carbon, qc))
 ```
 
 * Save
@@ -723,7 +722,9 @@ ___
 ## Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_carbon <- dplyr::group_by(emissions, id) %>%
+  mass_carbon <- dplyr::group_by(dplyr::filter(emissions,
+                                 grepl("^total_vocs$|^total_ions$|^total_carbonyls$",
+                                 pol) == FALSE), id) %>%
                  dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
@@ -761,18 +762,17 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE} 
   mass_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
-            dplyr::mutate(mass_fuel_c = ug*(1e-9)*(1/carbon_fraction)) %>%
-            dplyr::mutate(mass_fuel_kg = mass_fuel*(1e-3))
+            dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
+            dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
-Filter out bad tests
+Filter out bad tests and only include summed species variables
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
-                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
-
-  emissions_g <- dplyr::filter(emissions_g, qc != "bad") %>%
-                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)
+                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
+                 dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$
+                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol) == TRUE)
 ```
 
 # Compare fuel mass burned using carbon balance approach
@@ -789,7 +789,7 @@ Filter out bad tests
 # Bar plots of pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  ggplot(emissions_g, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
+  ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -799,7 +799,7 @@ Filter out bad tests
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  ggplot(emissions_g, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -811,6 +811,6 @@ Filter out bad tests
 Print tests with negative values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  emissions_g <- dplyr::filter(emissions_g, mass_emitted < 0)
-  kable(emissions_g, align = 'c', caption = "Tests with negative values")
+  emissions_p <- dplyr::filter(emissions_p, mass_emitted < 0)
+  kable(emissions_p, align = 'c', caption = "Tests with negative values")
 ```
