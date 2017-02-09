@@ -99,9 +99,9 @@ split_co2_cal <- function(df){
 # filter flows
 split_filter_flows <- function(df){
  # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
-                           colour=as.factor(gsub("[^_]*_[^_]*_|_[^_]*$", "", df$var)),
-                           rep=as.factor(gsub("[^0-9]", "", df$var))) %>%
+  out <- dplyr::mutate(df, type = as.factor(sub("flow.*", "", var)), 
+                           colour = as.factor(gsub("[^_]*_[^_]*_|_[^_]*$", "", var)),
+                           rep = as.factor(gsub("[^0-9]", "", var))) %>%
           dplyr::select(-var)
 
  # return
