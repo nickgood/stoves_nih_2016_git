@@ -334,10 +334,10 @@ output:
 ## filter cartridge timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_times <- dplyr::filter(tidy_date(data_1, "^time_.*cart", "time_"), !is.na(value))
-  
+  filter_times <- dplyr::filter(tidy_id_date(data_1, "^time_.*cart", "time_"), !is.na(value))
+
   filter_times <- split_filter_times(filter_times)
-  
+
   save(filter_times, file="../r_files/filter_times.Rda")
 ```
 
