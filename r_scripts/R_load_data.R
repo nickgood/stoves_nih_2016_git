@@ -102,19 +102,21 @@ load_ecoc_file <- function(file){
           dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
                                datetime = as.POSIXct(as.character(date)))
 
- # determine type
+ # determine type (test, pilot or NA)
   ecoc <- dplyr::mutate(ecoc,
                         type = as.character(ecoc_id),
                         type = sub(".*india.*", NA, type, ignore.case = TRUE),
                         type = sub("^C11-.*", "test", type),
                         type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
-                        type = sub(".*BQ.*|.*BK.*|^BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
+                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
+                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
+                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
                         type = sub("^B63A$|^B63E$", "pilot", type),
                         type = sub("^P.*", "pilot", type),
                         type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
                         type = sub("^G.*", "bg", type))
 
- # determine cassette
+ # determine cassette (a, e or NA)
   ecoc <- dplyr::mutate(ecoc,
                         cassette = as.character(ecoc_id),
                         cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
@@ -126,7 +128,6 @@ load_ecoc_file <- function(file){
 
  # extract ids
   ecoc <- dplyr::mutate(ecoc,
-  											 id_old = as.character(ecoc_id),
                          id = as.character(ecoc_id),
                          id = sub("^B63A$|^B63E$", "lab_blank", id),
                          id = sub("5L-[A-Z]$", "5C", id),
