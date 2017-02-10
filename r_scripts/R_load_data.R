@@ -69,7 +69,7 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
-# file <- "../data/ecoc/20161208_ECOC.csv"
+# file <- "../data/ecoc/20170110_ECOC.csv"
 load_ecoc_file <- function(file){
  # classes
   classes <- c("character",
