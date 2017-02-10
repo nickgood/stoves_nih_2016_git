@@ -33,12 +33,23 @@ output:
   load("../r_files/data_1.Rda")
 ```
 
+# Filter data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged <- dplyr::filter(ecoc, grepl("^[0-9]", id) == TRUE |
+                               grepl("^G[0-9]", id) == TRUE |
+                               grepl("^analysis_bk", type) == TRUE |
+                               grepl("^lab_bk", type) == TRUE) %>%
+                 dplyr::arrange(id) %>%
+                 dplyr::mutate(id = as.factor(id))
+```
+
 # Meta data
 
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows_ <- dplyr::select(filter_flows, -date) %>%
+ flows <- dplyr::select(filter_flows, -date) %>%
            dplyr::filter(colour == "white" | colour == "orange") %>%
            dplyr::group_by(id, type, colour) %>%
            dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
@@ -54,7 +65,7 @@ output:
 * match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- times_ <- dplyr::select(filter_times, -date) %>%
+ times <- dplyr::select(filter_times, -date) %>%
            dplyr::filter(color == "white" | color == "orange") %>%
            tidyr::spread(type, value) %>%
            dplyr::mutate(cassette = 
@@ -66,15 +77,11 @@ output:
 Merge ecoc with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
-                 dplyr::left_join(times, by = c("id")) %>%
-                 dplyr::filter(grepl("^[0-9]", id) == TRUE |
-                               grepl("^G[0-9]", id) == TRUE |
-                               grepl("^analysis_bk", type) == TRUE |
-                               grepl("^lab_bk", type) == TRUE) %>%
-                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
+  ecoc_merged <- dplyr::left_join(ecoc_merged,
+                                  flows,
+                                  by = c("id", "cassette")) %>%
+                 dplyr::left_join(times,
+                                  by = c("id", "cassette"))
 ```
 
 # QC
