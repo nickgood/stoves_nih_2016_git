@@ -1,8 +1,10 @@
 ---
-title: "EF Template"
-author: "Kelsey Bilsback"
-date: "02/07/2017"
-output: html_document
+title: "VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -31,8 +33,8 @@ output: html_document
 * Select pollutant of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pol_p <- dplyr::filter(emissions,  pol == "voc_benzene")
-  pol_name <- "benzene"
+  pol_p <- dplyr::filter(emissions, grepl('^voc_benzene|^voc_toluene', pol))
+  pol_name <- "vocs"
 ```
 
 * Filter out bad tests
@@ -44,10 +46,12 @@ output: html_document
 * Merge with fuel burnt data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pol_p <- dplyr::left_join(pol_p, fuel_burnt, by = "id") %>%
+  pol_p <- dplyr::left_join(pol_p, dplyr::select(fuel_burnt, id,
+                                                 mass_fuel, lhv,
+                                                 carbon_fraction), by = "id") %>%
            dplyr::left_join(dplyr::select(samples, id, stove,
-                                          fuelcat, stovecat), by = "id") %>%
-           dplyr::mutate(stove_fuel = paste(stove, ":", fuel))
+                                          fuel, fuelcat, stovecat,
+                                          stove_fuel), by = "id")
 ```
 
 ## Calculate emissions factor
@@ -58,7 +62,7 @@ output: html_document
            dplyr::mutate(energy_ef = (mass_ef * 1e-3)*(lhv * 1e-3))  # g / MJ
 ```
 
-* Summary of the emissions factor data
+# Data summary 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   summary(pol_p$mass_ef)
@@ -71,13 +75,13 @@ output: html_document
 
 * Emissions grouped by stove/fuel combination 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_ef(pol_p, pol_name, "mass")
 ```
 
 # Energy based emissions factor plots 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14, fig.height = 10}
   plot_ef(pol_p, pol_name, "energy")
 ```
 

@@ -160,7 +160,7 @@ filter_times <- function(times, df){
 
 #________________________________________________________
 # plot mass based emission factors 
-plot_ef <- function(df, pol_name, type){
+plot_ef <- function(df, pol_name, type, pol){
   
   if(type == "mass"){
     ylabel <- "mass based emissions factors"
@@ -171,32 +171,38 @@ plot_ef <- function(df, pol_name, type){
   }
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = y_units, colour = fuel)) +
-        geom_point() +
+        geom_point(size = 1) +
+        facet_grid(pol ~ stovecat, scales = 'free') +
         ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
         xlab("stove type") +
         ylab(ylabel) +
         theme_minimal() +
-        scale_x_discrete(label=function(x) sub(" [:(:].*", "", x)) +
-        theme(text = element_text(size=12),
-             axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+        scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
+        theme(text = element_text(size=18),
+             axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
+             panel.spacing = unit(2, "lines"))
 
   p2 <- ggplot(pol_p, aes(x = stove, y = y_units, colour = fuel)) +
-        geom_point() +
-        facet_grid( ~ stovecat, scales = 'free') +
+        geom_point(size = 1) +
+        facet_grid(pol ~ stovecat, scales = 'free') +
         ggtitle(paste(pol_name, "ef by stove type")) +
         xlab("stove type") +
         ylab(ylabel) +
         theme_minimal() +
-        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+        theme(text = element_text(size=18),
+              axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
+              panel.spacing = unit(2, "lines"))
   
   p3 <- ggplot(pol_p, aes(x = fuel, y = y_units, colour = stove)) +
-    geom_point() +
-    facet_grid( ~ fuelcat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove type")) +
-    xlab("stove type") +
+    geom_point(size = 1) +
+    facet_grid(pol ~ fuelcat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by fuel type")) +
+    xlab("fuel type") +
     ylab(ylabel) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
+          panel.spacing = unit(2, "lines"))
   
   print(p1)
   print(p2)
