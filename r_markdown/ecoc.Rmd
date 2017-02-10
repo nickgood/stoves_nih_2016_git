@@ -1,8 +1,10 @@
 ---
 title: "ecoc"
-author: "Nicholas Good"
-date: "11/20/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -15,122 +17,79 @@ output: html_document
   source("../r_scripts/R_functions.R")
 ```
 
-## Load ecoc data
+# Load data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc.Rda")  # ecoc dataset
-```
+* ecoc
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(ecoc)
+  load("../r_files/ecoc.Rda")
 ```
 
-## Fix filter names
+* metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-# delete filters from different study
-  ecoc <- dplyr::filter(ecoc, ecoc_id != "INDIA BAKE BLANK") %>%
-          dplyr::filter(ecoc_id != "INDIA BAKE BLANK 2" )
-
-# rename blanks and ambigious ids and filter out pilot tests
-  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("Blank$|BLANK$|^BLANK|^Start",
-                        id),"blank",as.character(id))) %>%
-          dplyr::mutate(type = ifelse(grepl("blank", id), "analysis_bk",
-                        as.character(type))) %>%
-          dplyr::filter(!grepl("^P|^BK|^JAV|^BG|^B6", id))
-
-  ecoc <- dplyr::mutate(ecoc, id = ifelse(grepl("^[A-Z]-|^[A-Z] ", ecoc_id),
-                                   gsub( "^.* |-A|-E|-BQ|-BA", "", ecoc_id),
-                                   as.character(id)))
-
-# naming exceptions 
-  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("23A-E repeat", ecoc_id),
-                                         "E",as.character(cassette))) %>%
-          dplyr::mutate(cassette = ifelse(grepl("28B-E repeat", ecoc_id), "E",
-                                    as.character(cassette))) %>%
-          dplyr::mutate(cassette = ifelse(grepl("30A-3", ecoc_id), "E",
-                                    as.character(cassette))) %>%
-          dplyr::mutate(id = ifelse(grepl("A-2016-2-15|06-07-2016", id), "NA",
-                             as.character(id))) %>%
-          dplyr::mutate(type = ifelse(grepl("NA", id), "NA",
-                             as.character(type))) %>%
-          dplyr::mutate(id = ifelse(grepl("C11", id), "11C",
-                             as.character(id))) %>%
-          dplyr::mutate(cassette = ifelse(grepl("G7E", id), "E",
-                             as.character(cassette))) %>%
-          dplyr::mutate(id = ifelse(grepl("G7E", id), "G7",
-                             as.character(id))) %>%
-          dplyr::mutate(cassette = ifelse(grepl("^G3-E", ecoc_id), "E",
-                                   as.character(cassette))) %>%
-          dplyr::mutate(id = ifelse(grepl("5L",id), "5C",
-                             as.character(id))) %>%
-          dplyr::mutate(cassette = ifelse(grepl("^4C",ecoc$id) & grepl("^8",ecoc$oc_ug_sq_cm),
-                                   "A",as.character(cassette)))
-  
-  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]", id),"test",
-                                     as.character(type))) %>%
-          dplyr::mutate(type = ifelse(grepl("^[B]", id),"lab_bk",
-                               as.character(type))) %>%
-          dplyr::mutate(type = ifelse(grepl("^G", id),"bg",
-                               as.character(type)))
+  load(file = "../r_files/filter_times.Rda")
+  load(file = "../r_files/filter_flows.Rda")
+  load(file = "../r_files/notes.Rda")
+  load(file = "../r_files/samples.Rda")
 ```
 
-## Merge with filter meta data
+# Filter data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")  # metadata
+  ecoc_merged <- dplyr::filter(ecoc, grepl("^[0-9]", id) == TRUE |
+                               grepl("^G[0-9]", id) == TRUE |
+                               grepl("^analysis_bk", type) == TRUE |
+                               grepl("^lab_bk", type) == TRUE) %>%
+                 dplyr::arrange(id) %>%
+                 dplyr::mutate(id = as.factor(id))
 ```
 
-Extract metadata
+# Meta data
+
+* match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  meta <- dplyr::select(data_1, matches("_orange_|_white_|^id$|^date$"))
+ flows <- dplyr::select(filter_flows, -date) %>%
+           dplyr::filter(colour == "white" | colour == "orange") %>%
+           dplyr::group_by(id, type, colour) %>%
+           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+           dplyr::group_by(id, colour) %>%
+           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+           dplyr::mutate(colour = factor(colour)) %>%
+           dplyr::mutate(cassette = 
+                         forcats::fct_recode(colour, "a" = "white",
+                                                     "e" = "orange")) %>%
+           dplyr::select(-colour)
+```
 
-  flows <- dplyr::select(meta, matches("flow_|^id$|^date$")) %>%
-           tidyr::gather("var", "value", -id, -date) %>%
-           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-           dplyr::mutate(type = sub("flow.*", "", var),
-                         cassette = as.factor(ifelse(grepl("_white_", var), "A", "E")),
-                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
-           dplyr::select(-var) %>%
-           dplyr::filter(!is.na(id)) %>%
-           dplyr::group_by(id, type, cassette) %>%
-           dplyr::summarise(mean = mean(value, na.rm = TRUE)) %>%
-           tidyr::spread(type, mean)
+* match cassette timestamps to id
 
-  times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
-           tidyr::gather("var", "value", -id, -date) %>%
-           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                         type = ifelse(grepl("_end_", var), "end", type)) %>%
-           dplyr::filter(!is.na(id)) %>%
-           dplyr::select(-var, -date) %>%
-           tidyr::spread(type, value)
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ times <- dplyr::select(filter_times, -date) %>%
+           dplyr::filter(color == "white" | color == "orange") %>%
+           tidyr::spread(type, value) %>%
+           dplyr::mutate(cassette = 
+                         forcats::fct_recode(color, "a" = "white",
+                                                     "e" = "orange")) %>%
+           dplyr::select(-color)
 ```
 
 Merge ecoc with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc, flows, by = c("id", "cassette")) %>% 
-                 dplyr::left_join(times, by = c("id")) %>%
-                 dplyr::filter(grepl("^[0-9]", id) == TRUE |
-                               grepl("^G[0-9]", id) == TRUE |
-                               grepl("^analysis_bk", type) == TRUE |
-                               grepl("^lab_bk", type) == TRUE) %>%
-                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
+  ecoc_merged <- dplyr::left_join(ecoc_merged,
+                                  flows,
+                                  by = c("id", "cassette")) %>%
+                 dplyr::left_join(times,
+                                  by = c("id", "cassette"))
 ```
 
+# QC
 
-## QC
-
-Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/notes.Rda")
-
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
-
 ```
 
 Set one flag per test
@@ -169,7 +128,7 @@ Additional bad tests
 	                dplyr::mutate(qc = ifelse(id == "9B", "bad", as.character(qc)))
 ```
 
-## Convert to longer format
+# Convert to longer format
 
 Select columns of interest (others?)
 
@@ -177,7 +136,7 @@ Select columns of interest (others?)
   ecoc_merged <- dplyr::select(ecoc_merged, id, 
                                             oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
                                             datetime, date, time,
-                                            pre_flow, post_flow,
+                                            flow,
                                             start, end,
                                             qc,
                                             type, cassette,
@@ -191,11 +150,11 @@ Select columns of interest (others?)
                                 pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
 ```
 
-## Calculate LOD
+# Calculate LOD
 
 * need to identify and include blanks in previous analysis
 
-## Background analysis
+# Background analysis
 
 * extract "ok" background data
 * remove missing data
@@ -209,7 +168,6 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
         na.omit() %>%
-        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
         dplyr::group_by(pol, id, cassette) %>%
@@ -231,8 +189,8 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::select(bg, pol, cassette, mean) %>%
-         tidyr::spread(cassette, mean) %>%
-         dplyr::mutate(conc_bg = E - A)
+        tidyr::spread(cassette, mean) %>%
+        dplyr::mutate(conc_bg = e - a)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -247,22 +205,20 @@ Assume filter areas is `r area <- 11.8` cm^2.
                                                 by = "pol")
 ```
 
-## Save merged file
+# Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-## Load sample info and merge with ecoc data
+# Plots
 
-** The level definitions should be made when the samples file is created
+## merge sample info
 
 * Load sample info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")
-
-  samples <- dplyr::select(samples, id, stove, fuel)
+ samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
 * merge ecoc data with sample info
@@ -272,7 +228,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## Separate blank filters
+## separate blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ec_lod_loq <- dplyr::filter(ecoc_merged, type == "lab_bk" & pol == "ec") %>%
@@ -294,7 +250,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc was `r round(oc_lod_loq$mean[1], 3)` [ug/sq.cm] the average blank ec was `r round(ec_lod_loq$mean[1], 3)` [ug/sq.cm]. For OC the limit of detection was `r round(oc_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(oc_lod_loq$loq[1], 3)` [ug/sq.cm]. For EC the limit of detection was `r round(ec_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(ec_lod_loq$loq[1], 3)` [ug/sq.cm].
 
-## Add a LOD and LOQ flag
+## add a LOD and LOQ flags
 
 * ec
 
@@ -350,7 +306,7 @@ There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc 
                                             loq))
 ```
 
-## Plot blanks
+## plot blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ggplot(blanks, aes(pol, ug_sq_cm)) +
@@ -360,7 +316,7 @@ There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc 
     theme(legend.position = "top")
 ```
 
-## LOD/LOQ table
+## LOD/LOQ tables
 
 * ec lod
 
