@@ -28,9 +28,10 @@ output:
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/filter_times.Rda")
-  load("../r_files/filter_flows.Rda")
-  load(file="../r_files/notes.Rda")
+  load(file = "../r_files/filter_times.Rda")
+  load(file = "../r_files/filter_flows.Rda")
+  load(file = "../r_files/notes.Rda")
+  load(file = "../r_files/samples.Rda")
 ```
 
 # Filter data
@@ -135,7 +136,7 @@ Select columns of interest (others?)
   ecoc_merged <- dplyr::select(ecoc_merged, id, 
                                             oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
                                             datetime, date, time,
-                                            pre_flow, post_flow,
+                                            flow,
                                             start, end,
                                             qc,
                                             type, cassette,
@@ -167,7 +168,6 @@ Assume filter areas is `r area <- 11.8` cm^2.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
         na.omit() %>%
-        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
         dplyr::group_by(pol, id, cassette) %>%
@@ -189,8 +189,8 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::select(bg, pol, cassette, mean) %>%
-         tidyr::spread(cassette, mean) %>%
-         dplyr::mutate(conc_bg = E - A)
+        tidyr::spread(cassette, mean) %>%
+        dplyr::mutate(conc_bg = e - a)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -211,16 +211,14 @@ Assume filter areas is `r area <- 11.8` cm^2.
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-# Load sample info and merge with ecoc data
+# Plots
 
-** The level definitions should be made when the samples file is created
+## merge sample info
 
 * Load sample info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")
-
-  samples <- dplyr::select(samples, id, stove, fuel)
+ samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
 * merge ecoc data with sample info
@@ -230,7 +228,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
                  dplyr::mutate(id= as.factor(id))
 ```
 
-# Separate blank filters
+## separate blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ec_lod_loq <- dplyr::filter(ecoc_merged, type == "lab_bk" & pol == "ec") %>%
@@ -252,7 +250,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc was `r round(oc_lod_loq$mean[1], 3)` [ug/sq.cm] the average blank ec was `r round(ec_lod_loq$mean[1], 3)` [ug/sq.cm]. For OC the limit of detection was `r round(oc_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(oc_lod_loq$loq[1], 3)` [ug/sq.cm]. For EC the limit of detection was `r round(ec_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(ec_lod_loq$loq[1], 3)` [ug/sq.cm].
 
-# Add a LOD and LOQ flag
+## add a LOD and LOQ flags
 
 * ec
 
@@ -308,7 +306,7 @@ There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc 
                                             loq))
 ```
 
-## Plot blanks
+## plot blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ggplot(blanks, aes(pol, ug_sq_cm)) +
@@ -318,7 +316,7 @@ There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc 
     theme(legend.position = "top")
 ```
 
-## LOD/LOQ table
+## LOD/LOQ tables
 
 * ec lod
 
