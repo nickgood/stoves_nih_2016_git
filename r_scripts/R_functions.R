@@ -157,3 +157,49 @@ filter_times <- function(times, df){
     return(out)
 }
 #________________________________________________________
+
+#________________________________________________________
+# plot mass based emission factors 
+plot_ef <- function(df, pol_name, type){
+  
+  if(type == "mass"){
+    ylabel <- "mass based emissions factors"
+    y_units <- df$mass_ef
+  }else{
+    ylabel <- "fuel energy based emissions factors"
+    y_units <- df$mass_ef
+  }
+  
+  p1 <- ggplot(df, aes(x = stove_fuel, y = y_units, colour = fuel)) +
+        geom_point() +
+        ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
+        xlab("stove type") +
+        ylab(ylabel) +
+        theme_minimal() +
+        scale_x_discrete(label=function(x) sub(" [:(:].*", "", x)) +
+        theme(text = element_text(size=12),
+             axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+  p2 <- ggplot(pol_p, aes(x = stove, y = y_units, colour = fuel)) +
+        geom_point() +
+        facet_grid( ~ stovecat, scales = 'free') +
+        ggtitle(paste(pol_name, "ef by stove type")) +
+        xlab("stove type") +
+        ylab(ylabel) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+  
+  p3 <- ggplot(pol_p, aes(x = fuel, y = y_units, colour = stove)) +
+    geom_point() +
+    facet_grid( ~ fuelcat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove type")) +
+    xlab("stove type") +
+    ylab(ylabel) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+  
+  print(p1)
+  print(p2)
+  print(p3)
+}
+#________________________________________________________
