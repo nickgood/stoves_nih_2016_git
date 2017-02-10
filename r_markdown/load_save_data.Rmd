@@ -211,6 +211,43 @@ Reference for test id, stove and fuel types.
                              "Liquefied Petroleum Gas")))
 ```
 
+* Define stove fuel combination category levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples, stove_fuel = as.factor(paste(stove, ":", fuel))) %>%
+             dplyr::mutate(stove_fuel = factor(stove_fuel,
+                           levels = c("Three Stone Fire (Artisan) : Douglas Fir",
+                             "Three Stone Fire (Artisan) : Oak",
+                             "Three Stone Fire (Artisan) : Eucalyptus",
+                             "Clay Ring (Artisan) : Douglas Fir",
+                             "Clay Ring (Artisan) : Oak",
+                             "Clay Ring (Artisan) : Eucalyptus",
+                             "Built-in Justa (Envirofit, HM5000) : Douglas Fir",
+                             "Built-in Justa (Envirofit, HM5000) : Oak",
+                             "Built-in Justa (Envirofit, HM5000) : Eucalyptus",
+                             "Rocket Elbow (Envirofit, G3300) : Douglas Fir",
+                             "Rocket Elbow (Envirofit, G3300) : Oak",
+                             "Rocket Elbow (Envirofit, G3300) : Eucalyptus",
+                             "Fan Rocket Elbow (Biolite, HomeStove) : Douglas Fir",
+                             "Fan Rocket Elbow (Biolite, HomeStove) : Oak",
+                             "Fan Rocket Elbow (Biolite, HomeStove) : Eucalyptus",
+                             "Ceramic Charcoal (Artisan) : Lump Hardwood (Sm.)",
+                             "Ceramic Charcoal (Artisan) : Lump Hardwood (Med.)",
+                             "Ceramic Charcoal (Artisan) : Coconut Charcoal",
+                             "Metal Charcoal (Burn, Jikokoa) : Lump Hardwood (Sm.)",
+                             "Metal Charcoal (Burn, Jikokoa) : Lump Hardwood (Med.)",
+                             "Metal Charcoal (Burn, Jikokoa) : Coconut Charcoal",
+                             "Gasifier (Philips, HD4012) : West Slope Pellets",
+                             "Gasifier (Philips, HD4012) : Eucalyptus Pellets",
+                             "Gasifer (Mimi Moto, Mimi Moto) : West Slope Pellets",
+                             "Gasifer (Mimi Moto, Mimi Moto) : Eucalyptus Pellets",
+                             "Gasifier (Envirofit, Prototype) : West Slope Pellets",
+                             "Gasifier (Envirofit, Prototype) : Eucalyptus Pellets",
+                             "Wick Kerosene (Cook 'n Lite, 82) : Kerosene", 
+                             "Pressurized Kerosene (Butterfly, 2412) : Kerosene",
+                             "Pressurized LPG (WokSmith, WS-C1-25K) : Liquefied Petroleum Gas")))
+```
+
 * Create aggregated fuel category
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
