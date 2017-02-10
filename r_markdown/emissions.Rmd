@@ -129,7 +129,7 @@ output: html_document
 
 ### Merge fuel burnt with fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fuel_burnt <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
 	              dplyr::left_join(fuel_properties, by = "fuel")
 ```
@@ -770,13 +770,14 @@ Print tests with negative values
 
 # Calculate fuel burned using carbon balance approach
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   mass_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
             dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
             dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
 Filter out bad tests and only include summed species variables
+
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
@@ -787,7 +788,7 @@ Filter out bad tests and only include summed species variables
 
 # Compare fuel mass burned using carbon balance approach
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10} 
   ggplot(mass_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
     geom_point() +
     theme_minimal() +
@@ -798,13 +799,14 @@ Filter out bad tests and only include summed species variables
 
 # Bar plots of pollutants
 
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
     ylab("test id") + 
-    ylab("mass emitted") + 
+    ylab("mass emitted") +
     theme(legend.position = "top")
 ```
 
@@ -816,4 +818,20 @@ Filter out bad tests and only include summed species variables
     ylab("test id") + 
     ylab("mass emitted") + 
     theme(legend.position = "top")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") + 
+    theme(legend.position = "top")
+```
+Print tests with negative values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
+  emissions_g <- dplyr::filter(emissions_g, mass_emitted < 0)
+  kable(emissions_g, align = 'c', caption = "Tests with negative values")
 ```
