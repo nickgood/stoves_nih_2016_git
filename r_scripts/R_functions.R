@@ -116,9 +116,9 @@
 # p = pressure kPa
   convert_ppmv_ugpmc <- function(ppmv,mw,t,p){
 
-    ug <- (1/(mw*ppmv))*8.3144*(t+273.15)/(p*1000)
+    ug <- (1 / (mw * ppmv)) * 8.3144 * (t + 273.15 ) / (p * 1000)
 
-    ug <- (1/ug)
+    ug <- (1 / ug)
  
   # return
     return(ug)

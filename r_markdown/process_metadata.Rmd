@@ -290,17 +290,19 @@ output:
 ## fivegas calibration times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"), !is.na(value))
-  
+  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"),
+                                     !is.na(value))
+
   fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
-  
+
   save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
 ```
 
  * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(fivegas_cal_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+  outliers <- dplyr::filter(fivegas_cal_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -308,7 +310,9 @@ output:
 ## filter cartridge flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_flows <- dplyr::filter(tidy_date(data_1, "^preflow_.*[^avg]$|postflow.*[^avg]$", ""), !is.na(value))
+  filter_flows <- dplyr::filter(tidy_id_date(data_1,
+                                  "^preflow_.*[^avg]$|postflow.*[^avg]$", ""),
+                                  !is.na(value))
 
   filter_flows <- split_filter_flows(filter_flows)
 
@@ -334,17 +338,18 @@ output:
 ## filter cartridge timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_times <- dplyr::filter(tidy_date(data_1, "^time_.*cart", "time_"), !is.na(value))
-  
+  filter_times <- dplyr::filter(tidy_id_date(data_1, "^time_.*cart", "time_"), !is.na(value))
+
   filter_times <- split_filter_times(filter_times)
-  
+
   save(filter_times, file="../r_files/filter_times.Rda")
 ```
 
  * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(filter_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+  outliers <- dplyr::filter(filter_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -404,7 +409,8 @@ output:
 ## pax flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""), !is.na(value))
+  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""),
+                             !is.na(value))
   
   pax_flows <- split_pax_flows(pax_flows)
   
@@ -431,7 +437,8 @@ output:
 ## smps flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""), !is.na(value))
+  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""),
+                              !is.na(value))
   
   smps_flows <- split_flows(smps_flows)
   
@@ -464,4 +471,4 @@ output:
   count_fuels <- dplyr::tally(group_by(samples, fuel))
 ```
 
-A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested using `r nrow(count_fuels)` fuels. The graphic below, shows the stove-fuel combinations tested.
+A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of  `r nrow(count_fuels)` fuels were tested (on the appropriate stove).

@@ -778,7 +778,8 @@ Print tests with negative values
 
 Filter out bad tests and only include summed species variables
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
                  dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
                  dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
@@ -798,28 +799,19 @@ Filter out bad tests and only include summed species variables
 
 # Bar plots of pollutants
 
-<<<<<<< HEAD
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
-  ggplot(emissions_g, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
-=======
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
->>>>>>> ed1b787d25a679f57b0e77a6bf107818d6feddeb
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
     ylab("test id") + 
-    ylab("mass emitted") + 
+    ylab("mass emitted") +
     theme(legend.position = "top")
 ```
 
-<<<<<<< HEAD
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
-  ggplot(emissions_g, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
-=======
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
->>>>>>> ed1b787d25a679f57b0e77a6bf107818d6feddeb
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -827,13 +819,19 @@ Filter out bad tests and only include summed species variables
     ylab("mass emitted") + 
     theme(legend.position = "top")
 ```
-<<<<<<< HEAD
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") + 
+    theme(legend.position = "top")
+```
 Print tests with negative values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
   emissions_g <- dplyr::filter(emissions_g, mass_emitted < 0)
   kable(emissions_g, align = 'c', caption = "Tests with negative values")
 ```
-=======
->>>>>>> ed1b787d25a679f57b0e77a6bf107818d6feddeb

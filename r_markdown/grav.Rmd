@@ -1,8 +1,10 @@
 ---
-title: "grav"
-author: "Nicholas Good"
-date: "11/20/2016"
-output: html_document
+title: "gravimetric"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -14,32 +16,24 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")  # sample info
-```
 
-## Load gravimetric data
+# Load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/grav.Rda")
+  load("../r_files/samples.Rda")
+  load("../r_files/data_1.Rda")
+  load("../r_files/notes.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(grav)
-```
-
-## Set levels
+## set levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   levels_type <- c("test", "bg")
 ```
 
-## Merge with filter metadata
+## extract metadata (update)
 
-Load metadata
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")  # metadata
-```
 
 Extract gravimetric filter cartridge data
 
@@ -66,13 +60,13 @@ Extract gravimetric filter cartridge data
             tidyr::spread(type, value)
 ```
 
-## Filter gravimatric data
+## extract project data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- filter(grav, grepl("^[0-9]|^G[0-9]", grav$id))
 ```
 
-Merge with filter metadata and drop average values
+## merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav, flows, by = "id")  %>%  
@@ -88,7 +82,7 @@ Merge with filter metadata and drop average values
                  dplyr::mutate(id = as.factor(id))
 ```
 
-## Melt and clean
+# Make longer and clean
 
 Split pre and post measurements
 
@@ -126,14 +120,14 @@ Merge differences
                  dplyr::ungroup()
 ```
 
-## Add variables
+# Add variables
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged, 
-                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)  # calibration weight change
+                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
 
   grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)  # blank change
+                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
   
   grav_merged <- dplyr::mutate(grav_merged,
                                type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "")) %>%
@@ -141,12 +135,12 @@ Merge differences
                  dplyr::mutate(type = as.factor(type))
 ```
 
-## QC
+# QC
 
 Load notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")  # notes
+
 
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
@@ -192,7 +186,7 @@ Missing data
 
 A total of `r nrow(missing)` tests are missing data. The test id are: `r missing$id`.
 
-## Plots
+# Plots
 
 Weights
 
@@ -240,11 +234,11 @@ Blank weights
   theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
 ```
 
-## LOD
+# LOD
 
 The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
 
-## Background analysis
+# Background analysis
 
 * extract background data
 * remove missing data
