@@ -138,6 +138,20 @@ Additional bad tests
                     dplyr::summarise(number_conc = sum(value)*0.015625355)
 ```
 
+* save ultrafine for background analysis
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps_ultrafine_bkgd <- dplyr::select(smps_merged, datetime, date, time, id,
+                                       value, size, qc) %>%
+                         dplyr::filter(size <= 100) %>%
+                         dplyr::group_by(id, datetime) %>%
+                         dplyr::summarise(date = first(date), 
+                                          time = first(time), 
+                                          pol = "ufp_conc",
+                                          val = sum(value)*0.015625355,
+                                          qc = first(qc))
+```
+
 Plot timeseries for each experiment
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80} 
