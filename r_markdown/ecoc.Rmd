@@ -30,7 +30,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/filter_times.Rda")
   load("../r_files/filter_flows.Rda")
-  load("../r_files/data_1.Rda")
+  load(file="../r_files/notes.Rda")
 ```
 
 # Filter data
@@ -86,13 +86,9 @@ Merge ecoc with metadata
 
 # QC
 
-Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/notes.Rda")
-
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
-
 ```
 
 Set one flag per test
