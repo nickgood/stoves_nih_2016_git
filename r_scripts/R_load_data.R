@@ -71,7 +71,7 @@ load_co2_file <- function(file){
 # Load ECOC file
 # file <- "../data/ecoc/20161208_ECOC.csv"
 load_ecoc_file <- function(file){
-
+ # classes
   classes <- c("character",
                 "factor",
                 rep("numeric",20),
@@ -92,32 +92,43 @@ load_ecoc_file <- function(file){
                    fill = TRUE, na.strings = c("-", "na"))
 
   ecoc <- dplyr::rename(ecoc, time = Time) %>%
-          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
-          dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 +
+          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p"))),
+                        time = as.numeric(substr(time,12,13))*60*60 +
                                as.numeric(substr(time,15,16))*60 +
                                as.numeric(substr(time,18,19)))
 
-  ecoc <- dplyr::rename(ecoc, date = Date)
-  ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
-          dplyr::mutate(datetime = as.POSIXct(as.character(date)))
+  ecoc <- dplyr::rename(ecoc, date = Date,
+                        ecoc_id = Sample.ID) %>%
+          dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
+                               datetime = as.POSIXct(as.character(date)))
 
-  ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
-  ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
-          dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
-          dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+ # determine type
+  ecoc <- dplyr::mutate(ecoc,
+                        type = as.character(ecoc_id),
+                        type = sub("^C11-.*", "test", type),
+                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case=TRUE),
+                        type = sub(".*BQ.*|.*BK.*|^BG.*|^JAV.*", "pilot", type, ignore.case=TRUE),
+                        type = sub("^B63A$|^B63E$", "pilot", type),
+                        type = sub("^P.*", "pilot", type),
+                        type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
+                        type = sub("^G.*", "bg", type))
 
-  ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
-          dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
+ # determine cassette
+  ecoc <- dplyr::mutate(ecoc,
+                        cassette = as.character(ecoc_id),
+                        cassette = sub("^30A-3$", "e", cassette),
+                        cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
+                        cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
+                        cassette = sub(".*bq.*|.*blank.*", NA, cassette, ignore.case = TRUE))
 
  # extract ids
-  ecoc_ <- dplyr::mutate(ecoc,
-                         id_old = as.character(ecoc_id),
+  ecoc <- dplyr::mutate(ecoc,
                          id = as.character(ecoc_id),
                          id = sub("^B63A$|^B63E$", "lab_blank", id),
                          id = sub("5L-[A-Z]$", "5C", id),
                          id = sub("-[A-Z] repeat$", "", id),
                          id = sub(".*P5-A$", "5", id),
-                         id = gsub(".*blank.*|.*start.*", "system_blank", id, ignore.case=TRUE),
+                         id = gsub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
                          id = sub("^BG.*|.*BQ.*|^BK.*", "lab_blank", id),
                          id = sub(".*^P", "", id),
                          id = sub("-[0-9]$", "", id),
@@ -134,14 +145,15 @@ load_ecoc_file <- function(file){
   names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
   names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
   
- # set class
-    ecoc$ecoc_id <- as.factor(ecoc$ecoc_id)
-    ecoc$id <- as.factor(ecoc$id)
-    ecoc$type <- as.factor(ecoc$type)
-  ecoc$cassette <- as.factor(ecoc$cassette)
- 
-  # return
-    return(ecoc)
+ # set classes
+  ecoc <- dplyr::mutate(ecoc,
+                        ecod_id = as.factor(ecoc_id),
+                        id = as.factor(id),
+                        type = as.factor(type),
+                        cassette = as.factor(cassette))
+
+ # return
+  return(ecoc)
 }
 #________________________________________________________
 
