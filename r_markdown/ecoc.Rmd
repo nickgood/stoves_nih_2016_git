@@ -87,12 +87,9 @@ Merge ecoc with metadata
 
 # QC
 
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
 ```
-
-Set one flag per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -101,15 +98,21 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
                  dplyr::mutate(qc = ifelse(is.na(qc),
                                     "ok", as.character(qc))) %>%
                  dplyr::mutate(qc = as.factor(qc))
+
+  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
+  
+  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
 ```
+
+* the following tests are flagged as bad: `r unique(bad$id)`.
+
+* the following tests are flagged as maybe bad: `r unique(maybe$id)`.
 
 Additional bad tests
 
@@ -118,7 +121,7 @@ Additional bad tests
 * 8D, very high value
 * 9B, artifact gives very high values.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
                                                  as.character(qc), "bad")) %>%
                   dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 42234 & id == "6D", 
@@ -215,15 +218,9 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 ## merge sample info
 
-* Load sample info
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- samples <- dplyr::select(samples, id, stove, fuel)
-```
+  samples <- dplyr::select(samples, id, stove, fuel)
 
-* merge ecoc data with sample info
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
                  dplyr::mutate(id= as.factor(id))
 ```
