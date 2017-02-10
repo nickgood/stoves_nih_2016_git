@@ -471,4 +471,4 @@ output:
   count_fuels <- dplyr::tally(group_by(samples, fuel))
 ```
 
-A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested using `r nrow(count_fuels)` fuels. The graphic below, shows the stove-fuel combinations tested.
+A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of  `r nrow(count_fuels)` fuels were tested (on the appropriate stove).
