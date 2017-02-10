@@ -234,7 +234,7 @@ Reference for test id, stove and fuel types.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
                            fuelcat = factor(fuelcat,
-                                            levels(fuelcat)[c(3,2,4,5,1)])) %>%
+                                            levels(fuelcat)[c(1,2,3,4,5)])) %>%
              dplyr::mutate(stovecat =
                            fct_collapse(stove,
                              traditional = c("Clay Ring (Artisan)",
@@ -250,7 +250,7 @@ Reference for test id, stove and fuel types.
                              advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)",
                                           "Wick Kerosene (Cook 'n Lite, 82)", 
                                           "Pressurized Kerosene (Butterfly, 2412)"))) %>%
-            dplyr::mutate(stovecat = factor(stovecat,levels(stovecat)[c(3,2,4,5,1)]))
+            dplyr::mutate(stovecat = factor(stovecat,levels(stovecat)[c(1,2,3,4,5)]))
 ```
 
 * Save samples file
