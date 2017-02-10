@@ -446,6 +446,7 @@ ___
                         mass_carbon = mass_emitted * 0)
 
   ions_g <- dplyr::group_by(ions, id) %>%
+            dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
             dplyr::summarise(mass_emitted = sum(mass_emitted),
                              mass_carbon = sum(mass_carbon),
                              qc = first(qc)) %>%
@@ -496,6 +497,7 @@ ___
                              mass_carbon = mass_emitted * 0)  # carbonyls are gases
 
   carbonyls_g <- dplyr::group_by(carbonyls, id) %>%
+                 dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
                  dplyr::summarise(mass_emitted = sum(mass_emitted),
                                   mass_carbon = sum(mass_carbon),
                                   qc = first(qc)) %>%
@@ -685,10 +687,11 @@ ___
                             mass_carbon = mass_emitted * 12 * num_c / mw)
 
   voc_g <- dplyr::group_by(voc, id) %>%
+           dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
            dplyr::summarise(mass_emitted = sum(mass_emitted),
                             mass_carbon = sum(mass_carbon),
-                             qc = first(qc)) %>%
-           dplyr::mutate(pol = "total_vocs")
+                            qc = first(qc)) %>%
+          dplyr::mutate(pol = "total_vocs")
 ```
 
 * output
@@ -711,6 +714,13 @@ ___
                dplyr::bind_rows(dplyr::select(ions_g, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted, mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc_g, id, pol, mass_emitted, mass_carbon, qc))
+```
+
+Print tests with negative values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  kable(dplyr::filter(emissions, mass_emitted < 0),
+        align = 'c', caption = "Tests with negative values")
 ```
 
 * Save
@@ -771,8 +781,8 @@ Filter out bad tests and only include summed species variables
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
                  dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
-                 dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$
-                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol) == TRUE)
+                 dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
+                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol))
 ```
 
 # Compare fuel mass burned using carbon balance approach
@@ -806,11 +816,4 @@ Filter out bad tests and only include summed species variables
     ylab("test id") + 
     ylab("mass emitted") + 
     theme(legend.position = "top")
-```
-
-Print tests with negative values
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  emissions_p <- dplyr::filter(emissions_p, mass_emitted < 0)
-  kable(emissions_p, align = 'c', caption = "Tests with negative values")
 ```
