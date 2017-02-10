@@ -164,60 +164,60 @@ load_ecoc_file <- function(file){
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
 
-    df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ") # check file type from first line
-  
-  # load 
-    if(grepl("^Device", df[1][1])){
+  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ") # check file type from first line
 
-      classes = c(rep("character",2), rep("numeric",4))
-      
-      col_names = c("date", "time", "co2", "o2", "co", "ch4")
+ # load 
+  if(grepl("^Device", df[1][1])){
 
-      df <- read.csv(file, header = FALSE, colClasses = classes,
-                     skip = 7, fill = TRUE, col.names = col_names)
+  classes = c(rep("character",2), rep("numeric",4))
+
+  col_names = c("date", "time", "co2", "o2", "co", "ch4")
+
+  df <- read.csv(file, header = FALSE, colClasses = classes,
+                       skip = 7, fill = TRUE, col.names = col_names)
     
-      # check year format
-        if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
-           df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
-        }else{
-           df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
-        }
-     
-      # convert time string to seconds of day
-        df$time <- as.character(df$datetime)
-        df$time <- as.numeric(substr(df$time,12,13))*60*60 + 
-                    as.numeric(substr(df$time,15,16))*60 +
-                    as.numeric(substr(df$time,18,19)) 
+ # check year format
+  if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
+    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
+  }else{
+    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
+  }
 
-      # convert date
-        df$date <- as.Date(df$datetime)
-        
-    }else{
+ # convert time string to seconds of day
+  df$time <- as.character(df$datetime)
+  df$time <- as.numeric(substr(df$time,12,13))*60*60 +
+             as.numeric(substr(df$time,15,16))*60 +
+             as.numeric(substr(df$time,18,19)) 
 
-      classes = c(rep("numeric",6), "character")
-      
-      col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
+ # convert date
+  df$date <- as.Date(df$datetime)
 
-      df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
-                     skip = 1, fill = TRUE, col.names = col_names)
-        
-      df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time), format = "%Y%m%d %H:%M:%S") # fix
+  }else{
 
-      df$date <- as.Date(df$datetime)
+  classes = c(rep("numeric",6), "character")
 
-      df$time <- as.numeric(substr(df$time_str,1,2))*60*60 + 
-                 as.numeric(substr(df$time_str,4,5))*60 +
-                 as.numeric(substr(df$time_str,7,8))
-    }
+  col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
+
+  df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
+                       skip = 1, fill = TRUE, col.names = col_names)
+
+  df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time), format = "%Y%m%d %H:%M:%S") # fix
+
+  df$date <- as.Date(df$datetime)
+
+  df$time <- as.numeric(substr(df$time_str,1,2))*60*60 +
+             as.numeric(substr(df$time_str,4,5))*60 +
+             as.numeric(substr(df$time_str,7,8))
+}
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
-  # convert percents to ppm
-    df$co2 <- df$co2*10^4
-    df$o2 <- df$o2*10^4  
-    
-  # return
-    return(df)
+ # convert percents to ppm
+  df$co2 <- df$co2*10^4
+  df$o2 <- df$o2*10^4  
+
+ # return
+  return(df)
 }
 #________________________________________________________
 
