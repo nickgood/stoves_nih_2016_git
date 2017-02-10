@@ -1,8 +1,10 @@
 ---
 title: "ecoc"
-author: "Nicholas Good"
-date: "11/20/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -15,21 +17,23 @@ output: html_document
   source("../r_scripts/R_functions.R")
 ```
 
-## Load ecoc data
+# Load data
+
+* ecoc
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc.Rda")  # ecoc dataset
+  load("../r_files/ecoc.Rda")
 ```
+
+* metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(ecoc)
+  load("../r_files/filter_times.Rda")
+  load("../r_files/filter_flows.Rda")
+  load("../r_files/data_1.Rda")
 ```
 
-## Merge with filter meta data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")  # metadata
-```
+# Merge with filter meta data
 
 Extract metadata
 
@@ -71,8 +75,7 @@ Merge ecoc with metadata
                  dplyr::mutate(id = as.factor(id))
 ```
 
-
-## QC
+# QC
 
 Load notes
 
@@ -119,7 +122,7 @@ Additional bad tests
 	                dplyr::mutate(qc = ifelse(id == "9B", "bad", as.character(qc)))
 ```
 
-## Convert to longer format
+# Convert to longer format
 
 Select columns of interest (others?)
 
@@ -141,11 +144,11 @@ Select columns of interest (others?)
                                 pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
 ```
 
-## Calculate LOD
+# Calculate LOD
 
 * need to identify and include blanks in previous analysis
 
-## Background analysis
+# Background analysis
 
 * extract "ok" background data
 * remove missing data
@@ -197,13 +200,13 @@ Assume filter areas is `r area <- 11.8` cm^2.
                                                 by = "pol")
 ```
 
-## Save merged file
+# Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-## Load sample info and merge with ecoc data
+# Load sample info and merge with ecoc data
 
 ** The level definitions should be made when the samples file is created
 
@@ -222,7 +225,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## Separate blank filters
+# Separate blank filters
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ec_lod_loq <- dplyr::filter(ecoc_merged, type == "lab_bk" & pol == "ec") %>%
@@ -244,7 +247,7 @@ Assume filter areas is `r area <- 11.8` cm^2.
 
 There were `r ec_lod_loq$n[1]` blank ecoc filter analyzed. The average blank oc was `r round(oc_lod_loq$mean[1], 3)` [ug/sq.cm] the average blank ec was `r round(ec_lod_loq$mean[1], 3)` [ug/sq.cm]. For OC the limit of detection was `r round(oc_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(oc_lod_loq$loq[1], 3)` [ug/sq.cm]. For EC the limit of detection was `r round(ec_lod_loq$lod[1], 3)` [ug/sq.cm] and the limit of quantification was `r round(ec_lod_loq$loq[1], 3)` [ug/sq.cm].
 
-## Add a LOD and LOQ flag
+# Add a LOD and LOQ flag
 
 * ec
 
