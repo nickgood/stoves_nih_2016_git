@@ -179,15 +179,15 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_ec <- round(dplyr::filter(blanks, pol == "ec")$lod[1], 3)
-  lod_oc <- round(dplyr::filter(blanks, pol == "oc")$lod[1], 3)
-  loq_ec <- round(dplyr::filter(blanks, pol == "ec")$loq[1], 3)
-  loq_oc <- round(dplyr::filter(blanks, pol == "oc")$loq[1], 3)
+  lod_ec <- dplyr::filter(blanks, pol == "ec")$lod[1]
+  lod_oc <- dplyr::filter(blanks, pol == "oc")$lod[1]
+  loq_ec <- dplyr::filter(blanks, pol == "ec")$loq[1]
+  loq_oc <- dplyr::filter(blanks, pol == "oc")$loq[1]
 ```
 
-* The EC limit of detection is `r lod_ec` ($\mu g/cm^2$) and limit of quantification is `r loq_ec` ($\mu g/cm^2$).
+* The EC limit of detection is `r round(lod_ec, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_ec, 3)` ($\mu g/cm^2$).
 
-* The OC limit of detection is `r lod_oc` ($\mu g/cm^2$) and limit of quantification is `r loq_oc` ($\mu g/cm^2$).
+* The OC limit of detection is `r round(lod_oc, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_oc, 3)` ($\mu g/cm^2$).
 
 # Background analysis
 
@@ -265,22 +265,22 @@ Filter areas is `r area ` cm^2.
                                 lod = NA) %>%
                   dplyr::mutate(lod = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm >= ec_lod_loq$lod,
+                                            ug_sq_cm >= lod_ec,
                                             "ok",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm < ec_lod_loq$lod,
+                                            ug_sq_cm < lod_ec,
                                             "low",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm >= ec_lod_loq$loq,
+                                            ug_sq_cm >= lod_ec,
                                             "ok",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm < ec_lod_loq$loq,
+                                            ug_sq_cm < lod_ec,
                                             "low",
                                             loq))
 ```
@@ -291,22 +291,22 @@ Filter areas is `r area ` cm^2.
 
   ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm >= oc_lod_loq$lod,
+                                            ug_sq_cm >= lod_oc,
                                             "ok",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm < oc_lod_loq$lod,
+                                            ug_sq_cm < lod_oc,
                                             "low",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm >= oc_lod_loq$loq,
+                                            ug_sq_cm >= loq_oc,
                                             "ok",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
-                                            ug_sq_cm < oc_lod_loq$loq,
+                                            ug_sq_cm < loq_oc,
                                             "low",
                                             loq))
 ```
