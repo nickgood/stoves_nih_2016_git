@@ -9,6 +9,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -177,9 +178,8 @@ Reference for test id, stove and fuel types.
 * Define stove type levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- dplyr::mutate(samples,
-                           stove = factor(stove,
-                           levels = c("Three Stone Fire (Artisan)",
+  samples <- dplyr::mutate(samples, stove =
+                           lvls_revalue(stove, c("Three Stone Fire (Artisan)",
                              "Clay Ring (Artisan)",
                              "Built-in Justa (Envirofit, HM5000)",
                              "Rocket Elbow (Envirofit, G3300)",
@@ -191,24 +191,26 @@ Reference for test id, stove and fuel types.
                              "Gasifier (Envirofit, Prototype)",
                              "Wick Kerosene (Cook 'n Lite, 82)", 
                              "Pressurized Kerosene (Butterfly, 2412)",
-                             "Pressurized LPG (WokSmith, WS-C1-25K)")))
+                             "Pressurized LPG (WokSmith, WS-C1-25K)",
+                             "NA")))
 ```
 
 * Define fuel category levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- dplyr::mutate(samples,
-                           fuel = factor(fuel,
-                           levels = c("Douglas Fir",
-                             "Oak",
-                             "Eucalyptus",
-                             "Lump Hardwood (Sm.)",
-                             "Lump Hardwood (Med.)",
-                             "Coconut Charcoal",
-                             "West Slope Pellets",
-                             "Eucalyptus Pellets",
-                             "Kerosene",
-                             "Liquefied Petroleum Gas")))
+  samples <- dplyr::mutate(samples, fuel = 
+                           lvls_revalue(fuel,
+                                         c("Douglas Fir",
+                                           "Oak",
+                                           "Eucalyptus",
+                                           "Lump Hardwood (Sm.)",
+                                           "Lump Hardwood (Med.)",
+                                           "Coconut Charcoal",
+                                           "West Slope Pellets",
+                                           "Eucalyptus Pellets",
+                                           "Kerosene",
+                                           "Liquefied Petroleum Gas",
+                                           "NA")))
 ```
 
 * Define stove fuel combination category levels
