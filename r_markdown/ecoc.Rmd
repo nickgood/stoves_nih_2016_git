@@ -36,11 +36,10 @@ output:
 
 # Filter data
 
+* retain test and background data
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::filter(ecoc, grepl("^[0-9]", id) == TRUE |
-                               grepl("^G[0-9]", id) == TRUE |
-                               grepl("^analysis_bk", type) == TRUE |
-                               grepl("^lab_bk", type) == TRUE) %>%
+  ecoc_merged <- dplyr::filter(ecoc, type == "test" | type == "bg") %>%
                  dplyr::arrange(id) %>%
                  dplyr::mutate(id = as.factor(id))
 ```
@@ -75,7 +74,7 @@ output:
            dplyr::select(-color)
 ```
 
-Merge ecoc with metadata
+* merge ecoc with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged,
@@ -87,11 +86,13 @@ Merge ecoc with metadata
 
 # QC
 
+## merge notes with data
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
@@ -104,17 +105,9 @@ Merge ecoc with metadata
                  dplyr::mutate(qc = ifelse(is.na(qc),
                                     "ok", as.character(qc))) %>%
                  dplyr::mutate(qc = as.factor(qc))
-
-  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
-  
-  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
 ```
 
-* the following tests are flagged as bad: `r unique(bad$id)`.
-
-* the following tests are flagged as maybe bad: `r unique(maybe$id)`.
-
-Additional bad tests
+## additional bad tests
 
 * tests where fid2 is out of range
 * first 6D measurement, that produced very high value (repeated)
@@ -122,35 +115,58 @@ Additional bad tests
 * 9B, artifact gives very high values.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2), 
+  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2),
                                                  as.character(qc), "bad")) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 42234 & id == "6D", 
-                                            "bad", as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") & time == 53318 & id == "8D", 
-                                            "bad", as.character(qc))) %>%
-	                dplyr::mutate(qc = ifelse(id == "9B", "bad", as.character(qc)))
+                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
+                                            time == 42234 &
+                                            id == "6D", 
+                                            "bad",
+                                            as.character(qc))) %>%
+                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
+                                            time == 53318 &
+                                            id == "8D",
+                                            "bad",
+                                             as.character(qc))) %>%
+                  dplyr::mutate(qc = ifelse(id == "9B",
+                                            "bad",
+                                            as.character(qc)))
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
+
+  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
+```
+
+* the following tests are flagged as bad: `r unique(bad$id)`.
+
+* the following tests are flagged as maybe bad: `r unique(maybe$id)`.
 
 # Convert to longer format
 
-Select columns of interest (others?)
+* select columns of interest (others?)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::select(ecoc_merged, id, 
-                                            oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
-                                            datetime, date, time,
-                                            flow,
-                                            start, end,
-                                            qc,
-                                            type, cassette,
-                                            punch_area,
-                                            analyst) %>%
-                  tidyr::gather("pol", "ug_sq_cm", ec_ug_sq_cm,
-                                                   oc_ug_sq_cm,
-                                                   tc_ug_sq_cm) %>%
-                  dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
-                                pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
-                                pol = ifelse(pol == "tc_ug_sq_cm", "tc", pol))
+  ecoc_merged <- dplyr::select(ecoc_merged,
+                               id, 
+                               oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
+                               datetime, date, time,
+                               flow,
+                               start, end,
+                               qc,
+                               type, cassette,
+                               punch_area,
+                               analyst) %>%
+                  tidyr::gather("pol", "ug_sq_cm",
+                                ec_ug_sq_cm,
+                                oc_ug_sq_cm,
+                                tc_ug_sq_cm) %>%
+                  dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm",
+                                             "ec", pol),
+                                pol = ifelse(pol == "oc_ug_sq_cm",
+                                             "oc", pol),
+                                pol = ifelse(pol == "tc_ug_sq_cm",
+                                             "tc", pol))
 ```
 
 # Calculate LOD
