@@ -29,10 +29,10 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
                             pattern = "DILUTION1.csv$", inst = "co2")
 
   save(co2_lab, file = "../r_files/co2_lab.Rda")
-  
+
   co2_sample <- load_multifile(fldr = "../data/co2",
                                pattern = "DILUTION2.csv$", inst = "co2")
-  
+
   save(co2_sample, file = "../r_files/co2_sample.Rda")
 
   co2_lab_sample <- load_multifile(fldr = "../data/co2",

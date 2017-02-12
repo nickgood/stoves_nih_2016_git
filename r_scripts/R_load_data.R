@@ -69,7 +69,7 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
-# file <- "../data/ecoc/20161208_ECOC.csv"
+# file <- "../data/ecoc/20170110_ECOC.csv"
 load_ecoc_file <- function(file){
  # classes
   classes <- c("character",
@@ -102,20 +102,25 @@ load_ecoc_file <- function(file){
           dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
                                datetime = as.POSIXct(as.character(date)))
 
- # determine type
+ # determine type (test, pilot or NA)
   ecoc <- dplyr::mutate(ecoc,
                         type = as.character(ecoc_id),
+                        type = sub(".*india.*", NA, type, ignore.case = TRUE),
                         type = sub("^C11-.*", "test", type),
-                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case=TRUE),
-                        type = sub(".*BQ.*|.*BK.*|^BG.*|^JAV.*", "pilot", type, ignore.case=TRUE),
+                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
+                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
+                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
+                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
                         type = sub("^B63A$|^B63E$", "pilot", type),
                         type = sub("^P.*", "pilot", type),
                         type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
                         type = sub("^G.*", "bg", type))
 
- # determine cassette
+ # determine cassette (a, e or NA)
   ecoc <- dplyr::mutate(ecoc,
                         cassette = as.character(ecoc_id),
+                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
+                                   NA, cassette),
                         cassette = sub("^30A-3$", "e", cassette),
                         cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
                         cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
@@ -126,19 +131,22 @@ load_ecoc_file <- function(file){
                          id = as.character(ecoc_id),
                          id = sub("^B63A$|^B63E$", "lab_blank", id),
                          id = sub("5L-[A-Z]$", "5C", id),
+                         id = sub("^G7E$", "G7", id),
                          id = sub("-[A-Z] repeat$", "", id),
                          id = sub(".*P5-A$", "5", id),
-                         id = gsub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
-                         id = sub("^BG.*|.*BQ.*|^BK.*", "lab_blank", id),
-                         id = sub(".*^P", "", id),
+                         id = sub(".*india.*", NA, id, ignore.case = TRUE),
+                         id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
+                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
+                         id = gsub("^P.*", NA, id),
                          id = sub("-[0-9]$", "", id),
+                         id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
                          id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
-                         id = gsub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = gsub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
+                         id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
+                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
 
  # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
