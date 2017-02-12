@@ -169,20 +169,40 @@ output:
                                              "tc", pol))
 ```
 
-# Calculate LOD
+# Calculate LOD / LOQ
 
-* need to identify and include blanks in previous analysis
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  blanks <- dplyr::filter(ecoc_merged, id == "lab_blank") %>%
+            dplyr::group_by(pol) %>%
+            dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
+                             loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  lod_ec <- round(dplyr::filter(blanks, pol == "ec")$lod[1], 3)
+  lod_oc <- round(dplyr::filter(blanks, pol == "oc")$lod[1], 3)
+  loq_ec <- round(dplyr::filter(blanks, pol == "ec")$loq[1], 3)
+  loq_oc <- round(dplyr::filter(blanks, pol == "oc")$loq[1], 3)
+```
+
+* The EC limit of detection is `r lod_ec` ($\mu g/cm^2$) and limit of quantification is `r loq_ec` ($\mu g/cm^2$).
+
+* The OC limit of detection is `r lod_oc` ($\mu g/cm^2$) and limit of quantification is `r loq_oc` ($\mu g/cm^2$).
 
 # Background analysis
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ area <- 11.79  # filter area (cm^2)
+```
 
 * extract "ok" background data
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 * average any repeat measurements (non in G8-G14)
 * note G12 missing measurement data
-* calculate averge backgoround by pollutant / type
+* calculate averge background by pollutant / type
 
-Assume filter areas is `r area <- 11.8` cm^2.
+Filter areas is `r area ` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
@@ -198,10 +218,6 @@ Assume filter areas is `r area <- 11.8` cm^2.
                          min = min(rep_mean),
                          max = max(rep_mean),
                          n = n())
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
 ```
 
 * account for artifact
@@ -230,14 +246,12 @@ Assume filter areas is `r area <- 11.8` cm^2.
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-# Plots
+# Tables & Plots
 
-## merge sample info
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- dplyr::select(samples, id, stove, fuel)
-
-  ecoc_merged <- dplyr::left_join(ecoc_merged, samples, by = "id") %>%
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged <- dplyr::left_join(ecoc_merged,
+                                  dplyr::select(samples, id, stove, fuel),
+                                                by = "id") %>%
                  dplyr::mutate(id= as.factor(id))
 ```
 
