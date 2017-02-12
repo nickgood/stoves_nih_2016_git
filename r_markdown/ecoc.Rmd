@@ -36,7 +36,7 @@ output:
 
 # Filter data
 
-* retain test and background data
+* retain test and background data (blanks fall under test category)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::filter(ecoc, type == "test" | type == "bg") %>%
@@ -86,21 +86,28 @@ output:
 
 # QC
 
-## merge notes with data
+## flags from notes
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+* extract ecoc notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
 ```
 
+* merge flags with data
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, flags, by = "id") %>%
+  ecoc_merged <- dplyr::left_join(ecoc_merged, flags,
+                                  by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
                  dplyr::mutate(qc = ifelse(is.na(qc),
                                     "ok", as.character(qc))) %>%
@@ -138,13 +145,16 @@ output:
   maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
 ```
 
+## bad tests
+
 * the following tests are flagged as bad: `r unique(bad$id)`.
 
 * the following tests are flagged as maybe bad: `r unique(maybe$id)`.
 
-# Convert to longer format
+# Reformat
 
 * select columns of interest (others?)
+* longer format with columns: `pol = ec, oc or tc` containing the pollutant name and `ug_sq_cm` containing the measured value
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::select(ecoc_merged,
@@ -169,7 +179,7 @@ output:
                                              "tc", pol))
 ```
 
-# Calculate LOD / LOQ
+# LOD / LOQ
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   blanks <- dplyr::filter(ecoc_merged, id == "lab_blank") %>%
@@ -185,9 +195,63 @@ output:
   loq_oc <- dplyr::filter(blanks, pol == "oc")$loq[1]
 ```
 
-* The EC limit of detection is `r round(lod_ec, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_ec, 3)` ($\mu g/cm^2$).
+* the EC limit of detection is `r round(lod_ec, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_ec, 3)` ($\mu g/cm^2$).
 
-* The OC limit of detection is `r round(lod_oc, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_oc, 3)` ($\mu g/cm^2$).
+* the OC limit of detection is `r round(lod_oc, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_oc, 3)` ($\mu g/cm^2$).
+
+* add ec lod and loq flags
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc_merged <- dplyr::mutate(ecoc_merged,
+                                loq = NA,
+                                lod = NA) %>%
+                  dplyr::mutate(lod = ifelse(pol == "ec" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm >= lod_ec,
+                                            "ok",
+                                            lod)) %>%
+                  dplyr::mutate(lod = ifelse(pol == "ec" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm < lod_ec,
+                                            "low",
+                                            lod)) %>%
+	                dplyr::mutate(loq = ifelse(pol == "ec" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm >= lod_ec,
+                                            "ok",
+                                            loq)) %>%
+                  dplyr::mutate(loq = ifelse(pol == "ec" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm < lod_ec,
+                                            "low",
+                                            loq))
+```
+
+* add oc lod and loq flags
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm >= lod_oc,
+                                            "ok",
+                                            lod)) %>%
+                  dplyr::mutate(lod = ifelse(pol == "oc" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm < lod_oc,
+                                            "low",
+                                            lod)) %>%
+	                dplyr::mutate(loq = ifelse(pol == "oc" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm >= loq_oc,
+                                            "ok",
+                                            loq)) %>%
+                  dplyr::mutate(loq = ifelse(pol == "oc" &
+                                            (type == "test" | type == "bg") &
+                                            ug_sq_cm < loq_oc,
+                                            "low",
+                                            loq))
+```
 
 # Background analysis
 
@@ -201,8 +265,7 @@ output:
 * average any repeat measurements (non in G8-G14)
 * note G12 missing measurement data
 * calculate averge background by pollutant / type
-
-Filter areas is `r area ` cm^2.
+* the filter areas is `r area ` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
@@ -246,7 +309,7 @@ Filter areas is `r area ` cm^2.
   save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
 ```
 
-# Tables & Plots
+# Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_merged <- dplyr::left_join(ecoc_merged,
@@ -255,132 +318,25 @@ Filter areas is `r area ` cm^2.
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## add a LOD and LOQ flags
+## values below lod
 
-* ec
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged,
-                                loq = NA,
-                                lod = NA) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "ok",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "low",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "ok",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "low",
-                                            loq))
-```
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
+                                       qc == "ok" &
+                                       type == "test" &
+                                       grepl("^[0-9]", id) &
+                                       cassette == "e")
 
-* oc
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_oc,
-                                            "ok",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_oc,
-                                            "low",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= loq_oc,
-                                            "ok",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < loq_oc,
-                                            "low",
-                                            loq))
-```
-
-## plot blanks
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ggplot(blanks, aes(pol, ug_sq_cm)) +
-    geom_boxplot() +
+  ggplot(test_data, aes(id, ug_sq_cm, colour = lod)) +
+    geom_point() +
     theme_minimal() +
-    ylab("pollutant [ug/sq.cm]")+
-    theme(legend.position = "top")
+    theme(legend.position = "top") +
+    scale_y_log10() +
+    scale_colour_manual(values = c("ok" = "chartreuse4",
+                                   "maybe" = "dodgerblue2",
+                                   "bad" = "springgreen3")) +
+    facet_wrap(~pol, ncol = 1, scales = "free") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-## LOD/LOQ tables
-
-* ec lod
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_ec <- dplyr::select(ecoc_merged, id,
-                                       ug_sq_cm,
-                                       cassette,
-                                       stove,
-                                       fuel,
-                                       qc, pol,
-                                       lod) %>%
-             dplyr::filter(lod == "low" & pol == "ec")
-
-  kable(lod_ec, align = 'c', caption = "Filters below LOD for EC")
-```
-
-* ec loq
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  loq_ec <- dplyr::select(ecoc_merged, id,
-                                       ug_sq_cm,
-                                       cassette,
-                                       stove,
-                                       fuel,
-                                       qc, pol,
-                                       loq) %>%
-             dplyr::filter(loq == "low" & pol == "ec")
-
-  kable(loq_ec, align = 'c', caption = "Filters below LOQ for EC")
-```
-
-* oc lod
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_oc <- dplyr::select(ecoc_merged, id,
-                                       ug_sq_cm,
-                                       cassette,
-                                       stove,
-                                       fuel,
-                                       qc, pol,
-                                       lod) %>%
-             dplyr::filter(lod == "low" & pol == "oc")
-
-  kable(lod_oc, align = 'c', caption = "Filters below LOD for OC")
-```
-
-* oc loq
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  loq_oc <- dplyr::select(ecoc_merged, id,
-                                       ug_sq_cm,
-                                       cassette,
-                                       stove,
-                                       fuel,
-                                       qc, pol,
-                                       loq) %>%
-             dplyr::filter(loq == "low" & pol == "oc")
-
-  kable(loq_oc, align = 'c', caption = "Filters below LOQ for OC")
-``` 
-
-There were `r nrow(lod_ec)` filters below the limit of detection for ec and `r nrow(lod_oc)` filters below the limit detection for oc. There were `r nrow(loq_ec)` filters below the limit of quantification for ec and `r nrow(loq_oc)` filters below the limit quantification for oc.
