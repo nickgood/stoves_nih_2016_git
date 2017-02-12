@@ -214,9 +214,13 @@ Reference for test id, stove and fuel types.
 * Define stove fuel combination category levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- dplyr::mutate(samples, stove_fuel = as.factor(paste(stove, ":", fuel))) %>%
-             dplyr::mutate(stove_fuel = factor(stove_fuel,
-                           levels = c("Three Stone Fire (Artisan) : Douglas Fir",
+  samples <- dplyr::mutate(samples,
+                           stove_fuel_combo = 
+                           as.factor(paste(stove, ":", fuel))) %>%
+             dplyr::mutate(stove_fuel = 
+                           factor(stove_fuel,
+                           levels = 
+                           c("Three Stone Fire (Artisan) : Douglas Fir",
                              "Three Stone Fire (Artisan) : Oak",
                              "Three Stone Fire (Artisan) : Eucalyptus",
                              "Clay Ring (Artisan) : Douglas Fir",
@@ -271,7 +275,7 @@ Reference for test id, stove and fuel types.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
                            fuelcat = factor(fuelcat,
-                                            levels(fuelcat)[c(1,2,3,4,5)])) %>%
+                                            levels(fuelcat)[c(1,2,3,4,5)])) %>%  # set factor level order for plots
              dplyr::mutate(stovecat =
                            fct_collapse(stove,
                              traditional = c("Clay Ring (Artisan)",
@@ -287,7 +291,7 @@ Reference for test id, stove and fuel types.
                              advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)",
                                           "Wick Kerosene (Cook 'n Lite, 82)", 
                                           "Pressurized Kerosene (Butterfly, 2412)"))) %>%
-            dplyr::mutate(stovecat = factor(stovecat,levels(stovecat)[c(1,2,3,4,5)]))
+            dplyr::mutate(stovecat = factor(stovecat,levels(stovecat)[c(1,2,3,4,5)]))  # set factor level order for plots
 ```
 
 * Save samples file
