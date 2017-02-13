@@ -136,19 +136,20 @@ output:
 
 # QC
 
+* extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
 
-Flag bad data from notes and plots
+* mark `bad` tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes$qc[33] <- "bad"
   notes$qc[34] <- "bad"
 ```
 
-Set one flag per test
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -157,7 +158,7 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged, flags, by = "id") %>%
@@ -173,7 +174,55 @@ Additional bad tests
   grav_merged$qc[grav_merged$id == "29A"] <- "bad"
 ```
 
-Missing data
+# Reformat
+
+# LOD/LOQ
+
+The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
+
+# Background analyis
+
+* extract background data
+* remove missing data
+* calculate average concentration emitted ( and other stats)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
+        dplyr::select(id,
+                         flow_pre, flow_post,
+                         time_end, time_start,
+                         wgt_delta) %>%
+        dplyr::mutate(flow_pre = ifelse(is.na(flow_pre) == TRUE, flow_post,
+                                                                 flow_pre)) %>%
+        na.omit() %>%
+        dplyr::mutate(flow = (flow_pre + flow_post) / 2,
+                      dur = (time_end - time_start) / 60,
+                      conc = wgt_delta * 1000 / (flow * dur)) %>%
+        dplyr::summarise(mean = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n()) %>%
+        dplyr::mutate(type = factor("test", levels_type))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(bg, "markdown", digits = 2)
+```
+
+* merge with test data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # extract data for merge
+  bg <- dplyr::select(bg, type, mean) %>%
+        dplyr::rename(conc_bg = mean)
+
+ # merge and add pollutant variable
+  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type") %>%
+                 dplyr::mutate(pol = as.factor("grav"))
+```
+
+# Summary
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   missing <- dplyr::select(grav_merged, -notes) 
@@ -181,6 +230,16 @@ Missing data
 ```
 
 A total of `r nrow(missing)` tests are missing data. The test id are: `r missing$id`.
+
+Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+
+Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
+
+# Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(grav_merged, file = "../r_files/grav_merged.Rda")
+```
 
 # Plots
 
@@ -230,60 +289,4 @@ Blank weights
   theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
 ```
 
-# LOD
 
-The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
-
-# Background analysis
-
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
-        dplyr::select(id,
-                         flow_pre, flow_post,
-                         time_end, time_start,
-                         wgt_delta) %>%
-        dplyr::mutate(flow_pre = ifelse(is.na(flow_pre) == TRUE, flow_post,
-                                                                 flow_pre)) %>%
-        na.omit() %>%
-        dplyr::mutate(flow = (flow_pre + flow_post) / 2,
-                      dur = (time_end - time_start) / 60,
-                      conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(mean = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n()) %>%
-        dplyr::mutate(type = factor("test", levels_type))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
-```
-
-* merge with test data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
-  bg <- dplyr::select(bg, type, mean) %>%
-        dplyr::rename(conc_bg = mean)
-
- # merge and add pollutant variable
-  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type") %>%
-                 dplyr::mutate(pol = as.factor("grav"))
-```
-
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(grav_merged, file = "../r_files/grav_merged.Rda")
-```
-
-## Summary
-
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
-
-Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
