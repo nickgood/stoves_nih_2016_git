@@ -31,7 +31,6 @@ output:
   load("../r_files/samples.Rda")
   load("../r_files/filter_times.Rda")
   load("../r_files/filter_flows.Rda")
-  load("../r_files/data_1.Rda")
   load("../r_files/notes.Rda")
 ```
 
@@ -80,11 +79,9 @@ output:
                                   by = "id")
 ```
 
-# Make longer and clean
+# Reformat
 
-Split pre and post measurements
-
-Pre-weight average
+* pre-average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
@@ -94,7 +91,7 @@ Pre-weight average
               dplyr::summarise(wgt_pre = mean(val))
 ```
 
-Post-weight average
+* post-average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
@@ -104,14 +101,14 @@ Post-weight average
                dplyr::summarise(wgt_post = mean(val))
 ```
 
-Weight difference
+* mass added
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_dif <- dplyr::full_join(grav_pre, grav_post, by = "id") %>%
                 dplyr::mutate(wgt_delta = wgt_post - wgt_pre)
 ```
 
-Merge differences
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged, grav_dif, by = "id") %>%
@@ -119,6 +116,10 @@ Merge differences
 ```
 
 # Add variables
+
+* change in calibration weight
+* change in blank weight
+* test type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged, 
@@ -135,11 +136,8 @@ Merge differences
 
 # QC
 
-Load notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-
   notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
 ```
 
