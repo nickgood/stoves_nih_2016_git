@@ -19,11 +19,26 @@ output:
 
 # Load data
 
+* gravimetric
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/grav.Rda")
+```
+
+* metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
+  load("../r_files/filter_times.Rda")
+  load("../r_files/filter_flows.Rda")
   load("../r_files/data_1.Rda")
   load("../r_files/notes.Rda")
+```
+
+# Filter data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id))
 ```
 
 ## set levels
@@ -32,54 +47,37 @@ output:
   levels_type <- c("test", "bg")
 ```
 
-## extract metadata (update)
+# Metadata
 
-
-Extract gravimetric filter cartridge data
+* match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  meta <- dplyr::select(data_1, matches("_white_|^id$|^date$"))
-
-  flows <- dplyr::select(meta, matches("flow_|^id$|^date$")) %>%
-            tidyr::gather("var", "value", -id, -date) %>%
-            dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-            dplyr::mutate(type = as.factor(sub("flow.*", "", var)),
-                          rep = as.factor(gsub("[^0-9]", "", var))) %>%
-            dplyr::select(-var)  %>%
-            dplyr::filter(!is.na(id)) %>%
-            dplyr::group_by(id, type, date) %>%
-            dplyr::summarise(mean = mean(value))  %>%
-            tidyr::spread(type, mean)
-  
-  times <- dplyr::select(meta, matches("^time_|^id$")) %>%
-            tidyr::gather("var", "value", -id) %>%
-            dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                          type = ifelse(grepl("_end_", var), "end", type)) %>%
-            dplyr::filter(!is.na(id)) %>%  
-            dplyr::select(-var) %>%  
-            tidyr::spread(type, value)
+ flows <- dplyr::select(filter_flows, -date) %>%
+           dplyr::filter(colour == "white") %>%
+           dplyr::group_by(id, type, colour) %>%
+           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+           dplyr::group_by(id, colour) %>%
+           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+           dplyr::select(-colour)
 ```
 
-## extract project data
+* match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav <- filter(grav, grepl("^[0-9]|^G[0-9]", grav$id))
+ times <- dplyr::select(filter_times, -date) %>%
+           dplyr::filter(color == "white") %>%
+           tidyr::spread(type, value) %>%
+           dplyr::select(-color)
 ```
 
-## merge
+* merge gravimetric with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav, flows, by = "id")  %>%  
-                 dplyr::left_join(times, by = "id") %>%  
-                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                 dplyr::rename(flow_pre = pre, flow_post = post) %>%
-                 dplyr::rename(time_start = start, time_end = end) %>%
-                 dplyr::select(-wgt_pre_avg,
-                                -wgt_post_avg,
-                                -lod, 
-                                -wgt_dif) %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
+  grav_merged <- dplyr::left_join(grav_merged,
+                                  flows,
+                                  by = "id") %>%
+                 dplyr::left_join(times,
+                                  by = "id")
 ```
 
 # Make longer and clean
