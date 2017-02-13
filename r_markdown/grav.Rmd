@@ -38,10 +38,11 @@ output:
 
 ## filter tests
 
-* select stove and background tests only
+* select stove and background tests only. Remove pre-calculated LOD.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id)) %>%
+                 dplyr::select(-lod) %>%
                  dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
 ```
 
@@ -50,7 +51,6 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   levels_type <- c("test", "bg")
 ```
-
 
 # Metadata
 
@@ -177,7 +177,28 @@ Additional bad tests
 
 # LOD/LOQ
 
-The limit of detection is calculated to be `r round(sd(grav_merged$wgt_blank_delta, na.rm = TRUE)*3, 2)` ug.
+* remove backgrounds and bad data then calculate the limit of detection and quantification
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  signal <- dplyr::filter(grav_merged, type == "test", qc != "bad") %>%
+            dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
+                             loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  lod_var <- signal$lod[1]
+  loq_var <- signal$loq[1]
+```
+
+The LOD is `r lod_var`, the LOQ is `r loq_var`.
+
+* flag the measurements
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::mutate(grav_merged,
+                               lod = ifelse(wgt_delta >= lod_var, "ok", "low"),
+                               loq = ifelse(wgt_delta >= loq_var, "ok", "low"))
+```
 
 # Background analyis
 
