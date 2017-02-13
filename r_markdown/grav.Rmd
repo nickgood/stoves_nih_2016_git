@@ -34,10 +34,15 @@ output:
   load("../r_files/notes.Rda")
 ```
 
-# Filter data
+# Organize
+
+## filter tests
+
+* select stove and background tests only
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id))
+  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id)) %>%
+                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
 ```
 
 ## set levels
@@ -45,6 +50,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   levels_type <- c("test", "bg")
 ```
+
 
 # Metadata
 
@@ -101,37 +107,32 @@ output:
                dplyr::summarise(wgt_post = mean(val))
 ```
 
+* merge averages
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
+                 dplyr::left_join(grav_post, by = "id")
+```
+
 * mass added
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_dif <- dplyr::full_join(grav_pre, grav_post, by = "id") %>%
-                dplyr::mutate(wgt_delta = wgt_post - wgt_pre)
+  grav_merged <- dplyr::mutate(grav_merged, 
+                            wgt_delta = wgt_post - wgt_pre)
 ```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, grav_dif, by = "id") %>%
-                 dplyr::ungroup()
-```
-
-# Add variables
 
 * change in calibration weight
-* change in blank weight
-* test type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged, 
-                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+  grav_merged <- dplyr::mutate(grav_merged,
+                            wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+```
 
+* change in blank weight
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
                                wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
-  
-  grav_merged <- dplyr::mutate(grav_merged,
-                               type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "")) %>%
-                 dplyr::mutate(type = ifelse(grepl("^G", id) == TRUE, "bg", type)) %>%
-                 dplyr::mutate(type = as.factor(type))
 ```
 
 # QC
@@ -173,8 +174,6 @@ Additional bad tests
   grav_merged$qc[grav_merged$id == "28B"] <- "bad"
   grav_merged$qc[grav_merged$id == "29A"] <- "bad"
 ```
-
-# Reformat
 
 # LOD/LOQ
 
