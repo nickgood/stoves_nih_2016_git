@@ -211,7 +211,7 @@ load_fivegas_file <- function(file){
 
   df <- dplyr::mutate(df, datetime = as.POSIXct(paste((strsplit(basename(file),
                                                 "_")[[1]])[1],
-                                                time),
+                                                df$time),
                                                 format = "%Y%m%d %H:%M:%S"),
                           date = as.Date(datetime),
                           time = as.character(datetime),
