@@ -209,10 +209,10 @@ load_fivegas_file <- function(file){
   df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
                        skip = 1, fill = TRUE, col.names = col_names)
 
-  df <- dplyr::mutate(datetime = as.POSIXct(paste((strsplit(basename(file),
-                                            "_")[[1]])[1],
-                                            time),
-                                            format = "%Y%m%d %H:%M:%S"),
+  df <- dplyr::mutate(df, datetime = as.POSIXct(paste((strsplit(basename(file),
+                                                "_")[[1]])[1],
+                                                time),
+                                                format = "%Y%m%d %H:%M:%S"),
                       date = as.Date(datetime),
                       time = as.character(datetime),
                       time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
