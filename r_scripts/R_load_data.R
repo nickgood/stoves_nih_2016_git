@@ -209,13 +209,15 @@ load_fivegas_file <- function(file){
   df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
                        skip = 1, fill = TRUE, col.names = col_names)
 
-  df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time), format = "%Y%m%d %H:%M:%S") # fix
-
-  df$date <- as.Date(df$datetime)
-
-  df$time <- as.numeric(substr(df$time_str,1,2))*60*60 +
-             as.numeric(substr(df$time_str,4,5))*60 +
-             as.numeric(substr(df$time_str,7,8))
+  df <- dplyr::mutate(datetime = as.POSIXct(paste((strsplit(basename(file),
+                                            "_")[[1]])[1],
+                                            time),
+                                            format = "%Y%m%d %H:%M:%S"),
+                      date = as.Date(datetime),
+                      time = as.character(datetime),
+                      time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                             as.numeric(substr(datetime, 15, 16)) * 60 +
+                             as.numeric(substr(datetime, 18, 19)))
 }
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
