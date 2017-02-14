@@ -360,7 +360,7 @@ $Fivegas$ data is expected to be missing for:
 
 # Plots
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=40, eval=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
         dplyr::arrange(id) %>%
         dplyr::mutate(id = as.factor(id))
@@ -371,9 +371,9 @@ $Fivegas$ data is expected to be missing for:
     scale_colour_manual(values = 
                         c("ok" = "mediumaquamarine",
                           "maybe" = "mediumorchid1",
-                          "bad" = "mistyrose4")) +
+                          "bad" = "darkorange2")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
-    theme(legend.position="top")
+    theme(legend.position = "top")
 ```
