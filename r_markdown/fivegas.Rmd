@@ -228,7 +228,7 @@ Add calibration date to voltage data
   fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
 ```
 
-## plot
+## plot span
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=6}
  p_df <- tidyr::gather(fivegas_cal,
@@ -289,7 +289,7 @@ Merge voltage and mixing ratio data
                                    datetime)
 ```
 
-Remove ozone and nox rows (channels not used)
+Remove ozone and nox rows (channels not used during study)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_merged <- dplyr::filter(fivegas_merged, pol != "o2" & pol != "nox")
@@ -358,9 +358,9 @@ $Fivegas$ data is expected to be missing for:
 
 * calibration files for 2016/03/09 and 2016/04/01 missing (check)
 
-# Plot
+# Plots
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=12, fig.height=40, eval=TRUE}
   df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
         dplyr::arrange(id) %>%
         dplyr::mutate(id = as.factor(id))
@@ -369,7 +369,9 @@ $Fivegas$ data is expected to be missing for:
     geom_line() +
     scale_y_log10(limits = c(1, 10^5)) +
     scale_colour_manual(values = 
-                        c("ok" = "mediumorchid", "maybe" = "mediumaquamarine", "bad" = "mistyrose4")) +
+                        c("ok" = "mediumaquamarine",
+                          "maybe" = "mediumorchid1",
+                          "bad" = "mistyrose4")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
