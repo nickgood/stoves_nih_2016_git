@@ -379,7 +379,7 @@ Additional bad tests
     geom_line() +
     scale_y_log10(limits = c(1, 10^5)) +
     scale_colour_manual(values = 
-                        c("ok" = "springgreen4", "maybe" = "orange3", "bad" = "firebrick2")) +
+                        c("ok" = "mediumorchid", "maybe" = "mediumaquamarine", "bad" = "mistyrose4")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
