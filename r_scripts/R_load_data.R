@@ -213,11 +213,11 @@ load_fivegas_file <- function(file){
                                                 "_")[[1]])[1],
                                                 time),
                                                 format = "%Y%m%d %H:%M:%S"),
-                      date = as.Date(datetime),
-                      time = as.character(datetime),
-                      time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                             as.numeric(substr(datetime, 15, 16)) * 60 +
-                             as.numeric(substr(datetime, 18, 19)))
+                          date = as.Date(datetime),
+                          time = as.character(datetime),
+                          time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                 as.numeric(substr(datetime, 15, 16)) * 60 +
+                                 as.numeric(substr(datetime, 18, 19)))
 }
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
