@@ -42,6 +42,7 @@ output:
 ## sample times
 
 * background times from logged timestamps
+* trim first and last minute
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times_pre <- dplyr::filter(test_times,
@@ -49,14 +50,18 @@ output:
                tidyr::spread(var, value) %>%
                dplyr::select(-date) %>%
                dplyr::rename(start = bg_pre_start_fivegas,
-                             end = bg_pre_end_fivegas)
+                             end = bg_pre_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end = end - 60)
 
   times_post <- dplyr::filter(test_times,
                              var == "bg_post_start_fivegas" | var == "bg_post_end_fivegas") %>%
                tidyr::spread(var, value) %>%
                dplyr::select(-date) %>%
                dplyr::rename(start = bg_post_start_fivegas,
-                             end = bg_post_end_fivegas)
+                             end = bg_post_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end = end - 60)
 
 ```
 
@@ -166,24 +171,72 @@ Calculate mean background over all good tests
   save(background, file = "../r_files/background_co.Rda")
 ```
 
-# Plot
+# Plots
+
+## outliers
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+  p_data <- dplyr::mutate(background_means, 
+                          value_norm = (conc - mean(conc)) / sd(conc),
+                          outlier = ifelse(is_outlier(conc), as.character(id), NA))
+
+  ggplot(p_data, aes(x = "background tests", y = value_norm)) +
+    geom_boxplot() +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+    theme_minimal() +
+    ylab("z score normalized value") +
+    xlab("") +
+    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+    theme(axis.text.y = element_text(size = 30),
+          axis.title=element_text(size=40))
+```
 
 ## background by type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_pre_post, aes(id, mean, colour = type)) +
+  p_data <- background_pre_post
+
+  ggplot(p_data, aes(id, mean, colour = type)) +
     geom_point() +
     ggtitle("CO") +
     theme_minimal() +
+    scale_colour_manual(values = 
+                        c("pre" = "mediumaquamarine",
+                          "sample" = "mediumorchid1",
+                          "post" = "mistyrose4")) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## background by qc flag
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_pre_post, aes(id, mean, colour = qc)) +
+  p_data <- dplyr::filter(background_pre_post, type != "sample")
+
+  ggplot(p_data, aes(id, mean, colour = qc)) +
     geom_point() +
     ggtitle("CO") +
     theme_minimal() +
+    scale_colour_manual(values = 
+                        c("ok" = "mediumaquamarine",
+                          "maybe" = "mediumorchid1",
+                          "bad" = "mistyrose4")) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
+
+## timeseries
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  p_data <- dplyr::mutate(background_data, type = as.factor(type)) %>%
+            dplyr::filter(type != "sample")
+
+  ggplot(p_data, aes(datetime, ppm, colour = type, group = type)) + 
+    geom_line() +
+    scale_colour_manual(values = 
+                        c("pre" = "mediumaquamarine",
+                          "post" = "mistyrose4")) +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position="top")
+```
+
