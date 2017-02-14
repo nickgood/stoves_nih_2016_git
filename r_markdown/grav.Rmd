@@ -208,17 +208,13 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
-        dplyr::select(id,
-                         flow_pre, flow_post,
-                         time_end, time_start,
+        dplyr::select(id, flow,
+                         start, end,
                          wgt_delta) %>%
-        dplyr::mutate(flow_pre = ifelse(is.na(flow_pre) == TRUE, flow_post,
-                                                                 flow_pre)) %>%
         na.omit() %>%
-        dplyr::mutate(flow = (flow_pre + flow_post) / 2,
-                      dur = (time_end - time_start) / 60,
+        dplyr::mutate(dur = (end - start) / 60,
                       conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(mean = mean(conc),
+        dplyr::summarise(bg_mean = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
                          max = max(conc),
@@ -230,16 +226,12 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-* merge with test data
+* add background to main dataframe
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
-  bg <- dplyr::select(bg, type, mean) %>%
-        dplyr::rename(conc_bg = mean)
-
- # merge and add pollutant variable
-  grav_merged <- dplyr::left_join(grav_merged, bg, by = "type") %>%
-                 dplyr::mutate(pol = as.factor("grav"))
+  grav_merged <- dplyr::left_join(grav_merged,
+                                  dplyr::select(bg, type, bg_mean),
+                                                by = "type")
 ```
 
 # Summary
