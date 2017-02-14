@@ -371,7 +371,7 @@ $Fivegas$ data is expected to be missing for:
     scale_colour_manual(values = 
                         c("ok" = "mediumaquamarine",
                           "maybe" = "mediumorchid1",
-                          "bad" = "darkorange2")) +
+                          "bad" = "darkorange1")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
