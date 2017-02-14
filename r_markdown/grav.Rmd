@@ -274,8 +274,6 @@ Gravimetric data is expected to be missing for: 17A only. Filter ruptured so cou
 
 ## calibration
 
-Tests `r dplyr::filter(grav_merged, wgt_cal_delta > 10 | wgt_cal_delta < -10)$id` have large differences (> 10 ug) in the calibration weight values.
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav_merged, aes(id, wgt_cal_delta)) +
   geom_point() +
