@@ -1,8 +1,9 @@
 ---
-title: "ions"
-author: "Nicholas Good"
-date: "1/19/2017"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -16,65 +17,66 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")  # sample info
-```
+# Load data
 
-## Load ions
+* load ions
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")  # ions
-
-  ions <- dplyr::select(ions, 1:23, type, id)  # selction ions only
+  load("../r_files/ions.Rda")
 ```
+
+* metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(ions)
+  load("../r_files/samples.Rda")
+  load("../r_files/filter_times.Rda")
+  load("../r_files/filter_flows.Rda")
+  
+  load("../r_files/data_1.Rda")
 ```
 
-## Merge with filter meta data
+# Organize
 
-Load metadata
+## extract ions data
+
+* separate from carbonyls in same file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")  # metadata
+  ions_merged <- dplyr::select(ions, 1:23, type, id) %>%
+                 dplyr::filter(type == "test" | type == "bg")
 ```
 
-Extract ions filter cartridge data
+## flows and times
+
+* match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  meta <- dplyr::select(data_1, matches("_green_|^id$|^date$"))
-
-  flows <- dplyr::select(meta, matches("flow_|^id$")) %>%
-           tidyr::gather("var", "value", -id) %>%
-           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-           dplyr::mutate(type = sub("flow.*", "", var),
-                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
-           dplyr::select(-var)  %>%
-           dplyr::filter(!is.na(id)) %>%
-           dplyr::group_by(id, type) %>%
-           dplyr::summarise(mean = mean(value, na.rm = TRUE))  %>%
-           tidyr::spread(type, mean)
-
-  times <- dplyr::select(meta, matches("^time_|^id$|^date$")) %>%
-           tidyr::gather("var", "value", -id, -date) %>%
-           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                         type = ifelse(grepl("_end_", var), "end", type)) %>%
-           dplyr::arrange(id) %>%
-           dplyr::filter(!is.na(id)) %>%
-           dplyr::select(-var, -date) %>%
-           tidyr::spread(type, value)
+  flows <- dplyr::select(filter_flows, -date) %>%
+           dplyr::filter(colour == "green") %>%
+           dplyr::group_by(id, type, colour) %>%
+           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+           dplyr::group_by(id, colour) %>%
+           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+           dplyr::select(-colour)
 ```
 
-Merge ion with filter metadata
+* match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::left_join(ions, flows, by = "id") %>%
-                 dplyr::left_join(times, by = "id") %>%
-                 dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-                 dplyr::rename(pre_flow = pre, post_flow = post) %>%
-                 dplyr::rename(time_start = start, time_end = end) %>%
-                 dplyr::mutate(id = as.factor(id))
+  times <- dplyr::select(filter_times, -date) %>%
+           dplyr::filter(color == "green") %>%
+           tidyr::spread(type, value) %>%
+           dplyr::select(-color)
+```
+
+* merge ions with metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions_merged <- dplyr::left_join(ions_merged,
+                                  flows,
+                                  by = "id") %>%
+                 dplyr::left_join(times,
+                                  by = "id")
 ```
 
 ## QC
