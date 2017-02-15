@@ -1,25 +1,15 @@
 ---
 title: "background analysis carbon dioxide"
-author: "Nicholas Good"
-date: "1/27/2017"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
-# Setup
-
-1. Create working directory
-2. Download lastest .Rda files folder from server (r_files) and place in working directory
-3. Create RStudio project in working directory
-
-# Libraries
-
-The dataset has been optimized to work with `tidyverse`. It is strongly recommended you use `tidyverse` packages for data manipulation and plotting.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
 ```
-
-# Source files
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_functions.R")
@@ -27,19 +17,19 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
 
 # Load data
 
-* First we'll load the sample info data.
+* sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
 ```
 
-* Next we'll load the sample times file
+* test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/test_times.Rda")
 ```
 
-* Next we'll load the pollutant data we're interested in. In this case we're going to look at the CO2 data:
+* fivegas co2
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_merged.Rda")
@@ -49,7 +39,10 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
 
 # Extract data
 
-* by fivegas background log times
+## sample times
+
+* background times from logged timestamps
+* trim first and last minute
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times_pre <- dplyr::filter(test_times,
@@ -57,30 +50,35 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
                tidyr::spread(var, value) %>%
                dplyr::select(-date) %>%
                dplyr::rename(start = bg_pre_start_fivegas,
-                             end = bg_pre_end_fivegas)
+                             end = bg_pre_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end = end - 60)
 
   times_post <- dplyr::filter(test_times,
                              var == "bg_post_start_fivegas" | var == "bg_post_end_fivegas") %>%
                tidyr::spread(var, value) %>%
                dplyr::select(-date) %>%
                dplyr::rename(start = bg_post_start_fivegas,
-                             end = bg_post_end_fivegas)
+                             end = bg_post_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end = end - 60)
+
 ```
 
 * 5 minutes before and after each test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times_pre_5 <- dplyr::filter(test_times, var == "ignite") %>%
-                 tidyr::spread(var, value) %>%
-                 dplyr::select(-date) %>%
-                 dplyr::rename(end = ignite) %>%
-                 dplyr::mutate(start = end - 5*60)
+                tidyr::spread(var, value) %>%
+                dplyr::select(-date) %>%
+                dplyr::rename(end = ignite) %>%
+                dplyr::mutate(start = end - 5*60)
 
   times_post_5 <- dplyr::filter(test_times, var == "end") %>%
-                 tidyr::spread(var, value) %>%
-                 dplyr::select(-date) %>%
-                 dplyr::rename(start = end) %>%
-                 dplyr::mutate(end = start + 5*60)
+                tidyr::spread(var, value) %>%
+                dplyr::select(-date) %>%
+                dplyr::rename(start = end) %>%
+                dplyr::mutate(end = start + 5*60)
 ```
 
 * join time data with precedence for the logged times over estimated times
@@ -89,8 +87,8 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
   times_pre <- dplyr::anti_join(times_pre_5, times_pre, by = "id") %>%
                dplyr::bind_rows(times_pre)
 
-  times_post <- dplyr::anti_join(times_post_5, times_pre, by = "id") %>%
-               dplyr::bind_rows(times_post)
+  times_post <- dplyr::anti_join(times_post_5, times_post, by = "id") %>%
+                dplyr::bind_rows(times_post)
 ```
 
 * sample times
@@ -103,9 +101,10 @@ The dataset has been optimized to work with `tidyverse`. It is strongly recommen
                   dplyr::rename(start = start_1, end = shutdown)
 ```
 
-* extract data for times windows
+## filter data
 
-Append type column with "pre", "post" and "sample"
+* filter data inside times windows
+* add `type` column with value: `pre`, `post` or `sample`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   df_pre <- filter_times(times_pre, pol_data)
@@ -116,17 +115,21 @@ Append type column with "pre", "post" and "sample"
 
   df_sample <- filter_times(times_sample, pol_data)
   df_sample <- dplyr::mutate(df_sample, type = "sample")
+```
 
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_data <- dplyr::bind_rows(df_pre, df_post, df_sample)
 ```
 
-## Analyze
+# Analyze
 
-Calculate mean pollutant value for each period
+* mean value for each window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_pre_post <- dplyr::group_by(background_data, id, type) %>%
-                         dplyr::summarise(mean = mean(ppm), 
+                         dplyr::summarise(mean = mean(ppm, na.rm = TRUE), 
                                           qc_val = mean(as.numeric(qc))) %>%
                          dplyr::ungroup() %>%
 	                       dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
@@ -137,7 +140,7 @@ Calculate mean pollutant value for each period
 	                       dplyr::select(-qc_val)
 ```
 
-* Average pre and post (good tests only)
+* average pre and post (good tests only)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post", qc == "ok") %>%
@@ -153,39 +156,87 @@ Calculate mean background over all good tests
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mean_bg <- dplyr::summarise(background_means,
                               ppm = mean(ppm, na.rm = TRUE),
-	           									conc = mean(conc, na.rm = TRUE))
+                              conc = mean(conc, na.rm = TRUE))
 ```
 
-* List outputs
+* create list object with output data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background <- list(bg = background_means, mean = mean_bg)
 ```
 
-## Save to file
+# Save to file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(background, file = "../r_files/background_co2.Rda")
 ```
 
-## Plots
+# Plots
 
-* Plot
+## outliers
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+  p_data <- dplyr::mutate(background_means, 
+                          value_norm = (conc - mean(conc)) / sd(conc),
+                          outlier = ifelse(is_outlier(conc), as.character(id), NA))
+
+  ggplot(p_data, aes(x = "background tests", y = value_norm)) +
+    geom_boxplot() +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+    theme_minimal() +
+    ylab("z score normalized value") +
+    xlab("") +
+    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+    theme(axis.text.y = element_text(size = 30),
+          axis.title=element_text(size=40))
+```
+
+## background by type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_pre_post, aes(id, mean, colour = type)) +
+  p_data <- background_pre_post
+
+  ggplot(p_data, aes(id, mean, colour = type)) +
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
+    scale_colour_manual(values = 
+                        c("pre" = "mediumaquamarine",
+                          "sample" = "mediumorchid1",
+                          "post" = "mistyrose4")) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-* Plot
+## background by qc flag
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
-  ggplot(background_pre_post, aes(id, mean, colour = qc)) +
+  p_data <- dplyr::filter(background_pre_post, type != "sample")
+
+  ggplot(p_data, aes(id, mean, colour = qc)) +
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
+    scale_colour_manual(values = 
+                        c("ok" = "mediumaquamarine",
+                          "maybe" = "mediumorchid1",
+                          "bad" = "mistyrose4")) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
+
+## timeseries
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  p_data <- dplyr::mutate(background_data, type = as.factor(type)) %>%
+            dplyr::filter(type != "sample")
+
+  ggplot(p_data, aes(datetime, ppm, colour = type, group = type)) + 
+    geom_line() +
+    scale_colour_manual(values = 
+                        c("pre" = "mediumaquamarine",
+                          "post" = "mistyrose4")) +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position="top")
+```
+
