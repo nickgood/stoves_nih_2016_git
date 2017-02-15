@@ -31,8 +31,7 @@ output:
   load("../r_files/samples.Rda")
   load("../r_files/filter_times.Rda")
   load("../r_files/filter_flows.Rda")
-  
-  load("../r_files/data_1.Rda")
+  load("../r_files/notes.Rda")
 ```
 
 # Organize
@@ -79,16 +78,15 @@ output:
                                   by = "id")
 ```
 
-## QC
+# QC
 
-Load notes
+* extract notes for ion data 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")  # notes
   notes <- dplyr::filter(notes, grepl("ions|all", notes$inst) == TRUE)
 ```
 
-Set one flag per test
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -97,7 +95,7 @@ Set one flag per test
            summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions_merged <- dplyr::left_join(ions_merged, flags, by = "id") %>%
@@ -105,47 +103,26 @@ Merge with data
                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # ions_merged$qc[ions_merged$id == ""] <- "bad"
 ```
 
-## Convert to long format
+# Reformat
+
+* convert to longer format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ions_merged <- tidyr::gather(ions_merged, "pol", "mass_ug",
-                               -id, -id_ions, -post_flow,
-                               -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                               -id, -id_ions,
+                               -flow, -start, -end,
+                               -type, -qc) %>%
                  dplyr::filter(!is.na(mass_ug)) %>%
                  dplyr::mutate(pol = as.factor(pol))
 ```
 
-## Plot
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = pol)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top")
-```
-
-## Plot QC
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = qc)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top")
-```
-
-## Background analysis
+# Background analysis
 
 * extract background data
 * deal with LOD (not implemented)
@@ -157,8 +134,7 @@ Additional bad tests
         dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
         dplyr::select(-id_ions) %>%
-        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
-        dplyr::mutate(dur = time_end - time_start) %>%
+        dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
         dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
@@ -184,12 +160,38 @@ Additional bad tests
                  dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
 
+## Summary
+
+Ion data was collected during `r length(unique(ions_merged$id))` experiments. There is no ion data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
+
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(ions_merged, file = "../r_files/ions_merged.Rda")
 ```
 
-## Summary
+# Plots
 
-Ion data was collected during `r length(unique(ions_merged$id))` experiments. There is no ion data for tests: `r setdiff(as.character(samples$id), as.character(ions_merged$id))`.
+## mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = pol)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
+```
+
+## qc
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(ions_merged, aes(id, mass_ug, group = pol, color = qc)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top")
+```
