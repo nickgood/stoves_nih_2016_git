@@ -177,7 +177,7 @@ Calculate mean background over all good tests
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
   p_data <- dplyr::mutate(background_means, 
-                          value_norm = (conc - mean(conc)) / sd(conc),
+                          value_norm = (conc - mean(conc, na.rm = TRUE)) / sd(conc, na.rm = TRUE),
                           outlier = ifelse(is_outlier(conc), as.character(id), NA))
 
   ggplot(p_data, aes(x = "background tests", y = value_norm)) +
