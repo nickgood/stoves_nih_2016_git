@@ -87,7 +87,7 @@ output:
   times_pre <- dplyr::anti_join(times_pre_5, times_pre, by = "id") %>%
                dplyr::bind_rows(times_pre)
 
-  times_post <- dplyr::anti_join(times_post_5, times_pre, by = "id") %>%
+  times_post <- dplyr::anti_join(times_post_5, times_post, by = "id") %>%
                 dplyr::bind_rows(times_post)
 ```
 
@@ -129,7 +129,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   background_pre_post <- dplyr::group_by(background_data, id, type) %>%
-                         dplyr::summarise(mean = mean(ppm), 
+                         dplyr::summarise(mean = mean(ppm, na.rm = TRUE), 
                                           qc_val = mean(as.numeric(qc))) %>%
                          dplyr::ungroup() %>%
 	                       dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
