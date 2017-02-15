@@ -167,12 +167,12 @@ load_ecoc_file <- function(file){
 
 #________________________________________________________
 # Load fivegas file
-# file <- "data/fivegas/20160105_13A_FIVEGAS_OLD.csv" # voltage
-# file <- "data/fivegas/20160429_3B_FIVEGAS_FIXED.csv" # conc
+# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
+# file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
 
-  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ") # check file type from first line
+  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ")  # check file type from first line
 
  # load 
   if(grepl("^Device", df[1][1])){
@@ -201,7 +201,14 @@ load_fivegas_file <- function(file){
   df$date <- as.Date(df$datetime)
 
   }else{
+ # check time format
+  df <- read.csv(file, header = FALSE,
+                   nrows = 1,
+                   colClasses = "character",
+                   skip = 1)
 
+  time_format <- ifelse(grepl("AM$|PM$", df$V7[1]), "us", "mil")
+    
   classes = c(rep("numeric",6), "character")
 
   col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
@@ -209,13 +216,29 @@ load_fivegas_file <- function(file){
   df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
                        skip = 1, fill = TRUE, col.names = col_names)
 
-  df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time), format = "%Y%m%d %H:%M:%S") # fix
-
-  df$date <- as.Date(df$datetime)
-
-  df$time <- as.numeric(substr(df$time_str,1,2))*60*60 +
-             as.numeric(substr(df$time_str,4,5))*60 +
-             as.numeric(substr(df$time_str,7,8))
+  if(time_format == "mil"){
+    df <- dplyr::mutate(df, datetime =
+                            as.POSIXct(paste((strsplit(basename(file),
+                            "_")[[1]])[1],
+                            df$time),
+                            format = "%Y%m%d %H:%M:%S"),
+                            date = as.Date(datetime),
+                            time = as.character(datetime),
+                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                 as.numeric(substr(datetime, 15, 16)) * 60 +
+                                 as.numeric(substr(datetime, 18, 19)))
+  }else{
+    df <- dplyr::mutate(df, datetime =
+                            as.POSIXct(paste((strsplit(basename(file),
+                            "_")[[1]])[1],
+                            df$time),
+                            format = "%Y%m%d %I:%M:%S %p"),
+                            date = as.Date(datetime),
+                            time = as.character(datetime),
+                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                            as.numeric(substr(datetime, 15, 16)) * 60 +
+                            as.numeric(substr(datetime, 18, 19)))
+  }
 }
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])

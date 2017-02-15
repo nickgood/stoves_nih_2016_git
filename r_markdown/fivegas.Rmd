@@ -18,57 +18,37 @@ output:
 
 # Load data
 
-### mixing ratio
-
-Data logged in ppm units.
+* data logged in ppm units.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_conc.Rda")    
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_conc, 2)
-```
-
-## voltage
-
-Data logged in voltage units
+* data logged in voltage units
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_volts.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_volts, 2)
-```
-
-## voltage calibration
+* voltage calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/fivegas_calibration.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_calibration, 2)
-```
-
-## calibration metadata
+* calibration metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/cal_1.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(cal_1, 2)
-```
-
-## sample information
+* sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
 ```
 
-## notes
+* notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")
@@ -120,9 +100,7 @@ Convert voltage calibration data to longer format
 
 # Wrangle data
 
-## calibration standards
-
-Calibration standard mixing ratios
+* calibration standard mixing ratios
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
@@ -132,7 +110,7 @@ Calibration standard mixing ratios
   head(fivegas_cal_conc, 2)
 ```
 
-## calibration timestamps
+* calibration timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
@@ -146,7 +124,9 @@ Calibration standard mixing ratios
 
 # Calibration
 
-## response to standard
+## calculate and organize
+
+* response to standard
 
 Calculate mean voltage over last 30 seconds of each calibration window
 
@@ -170,11 +150,7 @@ Calculate mean voltage over last 30 seconds of each calibration window
                                                  stat_var = "sd"))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal, 2)
-```
-
-## zero time windows
+* zero time windows
 
 Extract zero time periods
 
@@ -185,11 +161,7 @@ Extract zero time periods
                       dplyr::rename(start_zero = start, end_zero = end)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal_zero, 2)
-```
-
-## merge standard and zero 
+* merge standard and zero 
 
 Join zero time periods with the calibration data 
 
@@ -197,11 +169,7 @@ Join zero time periods with the calibration data
   fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_zero, by = "date")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal, 2)
-```
- 
-## response to zero
+* response to zero
 
 Calculate mean voltage during last 30 seconds of each zero calibration
 
@@ -223,17 +191,13 @@ Calculate mean voltage during last 30 seconds of each zero calibration
                                            stat_var = "sd"))
 ```
 
-## remove NaNs
+* remove NaNs
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- na.omit(fivegas_cal)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal, 2)
-```
-
-## combine voltage and standard info
+* combine voltage and standard info
 
 Merge measured voltage with standard mixing ratio
 
@@ -246,13 +210,7 @@ Merge measured voltage with standard mixing ratio
                                   by = c("date", "pol"))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal, 2)
-```
-
-## calibration coefficients
-
-Calculate the calibration coefficients
+* calibration coefficients
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_cal <- dplyr::mutate(fivegas_cal,
@@ -260,11 +218,7 @@ Calculate the calibration coefficients
                  dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal, 2)
-```
-
-## add calibration date
+* add calibration date
 
 Add calibration date to voltage data
 
@@ -274,11 +228,7 @@ Add calibration date to voltage data
   fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_volts, 2)
-```
-
-## plot results
+## plot span
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=6}
  p_df <- tidyr::gather(fivegas_cal,
@@ -339,7 +289,7 @@ Merge voltage and mixing ratio data
                                    datetime)
 ```
 
-Remove ozone and nox rows (channels not used)
+Remove ozone and nox rows (channels not used during study)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_merged <- dplyr::filter(fivegas_merged, pol != "o2" & pol != "nox")
@@ -388,7 +338,27 @@ Additional bad tests
   fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
 ```
 
-## plot
+# Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
+```
+
+# Summary
+
+The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
+
+$Fivegas$ data is expected to be missing for: 
+
+* all "G" tests: five gas not run during backgrounds.
+
+* 1B, 2A: "no data" noted on QC log
+
+* 4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
+
+* calibration files for 2016/03/09 and 2016/04/01 missing (check)
+
+# Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
@@ -399,72 +369,11 @@ Additional bad tests
     geom_line() +
     scale_y_log10(limits = c(1, 10^5)) +
     scale_colour_manual(values = 
-                        c("ok" = "springgreen4", "maybe" = "orange3", "bad" = "firebrick2")) +
+                        c("ok" = "mediumaquamarine",
+                          "maybe" = "mediumorchid1",
+                          "bad" = "darkorange1")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
-    theme(legend.position="top")
-```
-
-# Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
-```
-
-# Summary
-
-The $Fivegas$ measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
-
-$Fivegas$ data is expected to be missing for: 
-
-All "G" tests: five gas not run during backgrounds.
-
-1B, 2A: "no data" noted on QC log
-
-4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
-
-NG: Calibration files for 2016/03/09 and 2016/04/01 missing?
-
-Plot QC
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
-  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co")  # filter
-  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
-        geom_line() +
-        scale_y_log10(limits = c(1, 10^5)) +
-        facet_wrap(~id, ncol = 3, scale = "free") +
-        theme_minimal() +
-        xlab("") + ylab("co ppm")
-  
-  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "co2")  # filter
-  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
-        geom_line() +
-        scale_y_log10(limits = c(1, 10^5)) +
-        facet_wrap(~id, ncol = 3, scale = "free") +
-        theme_minimal() +
-        xlab("") + ylab("co2 ppm")
-  
-  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol == "ch4")  # filter
-  ggplot(df,  aes(datetime, ppm, colour = qc, group = pol)) +
-        geom_line() +
-        scale_y_log10(limits = c(1, 10^5)) +
-        facet_wrap(~id, ncol = 3, scale = "free") +
-        theme_minimal() +
-        xlab("") + ylab("ch4 ppm")
-```
-
-Plot data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=FALSE}
-  df <- dplyr::filter(fivegas_merged, !is.na(ppm) & pol != "o2" & pol != "nox") %>%
-        dplyr::mutate(id = as.character(id)) %>%
-        dplyr::arrange(id) %>%
-        dplyr::mutate(id = as.factor(id))
-
-  ggplot(df, aes(datetime, ppm, colour = pol)) + 
-        geom_line() +
-        scale_y_log10(limits = c(1, 10^5)) +
-        facet_wrap(~id, ncol = 3, scale = "free") +
-        theme_minimal()
+    theme(legend.position = "top")
 ```
