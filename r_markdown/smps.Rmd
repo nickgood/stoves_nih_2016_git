@@ -237,9 +237,9 @@ output:
 
 # Summary
 
-The $SMPS$ measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
+The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
 
-$SMPS$ data is expected to be missing for: 
+SMPS data is expected to be missing for: 
 13A, 17A, 18A, 19A, 20A, G3, G4. "no data" was noted on QC log for these tests. 
 
 G1, 23A: test date 1/7/2016: data lost from this day. 
@@ -263,5 +263,5 @@ G1, 23A: test date 1/7/2016: data lost from this day.
          scale_x_log10() + scale_y_log10() +
          ylab("dN/dlogDp") +
          xlab("nm") +
-         theme(legend.position="none")
+         theme(legend.position = "none")
 ```
