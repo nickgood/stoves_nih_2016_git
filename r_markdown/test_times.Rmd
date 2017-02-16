@@ -7,23 +7,19 @@ output:
     theme: united
 ---
 
-## Libraries
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
 ```
 
-## Source files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../R_scripts/R_load_data.R")
   source("../R_scripts/R_load_metadata.R")
   source("../R_scripts/R_tidy.R")
 ```
 
-## Load data
+# Load data
 
-Load sample, wood and batch test meta data
+* sample, wood and batch test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
@@ -31,7 +27,7 @@ Load sample, wood and batch test meta data
   load("../r_files/wood_times.Rda")
 ```
 
-Load pre and post experiment background times for online instruments
+* pre and post experiment background times for online instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/data_1.Rda")
@@ -104,27 +100,32 @@ Load pre and post experiment background times for online instruments
   head(test_times, 2)
 ```
 
-## Save data
+# Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(test_times, file = "../r_files/test_times.Rda")
 ```
 
-## Summary
+# Summary
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample info
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample durations (minutes)
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
            tidyr::spread(var, value) %>%
-           dplyr::mutate(dur = (shutdown - start_1) / 60)  # extract test sample durations (minutes)
+           dplyr::mutate(dur = (shutdown - start_1) / 60)
+```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # merge with full test list
   times <- dplyr::left_join(dplyr::select(samples, id) %>%
-  													dplyr::filter(grepl("^[0-9]", id) == TRUE), 
-  													times,
-  													by = "id")  # join with sample list
+                            dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+                            times,
+                            by = "id")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
