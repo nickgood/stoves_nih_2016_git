@@ -130,13 +130,14 @@ output:
 
 ```
 
-* plot vocs with a background test higher than 10 ppb
+* plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   p_data <-  dplyr::group_by(bg, pol) %>%
              dplyr::mutate(max = max(ppb)) %>%
              dplyr::ungroup() %>%
              dplyr::filter(max > 10) %>%
+             dplyr::group_by(pol) %>%
              dplyr::mutate(outlier = ifelse(is_outlier(ppb), as.character(id), NA),
                            mean = mean(ppb, na.rm = TRUE)) %>%
              dplyr::ungroup() %>%
