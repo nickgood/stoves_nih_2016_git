@@ -14,6 +14,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 # Load data
@@ -127,6 +128,24 @@ output:
         na.omit() %>%
         dplyr::select(-id_can, -id_voc) %>%
         dplyr::group_by(pol) %>%
+        dplyr::mutate(outlier = ifelse(is_outlier(ppb), as.character(id), NA))
+```
+
+* plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(bg, aes(pol, ppb)) +
+    geom_boxplot(outlier.size = 0) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    ylab("ppb") + xlab("pollutant") +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4)
+
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+        dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(ppb),
                          sd = sd(ppb),
                          min = min(ppb),
@@ -134,16 +153,6 @@ output:
                          n = n())
 ```
 
-## plot background
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20}
-    ggplot(bg, aes(pol, mean, ymin = min, ymax = max)) +
-         geom_pointrange(size = 0.5) +
-         theme_minimal() +
-         theme(axis.text.x = element_text(angle=45, hjust=1)) +
-         ylab("ppb") + xlab("pollutant")
-         
-```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
