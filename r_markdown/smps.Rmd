@@ -9,6 +9,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(gridExtra)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -98,6 +99,15 @@ output:
                                type = ifelse(grepl("^G", id), "bg", type))
 ```
 
+* error from instrument
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps_merged <- dplyr::mutate(smps_merged,
+                               qc = ifelse(grepl("^Normal Scan$", instrument_errors),
+                                           as.character(qc),
+                                           "bad"))
+```
+
 * additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -110,13 +120,14 @@ output:
 
 ## average per scan
 
+* select sub-100nm data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::select(smps_merged, id, value, size, time, sample) %>%
+  smps_ultrafine <- dplyr::select(smps_merged, id, value, size, time, sample, qc) %>%
                     dplyr::filter(size <= 100)
 ```
 
-* integrate over size range
+* get timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
@@ -132,25 +143,50 @@ output:
 ```
 
 * calculate number concentration over each scan
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
-                    dplyr::summarise(number_conc = sum(value) * 0.015625355)
+                    dplyr::summarise(number_conc = sum(value) * 0.015625355,
+                                     n_bad = sum(qc == "bad"),
+                                     qc = first(qc))
 ```
 
 # Background
 
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bkgd <- dplyr::select(smps_merged, datetime, date, time, id,
+  smps_ultrafine_bg <- dplyr::filter(smps_merged, type == "bg") %>%
+                         dplyr::select(datetime, date, time, id, sample,
                                        value, size, qc) %>%
                          dplyr::filter(size <= 100) %>%
-                         dplyr::group_by(id, datetime) %>%
-                         dplyr::summarise(date = first(date), 
-                                          time = first(time), 
-                                          pol = "ufp_conc",
-                                          val = sum(value) * 0.015625355,
-                                          qc = first(qc))
+                         dplyr::group_by(id, sample) %>%
+                         dplyr::summarise(number_conc = sum(value) * 0.015625355,
+                                          n_bad = sum(qc == "bad"),
+                                          qc = first(qc)) %>%
+                         dplyr::ungroup()
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  p_id <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = id)) +
+            geom_point() +
+            geom_line() +
+            theme_minimal() +
+            scale_y_log10() +
+            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+            theme(legend.position = "top")
+
+  p_qc <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = qc)) +
+            geom_point() +
+            geom_line() +
+            theme_minimal() +
+            scale_y_log10() +
+            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+            theme(legend.position = "top")
+
+  grid.arrange(p_id, p_qc, ncol = 1)
+```
+
+
+
 
 Plot timeseries for each experiment
 
