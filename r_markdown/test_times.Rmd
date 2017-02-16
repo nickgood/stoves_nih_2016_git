@@ -9,12 +9,14 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(gridExtra)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../R_scripts/R_load_data.R")
   source("../R_scripts/R_load_metadata.R")
   source("../R_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 # Load data
@@ -96,10 +98,6 @@ output:
                 tibble::as_data_frame()
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(test_times, 2)
-```
-
 # Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -128,11 +126,30 @@ output:
                             by = "id")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ggplot(times, aes(x = dur)) +
-    geom_histogram(binwidth = 15) +
-    theme_minimal() +
-    xlab("test duration (min)")
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_hist <- ggplot(times, aes(x = dur)) +
+            geom_histogram(binwidth = 15) +
+            theme_minimal() +
+            xlab("test duration (min)")
+
+  p_data <- dplyr::mutate(times,
+                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(dur),
+                          as.character(id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
 ```
 
-There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are tests: `r times$id[is.na(times$dur)]`.
+There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are: `r times$id[is.na(times$dur)]`.
