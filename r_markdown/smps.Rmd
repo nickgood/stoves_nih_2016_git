@@ -16,78 +16,68 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-```
+# Load data
 
-## Load smps data
+* smps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/smps.Rda")
 ```
 
+* metadata
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(smps)
-```
-
-## Load flow data and test times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")
   load("../r_files/cal_2.Rda")
+  load("../r_files/notes.Rda")
+  load("../r_files/test_times.Rda")
 ```
 
-Extract measured flows.
+# Organize
+
+* extract measured flows.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_flows <- tidy_date(cal_2, "^preflow_smps|^postflow_smps", "")
-```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(smps_flows, 2)
-```
-
-Separate measurement location and replicate
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_flows <- split_flows(smps_flows)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(smps_flows, 2)
-```
-
-## Average measured flows
+* average flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # group by date and type, order, average, drop duplicates, spread
   smps_flows <- dplyr::arrange(group_by(smps_flows, date, type), date) %>%
                 dplyr::mutate(mean = mean(value, na.rm = TRUE),
                               sd = sd(value, na.rm = TRUE)) %>%
-                dplyr::filter(rep ==1) %>%
-                dplyr::select(-rep, -value)  %>%
-                tidyr::gather(temp, val, mean, sd) %>% 
-                tidyr::unite(temp1, type, temp, sep = "_") %>% 
+                dplyr::filter(rep == 1) %>%
+                dplyr::select(-rep, -value) %>%
+                tidyr::gather(temp, val, mean, sd) %>%
+                tidyr::unite(temp1, type, temp, sep = "_") %>%
                 tidyr::spread(temp1, val)
 ```
 
-## Append measured flows to smps data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_merged <- dplyr::left_join(smps, smps_flows, "date") %>%
                  dplyr::mutate(sample = as.factor(sample))
 ```
 
-## QC
+# QC
 
-Load notes
+* notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("smps|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("smps|all", inst))
 ```
 
-Set one flag per test
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(dplyr::filter(notes, grepl(".*smps.*", inst)) %>%
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -96,23 +86,30 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_merged <- dplyr::left_join(smps_merged, flags, by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
+                                                     "ok",
+                                                     as.character(qc)))) %>%
+                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
+                               type = ifelse(grepl("^G", id), "bg", type))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # smps_merged$qc[smps_merged$id == ""] <- "bad"
 ```
 
-## Ultrafine number
+# Ultrafine number
 
-* filter smps data (<= 100 nm only)
+* calculate the sub-100 nm number concentration for each smps scan 
+
+## average per scan
+
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine <- dplyr::select(smps_merged, id, value, size, time, sample) %>%
@@ -122,8 +119,6 @@ Additional bad tests
 * integrate over size range
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/test_times.Rda")
- 
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
@@ -131,16 +126,19 @@ Additional bad tests
 ```
 
 * filter by test time window
-* calculate number concentration over each scan
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine <- filter_times(times, smps_ultrafine)
-
-  smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
-                    dplyr::summarise(number_conc = sum(value)*0.015625355)
 ```
 
-* save ultrafine for background analysis
+* calculate number concentration over each scan
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
+                    dplyr::summarise(number_conc = sum(value) * 0.015625355)
+```
+
+# Background
+
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_bkgd <- dplyr::select(smps_merged, datetime, date, time, id,
@@ -150,7 +148,7 @@ Additional bad tests
                          dplyr::summarise(date = first(date), 
                                           time = first(time), 
                                           pol = "ufp_conc",
-                                          val = sum(value)*0.015625355,
+                                          val = sum(value) * 0.015625355,
                                           qc = first(qc))
 ```
 
