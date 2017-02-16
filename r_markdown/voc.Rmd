@@ -117,12 +117,9 @@ output:
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
-## Background analysis
+# Background
 
-* extract background data
-* deal with LOD (not implemented)
-* remove missing data
-* calculate mean ppbv emitted (and other stats)
+* extract good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
@@ -137,10 +134,10 @@ output:
                          n = n())
 ```
 
-#Plot background
+## plot background
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20}
-    ggplot(bg, aes(pol, mean, ymin = min, ymax = max)) + 
+    ggplot(bg, aes(pol, mean, ymin = min, ymax = max)) +
          geom_pointrange(size = 0.5) +
          theme_minimal() +
          theme(axis.text.x = element_text(angle=45, hjust=1)) +
@@ -152,32 +149,36 @@ output:
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-* merge with test data
+##  merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
- # merge and add zeros for missing values
   voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
                 dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
-## Save merged file
+# Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(voc_merged, file="../r_files/voc_merged.Rda")
 ```
 
-## Plot (coloured by fuel type)
+# Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")
-
   samples <- dplyr::select(samples, id, stove, fuel)
+```
+
+## plot by fuel type
+
+
+
+
 
 # change factor order
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
                           "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
                           "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
