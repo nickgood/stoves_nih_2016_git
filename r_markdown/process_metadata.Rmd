@@ -128,7 +128,7 @@ output:
           axis.title=element_text(size=40))
 ```
 
-## carbonyls flows
+## carbonyl flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   carb_flows <- dplyr::filter(tidy_id_date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))

@@ -200,7 +200,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
                                loq = ifelse(wgt_delta >= loq_var, "ok", "low"))
 ```
 
-# Background analyis
+# Background analysis
 
 * extract background data
 * remove missing data
