@@ -481,6 +481,28 @@ output:
           axis.title=element_text(size=40))
 ```
 
+## smps / pax background times
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  smps_pax_bg_times <- dplyr::filter(tidy_id_date(data_2,
+                                                  "^time_.*smps.*", "^time_"),
+                                                  !is.na(value))
+
+  smps_pax_bg_times <- split_times(smps_pax_bg_times)
+
+  save(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.Rda")
+```
+
+* unexpected values:
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  outliers <- dplyr::filter(smps_pax_bg_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
+
+  knitr::kable(outliers, "markdown", digits = 2)
+```
+
 # Summary
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
