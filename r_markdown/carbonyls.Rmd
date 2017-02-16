@@ -1,8 +1,11 @@
 ---
 title: "carbonyls"
-author: "Nicholas Good"
-date: "1/19/2017"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
