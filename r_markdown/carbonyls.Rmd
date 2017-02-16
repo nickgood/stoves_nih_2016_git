@@ -84,7 +84,13 @@ Load notes
   notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE)
 ```
 
-Set one flag per test
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(dplyr::filter(notes, grepl(".*carbonyls.*", inst)) %>% 
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -93,7 +99,7 @@ Set one flag per test
            summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls_merged <- dplyr::left_join(carbonyls_merged, flags, by = "id") %>%
@@ -101,50 +107,27 @@ Merge with data
                       dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # carbonyls_merged$qc[carbonyls_merged$id == ""] <- "bad"
 ```
 
-## Convert to long format
+# Reformat
+
+* convert to longer format
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   carbonyls_merged <- tidyr::gather(carbonyls_merged, "pol", "mass_ug",
-                                    -id, -id_ions, -post_flow,
-                                     -pre_flow, -time_start, -time_end, -type, -qc) %>%
+                                    -id, -id_ions, -flow,
+                                    -start, -end, -type, -qc) %>%
                       dplyr::filter(!is.na(pol)) %>%
                       dplyr::mutate(pol = as.factor(pol))
 ```
 
-## Plot
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = pol)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top")
-```
-
-## Plot QC
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = qc)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top")
-```
-
-## Background analysis
+# Background analysis
 
 * extract background data
-* deal with LOD (not implemented)
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 
@@ -153,9 +136,9 @@ Additional bad tests
         dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
         dplyr::select(-id_ions) %>%
-        dplyr::mutate(flow = (post_flow + pre_flow) / 2) %>%
-        dplyr::mutate(dur = time_end - time_start) %>%
-        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
+        dplyr::mutate(dur = end - start) %>%
+        # ug * 1000 * 60 / (L/min * s) = ug / m^3
+        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%
         dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
@@ -164,6 +147,8 @@ Additional bad tests
                          n = n())
 ```
 
+* background concentration ($\mu g/m^3$)
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
@@ -171,11 +156,9 @@ Additional bad tests
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(conc_bg = mean)
 
- # merge
   carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "pol") %>%
                       dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
@@ -189,3 +172,33 @@ Additional bad tests
 ## Summary
 
 Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no carbonyl data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.
+
+# Plots
+
+## mass by pollutant
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = pol)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top") +
+         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+         facet_wrap(~type, ncol = 1, scales = "free")
+```
+
+## qc
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = qc)) +
+         geom_point() +
+         geom_line() +
+         scale_y_log10() +
+         theme_minimal() +
+         ylab("ug") +
+         theme(legend.position="top") +
+         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+         facet_wrap(~type, ncol = 1, scales = "free")
+```
