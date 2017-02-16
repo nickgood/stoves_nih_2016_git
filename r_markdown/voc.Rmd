@@ -86,13 +86,13 @@ output:
                "markdown", digits = 2)
 ```
 
-Flag bad data from notes and plots
+* flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes$qc[33:36] <- "maybe"
 ```
 
-Set one flag per test
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -101,24 +101,20 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc_merged <- dplyr::left_join(voc_merged, flags, by = "id") %>%
                 dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
+                                                    "ok",
+                                                    as.character(qc))))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
-```
-
-Filter out bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::filter(voc_merged, qc != "bad")
 ```
 
 ## Background analysis
