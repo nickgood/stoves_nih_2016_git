@@ -16,61 +16,47 @@ output:
   source("../r_scripts/R_tidy.R")
 ```
 
-## Load $VOC$ data
+# Load data
 
-The $VOC$ data is contain in one file. Units are $ppbv$. 
+ * voc (ppbv)
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")  # voc dataset
-  load("../r_files/emissions.Rda")  # load pollutant emissions data
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/voc.Rda")
 ```
 
-* The column `pol` contains the individual pollutant names. The column `mass_emitted` contains the total mass of each pollutant emitted per firepower sweep test (excluding startup and shutdown periods). Units are $micrograms$ $of$ $total$ $mass$ $emitted$
+* metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(voc)
-  colnames(emissions)
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")  # load sample meta data
+  load("../r_files/samples.Rda")     # load sample meta data
   load("../r_files/fuel_burnt.Rda")  # fuel use meta data
-```
+  load("../r_files/emissions.Rda")   # load pollutant emissions data
+  load("../r_files/data_1.Rda")
+``` 
 
-**The `samples.Rda` file contains metadata related to the test IDs, such as what stove and fuel type was burned. The `fuel_burnt.Rda` file contains data on the total mass of fuel burned during each test.**
 
 * The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
 
-## Remove non-study data
+# Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+  voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
 ```
 
-## Convert to longer format
+## longer format
 
-Make longer and remove n/a.
+* make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(voc, "pol", "ppb", starts_with("voc_")) %>%
-         dplyr::filter(!is.na(id) & id != "NA")
+  voc_merged <- tidyr::gather(voc_merged, "pol", "ppb", starts_with("voc_")) %>%
+                dplyr::filter(!is.na(id) & id != "NA")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(voc, 2)
-```
-
-## Merge with meta data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/data_1.Rda")
-```
+# merge with meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # match voc metadata
-  meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
- # merge
-  voc_merged <- dplyr::left_join(voc, meta)
+  voc_merged <- dplyr::left_join(voc_merged,
+                                 dplyr::select(data_1,
+                                               matches("_voc|voc_|^id$|^date$")))
 ```
 
 ## LOD
