@@ -31,8 +31,8 @@ output:
   load("../r_files/fuel_burnt.Rda")  # fuel use meta data
   load("../r_files/emissions.Rda")   # load pollutant emissions data
   load("../r_files/data_1.Rda")
+  load("../r_files/notes.Rda")
 ``` 
-
 
 * The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
 
@@ -59,22 +59,25 @@ output:
                                                matches("_voc|voc_|^id$|^date$")))
 ```
 
-## LOD
+# LOD
 
 * Add LOD flag
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(ppb == -8888, "below", "above"))) %>%
-                dplyr::mutate(ppb = ifelse(ppb == -8888, NA, ppb))
+  voc_merged <- dplyr::mutate(voc_merged,
+                              lod = as.factor(ifelse(ppb == -8888,
+                                                     "below",
+                                                     "above"))) %>%
+                dplyr::mutate(ppb = ifelse(ppb == -8888,
+                                           NA,
+                                           ppb))
 ```
 
-## QC
+# QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("voc|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("voc|all", inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
