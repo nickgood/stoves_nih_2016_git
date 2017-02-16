@@ -1,8 +1,10 @@
 ---
-title: "$VOCs$"
-author: "Nicholas Good"
-date: "11/23/2016"
-output: html_document
+title: "VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
