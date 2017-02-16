@@ -1,4 +1,5 @@
 ---
+title: "Ions"
 output:
   html_document:
     toc: true
@@ -149,6 +150,8 @@ output:
                          n = n())
 ```
 
+* background concentration ($\mu g/m^3$)
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
@@ -156,11 +159,9 @@ output:
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(conc_bg = mean)
 
- # merge and add zeros for missing values
   ions_merged <- dplyr::left_join(ions_merged, bg, by = "pol") %>%
                  dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
 ```
