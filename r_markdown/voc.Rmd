@@ -1,8 +1,10 @@
 ---
-title: "$VOCs$"
-author: "Nicholas Good"
-date: "11/23/2016"
-output: html_document
+title: "VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -12,90 +14,86 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
-## Load $VOC$ data
+# Load data
 
-The $VOC$ data is contain in one file. Units are $ppbv$. 
+ * voc (ppbv)
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")  # voc dataset
-  load("../r_files/emissions.Rda")  # load pollutant emissions data
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/voc.Rda")
 ```
 
-* The column `pol` contains the individual pollutant names. The column `mass_emitted` contains the total mass of each pollutant emitted per firepower sweep test (excluding startup and shutdown periods). Units are $micrograms$ $of$ $total$ $mass$ $emitted$
+* metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(voc)
-  colnames(emissions)
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")  # load sample meta data
+  load("../r_files/samples.Rda")     # load sample meta data
   load("../r_files/fuel_burnt.Rda")  # fuel use meta data
-```
-
-**The `samples.Rda` file contains metadata related to the test IDs, such as what stove and fuel type was burned. The `fuel_burnt.Rda` file contains data on the total mass of fuel burned during each test.**
+  load("../r_files/emissions.Rda")   # load pollutant emissions data
+  load("../r_files/data_1.Rda")
+  load("../r_files/notes.Rda")
+``` 
 
 * The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
 
-## Remove non-study data
+# Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+  voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
 ```
 
-## Convert to longer format
+## longer format
 
-Make longer and remove n/a.
+* make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(voc, "pol", "ppb", starts_with("voc_")) %>%
-         dplyr::filter(!is.na(id) & id != "NA")
+  voc_merged <- tidyr::gather(voc_merged, "pol", "ppb", starts_with("voc_")) %>%
+                dplyr::filter(!is.na(id) & id != "NA")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(voc, 2)
-```
-
-## Merge with meta data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/data_1.Rda")
-```
+## merge with meta data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # match voc metadata
-  meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
- # merge
-  voc_merged <- dplyr::left_join(voc, meta)
+  voc_merged <- dplyr::left_join(voc_merged,
+                                 dplyr::select(data_1,
+                                               matches("_voc|voc_|^id$|^date$")))
 ```
 
-## LOD
+# LOD
 
 * Add LOD flag
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(ppb == -8888, "below", "above"))) %>%
-                dplyr::mutate(ppb = ifelse(ppb == -8888, NA, ppb))
+  voc_merged <- dplyr::mutate(voc_merged,
+                              lod = as.factor(ifelse(ppb == -8888,
+                                                     "below",
+                                                     "above"))) %>%
+                dplyr::mutate(ppb = ifelse(ppb == -8888,
+                                           NA,
+                                           ppb))
 ```
 
-## QC
+# QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("voc|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("voc|all", inst))
 ```
 
-Flag bad data from notes and plots
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(dplyr::filter(notes, grepl(".*voc.*", inst)) %>%
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
+```
+
+* flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes$qc[33:36] <- "maybe"
 ```
 
-Set one flag per test
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -104,39 +102,61 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc_merged <- dplyr::left_join(voc_merged, flags, by = "id") %>%
                 dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
+                                                    "ok",
+                                                    as.character(qc))))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
-Filter out bad tests
+# Background
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::filter(voc_merged, qc != "bad")
-```
-
-## Background analysis
-
-* extract background data
-* deal with LOD (not implemented)
-* remove missing data
-* calculate mean ppbv emitted (and other stats)
+* extract good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
         na.omit() %>%
-        dplyr::select(-id_can, -id_voc) %>%
-        dplyr::group_by(pol) %>%
+        dplyr::select(-id_can, -id_voc)
+
+```
+
+* plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_data <-  dplyr::group_by(bg, pol) %>%
+             dplyr::mutate(max = max(ppb)) %>%
+             dplyr::ungroup() %>%
+             dplyr::filter(max > 10) %>%
+             dplyr::group_by(pol) %>%
+             dplyr::mutate(outlier = ifelse(is_outlier(ppb), as.character(id), NA),
+                           mean = mean(ppb, na.rm = TRUE)) %>%
+             dplyr::ungroup() %>%
+             dplyr::mutate(pct = round(percent_rank(mean), 1))
+
+  ggplot(p_data, aes(pol, ppb)) +
+    geom_boxplot(outlier.size = 0) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    ylab("ppb") + xlab("pollutant") +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4)
+
+```
+
+## average background
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::group_by(bg, pol) %>%
         dplyr::summarise(mean = mean(ppb),
                          sd = sd(ppb),
                          min = min(ppb),
@@ -144,204 +164,58 @@ Filter out bad tests
                          n = n())
 ```
 
-#Plot background
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20}
-    ggplot(bg, aes(pol, mean, ymin = min, ymax = max)) + 
-         geom_pointrange(size = 0.5) +
-         theme_minimal() +
-         theme(axis.text.x = element_text(angle=45, hjust=1)) +
-         ylab("ppb") + xlab("pollutant")
-         
-```
+* background values (ppb)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-* merge with test data
+##  merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
- # merge and add zeros for missing values
   voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
                 dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
-## Save merged file
+# Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(voc_merged, file="../r_files/voc_merged.Rda")
 ```
 
-## Plot (coloured by fuel type)
+# Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")
-
   samples <- dplyr::select(samples, id, stove, fuel)
+```
 
-# change factor order
-  samples$stove <- factor(samples$stove, levels = c("Three Stone Fire (Artisan)", "Clay Ring (Artisan)",
-                          "Built-in Justa (Envirofit, HM5000)", "Rocket Elbow (Envirofit, G3300)",
-                          "Fan Rocket Elbow (Biolite, HomeStove)", "Ceramic Charcoal (Artisan)",
-                          "Metal Charcoal (Burn, Jikokoa)", "Gasifier (Philips, HD4012)",
-                          "Gasifer (Mimi Moto, Mimi Moto)",
-                          "Gasifier (Envirofit, Prototype)", "Wick Kerosene (Cook 'n Lite, 82)",
-                          "Pressurized Kerosene (Butterfly, 2412)", "Pressurized LPG (WokSmith, WS-C1-25K)"))
-    
-  samples$fuel <- factor(samples$fuel, levels = c("Douglas Fir", "Oak", "Eucalyptus", "Lump Hardwood (Sm.)",
-                        "Lump Hardwood (Med.)", "Coconut Charcoal", "West Slope Pellets", "Eucalyptus Pellets",
-                        "Kerosene", "Liquefied Petroleum Gas"))
+## plot by fuel type
 
-  voc_p <- dplyr::left_join(voc_merged, samples, by = "id") %>%
-           dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
-           dplyr::mutate(id = as.factor(id))
-  
- # filter out background data and non-detects 
-  voc_p <- dplyr::filter(voc_p, ppb > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  p_data <- dplyr::left_join(voc_merged, samples, by = "id") %>%
+            dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
+            dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::filter(ppb > 0 &
+                          grepl("^P", id) == FALSE &
+                          grepl("^G", id)==FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  #ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
-         #geom_point() +
-         #facet_wrap(~pol, ncol = 1, scales = "free") +
-         #theme_minimal() +
-         #theme(legend.position = "top") +
-         #ylab("ug/m3") + xlab("")
+  ggplot(p_data, aes(id, ppb, colour = fuel)) + 
+         geom_point() +
+         facet_wrap(~pol, ncol = 1, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("ug/m3") +
+         xlab("") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-## Plot QC
+# Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  #ggplot(voc_p, aes(id, ppb, colour = qc)) + 
-         #geom_point() +
-         #facet_wrap(~pol, ncol = 1, scales = "free") +
-         #theme_minimal()
-```
+VOCs were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
 
-## Select pollutant of interest and merge with fuel burnt and metadata 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  benzene <- dplyr::filter(emissions,  pol == "voc_benzene")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
-  benzene <- dplyr::left_join(benzene, 
-                              dplyr::select(samples, id, fuel, stove, fuelcat, stovecat),
-                              by = "id") %>%
-             dplyr::left_join(fuel_burnt, by = "id")
-```
-
-* The `benzene` dataframe now contains a subset of the emissions data for only the pollutant benzene. A summary of the dataset is below:  
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  summary(benzene)
-```
-
-## Calculate Emissions Factor
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  benzene <- dplyr::mutate(benzene, pol_fuel_mass_ratio = (mass_emitted * 1e-3) / (mass_fuel*1e-3))  # ug * 1e-6 / g
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  summary(benzene$pol_fuel_mass_ratio)
-```
-
-* units: miligram of pollutant emitted per kilogram of fuel burned 
-
-# Plots
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12}
-  ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuelcat)) +
-    geom_point() +
-    ggtitle("Benzene EFs by Test ID") +
-    xlab("Test ID") +
-    ylab("g emitted / g fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
-    geom_point() +
-    ggtitle("Benzene EFs by Stove") +
-    xlab("Stove type") +
-    ylab("mg emitted / kg fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = fuel)) +
-    geom_point() +
-    facet_grid( ~ stovecat, scales = 'free') +
-    ggtitle("Benzene EFs by Stove Type") +
-    xlab("Stove type") +
-    ylab("mg emitted / kg fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-  ggplot(benzene, aes(x= stove, pol_fuel_mass_ratio, colour = stovecat)) +
-    geom_point() +
-    facet_grid( ~ fuelcat, scales = 'free') +
-    ggtitle("Benzene EFs by Fuel Type and Stove Type") +
-    xlab("Stove type") +
-    ylab("mg emitted / kg fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45,  hjust = 0.9))
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-  ggplot(benzene, aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
-    geom_point() +
-    facet_wrap(fuelcat ~ stovecat) +
-    ggtitle("Benzene EFs by Stove and Fuel categories") +
-    xlab("Stove type") +
-    ylab("mg emitted / kg fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-```
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-  ggplot(filter(benzene, fuelcat == 'wood'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
-    geom_point() +
-    facet_grid( ~ stove, scales = 'free') +
-    ggtitle("Benzene EFs by Stove Type - Wood Stoves Only") +
-    xlab("Stove type") +
-    ylab("mg emitted / kg fuel burned") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10}
-ggplot(filter(benzene, fuelcat == 'charcoal'), aes(x= id, pol_fuel_mass_ratio, colour = fuel)) +
-  geom_point() +
-  facet_grid( ~ stove, scales = 'free') +
-  ggtitle("Benzene EFs by Stove Type - Charcoal Stoves Only") +
-  xlab("Stove type") +
-  ylab("mg emitted / kg fuel burned") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
-
-$VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
-
-$VOCs$ data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
-
-# Flag additional bad tests based on qaqc
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # voc_merged$qc[grav_merged$id == ""] <- "bad"
-```
+VOCs data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
