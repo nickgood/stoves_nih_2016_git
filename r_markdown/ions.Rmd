@@ -131,7 +131,6 @@ output:
 # Background analysis
 
 * extract background data
-* deal with LOD (not implemented)
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 
