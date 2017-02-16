@@ -77,7 +77,13 @@ output:
 # QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("voc|all", inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("voc|all", inst))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(dplyr::filter(notes, grepl(".*voc.*", inst)) %>%
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
 ```
 
 Flag bad data from notes and plots
