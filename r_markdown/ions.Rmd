@@ -1,5 +1,5 @@
 ---
-title: "ions"
+title: "Ions"
 output:
   html_document:
     toc: true
