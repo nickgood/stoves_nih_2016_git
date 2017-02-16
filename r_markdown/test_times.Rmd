@@ -1,27 +1,27 @@
 ---
 title: "test times"
-author: "Nicholas Good"
-date: "11/21/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
-## Libraries
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(gridExtra)
 ```
 
-## Source files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../R_scripts/R_load_data.R")
   source("../R_scripts/R_load_metadata.R")
   source("../R_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
-## Load data
+# Load data
 
-Load sample, wood and batch test meta data
+* sample, wood and batch test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
@@ -29,7 +29,7 @@ Load sample, wood and batch test meta data
   load("../r_files/wood_times.Rda")
 ```
 
-Load pre and post experiment background times for online instruments
+* pre and post experiment background times for online instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/data_1.Rda")
@@ -98,38 +98,58 @@ Load pre and post experiment background times for online instruments
                 tibble::as_data_frame()
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(test_times, 2)
-```
-
-## Save data
+# Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(test_times, file = "../r_files/test_times.Rda")
 ```
 
-## Summary
+# Summary
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample info
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample durations (minutes)
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
            tidyr::spread(var, value) %>%
-           dplyr::mutate(dur = (shutdown - start_1) / 60)  # extract test sample durations (minutes)
-
-  times <- dplyr::left_join(dplyr::select(samples, id) %>%
-  													dplyr::filter(grepl("^[0-9]", id) == TRUE), 
-  													times,
-  													by = "id")  # join with sample list
+           dplyr::mutate(dur = (shutdown - start_1) / 60)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ggplot(times, aes(x = dur)) +
-    geom_histogram(binwidth = 15) +
-    theme_minimal() +
-    xlab("test duration (min)")
+ # merge with full test list
+  times <- dplyr::left_join(dplyr::select(samples, id) %>%
+                            dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+                            times,
+                            by = "id")
 ```
 
-There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are tests: `r times$id[is.na(times$dur)]`.
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_hist <- ggplot(times, aes(x = dur)) +
+            geom_histogram(binwidth = 15) +
+            theme_minimal() +
+            xlab("test duration (min)")
+
+  p_data <- dplyr::mutate(times,
+                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(dur),
+                          as.character(id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+```
+
+There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are: `r times$id[is.na(times$dur)]`.
