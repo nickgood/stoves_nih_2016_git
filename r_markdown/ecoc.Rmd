@@ -333,9 +333,9 @@ output:
     theme_minimal() +
     theme(legend.position = "top") +
     scale_y_log10() +
-    scale_colour_manual(values = c("ok" = "chartreuse4",
-                                   "maybe" = "dodgerblue2",
-                                   "bad" = "springgreen3")) +
+    scale_colour_manual(values = c("ok" = "mediumorchid",
+                                   "maybe" = "mediumaquamarine",
+                                   "bad" = "mistyrose4")) +
     facet_wrap(~pol, ncol = 1, scales = "free") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
