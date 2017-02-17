@@ -459,7 +459,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""),
                               !is.na(value))
-  
+
   smps_flows <- split_flows(smps_flows)
   
   save(smps_flows, file="../r_files/smps_flows.Rda")
@@ -479,6 +479,28 @@ output:
     theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
     theme(axis.text.y = element_text(size = 30),
           axis.title=element_text(size=40))
+```
+
+## smps / pax times
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  smps_pax_bg_times <- dplyr::filter(tidy_id_date(data_2,
+                                                  "^time_.*smps.*", "^time_"),
+                                                  !is.na(value))
+
+  smps_pax_bg_times <- split_times_smps_pax(smps_pax_bg_times)
+
+  save(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.Rda")
+```
+
+* unexpected values:
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  outliers <- dplyr::filter(smps_pax_bg_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
+
+  knitr::kable(outliers, "markdown", digits = 2)
 ```
 
 # Summary
