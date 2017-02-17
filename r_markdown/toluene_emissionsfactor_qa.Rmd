@@ -65,7 +65,8 @@ output: html_document
   toluene <- dplyr::left_join(toluene, 
                               dplyr::select(samples, id, fuel, stove, fuelcat, stovecat),
                               by = "id") %>%
-             dplyr::left_join(fuel_burnt, by = "id")
+             dplyr::left_join(dplyr::select(fuel_burnt, - fuel),
+                              by = "id")
 ```
 
 * The `toluene` dataframe now contains a subset of the emissions data for only the pollutant toluene. A summary of the dataset is below:  
