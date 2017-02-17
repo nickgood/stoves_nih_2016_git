@@ -161,7 +161,7 @@ ___
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test") %>%
+  ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
           dplyr::select(id, cassette,
                         start, end,
                         flow,
@@ -179,7 +179,7 @@ ___
 * account for artifact
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
+  ecoc <- dplyr::group_by(ecoc, pol, id, cassette) %>%
             dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
             tidyr::spread(cassette, rep_mean) %>%
@@ -190,7 +190,7 @@ ___
 * merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::filter(ecoc, cassette == "E") %>%
+  ecoc <- dplyr::filter(ecoc, cassette == "e") %>%
            dplyr::left_join(dplyr::select(ecoc_a, id, pol, conc_cor),
                             by = c("id", "pol"))
 ```
