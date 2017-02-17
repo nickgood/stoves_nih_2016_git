@@ -216,6 +216,8 @@ Outlier 16B checked by KF in February 2017. There is no transcription error, but
           axis.title=element_text(size=40))
 ```
 
+Outlier 1C checked by KF in February 2017. There is no transcription error and the value is within an expected normal range. 
+
 ## wood stove weights
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
