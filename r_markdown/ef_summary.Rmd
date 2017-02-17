@@ -39,20 +39,25 @@ output:
 * Merge with fuel burnt data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::left_join(emissions, dplyr::select(fuel_burnt, id,
-                                                 mass_fuel, lhv,
-                                                 carbon_fraction), by = "id") %>%
-           dplyr::left_join(dplyr::select(samples, id, stove,
-                                          fuel, fuelcat, stovecat,
-                                          stove_fuel), by = "id")
+  emissions <- dplyr::left_join(emissions,
+                                dplyr::select(fuel_burnt, id,
+                                                          mass_fuel, lhv,
+                                                          carbon_fraction),
+                                                          by = "id") %>%
+               dplyr::left_join(dplyr::select(samples, id,
+                                                       stove,
+                                                       fuel, fuelcat,
+                                                       stovecat,
+                                                       stove_fuel),
+                                                       by = "id")
 ```
 
 ## Calculate emissions factors
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::mutate(emissions, mass_ef = 
-                           (mass_emitted * 1e-3) / (mass_fuel * 1e-3)) %>%  # mg / kg
-           dplyr::mutate(energy_ef = (mass_ef * 1e-3)*(lhv * 1e-3))  # g / MJ
+  emissions <- dplyr::mutate(emissions,
+                             mass_ef = ((mass_emitted * 1e-3) / (mass_fuel * 1e-3)),  # mg / kg
+                             energy_ef = ((mass_ef * 1e-3) * (lhv * 1e-3)))  # g / MJ
 ```
 
 * emissions are given in units of miligrams per kilogram of fuel burned and grams per MJ delivered by the fuel
