@@ -74,8 +74,23 @@ split_flows <- function(df){
 # carb
 split_times <- function(df){
   # split variable
-    out <- dplyr::mutate(df, type=as.factor(sub("_.*", "", df$var))) %>%
+    out <- dplyr::mutate(df, type = as.factor(sub("_.*", "", var))) %>%
            dplyr::select(-var)
+
+ # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# smps pax times
+split_times_smps_pax <- function(df){
+ # split variable
+  out <- dplyr::mutate(df, time_point = as.factor(sub("_.*", "", var)),
+                           type = ifelse(grepl("_pre$", var), "bg_pre", NA),
+                           type = ifelse(grepl("_post$", var), "bg_post", type),
+                           type = ifelse(grepl("_pax$", var), "sample", type)) %>%
+         dplyr::select(-var)
 
  # return
   return(out)
