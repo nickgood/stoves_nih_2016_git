@@ -16,12 +16,12 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-## Load and tidy data
+# Load and tidy data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/emissions.Rda")  # load emissions data
-  load("../r_files/samples.Rda")  # load sample meta data
-  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
+  load("../r_files/emissions.Rda")
+  load("../r_files/samples.Rda")
+  load("../r_files/fuel_burnt.Rda")
 ```
 
 * Output emissions column names 
@@ -52,7 +52,7 @@ output:
                                                        by = "id")
 ```
 
-## Calculate emissions factors
+# Calculate emissions factors
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::mutate(emissions,
