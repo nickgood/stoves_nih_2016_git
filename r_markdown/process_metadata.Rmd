@@ -459,7 +459,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""),
                               !is.na(value))
-  
+
   smps_flows <- split_flows(smps_flows)
   
   save(smps_flows, file="../r_files/smps_flows.Rda")
@@ -481,7 +481,7 @@ output:
           axis.title=element_text(size=40))
 ```
 
-## smps / pax background times
+## smps / pax times
 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
@@ -489,7 +489,7 @@ output:
                                                   "^time_.*smps.*", "^time_"),
                                                   !is.na(value))
 
-  smps_pax_bg_times <- split_times(smps_pax_bg_times)
+  smps_pax_bg_times <- split_times_smps_pax(smps_pax_bg_times)
 
   save(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.Rda")
 ```
