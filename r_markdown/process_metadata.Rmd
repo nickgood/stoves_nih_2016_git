@@ -170,6 +170,8 @@ Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperatu
           axis.title=element_text(size=40))
 ```
 
+Outlier 16B checked by KF in February 2017. There is no transcription error, but this measure is QC-flagged as bad due to an issue with the carbonyl line being clogged/having known sampling issues that impacted flow rates. 
+
 ## carbonyl timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
