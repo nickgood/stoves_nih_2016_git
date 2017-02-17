@@ -41,10 +41,11 @@ output:
 ## extract ions data
 
 * separate from carbonyls in same file
+* remove G8B (breakthrough test)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls_merged <- dplyr::select(ions, 24:39, type, id, id_ions) %>%
-                      dplyr::filter(type == "test" | type == "bg")
+                      dplyr::filter(type == "test" | type == "bg", id != "G8B")
 ```
 
 ## flows and times
