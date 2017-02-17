@@ -164,7 +164,7 @@ ___
   ecoc <- dplyr::filter(ecoc_merged, type == "test") %>%
           dplyr::select(id, cassette,
                         start, end,
-                        pre_flow, post_flow,
+                        flow,
                         pol, ug_sq_cm,
                         conc_bg, type, qc)
 ```
