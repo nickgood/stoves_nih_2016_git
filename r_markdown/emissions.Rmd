@@ -172,8 +172,7 @@ ___
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::mutate(ecoc, flow = (pre_flow + post_flow) / 2,
-                              dur = (end - start) / 60,
+  ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
                               conc = ug_sq_cm * area * 1000 / (flow * dur))
 ```
 
@@ -184,8 +183,8 @@ ___
             dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
             tidyr::spread(cassette, rep_mean) %>%
-            dplyr::mutate(A = ifelse(is.na(A), 0, A)) %>%
-            dplyr::mutate(conc_cor = E - A)
+            dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
+            dplyr::mutate(conc_cor = e - a)
 ```
 
 * merge
