@@ -74,8 +74,23 @@ split_flows <- function(df){
 # carb
 split_times <- function(df){
   # split variable
-    out <- dplyr::mutate(df, type=as.factor(sub("_.*", "", df$var))) %>%
+    out <- dplyr::mutate(df, type = as.factor(sub("_.*", "", var))) %>%
            dplyr::select(-var)
+
+ # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# smps pax times
+split_times_smps_pax <- function(df){
+ # split variable
+  out <- dplyr::mutate(df, time_point = as.factor(sub("_.*", "", var)),
+                           type = ifelse(grepl("_pre$", var), "bg_pre", NA),
+                           type = ifelse(grepl("_post$", var), "bg_post", type),
+                           type = ifelse(grepl("_pax$", var), "sample", type)) %>%
+         dplyr::select(-var)
 
  # return
   return(out)
@@ -99,9 +114,9 @@ split_co2_cal <- function(df){
 # filter flows
 split_filter_flows <- function(df){
  # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
-                           colour=as.factor(gsub("[^_]*_[^_]*_|_[^_]*$", "", df$var)),
-                           rep=as.factor(gsub("[^0-9]", "", df$var))) %>%
+  out <- dplyr::mutate(df, type = as.factor(sub("flow.*", "", var)), 
+                           colour = as.factor(gsub("[^_]*_[^_]*_|_[^_]*$", "", var)),
+                           rep = as.factor(gsub("[^0-9]", "", var))) %>%
           dplyr::select(-var)
 
  # return
@@ -113,11 +128,11 @@ split_filter_flows <- function(df){
 # filter times
 split_filter_times <- function(df){
  # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("_.*", "", df$var)), 
-                           colour_1=gsub("[^_]*_[^_]*_|_[^_]*$", "", df$var),
-                           colour_2=gsub("[^_]*_[^_]*_[^_]*_|_[^_]*$", "", df$var)) %>%
+  out <- dplyr::mutate(df, type = as.factor(sub("_.*", "", var)), 
+                           colour_1=gsub("[^_]*_[^_]*_|_[^_]*$", "", var),
+                           colour_2=gsub("[^_]*_[^_]*_[^_]*_|_[^_]*$", "", var)) %>%
          dplyr::select(-var) %>%
-         tidyr::gather(col_var, color, -date, -value, -type) %>%
+         tidyr::gather(col_var, color, -id, -date, -value, -type) %>%
          dplyr::select(-col_var) %>%
          dplyr::mutate(color = as.factor(color))
              

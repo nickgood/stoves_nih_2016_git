@@ -26,6 +26,15 @@ Use `<-` not `=`.
 
 * round brackets should open and close immediately before or after the code they enclose 
 
+## Colors
+
+* Plots colored by `ok`, `maybe` and `bad` should use:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', eval=FALSE}
+  scale_colour_manual(values = c("ok" = "mediumaquamarine",
+                                 "maybe" = "mediumorchid",
+                                 "bad" = "mistyrose4"))
+```
+
 ## Comments
 
 Comments should be in lower case.

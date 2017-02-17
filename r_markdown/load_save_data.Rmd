@@ -1,19 +1,18 @@
 ---
 title: "Load and save data"
-author: "Nicholas Good"
-date: "1/31/2017"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
-## Libraries
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
-## Source files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_load_data.R")
   source("../r_scripts/R_load_metadata.R")
   source("../r_scripts/R_tidy.R")
@@ -22,35 +21,38 @@ output: html_document
 
 # Pollutant data
 
-## CO2
+## co2
 
 Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  co2_lab <- load_multifile(fldr = "../data/co2", pattern = "DILUTION1.csv$", inst = "co2")
+  co2_lab <- load_multifile(fldr = "../data/co2",
+                            pattern = "DILUTION1.csv$", inst = "co2")
 
   save(co2_lab, file = "../r_files/co2_lab.Rda")
-  
-  co2_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION2.csv$", inst = "co2")
-  
+
+  co2_sample <- load_multifile(fldr = "../data/co2",
+                               pattern = "DILUTION2.csv$", inst = "co2")
+
   save(co2_sample, file = "../r_files/co2_sample.Rda")
-    
-  co2_lab_sample <- load_multifile(fldr = "../data/co2", pattern = "DILUTION.csv$", inst = "co2")
+
+  co2_lab_sample <- load_multifile(fldr = "../data/co2",
+                                   pattern = "DILUTION.csv$", inst = "co2")
 
   save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
 ```
 
-## ECOC
+## ecoc
 
-Loads ecoc data file and resaves as .Rda.
+Loads ecoc data file and resave as .Rda
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ecoc <- load_singlefiles("ecoc")  # ecoc filter analysis
+  ecoc <- load_singlefiles("ecoc")
 
   save(ecoc, file = "../r_files/ecoc.Rda")
 ```  
 
-## Fivegas
+## fivegas
 
 The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
 
@@ -63,12 +65,13 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 
   save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
 
-  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",type = "volts")
+  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",
+                                      type = "volts")
 
   save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
 ```
 
-## Gravimetric
+## gravimetric
 
 Loads filter weight data and resaves as .Rda.
 
@@ -78,7 +81,7 @@ Loads filter weight data and resaves as .Rda.
   save(grav, file = "../r_files/grav.Rda")
 ```
 
-## Ions and carbonyls
+## ions and carbonyls
 
 Loads and resaves data as .Rda.
 
@@ -88,71 +91,75 @@ Loads and resaves data as .Rda.
   save(ions, file = "../r_files/ions.Rda")
 ```
 
-## PAHS
+## pahs
 
 Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
-  pah <- load_singlefiles("pah")  # pah data
+  pah <- load_singlefiles("pah")
 
   save(pah, file = "../r_files/pah.Rda")
 ```
 
-## PAX
+## pax
 
 Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- load_multifile(fldr = "../data/pax", pattern = "ALLDAY_PAX.csv$", inst = "pax")
+  pax <- load_multifile(fldr = "../data/pax",
+                        pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
   save(pax, file = "../r_files/pax.Rda")
 ```
 
-## SCALE
+## scale
 
 Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  scale <- load_multifile(fldr = "../data/scale", pattern = "_SCALE.xlsx$", inst = "scale")
+  scale <- load_multifile(fldr = "../data/scale",
+                          pattern = "_SCALE.xlsx$", inst = "scale")
 
   save(scale, file = "../r_files/scale.Rda")
 ```
 
-## SMPS
+## smps
 
 Loads and resaves data as an .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  smps <- load_multifile(fldr = "../data/smps", pattern = "_SMPS.csv$", inst = "smps")
+  smps <- load_multifile(fldr = "../data/smps",
+                         pattern = "_SMPS.csv$", inst = "smps")
 
   save(smps, file = "../r_files/smps.Rda")
 ```
 
-## TEMP
+## temperature
 
 Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  temp <- load_multifile(fldr = "../data/temp", pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp <- load_multifile(fldr = "../data/temp",
+                         pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
 
   save(temp, file = "../r_files/temp.Rda")
 ```
 
-## TRANS
+## transmissometer
 
 Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   trans <- load_singlefiles("trans")
 
   save(trans, file = "../r_files/trans.Rda")
 ```
  
-## VOC
+## vocs
 
 Loads the microgram sheet  and resaves data as an .Rda.
  
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- load_singlefiles("voc")
 
   save(voc, file = "../r_files/voc.Rda")
@@ -160,49 +167,117 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 # Metadata
 
-## Sample logs
+## sample logs
 
 Reference for test id, stove and fuel types.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- load_singlefiles("sample")
+```
 
-  samples$fuelcat <- fct_collapse(samples$fuel,
-  wood = c("Oak", "Eucalyptus", "Douglas Fir"),
-  charcoal = c("Coconut Charcoal", "Lump Hardwood (Med.)", 
-               "Lump Hardwood (Sm.)"),
-  pellets = c("Eucalyptus Pellets", "West Slope Pellets"),
-  advanced = c("Kerosene", "Liquefied Petroleum Gas"),
-  none = c("Background")
-  )
-  samples$fuelcat <- lvls_revalue(samples$fuelcat, c("wood", "charcoal", 
-                                  "pellets", "advanced", "none"))
+* Define stove type levels
 
-  samples$stovecat <- fct_collapse(samples$stove,
-  traditional = c("Clay Ring (Artisan)", 
-                  "Three Stone Fire (Artisan)", 
-                  "Ceramic Charcoal (Artisan)"),
-  improved = c("Fan Rocket Elbow (Biolite, HomeStove)", 
-               "Metal Charcoal (Burn, Jikokoa)", 
-               "Rocket Elbow (Envirofit, G3300)",
-               "Built-in Justa (Envirofit, HM5000)"),
-  gasifiers = c("Gasifier (Envirofit, Prototype)", 
-                "Gasifier (Philips, HD4012)",
-                "Gasifer (Mimi Moto, Mimi Moto)"),
-  advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)", 
-               "Wick Kerosene (Cook 'n Lite, 82)", 
-               "Pressurized Kerosene (Butterfly, 2412)"),
-  none = c("Background")
-  )
-  samples$stovecat <- lvls_revalue(samples$stovecat, c("traditional", "improved",
-                                   "gasifiers", "advanced", "none"))
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples,
+                           stove = forcats::lvls_revalue(stove,
+                                   c("Three Stone Fire (Artisan)",
+                                      "Clay Ring (Artisan)",
+                                      "Built-in Justa (Envirofit, HM5000)",
+                                      "Rocket Elbow (Envirofit, G3300)",
+                                      "Fan Rocket Elbow (Biolite, HomeStove)",
+                                      "Ceramic Charcoal (Artisan)",
+                                      "Metal Charcoal (Burn, Jikokoa)",
+                                      "Gasifier (Philips, HD4012)",
+                                      "Gasifer (Mimi Moto, Mimi Moto)",
+                                      "Gasifier (Envirofit, Prototype)",
+                                      "Wick Kerosene (Cook 'n Lite, 82)", 
+                                      "Pressurized Kerosene (Butterfly, 2412)",
+                                      "Pressurized LPG (WokSmith, WS-C1-25K)",
+                                      "NA")))
+```
 
+* Define fuel category levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples,
+                           fuel = forcats::lvls_revalue(fuel,
+                                  c("Douglas Fir",
+                                  "Oak",
+                                  "Eucalyptus",
+                                  "Lump Hardwood (Sm.)",
+                                  "Lump Hardwood (Med.)",
+                                  "Coconut Charcoal",
+                                  "West Slope Pellets",
+                                  "Eucalyptus Pellets",
+                                  "Kerosene",
+                                  "Liquefied Petroleum Gas",
+                                  "NA")))
+```
+
+* Define stove fuel combination category levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples,
+                           stove_fuel = forcats::as_factor(paste(stove, ":", fuel))) %>%
+                           dplyr::mutate(stove_fuel = 
+                           forcats::lvls_reorder(stove_fuel,
+                                                 c(28, 30, 29, 7, 9, 8,
+                                                   1, 3, 2, 25, 27, 26,
+                                                   10, 12, 11, 6, 5, 4,
+                                                   21, 20, 19, 18, 17, 14,
+                                                   13, 16, 15, 31, 23, 24, 22))) # set logical factor order
+```
+
+* Create aggregated fuel category
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples, fuelcat = forcats::fct_collapse(fuel,
+                                               wood = c("Oak",
+                                                        "Eucalyptus",
+                                                        "Douglas Fir"),
+                                               charcoal = c("Coconut Charcoal",
+                                                            "Lump Hardwood (Med.)", 
+                                                            "Lump Hardwood (Sm.)"),
+                                               pellets = c("Eucalyptus Pellets",
+                                                           "West Slope Pellets"),
+                                               advanced = c("Kerosene",
+                                                            "Liquefied Petroleum Gas")))
+```
+
+* Create aggregated stove catergory
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples,
+                           fuelcat = forcats::lvls_reorder(fuelcat, c(1,2,3,4,5))) %>%  # set factor level order for plots
+             dplyr::mutate(stovecat = forcats::fct_collapse(stove,
+                                        traditional = c("Clay Ring (Artisan)",
+                                                        "Three Stone Fire (Artisan)",
+                                                        "Ceramic Charcoal (Artisan)"),
+                                        improved = c("Fan Rocket Elbow (Biolite, HomeStove)",
+                                                      "Metal Charcoal (Burn, Jikokoa)", 
+                                                      "Rocket Elbow (Envirofit, G3300)",
+                                                      "Built-in Justa (Envirofit, HM5000)"),
+                                        gasifiers = c("Gasifier (Envirofit, Prototype)", 
+                                                       "Gasifier (Philips, HD4012)",
+                                                       "Gasifer (Mimi Moto, Mimi Moto)"),
+                                        advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)",
+                                                     "Wick Kerosene (Cook 'n Lite, 82)", 
+                                                     "Pressurized Kerosene (Butterfly, 2412)"))) %>%
+             dplyr::mutate(stovecat = forcats::lvls_reorder(stovecat, c(1, 2, 3, 4, 5)))  # set factor level order for plots
+```
+
+* Save samples file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(samples, file = "../r_files/samples.Rda")
 ```
 
-## Batch sample meta data
+## batch sample meta data
 
-Weights, times, notes...
+* weights (fuel, pot, ...)
+* times (start, refuel, ...)
+* lab conditions (T, RH, P)
+* notes
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   batch <- load_singlefiles("batch")
@@ -210,9 +285,12 @@ Weights, times, notes...
   save(batch, file = "../r_files/batch.Rda")
 ```
 
-## Wood sample meta data
+## wood sample meta data
 
-Weights, times, notes...
+* weights (fuel, pot, ...)
+* times (start, refuel, ...)
+* lab conditions (T, RH, P)
+* notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   wood <- load_singlefiles("wood")
@@ -220,9 +298,10 @@ Weights, times, notes...
   save(wood, file = "../r_files/wood.Rda")
 ```
 
-## Calibration log 1
+## calibration log 1
 
-Fivegas calibration mixing ratios and timestamps.
+* fivegas calibration standards
+* fivegas calibration timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   cal_1 <- load_singlefiles("cal_1")
@@ -230,10 +309,10 @@ Fivegas calibration mixing ratios and timestamps.
   save(cal_1, file = "../r_files/cal_1.Rda")
 ```
 
-## Calibration log 2
+## calibration log 2
 
-* CO2 calibration information
-* Pax and smps flow measurements
+* co2 calibration information
+* pax and smps flow measurements
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   cal_2 <- load_singlefiles("cal_2")
@@ -241,12 +320,12 @@ Fivegas calibration mixing ratios and timestamps.
   save(cal_2, file = "../r_files/cal_2.Rda")
 ```
 
-## Data log 1
+## data log 1
 
-* Filter cartridge flows and times
-* Voc times
-* Fivegas backgriund times
-* Notes
+* vilter cartridge flows and times
+* voc times
+* fivegas background times
+* notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_1 <- load_singlefiles("data_1")
@@ -254,10 +333,10 @@ Fivegas calibration mixing ratios and timestamps.
   save(data_1, file = "../r_files/data_1.Rda")
 ```
  
-## Data log 2
+## data log 2
 
-* Carbonyls and isokinetic sampler times and flows
-* Smps and pax times (including background)
+* carbonyls and isokinetic sampler times and flows
+* smps and pax times (including background)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   data_2 <- load_singlefiles("data_2")

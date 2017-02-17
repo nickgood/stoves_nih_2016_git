@@ -1,8 +1,10 @@
 ---
-title: "$VOCs$"
-author: "Nicholas Good"
-date: "11/23/2016"
-output: html_document
+title: "VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -12,77 +14,86 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
-## Load $VOC$ data
+# Load data
 
-The $VOC$ data is contain in one file. Units are $ppbv$. 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")  # voc dataset
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(voc)
-```
-
-## Remove non-study data
+ * voc (ppbv)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+  load("../r_files/voc.Rda")
 ```
 
-## Convert to longer format
-
-Make longer and remove n/a.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(voc, "pol", "ppb", starts_with("voc_")) %>%
-         dplyr::filter(!is.na(id) & id != "NA")
-```
+* metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(voc, 2)
-```
+  load("../r_files/samples.Rda")     # load sample meta data
+  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
+  load("../r_files/emissions.Rda")   # load pollutant emissions data
+  load("../r_files/data_1.Rda")
+  load("../r_files/notes.Rda")
+``` 
 
-## Merge with meta data
+* The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/data_1.Rda")
-```
+# Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # match voc metadata
-  meta <- dplyr::select(data_1, matches("_voc|voc_|^id$|^date$"))
- # merge
-  voc_merged <- dplyr::left_join(voc, meta)
+  voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
 ```
 
-## LOD
+## longer format
+
+* make longer and remove `NA`.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- tidyr::gather(voc_merged, "pol", "ppb", starts_with("voc_")) %>%
+                dplyr::filter(!is.na(id) & id != "NA")
+```
+
+## merge with meta data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::left_join(voc_merged,
+                                 dplyr::select(data_1,
+                                               matches("_voc|voc_|^id$|^date$")))
+```
+
+# LOD
 
 * Add LOD flag
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::mutate(voc_merged, lod = as.factor(ifelse(ppb == -8888, "below", "above"))) %>%
-                dplyr::mutate(ppb = ifelse(ppb == -8888, NA, ppb))
+  voc_merged <- dplyr::mutate(voc_merged,
+                              lod = as.factor(ifelse(ppb == -8888,
+                                                     "below",
+                                                     "above"))) %>%
+                dplyr::mutate(ppb = ifelse(ppb == -8888,
+                                           NA,
+                                           ppb))
 ```
 
-## QC
+# QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("voc|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("voc|all", inst))
 ```
 
-Flag bad data from notes and plots
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  knitr::kable(dplyr::filter(notes, grepl(".*voc.*", inst)) %>%
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
+```
+
+* flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes$qc[33:36] <- "maybe"
 ```
 
-Set one flag per test
+* apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
@@ -91,33 +102,61 @@ Set one flag per test
            dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+* merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc_merged <- dplyr::left_join(voc_merged, flags, by = "id") %>%
                 dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
+                                                    "ok",
+                                                    as.character(qc))))
 ```
 
-Additional bad tests
+* additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
-## Background analysis
+# Background
 
-* extract background data
-* deal with LOD (not implemented)
-* remove missing data
-* calculate mean ppbv emitted (and other stats)
+* extract good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
         na.omit() %>%
-        dplyr::select(-id_can, -id_voc) %>%
-        dplyr::group_by(pol) %>%
+        dplyr::select(-id_can, -id_voc)
+
+```
+
+* plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_data <-  dplyr::group_by(bg, pol) %>%
+             dplyr::mutate(max = max(ppb)) %>%
+             dplyr::ungroup() %>%
+             dplyr::filter(max > 10) %>%
+             dplyr::group_by(pol) %>%
+             dplyr::mutate(outlier = ifelse(is_outlier(ppb), as.character(id), NA),
+                           mean = mean(ppb, na.rm = TRUE)) %>%
+             dplyr::ungroup() %>%
+             dplyr::mutate(pct = round(percent_rank(mean), 1))
+
+  ggplot(p_data, aes(pol, ppb)) +
+    geom_boxplot(outlier.size = 0) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    ylab("ppb") + xlab("pollutant") +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4)
+
+```
+
+## average background
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::group_by(bg, pol) %>%
         dplyr::summarise(mean = mean(ppb),
                          sd = sd(ppb),
                          min = min(ppb),
@@ -125,61 +164,58 @@ Additional bad tests
                          n = n())
 ```
 
+* background values (ppb)
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-* merge with test data
+##  merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # extract data for merge
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
- # merge and add zeros for missing values
   voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
                 dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
-## Save merged file
+# Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(voc_merged, file="../r_files/voc_merged.Rda")
 ```
 
-## Plot (coloured by fuel type)
+# Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file="../r_files/samples.Rda")
-
   samples <- dplyr::select(samples, id, stove, fuel)
-  
-  voc_p <- dplyr::left_join(voc_merged, samples, by = "id") %>%
-           dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
-           dplyr::mutate(id = as.factor(id))
-  
- # filter out background data and non-detects 
-  voc_p <- dplyr::filter(voc_p, ppb > 0 & grepl("^P", id)==FALSE & grepl("^G", id)==FALSE)
+```
+
+## plot by fuel type
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  p_data <- dplyr::left_join(voc_merged, samples, by = "id") %>%
+            dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
+            dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::filter(ppb > 0 &
+                          grepl("^P", id) == FALSE &
+                          grepl("^G", id)==FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, ppb, colour = fuel)) + 
+  ggplot(p_data, aes(id, ppb, colour = fuel)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
-         ylab("ug/m3") + xlab("")
+         ylab("ug/m3") +
+         xlab("") +
+         theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-## Plot QC
+# Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc_p, aes(id, ppb, colour = qc)) + 
-         geom_point() +
-         facet_wrap(~pol, ncol = 1, scales = "free") +
-         theme_minimal()
-```
+VOCs were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
 
-$VOCs$ were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no $VOC$ data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
-
-$VOCs$ data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
+VOCs data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.

@@ -15,8 +15,7 @@ load_co2_file <- function(file){
                  fill = TRUE, na.strings = c("NAN"), colClasses = "character")
 
   type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-  
-  print(type)
+
   
   # load based on type
     
@@ -70,125 +69,186 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
-# file <- "data/ecoc/20161102_ECOC.csv"
+# file <- "../data/ecoc/20170110_ECOC.csv"
 load_ecoc_file <- function(file){
+ # classes
+  classes <- c("character",
+                "factor",
+                rep("numeric",20),
+                "character",
+                "character",
+                rep("numeric",2),
+                rep("factor",2),
+                rep("numeric",3),
+                "character",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",2),
+                "factor",
+                rep("numeric",4),
+                rep("character",3))
 
-    classes <- c("character",
-                 "factor",
-                 rep("numeric",20),
-                 "character",
-                 "character",
-                 rep("numeric",2),
-                 rep("factor",2),
-                 rep("numeric",3),
-                 "character",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",2),
-                 "factor",
-                 rep("numeric",4),
-                 rep("character",3))
-
-    ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
+  ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
                    fill = TRUE, na.strings = c("-", "na"))
 
-    ecoc <- dplyr::rename(ecoc, time = Time) %>%
-            dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p")))) %>%
-            dplyr::mutate(time = as.numeric(substr(time,12,13))*60*60 + 
-                          as.numeric(substr(time,15,16))*60 +
-                          as.numeric(substr(time,18,19)))
+  ecoc <- dplyr::rename(ecoc, time = Time) %>%
+          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p"))),
+                        time = as.numeric(substr(time,12,13))*60*60 +
+                               as.numeric(substr(time,15,16))*60 +
+                               as.numeric(substr(time,18,19)))
 
-    ecoc <- dplyr::rename(ecoc, date = Date)
-    ecoc <- dplyr::mutate(ecoc, date = as.Date(ecoc$date, "%m/%d/%Y")) %>%
-            dplyr::mutate(datetime = as.POSIXct(as.character(date)))
-    
-    ecoc <- dplyr::rename(ecoc, ecoc_id = Sample.ID)
-    ecoc <- dplyr::mutate(ecoc, type = ifelse(grepl("^[0-9]",ecoc$ecoc_id),"test", "NA")) %>%
-            dplyr::mutate(type = ifelse(grepl("^P", ecoc_id),"pilot", type)) %>%
-            dplyr::mutate(type = ifelse(grepl("^G", ecoc_id),"bg", type))
+  ecoc <- dplyr::rename(ecoc, date = Date,
+                        ecoc_id = Sample.ID) %>%
+          dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
+                               datetime = as.POSIXct(as.character(date)))
 
-    ecoc <- dplyr::mutate(ecoc, cassette = ifelse(grepl("-A$", ecoc_id),"A", "NA")) %>%
-            dplyr::mutate(cassette = ifelse(grepl("-E$", ecoc_id),"E", cassette))
-    
-    ecoc <- dplyr::mutate(ecoc, id = sub("-.*", "", ecoc_id))
-    
-  # rename columns
+ # determine type (test, pilot or NA)
+  ecoc <- dplyr::mutate(ecoc,
+                        type = as.character(ecoc_id),
+                        type = sub(".*india.*", NA, type, ignore.case = TRUE),
+                        type = sub("^C11-.*", "test", type),
+                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
+                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
+                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
+                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
+                        type = sub("^B63A$|^B63E$", "pilot", type),
+                        type = sub("^P.*", "pilot", type),
+                        type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
+                        type = sub("^G.*", "bg", type))
+
+ # determine cassette (a, e or NA)
+  ecoc <- dplyr::mutate(ecoc,
+                        cassette = as.character(ecoc_id),
+                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
+                                   NA, cassette),
+                        cassette = sub("^30A-3$", "e", cassette),
+                        cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
+                        cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
+                        cassette = sub(".*bq.*|.*blank.*", NA, cassette, ignore.case = TRUE))
+
+ # extract ids
+  ecoc <- dplyr::mutate(ecoc,
+                         id = as.character(ecoc_id),
+                         id = sub("^B63A$|^B63E$", "lab_blank", id),
+                         id = sub("5L-[A-Z]$", "5C", id),
+                         id = sub("^G7E$", "G7", id),
+                         id = sub("-[A-Z] repeat$", "", id),
+                         id = sub(".*P5-A$", "5", id),
+                         id = sub(".*india.*", NA, id, ignore.case = TRUE),
+                         id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
+                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
+                         id = gsub("^P.*", NA, id),
+                         id = sub("-[0-9]$", "", id),
+                         id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
+                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
+                         id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
+                         id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
+                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
+
+ # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
   names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
   names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
   
-  # set class
-    ecoc$ecoc_id <- as.factor(ecoc$ecoc_id)
-    ecoc$id <- as.factor(ecoc$id)
-    ecoc$type <- as.factor(ecoc$type)
-    ecoc$cassette <- as.factor(ecoc$cassette)
- 
-  # return
-    return(ecoc)
+ # set classes
+  ecoc <- dplyr::mutate(ecoc,
+                        ecod_id = as.factor(ecoc_id),
+                        id = as.factor(id),
+                        type = as.factor(type),
+                        cassette = as.factor(cassette))
+
+ # return
+  return(ecoc)
 }
 #________________________________________________________
 
 #________________________________________________________
 # Load fivegas file
-# file <- "data/fivegas/20160105_13A_FIVEGAS_OLD.csv" # voltage
-# file <- "data/fivegas/20160429_3B_FIVEGAS_FIXED.csv" # conc
+# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
+# file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
 
-    df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ") # check file type from first line
-  
-  # load 
-    if(grepl("^Device", df[1][1])){
+  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ")  # check file type from first line
 
-      classes = c(rep("character",2), rep("numeric",4))
-      
-      col_names = c("date", "time", "co2", "o2", "co", "ch4")
+ # load 
+  if(grepl("^Device", df[1][1])){
 
-      df <- read.csv(file, header = FALSE, colClasses = classes,
-                     skip = 7, fill = TRUE, col.names = col_names)
+  classes = c(rep("character",2), rep("numeric",4))
+
+  col_names = c("date", "time", "co2", "o2", "co", "ch4")
+
+  df <- read.csv(file, header = FALSE, colClasses = classes,
+                       skip = 7, fill = TRUE, col.names = col_names)
     
-      # check year format
-        if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
-           df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
-        }else{
-           df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
-        }
-     
-      # convert time string to seconds of day
-        df$time <- as.character(df$datetime)
-        df$time <- as.numeric(substr(df$time,12,13))*60*60 + 
-                    as.numeric(substr(df$time,15,16))*60 +
-                    as.numeric(substr(df$time,18,19)) 
+ # check year format
+  if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
+    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
+  }else{
+    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
+  }
 
-      # convert date
-        df$date <- as.Date(df$datetime)
-        
-    }else{
+ # convert time string to seconds of day
+  df$time <- as.character(df$datetime)
+  df$time <- as.numeric(substr(df$time,12,13))*60*60 +
+             as.numeric(substr(df$time,15,16))*60 +
+             as.numeric(substr(df$time,18,19)) 
 
-      classes = c(rep("numeric",6), "character")
-      
-      col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
+ # convert date
+  df$date <- as.Date(df$datetime)
 
-      df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
-                     skip = 1, fill = TRUE, col.names = col_names)
-        
-      df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time), format = "%Y%m%d %H:%M:%S") # fix
+  }else{
+ # check time format
+  df <- read.csv(file, header = FALSE,
+                   nrows = 1,
+                   colClasses = "character",
+                   skip = 1)
 
-      df$date <- as.Date(df$datetime)
+  time_format <- ifelse(grepl("AM$|PM$", df$V7[1]), "us", "mil")
+    
+  classes = c(rep("numeric",6), "character")
 
-      df$time <- as.numeric(substr(df$time_str,1,2))*60*60 + 
-                 as.numeric(substr(df$time_str,4,5))*60 +
-                 as.numeric(substr(df$time_str,7,8))
-    }
+  col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
+
+  df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
+                       skip = 1, fill = TRUE, col.names = col_names)
+
+  if(time_format == "mil"){
+    df <- dplyr::mutate(df, datetime =
+                            as.POSIXct(paste((strsplit(basename(file),
+                            "_")[[1]])[1],
+                            df$time),
+                            format = "%Y%m%d %H:%M:%S"),
+                            date = as.Date(datetime),
+                            time = as.character(datetime),
+                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                 as.numeric(substr(datetime, 15, 16)) * 60 +
+                                 as.numeric(substr(datetime, 18, 19)))
+  }else{
+    df <- dplyr::mutate(df, datetime =
+                            as.POSIXct(paste((strsplit(basename(file),
+                            "_")[[1]])[1],
+                            df$time),
+                            format = "%Y%m%d %I:%M:%S %p"),
+                            date = as.Date(datetime),
+                            time = as.character(datetime),
+                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                            as.numeric(substr(datetime, 15, 16)) * 60 +
+                            as.numeric(substr(datetime, 18, 19)))
+  }
+}
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
-  # convert percents to ppm
-    df$co2 <- df$co2*10^4
-    df$o2 <- df$o2*10^4  
-    
-  # return
-    return(df)
+ # convert percents to ppm
+  df$co2 <- df$co2*10^4
+  df$o2 <- df$o2*10^4  
+
+ # return
+  return(df)
 }
 #________________________________________________________
 
@@ -554,11 +614,11 @@ load_pax_file <- function(file){
   
   df_other <- subset(df, select = c(alarm, local_date, local_time, date, time, datetime))
    
-  # combine dataframes
+ # combine dataframes
     df <- dplyr::bind_cols(df_other, df_num)
-    
-  # return
-    return(df)
+
+ # return
+  return(df)
 }
 #________________________________________________________
 
@@ -567,11 +627,12 @@ load_pax_file <- function(file){
 # file <- "../data/smps/20160330_16C_SMPS.csv"
 # df <- load_smps_file(file)
 load_smps_file <- function(file){
-  
-    df <- read.csv(file, header = TRUE, fill = TRUE,
-                   stringsAsFactors = FALSE, skip = 25)
 
-  df_meta <- read.csv(file, header = FALSE, fill = TRUE, stringsAsFactors = FALSE, nrows = 25)
+  df <- read.csv(file, header = TRUE, fill = TRUE,
+                       stringsAsFactors = FALSE, skip = 25)
+
+  df_meta <- read.csv(file, header = FALSE, fill = TRUE,
+                       stringsAsFactors = FALSE, nrows = 25)
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
@@ -580,7 +641,7 @@ load_smps_file <- function(file){
   names(df) <- gsub("\\.\\.", "_", colnames(df))
   names(df) <- gsub("\\.", "_", colnames(df))
   names(df) <- gsub("_$", "", colnames(df))
-     
+
   df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
   df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
 
@@ -627,9 +688,9 @@ load_smps_file <- function(file){
               as.numeric(substr(out$start_time,7,8))
 
   out$datetime <- as.POSIXct(paste(as.character(out$date), out$start_time), 
-                              format = "%Y-%m-%d %H:%M:%S")
+                             format = "%Y-%m-%d %H:%M:%S")
 
-  # return
+ # return
   return(out)
 }
 #________________________________________________________
@@ -726,35 +787,37 @@ load_multifile <- function(fldr, pattern, inst){
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE, ignore.case = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
+ # loop files
+  for(i in 1:length(filelist)){
 
-      print(filelist[i])
+  # print(filelist[i])
 
-      # co2
-        if(inst == "co2"){
-          ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
-        }
+ # co2
+  if(inst == "co2"){
+    ifelse(i==1, out <- load_co2_file(filelist[i]), out <- rbind(out, load_co2_file(filelist[i])))
+  }
 
-      # pax
-        if(inst == "pax"){
-          ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
-        }
+ # pax
+  if(inst == "pax"){
+    ifelse(i==1, out <- load_pax_file(filelist[i]), out <- rbind(out, load_pax_file(filelist[i])))
+  }
+
+ # scale
+  if(inst == "scale"){
+    ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
+  }
     
-      # scale
-        if(inst == "scale"){
-          ifelse(i==1, out <- load_scale_file(filelist[i]), out <- rbind(out, load_scale_file(filelist[i])))
-        }
-    
-      # temp
-        if(inst == "temp"){
-          ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
-        }
+ # temp
+  if(inst == "temp"){
+    ifelse(i==1, out <- load_temp_file(filelist[i]), out <- rbind(out, load_temp_file(filelist[i])))
+  }
 
-      # smps
-        if(inst == "smps"){
-          ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
-        }
+ # smps
+  if(inst == "smps"){
+    ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
+  }
+
+ # end for loop
   }
 
  # return
@@ -773,30 +836,29 @@ load_fivegas <- function(fldr = "../data/fivegas",
 
   filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
 
-  # loop files
-    for(i in 1:length(filelist)){
-    
-  # determine file type
-    df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
+ # loop files
+  for(i in 1:length(filelist)){
 
-  # check type
-    filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
+ # determine file type
+  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
 
-  # load 
-    if(filetype == type){
+ # check type
+  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
 
-      if(exists("out", inherits = FALSE)==FALSE){
-        
-        out <- load_fivegas_file(filelist[i])
-        
-      }else{
-        
-        out <- rbind(out, load_fivegas_file(filelist[i]))
-      }
-     }
-    }
+ # load 
+  if(filetype == type){
 
-  # return
-    return(out)
+  if(exists("out", inherits = FALSE)==FALSE){
+    out <- load_fivegas_file(filelist[i])
+  }else{
+    out <- rbind(out, load_fivegas_file(filelist[i]))
+  }
+ # end if
+  }
+ # end for
+  }
+
+ # return
+  return(out)
 }
-#________________________________________________________  
+#________________________________________________________
