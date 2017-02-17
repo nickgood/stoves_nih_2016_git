@@ -171,6 +171,7 @@ plot_mass_ef <- function(df, pol_name, type){
     theme_minimal() +
     scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
     theme(text = element_text(size=18),
+          legend.position = "top", 
           axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
           panel.spacing = unit(2, "lines"))
   
@@ -182,6 +183,7 @@ plot_mass_ef <- function(df, pol_name, type){
     ylab("mass based emissions factors (mg/kg of fuel)") +
     theme_minimal() +
     theme(text = element_text(size=18),
+          legend.position = "top", 
           axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
           panel.spacing = unit(2, "lines"))
   
@@ -193,6 +195,7 @@ plot_mass_ef <- function(df, pol_name, type){
     ylab("mass based emissions factors (mg/kg of fuel)") +
     theme_minimal() +
     theme(text = element_text(size=18),
+          legend.position = "top",
           axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
           panel.spacing = unit(2, "lines"))
   
@@ -215,6 +218,7 @@ plot_energy_ef <- function(df, pol_name, type){
     theme_minimal() +
     scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
     theme(text = element_text(size=18),
+          legend.position = "top",
           axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
           panel.spacing = unit(2, "lines"))
   
@@ -226,6 +230,7 @@ plot_energy_ef <- function(df, pol_name, type){
     ylab("fuel energy based emissions factors (g/MJ of fuel)") +
     theme_minimal() +
     theme(text = element_text(size=18),
+          legend.position = "top",
           axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
           panel.spacing = unit(2, "lines"))
   
@@ -237,6 +242,7 @@ plot_energy_ef <- function(df, pol_name, type){
     ylab("fuel energy based emissions factors (g/MJ of fuel)") +
     theme_minimal() +
     theme(text = element_text(size=18),
+          legend.position = "top",
           axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
           panel.spacing = unit(2, "lines"))
   
