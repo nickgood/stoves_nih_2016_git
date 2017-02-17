@@ -16,21 +16,45 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-## Test time data
+# Load
+
+* pollutant data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/test_times.Rda")
+  load("../r_files/ecoc_merged.Rda")
+  load("../r_files/fivegas_merged.Rda")
+  load("../r_files/background_co.Rda")
+    bg_co <- background$bg
+    bg_co_mean <- background$mean
+  load("../r_files/background_co2.Rda")
+    bg_co2 <- background$bg
+    bg_co2_mean <- background$mean
+  load("../r_files/background_ch4.Rda")
+    bg_ch4 <- background$bg
+    bg_ch4_mean <- background$mean
+  load("../r_files/grav_merged.Rda")
+  load("../r_files/smps_ultrafine.Rda")
+  load("../r_files/ions_merged.Rda")
+  load("../r_files/carbonyls_merged.Rda")
+  load("../r_files/voc_merged.Rda")
+```
 
+* metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")
+  load("../r_files/test_times.Rda")
+  load("../r_files/batch_wgts.Rda")
+  load("../r_files/wood_wgts.Rda")
+```
+
+# Test timestamps
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
            dplyr::rename(start = start_1, end = shutdown)
-```
-
-## Sample info
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
 ```
 
 ## Constants
@@ -63,12 +87,6 @@ output:
 
 ## Mass of fuel burnt
 
-* Load fuel mass data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/wood_wgts.Rda")
-```
 
 ### Extract mass of fuel burnt during sampling periods
 
@@ -149,7 +167,7 @@ ___
 * load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc_merged.Rda")
+
 ```
 
 * filter area
@@ -218,28 +236,7 @@ ___
 ### Load fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_merged.Rda")
 
- # background co
-  load("../r_files/background_co.Rda")
-
-  bg_co <- background$bg
-  
-  bg_co_mean <- background$mean
-
- # background co2
-  load("../r_files/background_co2.Rda")
-  
-  bg_co2 <- background$bg
-  
-  bg_co2_mean <- background$mean
-  
- # background ch4
-  load("../r_files/background_ch4.Rda")
-
-  bg_ch4 <- background$bg
-  
-  bg_ch4_mean <- background$mean
 ```
 
 ### Select fivegas pollutants
@@ -336,7 +333,7 @@ ___
 * load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/grav_merged.Rda")
+
 ```
 
 * select data
@@ -383,7 +380,7 @@ ___
 Note data is test average from desired time window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/smps_ultrafine.Rda")  # missing qc data
+
 ```
 
 * merge with sample time data and calculate test duration
@@ -414,7 +411,7 @@ ___
 * load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions_merged.Rda")
+
 ```
 
 * select data
@@ -465,7 +462,7 @@ ___
 * load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/carbonyls_merged.Rda")
+
 ```
 
 * select data
@@ -520,7 +517,7 @@ ___
 * load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc_merged.Rda")
+  
 
   flow <- 13.5  # L/min
 ```
