@@ -248,7 +248,7 @@ output:
 
   save(smps_ultrafine, file = "../r_files/smps_ultrafine.Rda")
 
-  save(smps_ultrafine_bg, file = "../r_files/smps_ultrafine.Rda")
+  save(smps_ultrafine_bg, file = "../r_files/smps_ultrafine_bg.Rda")
 ```
 
 # Summary
