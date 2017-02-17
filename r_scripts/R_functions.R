@@ -70,7 +70,7 @@
   return(out)
 }
 #________________________________________________________
-  
+
 #________________________________________________________ 
 # add calibration date to dataframe
   add_caldate <- function(df, cal){
@@ -108,7 +108,7 @@
     return(out)
 }  
 #________________________________________________________  
-  
+
 #________________________________________________________
 # convert ppmv to ug/m^3
 # mw = molecular weight g/mol
@@ -155,5 +155,93 @@ filter_times <- function(times, df){
     
   # return
     return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot mass based emission factors 
+plot_mass_ef <- function(df, pol_name, type){
+  
+  p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ stovecat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
+    xlab("stove type") +
+    ylab("mass based emissions factors (mg/kg of fuel)") +
+    theme_minimal() +
+    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
+          panel.spacing = unit(2, "lines"))
+  
+  p2 <- ggplot(df, aes(x = stove, y = mass_ef, colour = fuel)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ stovecat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove type")) +
+    xlab("stove type") +
+    ylab("mass based emissions factors (mg/kg of fuel)") +
+    theme_minimal() +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
+          panel.spacing = unit(2, "lines"))
+  
+  p3 <- ggplot(df, aes(x = fuel, y = mass_ef, colour = stove)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ fuelcat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by fuel type")) +
+    xlab("fuel type") +
+    ylab("mass based emissions factors (mg/kg of fuel)") +
+    theme_minimal() +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
+          panel.spacing = unit(2, "lines"))
+  
+  print(p1)
+  print(p2)
+  print(p3)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot energy based emission factors 
+plot_energy_ef <- function(df, pol_name, type){
+  
+  p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ stovecat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
+    xlab("stove type") +
+    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
+    theme_minimal() +
+    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
+          panel.spacing = unit(2, "lines"))
+  
+  p2 <- ggplot(df, aes(x = stove, y = energy_ef, colour = fuel)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ stovecat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove type")) +
+    xlab("stove type") +
+    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
+    theme_minimal() +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
+          panel.spacing = unit(2, "lines"))
+  
+  p3 <- ggplot(df, aes(x = fuel, y = energy_ef, colour = stove)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ fuelcat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by fuel type")) +
+    xlab("fuel type") +
+    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
+    theme_minimal() +
+    theme(text = element_text(size=18),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
+          panel.spacing = unit(2, "lines"))
+  
+  print(p1)
+  print(p2)
+  print(p3)
 }
 #________________________________________________________
