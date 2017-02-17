@@ -191,14 +191,29 @@ output:
                                         "bad" = "mistyrose4"))
 ```
 
-# Background
+# Background (G tests)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <- dplyr::filter(smps_merged, type == "bg") %>%
-                       dplyr::select(datetime, date, time, id, sample,
-                                       value, size, qc) %>%
-                       dplyr::filter(size <= 100) %>%
-                       dplyr::group_by(id, sample) %>%
+  smps_ultrafine_bg <-  dplyr::filter(smps_merged, size <= 100, type == "bg") %>%
+                        dplyr::select(id, value, size, time, sample, qc, type)
+```
+
+* reformat time data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg <- dplyr::filter(smps_pax_bg_times, grepl("^G", id), type == "sample") %>%
+              tidyr::spread(time_point, value) %>%
+              dplyr::select(-date)
+```
+
+* filter by test time window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps_ultrafine_bg <- filter_times(times_bg, smps_ultrafine_bg)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps_ultrafine_bg <- dplyr::group_by(smps_ultrafine_bg, id, sample) %>%
                        dplyr::summarise(number_conc = sum(value) * 0.015625355,
                                         n_bad = sum(qc == "bad"),
                                         qc = first(qc)) %>%
