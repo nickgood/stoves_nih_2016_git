@@ -140,6 +140,8 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
+Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperature]) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
+
 ## carbonyl flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
