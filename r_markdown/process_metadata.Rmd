@@ -96,7 +96,7 @@ output:
   save(batch_times, file="../r_files/batch_times.Rda")
 
 ```
- 
+  
  * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -104,6 +104,8 @@ output:
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
+
+Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
 
 ## batch lab conditions
 
@@ -249,6 +251,7 @@ output:
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
+
 
 ## wood lab conditions
 
