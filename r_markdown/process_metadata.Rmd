@@ -321,6 +321,10 @@ All outliers checked by KF in February 2017. There are no transcription errors.
           axis.title=element_text(size=40))
 ```
 
+
+Outlier date of 3-11-16: No transcription error, but KF thinks there was a mistake in the original data recording. It should have been written as 49.9 but instead was written as 49.5.
+
+
 ## fivegas calibration times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
