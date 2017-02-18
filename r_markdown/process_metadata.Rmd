@@ -295,6 +295,8 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
+All outliers checked by KF in February 2017. There are no transcription errors. 
+
 ## fivegas calibration standards
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
