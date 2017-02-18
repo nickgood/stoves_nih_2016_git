@@ -242,6 +242,10 @@ Outlier 1C checked by KF in February 2017. There is no transcription error and t
           axis.title=element_text(size=40))
 ```
 
+Outliers 10A, 6D, 5A, 2A, 1A checked by KF in February 2017. There are no transcription errors. 
+
+Outliers 6A and 13A were transcription errors that were fixed in wood sampling log on 2/18/17 so should not appear in subsequent re-run versions of this file.
+
 ## wood stove times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
