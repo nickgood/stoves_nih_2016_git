@@ -82,11 +82,11 @@ output:
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("carbonyls|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", notes$inst) == TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(dplyr::filter(notes, grepl(".*carbonyls.*", inst)) %>% 
+  knitr::kable(dplyr::filter(notes, grepl(".*carb.*", inst)) %>% 
                dplyr::select(-inst, -date),
                "markdown", digits = 2)
 ```
