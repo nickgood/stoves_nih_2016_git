@@ -218,7 +218,7 @@ Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
-                           stove_fuel = forcats::as_factor(paste(stove, ":", fuel))) %>%
+                           stove_fuel = factor(paste(stove, ":", fuel))) %>%
                            dplyr::mutate(stove_fuel = 
                            forcats::lvls_reorder(stove_fuel,
                                                  c(28, 30, 29, 7, 9, 8,
