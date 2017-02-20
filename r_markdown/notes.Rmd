@@ -5,7 +5,7 @@ date: "12/2/2016"
 output: html_document
 ---
 
-## Librries
+## Library
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
