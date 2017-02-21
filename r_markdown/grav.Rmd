@@ -135,6 +135,13 @@ output:
                                wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
 ```
 
+* add pollutant variable `pol`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::mutate(grav_merged,
+                               pol = "grav")
+```
+
 # QC
 
 * extract notes for gravimetric data
