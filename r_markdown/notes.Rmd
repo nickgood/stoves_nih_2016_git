@@ -1,25 +1,23 @@
 ---
 title: "Notes"
-author: "Nicholas Good"
-date: "12/2/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
-## Library
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
 ```
 
-## Source files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_load_metadata.R")
 ```
 
-## Load files
+# Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
@@ -30,7 +28,7 @@ output: html_document
   load("../r_files/grav.Rda")
 ```
 
-## Compile notes
+# Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_id_date <- dplyr::select(samples, id, date)  # get id and date
@@ -70,7 +68,7 @@ output: html_document
            dplyr::mutate(id = as.factor(id))
 ```
 
-## Break out instruments
+# Break out instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::mutate(notes, inst = ifelse(grepl("5-Gas|5-gas", notes), "fivegas",
@@ -130,7 +128,7 @@ With default value `maybe`.
            dplyr::mutate(id = as.factor(id))
 ```
 
-## Adjust some flags based on notes
+# Adjust some flags based on notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
@@ -144,7 +142,7 @@ With default value `maybe`.
                               notes), "bad", as.character(qc)))
 ```
 
-## Save notes
+# Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(notes, file = "../r_files/notes.Rda")
