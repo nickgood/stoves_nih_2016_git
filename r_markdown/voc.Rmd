@@ -170,7 +170,7 @@ output:
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-##  merge background
+## merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::select(bg, pol, mean) %>%
@@ -180,11 +180,26 @@ output:
                 dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
+## rename variables
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc_merged <- dplyr::rename(voc_merged,
+                                         start = time_start_voc,
+                                         end = time_end_voc)
+```
+
+
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(voc_merged, file="../r_files/voc_merged.Rda")
 ```
+
+# Summary
+
+VOCs were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
+
+VOCs data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
 
 # Plots
 
@@ -213,9 +228,3 @@ output:
          xlab("") +
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
-
-# Summary
-
-VOCs were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
-
-VOCs data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
