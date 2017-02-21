@@ -203,8 +203,8 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "ok", "low"),
-                               loq = ifelse(wgt_delta >= loq_var, "ok", "low"))
+                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
+                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
 ```
 
 # Background analysis
