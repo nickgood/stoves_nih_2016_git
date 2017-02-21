@@ -16,7 +16,6 @@ output:
   source("../r_scripts/R_tidy.R")
 ```
 
-
 # Load data
 
 * gravimetric
@@ -221,7 +220,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
         na.omit() %>%
         dplyr::mutate(dur = (end - start) / 60,
                       conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(bg_mean = mean(conc),
+        dplyr::summarise(conc_bg = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
                          max = max(conc),
@@ -237,7 +236,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged,
-                                  dplyr::select(bg, type, bg_mean),
+                                  dplyr::select(bg, type, conc_bg),
                                                 by = "type")
 ```
 
