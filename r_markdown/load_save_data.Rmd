@@ -270,6 +270,8 @@ Reference for test id, stove and fuel types.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
   batch <- load_singlefiles("batch")
 
+  batch <- dplyr::filter(batch, grepl("^[0-9]", id))
+
   save(batch, file = "../r_files/batch.Rda")
 ```
 
@@ -282,6 +284,8 @@ Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   wood <- load_singlefiles("wood")
+
+  wood <- dplyr::filter(wood, grepl("^[0-9]", id))
 
   save(wood, file = "../r_files/wood.Rda")
 ```
