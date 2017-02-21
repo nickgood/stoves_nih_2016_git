@@ -624,7 +624,7 @@ load_pax_file <- function(file){
 
 #________________________________________________________
 # Load smps file
-# file <- "../data/smps/20160105_2A_SMPS.csv"
+# file <- "../data/smps/20160105_6A_SMPS.csv"
 # df <- load_smps_file(file)
 load_smps_file <- function(file){
 
