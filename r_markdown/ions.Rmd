@@ -127,7 +127,8 @@ output:
                                -flow, -start, -end,
                                -type, -qc) %>%
                  dplyr::filter(!is.na(mass_ug)) %>%
-                 dplyr::mutate(pol = as.factor(pol))
+                 dplyr::mutate(pol = as.factor(pol)) %>%
+                 dplyr::select(-id_ions)
 ```
 
 # Background analysis
@@ -140,7 +141,6 @@ output:
   bg <- dplyr::filter(ions_merged, type == "bg", qc == "ok") %>%
         dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
-        dplyr::select(-id_ions) %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%  # ug * 1000 * 60 / (L/min * s) = ug / m^3
         dplyr::group_by(pol) %>%
