@@ -225,7 +225,6 @@ ___
 
 ## fivegas
 
-
 ### Select fivegas pollutants
 
 Select co, co2 and ch4.
@@ -362,7 +361,7 @@ ___
                dplyr::mutate(dur = end - start)
 ```
 
-* calculate number of particles emitted during tests
+* calculate number of particles emitted during tests (check this is all???)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
