@@ -38,6 +38,7 @@ output:
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
+  load("../r_files/temp.Rda")
 ```
 
 * metadata
@@ -71,7 +72,7 @@ output:
 * fuel consumed
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
+  batch_mass <- dplyr::filter(batch_wgts, var == "fuel" |
                                           var == "refueled" |
                                           var == "preshutdown") %>%
                 tidyr::spread(var, value) %>%
@@ -86,7 +87,7 @@ output:
 * fuel consumed
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
+  wood_mass <- dplyr::filter(wood_wgts, var == "fuel" |
                                         var == "ashpot_unusedfuel" |
                                         var == "ashpot_char_ash" |
                                         var == "ashpot_lid") %>%
@@ -104,11 +105,10 @@ output:
 * merge test types
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_wgts, id, mass_fuel),
-                                 dplyr::select(wood_wgts, id, mass_fuel)) %>%
+  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_mass, id, mass_fuel),
+                                 dplyr::select(wood_mass, id, mass_fuel)) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
                 dplyr::filter(grepl("^[0-9]", id) == TRUE)
-
 ```
 
 * plot
@@ -124,7 +124,6 @@ output:
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
         theme(legend.position = "top")
         ylab("fuel burnt (g)")
-
 ```
 
 ## save fuel file
@@ -135,6 +134,85 @@ output:
 
 ___
 
+# Energy
+
+* timestamps
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_times <- dplyr::filter(test_times, grepl("^start_[0-9]|^end_[0-9]", var)) %>%
+             tidyr::separate(var, c("var", "rep")) %>%
+             tidyr::spread(var, value)
+```
+
+* pot mass
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_pot_mass <- dplyr::filter(wood_wgts,
+                              grepl("^pot",
+                              var)) %>%
+                tidyr::separate(var, c("var", "pot")) %>%
+                tidyr::spread(var, value)
+```
+
+* pot + water mass
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_pot_water_mass <- dplyr::filter(wood_wgts,
+                                    grepl("^on_[0-9]|^off_[0-9]", var)) %>%
+                      tidyr::separate(var, c("var", "rep")) %>%
+                      tidyr::spread(var, value)
+```
+
+* extract temperature for periods of interest
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_temp <-  dplyr::select(temp, id, datetime, time, tamb, thood)
+
+  e_temp <- filter_temp(e_times, e_temp)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+  ggplot(e_temp, aes(datetime, tamb, group = rep, colour = rep)) +
+    geom_point() +
+    facet_wrap(~id, scales = "free", ncol = 3) +
+    theme_minimal()
+```
+
+
+* temperature change
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_temp <- dplyr::group_by(e_temp, id, rep) %>%
+            dplyr::summarise(t_min = quantile(tamb, 0.05, na.rm = TRUE),
+                             t_max = quantile(tamb, 0.95, na.rm = TRUE))
+  
+
+```
+
+* energy applied
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```
+
+* energy applied to stove
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# hyper special kb code :-):-):-):-):-):-):-)
+#  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
+#             tidyr::separate(var, c("pot_status","rep")) %>%
+#             dplyr::mutate(pot_id = paste(id, rep)) %>%
+#             dplyr::select(id, pot_id, pot_status, value) %>%
+#             tidyr::spread(pot_status, value) %>%
+#             dplyr::mutate(delta_m = on - off)
+
+# boring Nick code
+# mass H20 evaporated per test
+  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
+             tidyr::separate(var, c("pot_status","rep")) %>%
+             tidyr::spread(pot_status, value) %>%
+             dplyr::mutate(grams = on - off) %>%
+             dplyr::group_by(id) %>%
+             dplyr::summarise(grams = sum(grams, na.rm = TRUE))
+```
 # ecoc
 
 * filter area
@@ -444,8 +522,6 @@ ___
 * waiting on data
 
 # voc
-
-* load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flow <- 0.0135  # L/min
