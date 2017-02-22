@@ -179,8 +179,8 @@ Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
-                           stove = forcats::lvls_revalue(stove,
-                           c("Three Stone Fire (Artisan)",
+                           stove = factor(stove,
+                           levels = c("Three Stone Fire (Artisan)",
                              "Clay Ring (Artisan)",
                              "Built-in Justa (Envirofit, HM5000)",
                              "Rocket Elbow (Envirofit, G3300)",
@@ -199,17 +199,17 @@ Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
-                           fuel = forcats::lvls_revalue(fuel, 
-                             c("Douglas Fir",
-                               "Oak",
-                               "Eucalyptus",
-                               "Lump Hardwood (Sm.)",
-                               "Lump Hardwood (Med.)",
-                               "Coconut Charcoal",
-                               "West Slope Pellets",
-                               "Eucalyptus Pellets",
-                               "Kerosene",
-                               "Liquefied Petroleum Gas")))
+                           fuel = factor(fuel,
+                           levels = c("Douglas Fir",
+                             "Oak",
+                             "Eucalyptus",
+                             "Lump Hardwood (Sm.)",
+                             "Lump Hardwood (Med.)",
+                             "Coconut Charcoal",
+                             "West Slope Pellets",
+                             "Eucalyptus Pellets",
+                             "Kerosene",
+                             "Liquefied Petroleum Gas")))
 ```
 
 * Create aggregated fuel category
@@ -235,7 +235,7 @@ Reference for test id, stove and fuel types.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- dplyr::mutate(samples,
                            stovecat =
-                             forcats::fct_collapse(stove,
+                            forcats::fct_collapse(stove,
                                traditional = c("Clay Ring (Artisan)",
                                              "Three Stone Fire (Artisan)",
                                              "Ceramic Charcoal (Artisan)"),
@@ -248,7 +248,7 @@ Reference for test id, stove and fuel types.
                                            "Gasifer (Mimi Moto, Mimi Moto)"),
                                advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)",
                                           "Wick Kerosene (Cook 'n Lite, 82)", 
-                                          "Pressurized Kerosene (Butterfly, 2412)"))) 
+                                          "Pressurized Kerosene (Butterfly, 2412)")))
 ```
 
 * Save samples file
