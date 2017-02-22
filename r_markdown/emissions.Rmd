@@ -634,7 +634,7 @@ ___
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur,
+  voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * flow_hood * dur,
                             mass_carbon = mass_emitted * 12 * num_c / mw)
 ```
 
