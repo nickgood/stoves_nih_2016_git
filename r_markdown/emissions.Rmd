@@ -64,33 +64,11 @@ output:
   flow_hood <- 4  # m^3/min
 ```
 
-# Fuel properties
+# Fuel
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
-                                                  "Eucalyptus",
-                                                  "Oak",
-                                                  "Coconut Charcoal",
-                                                  "Lump Hardwood (Med.)",
-                                                  "Lump Hardwood (Sm.)",
-                                                  "Eucalyptus Pellets",
-                                                  "West Slope Pellets",
-                                                  "Kerosene",
-                                                  "Liquefied Petroleum Gas"),
-                                         lhv = c(18658, 19427, 18658, 16628,
-                                                 28611, 28611, 17501, 17501,
-                                                 43100, 46100),
-                                         carbon_fraction = c(0.497733333, 0.521166667,
-                                                             0.5, 0.488, 0.840833333,
-                                                             0.840833333, 0.4852,
-                                                             0.4852, 0.82, 0.82))
-```
+## batch stoves
 
-# Mass of fuel
-
-Amount of fuel burnt during each test
-
-* batch stoves
+* fuel consumed
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   batch_wgts <- dplyr::filter(batch_wgts, var == "fuel" |
@@ -103,7 +81,9 @@ Amount of fuel burnt during each test
                 dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
 ```
 
-* wood stoves
+## wood stoves
+
+* fuel consumed
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   wood_wgts <- dplyr::filter(wood_wgts, var == "fuel" |
@@ -147,14 +127,7 @@ Amount of fuel burnt during each test
 
 ```
 
-### Merge fuel burnt with fuel properties
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel_burnt <- dplyr::left_join(fuel_burnt, dplyr::select(samples, id, fuel), by = "id") %>%
-	              dplyr::left_join(fuel_properties, by = "fuel")
-```
-
-### Save
+## save fuel file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
@@ -162,7 +135,7 @@ Amount of fuel burnt during each test
 
 ___
 
-## ecoc
+# ECOC
 
 * filter area
 
@@ -224,17 +197,15 @@ Concentration is corrected for background by removing background test average co
 
 ___
 
-## fivegas
+# Fivegas
 
-### Select fivegas pollutants
+## process
 
-Select co, co2 and ch4.
+* select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4")
 ```
-
-### Process fivegas
 
 * filter out data from outside emissions window
 
@@ -267,7 +238,7 @@ Select co, co2 and ch4.
                 dplyr::mutate(id = as.factor(id))
 ```
 
-### Background
+## background
 
 * replace NaN with between test mean value
 * combine pollutants
@@ -298,6 +269,8 @@ Select co, co2 and ch4.
                 dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))
 ```
 
+## emissions
+
 * calculate micrograms emitted during tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -315,7 +288,7 @@ Select co, co2 and ch4.
 
 ___
 
-## grav
+# grav
 
 * select data
 
@@ -353,7 +326,7 @@ ___
 
 ___
 
-## smps
+# smps
 
 * calculate test average number concentration
 * calculate test duration
@@ -395,7 +368,7 @@ ___
 
 ___
 
-## ions
+# ions
 
 * select data
 
@@ -430,7 +403,7 @@ ___
   head(ions, 2)
 ```
 
-## carbonyls
+# carbonyls
 
 * select data
 
@@ -465,11 +438,11 @@ ___
   head(carbonyls, 2)
 ```
 
-## pah
+# pah
 
 * waiting on data
 
-## voc
+# voc
 
 * load data
 
@@ -646,7 +619,9 @@ ___
 
 ___
 
-## Combine pollutants
+# Output
+
+* combine pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted,
@@ -663,7 +638,7 @@ ___
                                                    mass_carbon, qc))
 ```
 
-Print tests with negative values
+* tests with negative values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   kable(dplyr::filter(emissions, mass_emitted < 0),
