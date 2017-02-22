@@ -448,7 +448,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-                             conc = (mass_ug * 1000 / (flow * dur)) - conc_bg)
+                             conc = (mass_ug * 1000 / (flow * dur)))
 ```
 
 * calculate mass emitted
