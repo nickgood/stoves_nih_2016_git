@@ -148,7 +148,7 @@ Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperatu
   batch_pot <- dplyr::filter(tidy_id_date(batch, "^pot_", "pot_"),
                              !is.na(as.numeric(value))) %>%
                dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value)
+               dplyr::rename(pot = value, rep = var)
 
   batch_pot$pot <- forcats::fct_recode(batch_pot$pot,
                                    a = "1", b = "2", c = "3", d = "4")
@@ -317,10 +317,12 @@ All outliers checked by KF in February 2017. There are no transcription errors.
   wood_pot <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
                              !is.na(as.numeric(value))) %>%
                dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value)
+               dplyr::rename(pot = value, rep = var)
 
   wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
                                    a = "1", b = "2", c = "3", d = "4")
+  
+  save(wood_pot, file="../r_files/wood_pot.Rda")
 ```
 
 
