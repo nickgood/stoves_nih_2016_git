@@ -135,7 +135,7 @@ output:
 
 ___
 
-# ECOC
+# ecoc
 
 * filter area
 
@@ -197,7 +197,7 @@ Concentration is corrected for background by removing background test average co
 
 ___
 
-# Fivegas
+# fivegas
 
 ## process
 
@@ -217,7 +217,8 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE), qc = first(qc)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE),
+                                 qc = first(qc)) %>%
                 dplyr::ungroup()
 ```
 
@@ -245,18 +246,18 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg_co <- dplyr::mutate(bg_co,
-                         bg_ppm = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
-                         bg_conc = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
+                         ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+                         conc_bg = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
                          pol = "co")
 
   bg_co2 <- dplyr::mutate(bg_co2,
-                         bg_ppm = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
-                         bg_conc = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
+                         ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+                         conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
                          pol = "co2")
  
   bg_ch4 <- dplyr::mutate(bg_ch4,
-                         bg_ppm = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
-                         bg_conc = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
+                         ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+                         conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
                          pol = "ch4")
 
   bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
@@ -266,7 +267,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(bg, id, pol, bg_conc), by = c("id", "pol"))
+                dplyr::select(bg, id, pol, conc_bg), by = c("id", "pol"))
 ```
 
 ## emissions
@@ -275,7 +276,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                              mass_emitted = (conc - bg_conc) * flow_hood * (dur / 60),
+                              mass_emitted = (conc - conc_bg) * flow_hood * (dur / 60),
                               num_c = 1,
                               mass_carbon = mass_emitted * 12 * num_c / mw)
 ```
@@ -651,7 +652,7 @@ ___
 
 * tests with negative values
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
   kable(dplyr::filter(emissions, mass_emitted < 0),
         align = 'c', caption = "Tests with negative values")
 ```
