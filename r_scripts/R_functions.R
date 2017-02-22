@@ -251,3 +251,36 @@ plot_energy_ef <- function(df, pol_name, type){
   print(p3)
 }
 #________________________________________________________
+
+#________________________________________________________
+# filter data for time periods of interest only
+# requires df with time windows (id, start, end)
+# df with id, time
+# appends rep variable
+filter_temp <- function(times, df){
+
+  rows <- nrow(times)
+
+ # loop ids
+  for(i in 1:rows){
+    tmp <- dplyr::filter(df,
+                         as.character(id) == as.character(times$id[i]),
+                         time >= times$start[i],
+                         time <= times$end[i]) %>%
+           dplyr::mutate(rep = times$rep[i])
+
+ # if first match
+  if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+    out <- tmp
+  }
+
+ # if not first match with data
+  if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+    out <- rbind(out, tmp)
+  }
+ # end for loop
+  }
+
+ # return
+  return(out)
+}
