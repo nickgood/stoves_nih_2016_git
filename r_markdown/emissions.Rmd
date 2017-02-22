@@ -34,6 +34,7 @@ output:
     bg_ch4_mean <- background$mean
   load("../r_files/grav_merged.Rda")
   load("../r_files/smps_ultrafine.Rda")
+    load("../r_files/smps_ultrafine_bg.Rda")
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
@@ -341,7 +342,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)  # all particle carbon in ec and oc
+                        mass_carbon = mass_emitted * 0)
 ```
 
 * output
@@ -354,18 +355,36 @@ ___
 
 ## smps
 
-* merge with sample time data and calculate test duration
+* calculate test average number concentration
+* calculate test duration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ultrafine <- dplyr::left_join(smps_ultrafine, times, by = "id") %>%
+  ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
+                                n = n()) %>%
+               dplyr::ungroup(id) %>%
+               dplyr::left_join(times, by = "id") %>%
                dplyr::mutate(dur = end - start)
+```
+
+* calculate average background (use other method?)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(smps_ultrafine_bg, qc == "ok", n_bad == 0) %>%
+        dplyr::group_by(id) %>%
+        dplyr::summarise(conc_bg = mean(number_conc)) %>%
+        dplyr::ungroup()
+
+  conc_bg <- mean(bg$conc_bg)
 ```
 
 * calculate number of particles emitted during tests (check this is all???)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
-  ultrafine <- dplyr::mutate(ultrafine, emitted = number_conc * 1e6 * flow_hood * (dur/60))
+  ultrafine <- dplyr::mutate(ultrafine,
+                             num_emitted = (conc - conc_bg) * 1e6 * flow_hood * (dur / 60))
 ```
 
 * output
@@ -403,13 +422,6 @@ ___
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
                         mass_carbon = mass_emitted * 0)
-
-  ions_g <- dplyr::group_by(ions, id) %>%
-            dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
-            dplyr::summarise(mass_emitted = sum(mass_emitted),
-                             mass_carbon = sum(mass_carbon),
-                             qc = first(qc)) %>%
-           dplyr::mutate(pol = "total_ions")
 ```
 
 * output
@@ -445,13 +457,6 @@ ___
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
                              mass_carbon = mass_emitted * 0.95) # assume 95% carbon
-
-  carbonyls_g <- dplyr::group_by(carbonyls, id) %>%
-                 dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
-                 dplyr::summarise(mass_emitted = sum(mass_emitted),
-                                  mass_carbon = sum(mass_carbon),
-                                  qc = first(qc)) %>%
-                 dplyr::mutate(pol = "total_carbonyls")
 ```
 
 * output
@@ -485,7 +490,7 @@ ___
 
 * moleculer weight data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mw_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
             dplyr::mutate(mw = NA) %>%
             dplyr::mutate(mw = ifelse(pol == "voc_ethane", 30.07, mw)) %>%
@@ -552,7 +557,7 @@ ___
 
 * number of carbon atoms data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   num_carbon_voc <- tibble::data_frame(pol = unique(voc$pol)) %>%
                     dplyr::mutate(num_c = NA) %>%
                     dplyr::mutate(num_c = ifelse(pol == "voc_ethane", 2, num_c)) %>%
@@ -631,13 +636,6 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, mass_emitted = conc * flow_hood * dur,
                             mass_carbon = mass_emitted * 12 * num_c / mw)
-
-  voc_g <- dplyr::group_by(voc, id) %>%
-           dplyr::filter(!is.na(mass_emitted), !is.na(mass_carbon)) %>%
-           dplyr::summarise(mass_emitted = sum(mass_emitted),
-                            mass_carbon = sum(mass_carbon),
-                            qc = first(qc)) %>%
-          dplyr::mutate(pol = "total_vocs")
 ```
 
 * output
@@ -655,21 +653,14 @@ ___
                                          mass_carbon, qc) %>%
                dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted,
                                                          mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(carbonyls_g,
-                                                         id, pol, mass_emitted,
-                                                         mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted,
                                                     mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted,
                                                     mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted,
                                                     mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(ions_g, id, pol, mass_emitted,
-                                                      mass_carbon, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted,
-                                                   mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(voc_g, id, pol, mass_emitted,
-                                                     mass_carbon, qc))
+                                                   mass_carbon, qc))
 ```
 
 Print tests with negative values
