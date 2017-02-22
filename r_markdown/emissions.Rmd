@@ -624,17 +624,28 @@ ___
 * combine pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::select(co_co2_ch4, id, pol, mass_emitted,
+  emissions <- dplyr::select(co_co2_ch4, id, pol, conc,
+                                         mass_emitted,
                                          mass_carbon, qc) %>%
-               dplyr::bind_rows(dplyr::select(carbonyls, id, pol, mass_emitted,
+               dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
+                                                         conc, conc_bg,
+                                                         mass_emitted,
                                                          mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(ecoc, id, pol, mass_emitted,
+               dplyr::bind_rows(dplyr::select(ecoc, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
                                                     mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(grav, id, pol, mass_emitted,
+               dplyr::bind_rows(dplyr::select(grav, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
                                                     mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(ions, id, pol, mass_emitted,
+               dplyr::bind_rows(dplyr::select(ions, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
                                                     mass_carbon, qc)) %>%
-               dplyr::bind_rows(dplyr::select(voc, id, pol, mass_emitted,
+               dplyr::bind_rows(dplyr::select(voc, id, pol,
+                                                   conc, conc_bg,
+                                                   mass_emitted,
                                                    mass_carbon, qc))
 ```
 
