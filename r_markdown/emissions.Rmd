@@ -147,6 +147,12 @@ ___
              tidyr::spread(var, value)
 ```
 
+* which pot
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_pot <- dplyr::select(wood_pot, -date)
+```
+
 * pot mass
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -154,7 +160,8 @@ ___
                               grepl("^pot",
                               var)) %>%
                 tidyr::separate(var, c("var", "pot")) %>%
-                dplyr::select(-var, -date)
+                dplyr::select(-var, -date) %>%
+                tidyr::spread(pot, value)
 ```
 
 * pot + water mass
@@ -197,11 +204,25 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_data <- dplyr::left_join(e_times, e_pot_water_mass, by = c("id", "rep")) %>%
-            dplyr::left_join(e_temp, by = c("id", "rep"))
+            dplyr::left_join(e_temp, by = c("id", "rep")) %>%
+            dplyr::left_join(e_pot_mass, by = "id") %>%
+            dplyr::left_join(e_pot, by = c("id", "rep")) %>%
+            dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
+                          mass_pot = ifelse(pot == "b", b, mass_pot),
+                          mass_pot = ifelse(pot == "c", c, mass_pot)) %>%
+            dplyr::select(-a, -b)
 ```
+
 * energy applied
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_data <- dplyr::mutate(e_data,
+                          mass_evap = mass_on - mass_off,
+                          mass_h2o = mass_on - mass_pot,
+                          dt = t_max - t_min,
+                          j_heat = mass_h2o * 4.186 * dt, # g * J/(g.oC) * oC
+                          j_vap = mass_evap * 2260,
+                          joules = j_heat + j_vap)
 ```
 
 * energy applied to stove
@@ -214,15 +235,16 @@ ___
 #             tidyr::spread(pot_status, value) %>%
 #             dplyr::mutate(delta_m = on - off)
 
-# boring Nick code
+# boring Nick code :-(:-(:-(:-(:-(:-(:-(:-(:-(
 # mass H20 evaporated per test
-  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
-             tidyr::separate(var, c("pot_status","rep")) %>%
-             tidyr::spread(pot_status, value) %>%
-             dplyr::mutate(grams = on - off) %>%
-             dplyr::group_by(id) %>%
-             dplyr::summarise(grams = sum(grams, na.rm = TRUE))
+#  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
+#             tidyr::separate(var, c("pot_status","rep")) %>%
+#             tidyr::spread(pot_status, value) %>%
+#             dplyr::mutate(grams = on - off) %>%
+#             dplyr::group_by(id) %>%
+#             dplyr::summarise(grams = sum(grams, na.rm = TRUE))
 ```
+
 # ecoc
 
 * filter area
