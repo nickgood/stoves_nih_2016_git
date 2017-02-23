@@ -208,22 +208,22 @@ output:
                   dplyr::mutate(lod = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm >= lod_ec,
-                                            "ok",
+                                            "above",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm < lod_ec,
-                                            "low",
+                                            "below",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm >= lod_ec,
-                                            "ok",
+                                            "above",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "ec" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm < lod_ec,
-                                            "low",
+                                            "below",
                                             loq))
 ```
 
@@ -234,22 +234,22 @@ output:
   ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm >= lod_oc,
-                                            "ok",
+                                            "above",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm < lod_oc,
-                                            "low",
+                                            "below",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm >= loq_oc,
-                                            "ok",
+                                            "above",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
                                             ug_sq_cm < loq_oc,
-                                            "low",
+                                            "below",
                                             loq))
 ```
 

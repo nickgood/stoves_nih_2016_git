@@ -1,25 +1,23 @@
 ---
 title: "Notes"
-author: "Nicholas Good"
-date: "12/2/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
-## Library
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
 ```
 
-## Source files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_load_metadata.R")
 ```
 
-## Load files
+# Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
@@ -30,7 +28,7 @@ output: html_document
   load("../r_files/grav.Rda")
 ```
 
-## Compile notes
+# Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_id_date <- dplyr::select(samples, id, date)  # get id and date
@@ -65,50 +63,77 @@ output: html_document
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
 
-  notes <- dplyr::bind_rows(notes_1, notes_2, notes_3, notes_4, notes_5, notes_6) %>%
+  notes <- dplyr::bind_rows(notes_1, notes_2,
+                            notes_3, notes_4,
+                            notes_5, notes_6) %>%
            dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
-## Break out instruments
+# Break out instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::mutate(notes, inst = ifelse(grepl("5-Gas|5-gas", notes), "fivegas",
+  notes <- dplyr::mutate(notes,
+                         inst = ifelse(grepl("5-Gas|5-gas", notes),
+                                       "fivegas",
                                        inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("CO2 sensors", notes), "co2", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^Missing", notes), "fivegas:smps", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^P ", notes), "pah|ions", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("CO2 sensors", notes),
+                                       "co2", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Missing", notes),
+                                       "fivegas:smps", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^P ", notes),
+                                       "pah|ions", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("^Filter ruptured$|^Teflon|^Flow dropped",
-                                notes), "trans:grav:ecoc:ions:pah", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^Filter ruptured;", notes),
-                                "trans:grav:ecoc:ions:pah:fivegas", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^No 5Gas", notes), "fivegas:carb", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("Out of CO2", notes), "fivegas:co2", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^Clock", notes), "all", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("E filter ruptured", notes), "smps:ecoc", inst)) %>%
+                                       notes),
+                                       "trans:grav:ecoc:ions:pah",
+                                       inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Filter ruptured;",
+                                       notes),
+                                       "trans:grav:ecoc:ions:pah:fivegas",
+                                       inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^No 5Gas", notes),
+           														"fivegas:carb",
+           														inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("Out of CO2", notes),
+           														"fivegas:co2", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Clock", notes),
+           														"all", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("E filter ruptured", notes),
+           														"smps:ecoc", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("SOME PM STUCK|dropped filter",
-                                notes), "grav", inst)) %>%
+                                       notes),
+                                       "grav", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("Carbonyl tubing became clogged",
-                                notes), "carb", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^SMPS|Size range:|Time:", notes), "smps", inst)) %>%
+                                       notes),
+                                       "carb", inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^SMPS|Size range:|Time:",
+                                       notes),
+                                       "smps", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("^White quartz|White cartridge flow",
-                                notes), "trans:grav:ecoc:ions:pah", inst)) %>%
-           dplyr::mutate(inst = ifelse(grepl("^Canister|canister", notes), "voc", inst)) %>%
+                                       notes),
+                                       "trans:grav:ecoc:ions:pah",
+                                       inst)) %>%
+           dplyr::mutate(inst = ifelse(grepl("^Canister|canister", notes),
+                                       "voc", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("Real time and carbonyl", notes),
-                                "pax:smps:co2:carb", inst)) %>%
+                                       "pax:smps:co2:carb", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("white/orange|White cartridge clogged",
-                                notes), "trans:grav:ecoc", inst)) %>%
+                                       notes),
+                                       "trans:grav:ecoc", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("White rotometer malfunctioned during test",
-                                notes),"grav:trans:ecoc",inst)) %>%
+                                       notes),
+                                       "grav:trans:ecoc",inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("two filter weights were switched",
-                                notes), "grav:trans", inst)) %>%
+                                       notes),
+                                       "grav:trans", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("extra gunk on filter|
-                                ^*Filters in the wrong cassettes|
-                                ^Filter cassettes were mislabled|
-                                ^filter cassettes were mislabeled",
-                                notes), "trans:grav", inst)) %>%
+                                       ^*Filters in the wrong cassettes|
+                                       ^Filter cassettes were mislabled|
+                                       ^filter cassettes were mislabeled",
+                                       notes),
+                                       "trans:grav", inst)) %>%
            dplyr::mutate(inst = ifelse(grepl("Pumps for real time", notes),
-                                "carb:smps:pax:co2",inst)) %>%
+                                       "carb:smps:pax:co2", inst)) %>%
            dplyr::distinct() %>%
            dplyr::arrange(inst)
 ```
@@ -130,21 +155,30 @@ With default value `maybe`.
            dplyr::mutate(id = as.factor(id))
 ```
 
-## Adjust some flags based on notes
+# Adjust some flags based on notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                    12.12$|^Size range|Charcoal test in Thing 2|Charcoal test running"
-                                    , notes), "ok", as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|^Bleed|^CO2
-                              |^5-Gas|^Out of CO2|^KF|^3|^New", notes), "ok",
-                              as.character(qc))) %>%
+                                            12.12$|^Size range|
+                                            Charcoal test in Thing 2|
+                                            Charcoal test running",
+                                            notes),
+                                            "ok",
+                                            as.character(qc))) %>%
+           dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
+                                           ^Bleed|^CO2
+                                            |^5-Gas|^Out of CO2|^KF|^3|^New",
+                                            notes),
+                                            "ok",
+                                            as.character(qc))) %>%
            dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-                              |^Dilution|^SMPS Malfunction|^No SMPS data.|^No 5-gas",
-                              notes), "bad", as.character(qc)))
+                                           |^Dilution|^SMPS Malfunction|
+                                           ^No SMPS data.|^No 5-gas",
+                                           notes),
+                                           "bad", as.character(qc)))
 ```
 
-## Save notes
+# Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(notes, file = "../r_files/notes.Rda")

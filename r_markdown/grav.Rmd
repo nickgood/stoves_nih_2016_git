@@ -16,7 +16,6 @@ output:
   source("../r_scripts/R_tidy.R")
 ```
 
-
 # Load data
 
 * gravimetric
@@ -135,6 +134,13 @@ output:
                                wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
 ```
 
+* add pollutant variable `pol`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged <- dplyr::mutate(grav_merged,
+                               pol = "grav")
+```
+
 # QC
 
 * extract notes for gravimetric data
@@ -196,8 +202,8 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "ok", "low"),
-                               loq = ifelse(wgt_delta >= loq_var, "ok", "low"))
+                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
+                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
 ```
 
 # Background analysis
@@ -214,7 +220,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
         na.omit() %>%
         dplyr::mutate(dur = (end - start) / 60,
                       conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(bg_mean = mean(conc),
+        dplyr::summarise(conc_bg = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
                          max = max(conc),
@@ -230,7 +236,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged,
-                                  dplyr::select(bg, type, bg_mean),
+                                  dplyr::select(bg, type, conc_bg),
                                                 by = "type")
 ```
 

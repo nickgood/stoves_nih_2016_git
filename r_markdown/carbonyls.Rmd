@@ -123,7 +123,8 @@ Load notes
                                     -id, -id_ions, -flow,
                                     -start, -end, -type, -qc) %>%
                       dplyr::filter(!is.na(pol)) %>%
-                      dplyr::mutate(pol = as.factor(pol))
+                      dplyr::mutate(pol = as.factor(pol)) %>%
+                      dplyr::select(-id_ions)
 ```
 
 # Background analysis
@@ -136,7 +137,6 @@ Load notes
   bg <- dplyr::filter(carbonyls_merged, type == "bg", qc == "ok") %>%
         dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
-        dplyr::select(-id_ions) %>%
         dplyr::mutate(dur = end - start) %>%
         # ug * 1000 * 60 / (L/min * s) = ug / m^3
         dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%
