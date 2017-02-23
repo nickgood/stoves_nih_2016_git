@@ -284,3 +284,23 @@ filter_temp <- function(times, df){
  # return
   return(out)
 }
+#________________________________________________________
+
+#________________________________________________________
+# Calculate the molecular weight of study pollutants
+# Molecuar weights are calculated using the average
+# standard atomic weights of each individual elements
+#
+# Atomic weights are from the NIST Physical Reference Data Website
+calc_mw <- function(num_c, num_h, num_o, ion){
+  if(is.na(ion)){
+    mw <- (num_c * 12.0106) +
+         (num_h * 1.007975) +
+         (num_o * 15.9994)
+  } else if(ion == "Na"){
+    mw <- 
+  }
+  # return the molecular weight
+  return(mw)
+}
+#________________________________________________________
