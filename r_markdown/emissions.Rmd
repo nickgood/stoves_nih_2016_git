@@ -209,7 +209,8 @@ ___
             dplyr::left_join(e_pot, by = c("id", "rep")) %>%
             dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
                           mass_pot = ifelse(pot == "b", b, mass_pot),
-                          mass_pot = ifelse(pot == "c", c, mass_pot)) %>%
+                          mass_pot = ifelse(pot == "c", c, mass_pot),
+                          id = as.factor(id)) %>%
             dplyr::select(-a, -b)
 ```
 
@@ -225,9 +226,21 @@ ___
                           joules = j_heat + j_vap)
 ```
 
-* energy applied to stove
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-# hyper special kb code :-):-):-):-):-):-):-)
+  kable(dplyr::slice(e_data, 1:5),
+        align = 'c', caption = "Energy Number")
+```
+* energy per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  energy <- dplyr::select(e_data, id, joules) %>%
+            dplyr::group_by(id) %>%
+            dplyr::summarise(joules = sum(joules, na.rm = TRUE))
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# template
+# hyper-special kb code :-):-):-):-):-):-):-)
 #  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
 #             tidyr::separate(var, c("pot_status","rep")) %>%
 #             dplyr::mutate(pot_id = paste(id, rep)) %>%
@@ -309,8 +322,6 @@ ___
 
 # fivegas
 
-## process
-
 * select co, co2 and ch4.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -349,8 +360,7 @@ ___
                 dplyr::mutate(id = as.factor(id))
 ```
 
-## background
-
+* background analysis
 * replace NaN with between test mean value
 * combine pollutants
 
@@ -379,8 +389,6 @@ ___
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
                 dplyr::select(bg, id, pol, conc_bg), by = c("id", "pol"))
 ```
-
-## emissions
 
 * calculate micrograms emitted during tests
 
