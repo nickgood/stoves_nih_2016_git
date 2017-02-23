@@ -142,6 +142,20 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
 
 Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperature]) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
 
+## batch pot number
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  batch_pot <- dplyr::filter(tidy_id_date(batch, "^pot_", "pot_"),
+                             !is.na(as.numeric(value))) %>%
+               dplyr::mutate(value = as.factor(value)) %>%
+               dplyr::rename(pot = value, rep = var)
+
+  batch_pot$pot <- forcats::fct_recode(batch_pot$pot,
+                                   a = "1", b = "2", c = "3", d = "4")
+
+  save(batch_pot, file="../r_files/batch_pot.Rda")
+```
+
 ## carbonyl flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
@@ -296,6 +310,21 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
 ```
 
 All outliers checked by KF in February 2017. There are no transcription errors. 
+
+## wood pot number
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  wood_pot <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
+                             !is.na(as.numeric(value))) %>%
+               dplyr::mutate(value = as.factor(value)) %>%
+               dplyr::rename(pot = value, rep = var)
+
+  wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
+                                   a = "1", b = "2", c = "3", d = "4")
+  
+  save(wood_pot, file="../r_files/wood_pot.Rda")
+```
+
 
 ## fivegas calibration standards
 

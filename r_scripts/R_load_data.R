@@ -10,13 +10,13 @@
 # file <- "data/co2/20160105_2A_DILUTION1.csv" # ppm
 # file <- "data/co2/20160615_8D_DILUTION.csv"  # voltage
 load_co2_file <- function(file){
-  
+
   df <- read.csv(file, header = FALSE, nrows = 1, sep = " ",
                  fill = TRUE, na.strings = c("NAN"), colClasses = "character")
 
   type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
 
-  
+
   # load based on type
     
   if(type == "ppm"){
@@ -624,7 +624,7 @@ load_pax_file <- function(file){
 
 #________________________________________________________
 # Load smps file
-# file <- "../data/smps/20160330_16C_SMPS.csv"
+# file <- "../data/smps/20160105_6A_SMPS.csv"
 # df <- load_smps_file(file)
 load_smps_file <- function(file){
 
@@ -677,11 +677,22 @@ load_smps_file <- function(file){
 
   out <- merge(df_allvals,df_dw, by.x = "sample")
 
-  out <- out[!is.na(out$value),]
+  out <- out[!is.na(out$value), ]
 
-  out <- arrange(out,sample,size)
+  out <- arrange(out, sample, size)
 
-  out$date <- as.Date(out$date, format = "%m/%d/%Y")
+ # match d/../yy or dd/../yy
+  if(grepl("(^[0-9]/)|(^[0-9][0-9]/)[0-9].*/[0-9][0-9]$", out$date[1])){
+    out$date <- as.Date(out$date, format = "%m/%d/%y")
+  }
+  # match yyyy/...
+  if(grepl("^[0-9][0-9][0-9][0-9]/.*$", out$date[1])){
+    out$date <- as.Date(out$date, format = "%Y/%m/%d")
+  }
+  # match .../yyyy
+  if(grepl(".*/[0-9][0-9][0-9][0-9]$", out$date[1])){
+    out$date <- as.Date(out$date, format = "%m/%d/%Y")
+  }
 
   out$time <- as.numeric(substr(out$start_time,1,2))*60*60 + 
               as.numeric(substr(out$start_time,4,5))*60 +

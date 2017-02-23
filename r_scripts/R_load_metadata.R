@@ -117,17 +117,18 @@ load_batch <- function(file, sheet = "Batch Fed Sampling Forms"){
   df_dat <- subset(df, select = date)
 
   df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
+                                 function(x) as.Date(as.numeric(as.character(x)),
+                                 origin = "1899-12-30")))
 
   cols <- subset(colnames(df), grepl("^wgt|^lab_t|^lab_p",colnames(df))==TRUE)
-  
+
   df_num <- subset(df, select = cols)
 
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(as.character(x))))
 
   cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-  
+
   df_time <- subset(df, select = cols)
 
   df_time <- as.data.frame(lapply(df_time, 
@@ -142,14 +143,16 @@ load_batch <- function(file, sheet = "Batch Fed Sampling Forms"){
   df_rh$lab_rh <- as.numeric(df_rh$lab_rh)
 
   df_rh$lab_rh <- ifelse(df_rh$lab_rh<1,df_rh$lab_rh*100,df_rh$lab_rh)
-        
+
   df_char <- subset(df, select = notes)
 
   df_char <- as.data.frame(lapply(df_char,
                                   function(x) as.character(x)))
 
-  df_fac <- subset(df, select = c(id, stove, fuel, person))
+  cols <- subset(colnames(df), grepl("^id$|^stove$|^fuel$|^person$|^pot|^other_stoves$", colnames(df))==TRUE)
   
+  df_fac <- subset(df, select = cols)
+
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_rh, df_char, df_fac)
 
  # return
