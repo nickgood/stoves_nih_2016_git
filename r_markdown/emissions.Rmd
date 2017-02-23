@@ -185,12 +185,13 @@ ___
                       dplyr::select(-date) %>%
                       dplyr::rename(mass_on = on, mass_off = off)
 
-  e_pot_water_mass <- dplyr::filter(batch_wgts,
-                                    grepl("^on_[0-9]|^off_[0-9]", var)) %>%
-                      tidyr::separate(var, c("var", "rep")) %>%
-                      tidyr::spread(var, value) %>%
-                      dplyr::select(-date) %>%
-                      dplyr::rename(mass_on = on, mass_off = off)
+  e_pot_water_mass <- dplyr::bind_rows(e_pot_water_mass,
+                                       dplyr::filter(batch_wgts,
+                                       grepl("^on_[0-9]|^off_[0-9]", var)) %>%
+                                       tidyr::separate(var, c("var", "rep")) %>%
+                                       tidyr::spread(var, value) %>%
+                                       dplyr::select(-date) %>%
+                                       dplyr::rename(mass_on = on, mass_off = off))
 ```
 
 * extract temperature for periods of interest
@@ -227,7 +228,6 @@ ___
             dplyr::left_join(e_pot, by = c("id", "rep")) %>%
             dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
                           mass_pot = ifelse(pot == "b", b, mass_pot),
-                          mass_pot = ifelse(pot == "c", c, mass_pot),
                           id = as.factor(id)) %>%
             dplyr::select(-a, -b)
 ```
@@ -255,6 +255,21 @@ ___
             dplyr::group_by(id) %>%
             dplyr::summarise(joules = sum(joules, na.rm = TRUE))
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
+                             energy,
+                             by = "id")
+
+  ggplot(p_data, aes(id, joules, colour = stove)) +
+  geom_point() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(legend.position = "top")
+  ylab("energy applied to stove (J)")
+  
+```
+
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 # template
