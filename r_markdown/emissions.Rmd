@@ -244,7 +244,7 @@ ___
                           joules = j_heat + j_vap)
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   kable(dplyr::slice(e_data, 1:5),
         align = 'c', caption = "Energy Number")
 ```
