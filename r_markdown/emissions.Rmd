@@ -248,7 +248,8 @@ ___
   kable(dplyr::slice(e_data, 1:5),
         align = 'c', caption = "Energy Number")
 ```
-* energy per test
+
+* energy applied per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   energy <- dplyr::select(e_data, id, joules) %>%
