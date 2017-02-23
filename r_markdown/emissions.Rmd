@@ -150,7 +150,8 @@ ___
 * which pot
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot <- dplyr::select(wood_pot, -date)
+  e_pot <- dplyr::select(wood_pot, -date) %>%
+           dplyr::bind_rows(dplyr::select(batch_pot, -date))
 ```
 
 * pot mass
@@ -162,12 +163,29 @@ ___
                 tidyr::separate(var, c("var", "pot")) %>%
                 dplyr::select(-var, -date) %>%
                 tidyr::spread(pot, value)
+
+  e_pot_mass <- dplyr::bind_rows(e_pot_mass,
+                                 dplyr::bind_rows(e_pot_mass,
+                                 dplyr::filter(batch_wgts,
+                                               grepl("^pot",
+                                               var)) %>%
+                                 tidyr::separate(var, c("var", "pot")) %>%
+                                 dplyr::select(-var, -date) %>%
+                                 tidyr::spread(pot, value)))
+
 ```
 
 * pot + water mass
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_pot_water_mass <- dplyr::filter(wood_wgts,
+                                    grepl("^on_[0-9]|^off_[0-9]", var)) %>%
+                      tidyr::separate(var, c("var", "rep")) %>%
+                      tidyr::spread(var, value) %>%
+                      dplyr::select(-date) %>%
+                      dplyr::rename(mass_on = on, mass_off = off)
+
+  e_pot_water_mass <- dplyr::filter(batch_wgts,
                                     grepl("^on_[0-9]|^off_[0-9]", var)) %>%
                       tidyr::separate(var, c("var", "rep")) %>%
                       tidyr::spread(var, value) %>%
