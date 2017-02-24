@@ -132,11 +132,6 @@ output:
 
 ```
 
-* fix times (on eohur fast?)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
-```
-
 # QC
 
 ## flags from notes
