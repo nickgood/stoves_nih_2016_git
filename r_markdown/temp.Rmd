@@ -38,6 +38,27 @@ output:
                  dplyr::arrange(id)
 ```
 
+# Switch probes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  id_flipped <- c("10B", "12B", "25A", "25B", "25C")
+
+  flipped <- dplyr::filter(temp_merged,
+                           id == "10B"| id =="12B"|
+                           id =="25A" | id =="25B" |
+                           id =="25C") %>%
+             dplyr::mutate(var = ifelse(var == "t_pot", "t_hood", "t_pot"))
+
+  not_flipped <- dplyr::filter(temp_merged,
+                           id != "10B" & id !="12B" &
+                           id !="25A" & id !="25B" &
+                           id !="25C")
+  
+  temp_merged <- dplyr::bind_rows(flipped, not_flipped) %>%
+                 dplyr::arrange(id) %>%
+                 dplyr::mutate(var = as.factor(var))
+```
+
 # QC
 
 ## flags from notes
@@ -82,18 +103,20 @@ output:
 Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
 
 Temperature data is expected to be missing for: 
-All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated. 
+All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated.
 
-13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost. It is possible that there were some thermocouple malfunctions resulting in this data loss (check "notes" on transcribed testing sheets).  
+13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost. It is possible that there were some thermocouple malfunctions resulting in this data loss (check "notes" on transcribed testing sheets).
 
 # Plots
+
+## timeseries
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
   ggplot(temp_merged, aes(datetime, val, color = var)) +
          geom_line() +
          geom_point() +
          facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal()
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
 ```
-
-
