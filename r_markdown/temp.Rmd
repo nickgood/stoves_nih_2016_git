@@ -17,16 +17,20 @@ output:
 
 # Load data
 
+* pot and hood temperature
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/temp.Rda")
+```
+
+* metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load(file = "../r_files/samples.Rda")
+  load("../r_files/notes.Rda")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(temp)
-```
-
-## Tidy
+# Tidy
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
@@ -34,13 +38,9 @@ output:
                  dplyr::arrange(id)
 ```
 
-## QC
-
-Load notes
+# QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
   notes <- dplyr::filter(notes, grepl("temp|all", notes$inst) == TRUE)
 ```
 
