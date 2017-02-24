@@ -111,7 +111,7 @@ output:
 
   temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
               dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_3", "back", loc),
                             loc = ifelse(loc == "t_4", "front", loc))
 
   temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
@@ -182,10 +182,25 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
 
 # Plots
 
-## timeseries
+## all
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
   ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
+```
+
+## pot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
+  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
+                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
+
+  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
          geom_line() +
          geom_point() +
          facet_wrap(~id, ncol = 3, scales = "free") +
