@@ -343,7 +343,8 @@ Concentration is corrected for background by removing background test average co
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted)
+                        mass_carbon = mass_emitted,
+                        inst = "ecoc")
 ```
 
 * output
@@ -430,7 +431,8 @@ ___
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
                               mass_emitted = (conc - conc_bg) * flow_hood * (dur / 60),
                               num_c = 1,
-                              mass_carbon = mass_emitted * 12 * num_c / mw)
+                              mass_carbon = mass_emitted * 12 * num_c / mw,
+                              inst = "fivegas")
 ```
 
 * output
@@ -468,7 +470,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)
+                        mass_carbon = mass_emitted * 0,
+                        inst = "grav")
 ```
 
 * output
@@ -510,7 +513,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- dplyr::mutate(ultrafine,
-                             num_emitted = (conc - conc_bg) * 1e6 * flow_hood * (dur / 60))
+                             num_emitted = (conc - conc_bg) * 1e6 * flow_hood * (dur / 60),
+                             inst = "smps")
 ```
 
 * output
@@ -547,7 +551,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)
+                        mass_carbon = mass_emitted * 0,
+                        inst = "ions")
 ```
 
 * output
@@ -582,7 +587,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                             mass_carbon = mass_emitted * 0.95) # assume 95% carbon
+                             mass_carbon = mass_emitted * 0.95, # assume 95% carbon
+                             inst = "carbs")
 ```
 
 * output
@@ -759,7 +765,8 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                            mass_carbon = mass_emitted * 12 * num_c / mw)
+                            mass_carbon = mass_emitted * 12 * num_c / mw,
+                            inst = "voc")
 ```
 
 * output
@@ -777,27 +784,33 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, conc,
                                          mass_emitted,
-                                         mass_carbon, qc) %>%
+                                         mass_carbon,
+                                         inst, qc) %>%
                dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
                                                          conc, conc_bg,
                                                          mass_emitted,
-                                                         mass_carbon, qc)) %>%
+                                                         mass_carbon,
+                                                         inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(ecoc, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(ions, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol,
                                                    conc, conc_bg,
                                                    mass_emitted,
-                                                   mass_carbon, qc))
+                                                   mass_carbon,
+                                                   inst, qc))
 ```
 
 * tests with negative values
