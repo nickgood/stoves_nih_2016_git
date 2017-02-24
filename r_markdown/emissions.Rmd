@@ -197,13 +197,26 @@ ___
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <- filter_temp(e_times, temp_merged)
+  e_temp <- dplyr::filter(temp_merged, loc != "flue")
+
+  e_temp <- filter_temp(e_times, e_temp)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  ggplot(dplyr::filter(e_temp, loc != "flue"),
+         aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
 ```
 
 * temperature timeseries
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, t_oc, group = rep, colour = rep)) +
+  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
     facet_wrap(~id, scales = "free", ncol = 3) +
     theme_minimal()
