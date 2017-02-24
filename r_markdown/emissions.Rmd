@@ -197,7 +197,7 @@ ___
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <-  dplyr::select(temp, id, datetime, time, tamb, thood)
+  e_temp <-  dplyr::select(temp, id, datetime, time, t_pot, t_hood)
 
   e_temp <- filter_temp(e_times, e_temp)
 ```
@@ -205,7 +205,7 @@ ___
 * temperature timeseries
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, tamb, group = rep, colour = rep)) +
+  ggplot(e_temp, aes(datetime, t_pot, group = rep, colour = rep)) +
     geom_point() +
     facet_wrap(~id, scales = "free", ncol = 3) +
     theme_minimal()
@@ -215,8 +215,8 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_temp <- dplyr::group_by(e_temp, id, rep) %>%
-            dplyr::summarise(t_min = quantile(tamb, 0.05, na.rm = TRUE),
-                             t_max = quantile(tamb, 0.95, na.rm = TRUE))
+            dplyr::summarise(t_min = quantile(t_pot, 0.05, na.rm = TRUE),
+                             t_max = quantile(t_pot, 0.95, na.rm = TRUE))
 ```
 
 * merge data
@@ -246,7 +246,7 @@ ___
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   kable(dplyr::slice(e_data, 1:5),
-        align = 'c', caption = "Energy Number")
+        align = 'c', caption = "Energy Numbers")
 ```
 
 * energy applied per test
