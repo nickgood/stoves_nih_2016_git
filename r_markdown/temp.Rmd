@@ -30,7 +30,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
-                 tidyr::gather(var, val, tamb, thood) %>%
+                 tidyr::gather(var, val, t_pot, t_hood) %>%
                  dplyr::arrange(id)
 ```
 
