@@ -7,10 +7,15 @@ output:
     theme: united
 ---
 
+# Load libraries and functions
+
 ```{r setup, include=FALSE}
   library(tidyverse)
   library(tibble)
-  library(OrgMassSpecR)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
 ```
 
 # Hood flow
@@ -45,7 +50,7 @@ output:
   save(fuel_properties, file = "../r_files/fuel_properties.Rda")
 ```
 
-# Number of carbon atoms
+# Molecular formula and molecular weight 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "ec", "oc",
@@ -108,15 +113,19 @@ output:
                                                 "o_tolualdehyde", "m_p_tolualdehyde",
                                                 "hexaldehyde", "2_5_dimethylbenzaldehyde"),
                                        num_c = c(1, 1, 1, NA, NA, NA, NA, NA,
-                                                 NA, NA, 2, 2, 3, 3, 4, 4, 2,
+                                                 2, 2, 3, 3, 4, 4, 2,
                                                  4, 4, 4, 4, 5, 5, 5, 5, 5,
                                                  5, 5, 6, 6, 5, 6, 6, 7, 7,
                                                  7, 6, 6, 7, 7, 7, 8, 8, 7,
                                                  8, 8, 8, 8, 8, 8, 8, 9, 9,
                                                  10, 9, 9, 9, 9, 9, 9, 10,
-                                                 9, 10, 10, 10),
+                                                 9, 10, 10, 10, 6, 6, 6, 6,
+                                                 6, 6, 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                                 2, 3, 3, 3, 4, 4, 4, 4, 7,
+                                                 5, 5, 8, 8, 6, 9),
                                        num_h = c(0, 0, 4, NA, NA, NA, NA, NA,
-                                                 NA, NA, 6, 4, 8, 6, 10, 10,
+                                                 6, 4, 8, 6, 10, 10,
                                                  2, 8, 8, 8, 8, 10, 12, 12,
                                                  10, 10, 10, 10, 12, 14, 8,
                                                  12, 12, 16, 14, 16, 16,
@@ -124,8 +133,13 @@ output:
                                                  8, 18, 18, 18, 10, 10,
                                                  18, 10, 20, 12, 16, 12,
                                                  12, 12, 12, 12, 12, 22,
-                                                 12, 14, 14, 14),
-                                       num_o = c(2, 1, 0, NA, NA, NA, NA, NA,
+                                                 12, 14, 14, 14, 10, 10,
+                                                 10, 12, 12, 12, 8, 10,
+                                                 14, 10, 10, NA, 0, 4,
+                                                 0, 0, 0, 0, 0, 0, 0, 2,
+                                                 4, 6, 4, 6, 6, 8, 6, 8,
+                                                 6, 10, 10, 8, 8, 12, 10),
+                                       num_o = c(2, 1, 0, NA, NA, NA,
                                                  NA, NA, 0, 0, 0, 0, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0,
@@ -133,11 +147,27 @@ output:
                                                  0, 0, 0, 0, 0, 0, 0, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0,
-                                                  0, 0)) %>%
-                    dplyr::mutate(mw = OrgMassSpecR::MolecularWeight(formula = 
-                                                    list(C = num_c,
-                                                         H = num_h,
-                                                         O = num_o)))
+                                                 0, 0, 5, 5, 5, 6, 6, 6,
+                                                 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 2, 3, 4,
+                                                 1, 1, 1, 1, 1, 1, 1, 1,
+                                                 1, 1, 1, 1, 1, 1, 1, 1),
+                                       ions = c(NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, "Na",
+                                                 "N", "K", "Mg", "Ca", "Cl",
+                                                 "N", "N", "S", NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA))
+
+  pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties))
 
   save(pol_properties, file = "../r_files/pol_properties.Rda")
 ```
