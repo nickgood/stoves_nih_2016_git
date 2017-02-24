@@ -1,8 +1,10 @@
 ---
 title: "temp"
-author: "Nicholas Good"
-date: "11/23/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -13,11 +15,10 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-## Load data
+# Load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/temp.Rda")
-
   load(file = "../r_files/samples.Rda")
 ```
 
