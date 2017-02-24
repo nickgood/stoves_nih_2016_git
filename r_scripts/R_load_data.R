@@ -538,10 +538,10 @@ load_temp_file <- function(file){
 
   col_names = c("date",
                 "time",
-                "tamb",
+                "t_pot",
                 "ch2",
                 "ch3",
-                "thood")
+                "t_hood")
 
   df <- read.csv(file, header = FALSE, colClasses = classes, 
                  fill = TRUE, na.strings = c("OL"), col.names = col_names)
