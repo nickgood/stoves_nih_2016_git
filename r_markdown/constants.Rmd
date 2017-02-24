@@ -176,16 +176,16 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   filter_area <- 11.79  # cm^2
-  voc_flow <- .0135  # L/min
+  voc_flow <- 0.0135  # L/min
   smps_const <- 0.015625355  # dlogDp
-  
+
   save(filter_area, voc_flow, smps_const, file = "../r_files/inst_constants.Rda")
 ```
 
 # Calculation constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  hfg_water <- 2257  #kJ/kg
+  hfg_water <- 2257  # kJ/kg
   c_water <- 4.186  # J/g C
   R <- 8.314  # J/K mol
 
