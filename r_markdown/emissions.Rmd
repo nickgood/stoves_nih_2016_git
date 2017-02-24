@@ -197,7 +197,7 @@ ___
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <-  dplyr::select(temp, id, datetime, time, t_pot, thood)
+  e_temp <-  dplyr::select(temp, id, datetime, time, t_pot, t_hood)
 
   e_temp <- filter_temp(e_times, e_temp)
 ```
