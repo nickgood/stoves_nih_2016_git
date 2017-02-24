@@ -33,8 +33,8 @@ output:
 # Tidy
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
-                 tidyr::gather(var, val, t_pot, t_hood) %>%
+  temp_merged <- tidyr::gather(temp, loc, t_oc,
+                               t_1, t_2, t_3, t_4) %>%
                  dplyr::arrange(id)
 ```
 
