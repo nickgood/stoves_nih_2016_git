@@ -292,15 +292,29 @@ filter_temp <- function(times, df){
 # standard atomic weights of each individual elements
 #
 # Atomic weights are from the NIST Physical Reference Data Website
-calc_mw <- function(num_c, num_h, num_o, ion){
-  if(is.na(ion)){
-    mw <- (num_c * 12.0106) +
-         (num_h * 1.007975) +
-         (num_o * 15.9994)
-  } else if(ion == "Na"){
-    mw <- 
-  }
+calc_mw <- function(pol_properties){
+
+  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
+                       (pol_properties$num_h * 1.007975) +
+                       (pol_properties$num_o * 15.9994)
+
+  pol_properties <- dplyr::mutate(pol_properties,
+                                  mw = ifelse(ions == "Na" & !is.na(ions),
+                                  mw + 22.98976928, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
+                                  mw + 14.006855, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
+                                  mw + 39.0983, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
+                                  mw + 24.3055, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
+                                  mw + 40.078, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
+                                  mw + 35.4515, mw)) %>%
+        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
+                                  mw + 32.0675, mw)) 
+
   # return the molecular weight
-  return(mw)
+  return(pol_properties$mw)
 }
 #________________________________________________________
