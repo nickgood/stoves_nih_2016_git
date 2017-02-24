@@ -53,16 +53,22 @@ output:
 * one pot stoves
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  flipped <- dplyr::filter(temp_merged,
-                           id =="25A" | id =="25B" |id =="25C") %>%
+  flipped_25a <- dplyr::filter(temp_merged,
+                           id =="25A") %>%
              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
                            loc = ifelse(loc == "t_4", "front", loc))
+
+  flipped_25bc <- dplyr::filter(temp_merged,
+                           id =="25B" |id =="25C") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                           loc = ifelse(loc == "t_2", "front", loc))
 
   regular <- dplyr::filter(temp_merged,
                           id !="25A" & id !="25B" & id !="25C" &
                           grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
                            loc = ifelse(loc == "t_4", "flue", loc))
+
 ```
 
 * two pot stoves
@@ -74,9 +80,9 @@ output:
                             loc = ifelse(loc == "t_4", "flue", loc))
 
   temp_10b <- dplyr::filter(temp_merged, id == "10B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                            loc = ifelse(loc == "t_3", "front", loc),
+                            loc = ifelse(loc == "t_4", "back", loc))
 
   temp_10c <- dplyr::filter(temp_merged, id == "10C") %>%
               dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
@@ -104,9 +110,9 @@ output:
                             loc = ifelse(loc == "t_4", "flue", loc))
 
   temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
                             loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
+                            loc = ifelse(loc == "t_4", "front", loc))
 
   temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
               dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
@@ -118,7 +124,8 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
   temp_merged <- dplyr::bind_rows(regular,
-                                  flipped,
+                                  flipped_25a,
+                                  flipped_25bc,
                                   temp_10a, temp_10b, temp_10c,
                                   temp_11a, temp_11b, temp_11c,
                                   temp_12a, temp_12b, temp_12c)
