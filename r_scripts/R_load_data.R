@@ -538,20 +538,20 @@ load_temp_file <- function(file){
 
   col_names = c("date",
                 "time",
-                "t_pot",
-                "ch2",
-                "ch3",
-                "t_hood")
+                "t_1",
+                "t_2",
+                "t_3",
+                "t_4")
 
   df <- read.csv(file, header = FALSE, colClasses = classes, 
                  fill = TRUE, na.strings = c("OL"), col.names = col_names)
   
-  df$datetime <- as.POSIXct(paste(df$date,df$time),
+  df$datetime <- as.POSIXct(paste(df$date, df$time),
                             format = "%m/%d/%Y %I:%M:%S %p") 
 
-  df$time <- as.numeric(substr(df$time,1,2))*60*60 + 
-             as.numeric(substr(df$time,4,5))*60 +
-             as.numeric(substr(df$time,7,8))
+  df$time <- as.numeric(substr(df$datetime, 12, 13)) * 60 * 60 + 
+             as.numeric(substr(df$datetime, 15, 16)) * 60 +
+             as.numeric(substr(df$datetime,18, 19))
 
   df$date <- as.Date(df$date, format = "%m/%d/%Y")
 

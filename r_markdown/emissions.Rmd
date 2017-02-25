@@ -38,7 +38,7 @@ output:
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
-  load("../r_files/temp.Rda")
+  load("../r_files/temp_merged.Rda")
 ```
 
 * metadata
@@ -197,15 +197,26 @@ ___
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <-  dplyr::select(temp, id, datetime, time, t_pot, t_hood)
+  e_temp <- dplyr::filter(temp_merged, loc != "flue")
 
   e_temp <- filter_temp(e_times, e_temp)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  ggplot(dplyr::filter(e_temp, loc != "flue"),
+         aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
 ```
 
 * temperature timeseries
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, t_pot, group = rep, colour = rep)) +
+  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
     facet_wrap(~id, scales = "free", ncol = 3) +
     theme_minimal()
@@ -343,7 +354,8 @@ Concentration is corrected for background by removing background test average co
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted)
+                        mass_carbon = mass_emitted,
+                        inst = "ecoc")
 ```
 
 * output
@@ -430,7 +442,8 @@ ___
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
                               mass_emitted = (conc - conc_bg) * flow_hood * (dur / 60),
                               num_c = 1,
-                              mass_carbon = mass_emitted * 12 * num_c / mw)
+                              mass_carbon = mass_emitted * 12 * num_c / mw,
+                              inst = "fivegas")
 ```
 
 * output
@@ -468,7 +481,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)
+                        mass_carbon = mass_emitted * 0,
+                        inst = "grav")
 ```
 
 * output
@@ -510,7 +524,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- dplyr::mutate(ultrafine,
-                             num_emitted = (conc - conc_bg) * 1e6 * flow_hood * (dur / 60))
+                             num_emitted = (conc - conc_bg) * 1e6 * flow_hood * (dur / 60),
+                             inst = "smps")
 ```
 
 * output
@@ -547,7 +562,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, 
                         mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                        mass_carbon = mass_emitted * 0)
+                        mass_carbon = mass_emitted * 0,
+                        inst = "ions")
 ```
 
 * output
@@ -582,7 +598,8 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                             mass_carbon = mass_emitted * 0.95) # assume 95% carbon
+                             mass_carbon = mass_emitted * 0.95, # assume 95% carbon
+                             inst = "carbs")
 ```
 
 * output
@@ -759,7 +776,8 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * flow_hood * dur,
-                            mass_carbon = mass_emitted * 12 * num_c / mw)
+                            mass_carbon = mass_emitted * 12 * num_c / mw,
+                            inst = "voc")
 ```
 
 * output
@@ -777,27 +795,33 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, conc,
                                          mass_emitted,
-                                         mass_carbon, qc) %>%
+                                         mass_carbon,
+                                         inst, qc) %>%
                dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
                                                          conc, conc_bg,
                                                          mass_emitted,
-                                                         mass_carbon, qc)) %>%
+                                                         mass_carbon,
+                                                         inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(ecoc, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(ions, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
-                                                    mass_carbon, qc)) %>%
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol,
                                                    conc, conc_bg,
                                                    mass_emitted,
-                                                   mass_carbon, qc))
+                                                   mass_carbon,
+                                                   inst, qc))
 ```
 
 * tests with negative values

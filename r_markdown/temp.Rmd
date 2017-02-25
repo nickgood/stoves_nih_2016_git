@@ -33,30 +33,103 @@ output:
 # Tidy
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- dplyr::select(temp, -ch2, -ch3) %>%
-                 tidyr::gather(var, val, t_pot, t_hood) %>%
+  temp_merged <- tidyr::gather(temp, loc, t_oc,
+                               t_1, t_2, t_3, t_4) %>%
                  dplyr::arrange(id)
 ```
 
 # Switch probes
 
+* standard set-up is `t_1 = t_pot` and `t_4 = flue`
+* test `10x, 11x and 12x` have two pots and prob location locies
+* some tests have inconsistant prob locations
+
+* filter out `NAs`
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  id_flipped <- c("10B", "12B", "25A", "25B", "25C")
+  temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
+```
 
-  flipped <- dplyr::filter(temp_merged,
-                           id == "10B"| id =="12B"|
-                           id =="25A" | id =="25B" |
-                           id =="25C") %>%
-             dplyr::mutate(var = ifelse(var == "t_pot", "t_hood", "t_pot"))
+* one pot stoves
 
-  not_flipped <- dplyr::filter(temp_merged,
-                           id != "10B" & id !="12B" &
-                           id !="25A" & id !="25B" &
-                           id !="25C")
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  flipped_25a <- dplyr::filter(temp_merged,
+                           id =="25A") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                           loc = ifelse(loc == "t_4", "front", loc))
+
+  flipped_25bc <- dplyr::filter(temp_merged,
+                           id =="25B" |id =="25C") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                           loc = ifelse(loc == "t_2", "front", loc))
+
+  regular <- dplyr::filter(temp_merged,
+                          id !="25A" & id !="25B" & id !="25C" &
+                          grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                           loc = ifelse(loc == "t_4", "flue", loc))
+
+```
+
+* two pot stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  temp_10a <- dplyr::filter(temp_merged, id == "10A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_10b <- dplyr::filter(temp_merged, id == "10B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                            loc = ifelse(loc == "t_3", "front", loc),
+                            loc = ifelse(loc == "t_4", "back", loc))
+
+  temp_10c <- dplyr::filter(temp_merged, id == "10C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
   
-  temp_merged <- dplyr::bind_rows(flipped, not_flipped) %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(var = as.factor(var))
+  temp_11a <- dplyr::filter(temp_merged, id == "11A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_11b <- dplyr::filter(temp_merged, id == "11B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_11c <- dplyr::filter(temp_merged, id == "11C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_12a <- dplyr::filter(temp_merged, id == "12A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                            loc = ifelse(loc == "t_3", "back", loc),
+                            loc = ifelse(loc == "t_4", "front", loc))
+
+  temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+```
+
+* combine
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  temp_merged <- dplyr::bind_rows(regular,
+                                  flipped_25a,
+                                  flipped_25bc,
+                                  temp_10a, temp_10b, temp_10c,
+                                  temp_11a, temp_11b, temp_11c,
+                                  temp_12a, temp_12b, temp_12c)
+
 ```
 
 # QC
@@ -109,10 +182,25 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
 
 # Plots
 
-## timeseries
+## all
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40}
-  ggplot(temp_merged, aes(datetime, val, color = var)) +
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
+```
+
+## pot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
+  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
+                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
+
+  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
          geom_line() +
          geom_point() +
          facet_wrap(~id, ncol = 3, scales = "free") +
