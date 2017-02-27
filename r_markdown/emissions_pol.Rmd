@@ -65,6 +65,46 @@ output:
            dplyr::rename(start = start_1, end = shutdown)
 ```
 
+# carbonyls
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             flow,
+                             start, end,
+                             pol, mass_ug,
+                             conc_bg) %>%
+               dplyr::left_join(dplyr::select(pol_properties, 
+                                              pol, 
+                                              mw, 
+                                              num_c), by = "pol") %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             inst = "carbs")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(carbonyls, 2)
+```
+
 # ecoc
 
 * select data
@@ -249,6 +289,42 @@ ___
   head(grav, 2)
 ```
 
+# ions
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::select(ions_merged,
+                        id, qc,
+                        flow,
+                        start, end,
+                        pol, mass_ug,
+                        conc_bg) %>%
+	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
+                              conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted * 0,
+                        inst = "ions")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ions, 2)
+```
+
 ___
 
 # smps
@@ -293,82 +369,6 @@ ___
 ```
 
 ___
-
-# ions
-
-* select data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::select(ions_merged,
-                        id, qc,
-                        flow,
-                        start, end,
-                        pol, mass_ug,
-                        conc_bg) %>%
-	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
-```
-
-* calculate concentrations
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
-                              conc = (mass_ug * 1000 / (flow * dur)))
-```
-
-* calculate mass emitted
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::mutate(ions, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                        mass_carbon = mass_emitted * 0,
-                        inst = "ions")
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(ions, 2)
-```
-
-# carbonyls
-
-* select data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls <- dplyr::select(carbonyls_merged,
-                             id, qc,
-                             flow,
-                             start, end,
-                             pol, mass_ug,
-                             conc_bg) %>%
-               dplyr::left_join(dplyr::select(pol_properties, 
-                                              pol, 
-                                              mw, 
-                                              num_c), by = "pol") %>%
-               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
-```
-
-* calculate concentrations
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-                             conc = (mass_ug * 1000 / (flow * dur)))
-```
-
-* calculate mass emitted
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls <- dplyr::mutate(carbonyls, 
-                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
-                             inst = "carbs")
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(carbonyls, 2)
-```
 
 # pah
 
