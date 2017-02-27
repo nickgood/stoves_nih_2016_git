@@ -206,10 +206,9 @@ output:
   geom_point() +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  theme(legend.position = "top")
+  theme(legend.position = "top") +
   ylab("energy delivered to pot (J)") +
   theme(legend.position = "top")
-  
 ```
 
 # Save (not implemented)
