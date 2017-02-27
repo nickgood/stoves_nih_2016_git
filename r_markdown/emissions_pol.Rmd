@@ -38,7 +38,6 @@ output:
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
-  load("../r_files/temp_merged.Rda")
 ```
 
 * constants
@@ -55,10 +54,6 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
   load("../r_files/test_times.Rda")
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/batch_pot.Rda")
-  load("../r_files/wood_wgts.Rda")
-  load("../r_files/wood_pot.Rda")
 ```
 
 # Test timestamps
