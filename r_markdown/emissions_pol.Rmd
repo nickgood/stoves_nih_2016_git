@@ -1,5 +1,5 @@
 ---
-title: "Emissions"
+title: "Pollutant emissions"
 output:
   html_document:
     toc: true
