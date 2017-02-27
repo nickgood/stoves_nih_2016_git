@@ -125,7 +125,8 @@ output:
          facet_wrap(~id, ncol = 3, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
-         ylab("degress celsius")
+         ylab("degress celsius") +
+         theme(legend.position = "top")
 ```
 
 * temperature timeseries
@@ -134,7 +135,8 @@ output:
   ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
     facet_wrap(~id, scales = "free", ncol = 3) +
-    theme_minimal()
+    theme_minimal() +
+    theme(legend.position = "top")
 ```
 
 * temperature change
@@ -183,17 +185,20 @@ output:
             dplyr::summarise(joules = sum(joules, na.rm = TRUE))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
                              energy,
                              by = "id")
+```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(p_data, aes(id, joules, colour = stove)) +
   geom_point() +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   theme(legend.position = "top")
-  ylab("energy delivered to pot (J)")
+  ylab("energy delivered to pot (J)") +
+  theme(legend.position = "top")
   
 ```
 
