@@ -188,7 +188,7 @@ output:
 # Calculation constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  hfg_water <- 2257  # kJ/kg
+  hfg_water <- 2257  # J/g
   c_water <- 4.186  # J/g C
   R <- 8.314  # J/K mol
 
