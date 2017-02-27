@@ -50,7 +50,7 @@ output:
   save(fuel_properties, file = "../r_files/fuel_properties.Rda")
 ```
 
-# Molecular formula and molecular weight 
+# Molecular formula and weight 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "ec", "oc",
@@ -175,7 +175,7 @@ output:
   save(pol_properties, mw_c, file = "../r_files/pol_properties.Rda")
 ```
 
-# Instrument specific constants
+# Instrument specific
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   filter_area <- 11.79  # cm^2
@@ -185,7 +185,7 @@ output:
   save(filter_area, voc_flow, smps_const, file = "../r_files/inst_constants.Rda")
 ```
 
-# Calculation constants
+# Thermodynamic
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   hfg_water <- 2257  # J/g
