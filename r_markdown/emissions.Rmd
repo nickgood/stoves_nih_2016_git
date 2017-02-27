@@ -34,11 +34,20 @@ output:
     bg_ch4_mean <- background$mean
   load("../r_files/grav_merged.Rda")
   load("../r_files/smps_ultrafine.Rda")
-    load("../r_files/smps_ultrafine_bg.Rda")
+  load("../r_files/smps_ultrafine_bg.Rda")
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
   load("../r_files/temp_merged.Rda")
+```
+
+* constants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/hood_flow.Rda")
+  load("../r_files/pol_properties.Rda")
+  load("../r_files/inst_constants.Rda")
+  load("../r_files/calc_constants.Rda")
 ```
 
 * metadata
