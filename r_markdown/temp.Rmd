@@ -188,6 +188,11 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
   ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
          geom_line() +
          geom_point() +
+         scale_colour_manual(values = 
+                               c("front" = "slateblue",
+                                 "back" = "lightseagreen",
+                                 "flue" = "tomato3",
+                                 "t_2" = "snow4")) +
          facet_wrap(~id, ncol = 3, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
@@ -203,6 +208,11 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
   ggplot(p_data, aes(datetime, t_oc, color = loc)) +
          geom_line() +
          geom_point() +
+         scale_colour_manual(values = 
+                               c("front" = "slateblue",
+                                 "back" = "lightseagreen",
+                                 "flue" = "tomato3",
+                                 "t_2" = "snow4")) +
          facet_wrap(~id, ncol = 3, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
