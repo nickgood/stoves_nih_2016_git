@@ -1,0 +1,130 @@
+---
+title: "Emission factors"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
+# Load
+
+* pollutant data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/emissions.Rda")
+  load("../r_files/fuel_burnt.Rda")
+  # load("../r_files/energy.Rda")
+```
+
+## Mass carbon per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  mass_carbon <- dplyr::group_by(dplyr::filter(emissions,
+                                 grepl("^total_vocs$|^total_ions$|^total_carbonyls$",
+                                 pol) == FALSE), id) %>%
+                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+```
+
+* Save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(mass_carbon, file = "../r_files/mass_carbon.Rda")
+```
+
+* Plot carbon emitted
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(mass_carbon, aes(x = id, y = ug)) +
+    geom_point() +
+    theme_minimal() +
+    scale_y_log10() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
+* plot carbon from CO2
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  mass_c_co2 <- dplyr::filter(emissions, pol == "co2")
+
+  ggplot(mass_c_co2, aes(x = id, y = mass_carbon)) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
+
+# Calculate fuel burned using carbon balance approach
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  mass_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
+            dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
+            dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+```
+
+Filter out bad tests and only include summed species variables
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
+                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
+                 dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
+                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol))
+```
+
+# Compare fuel mass burned using carbon balance approach
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10} 
+  ggplot(mass_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
+    geom_point() +
+    theme_minimal() +
+    ylim(0, 2) +
+    xlab("mass of fuel (measured) [kg]") +
+    ylab("mass of fuel (carbon balance) [kg]")
+```
+
+# Bar plots of pollutants
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
+    geom_bar(stat = "identity")+
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") +
+    theme(legend.position = "top")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+    geom_bar(stat = "identity")+
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") + 
+    theme(legend.position = "top")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") + 
+    theme(legend.position = "top")
+```
+Print tests with negative values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
+  emissions_g <- dplyr::filter(emissions_g, mass_emitted < 0)
+  kable(emissions_g, align = 'c', caption = "Tests with negative values")
+```
