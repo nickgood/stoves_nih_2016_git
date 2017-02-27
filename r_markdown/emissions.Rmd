@@ -285,27 +285,6 @@ ___
   
 ```
 
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-# template
-# hyper-special kb code :-):-):-):-):-):-):-)
-#  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
-#             tidyr::separate(var, c("pot_status","rep")) %>%
-#             dplyr::mutate(pot_id = paste(id, rep)) %>%
-#             dplyr::select(id, pot_id, pot_status, value) %>%
-#             tidyr::spread(pot_status, value) %>%
-#             dplyr::mutate(delta_m = on - off)
-
-# boring Nick code :-(:-(:-(:-(:-(:-(:-(:-(:-(
-# mass H20 evaporated per test
-#  delta_m <- dplyr::filter(wood_wgts, grepl("^on|^off", var)) %>%
-#             tidyr::separate(var, c("pot_status","rep")) %>%
-#             tidyr::spread(pot_status, value) %>%
-#             dplyr::mutate(grams = on - off) %>%
-#             dplyr::group_by(id) %>%
-#             dplyr::summarise(grams = sum(grams, na.rm = TRUE))
-```
-
 # ecoc
 
 * select data
