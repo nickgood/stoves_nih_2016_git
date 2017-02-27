@@ -167,9 +167,12 @@ output:
                                                  NA, NA, NA, NA, NA, NA, NA,
                                                  NA, NA, NA, NA, NA))
 
-  pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties))
+  pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties)) %>%
+                    dplyr::select(pol, mw, num_c)
 
-  save(pol_properties, file = "../r_files/pol_properties.Rda")
+  mw_c <- 12.0106
+
+  save(pol_properties, mw_c, file = "../r_files/pol_properties.Rda")
 ```
 
 # Instrument specific constants
