@@ -18,8 +18,8 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   qc_colours = c("ok" = "mediumaquamarine",
-                 "maybe" = "mediumorchid1",
-                 "bad" = "darkorange1")
+                 "maybe" = "darkorange1",
+                 "bad" = "mediumorchid1")
 ```
 
 # Temperature probe location
