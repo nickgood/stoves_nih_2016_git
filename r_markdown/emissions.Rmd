@@ -391,8 +391,10 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4,
-                                 dplyr::select(pol_properties, pol, mw, num_c),
-                                 by = "pol") %>%
+                                 dplyr::select(pol_properties,
+                                               pol,
+                                               mw,
+                                               num_c), by = "pol") %>%
                 dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
 ```
 
