@@ -228,9 +228,10 @@ ___
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # I had to change this from t_pot to t_oc to get the code to run 
   e_temp <- dplyr::group_by(e_temp, id, rep) %>%
-            dplyr::summarise(t_min = quantile(t_pot, 0.05, na.rm = TRUE),
-                             t_max = quantile(t_pot, 0.95, na.rm = TRUE))
+            dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
+                             t_max = quantile(t_oc, 0.95, na.rm = TRUE))
 ```
 
 * merge data
