@@ -199,9 +199,27 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
          ylab("degress celsius")
 ```
 
-## pot
+## temperature profile of front pot
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  p_data <- dplyr::filter(temp_merged, (loc == "front"))
+
+  ggplot(p_data, aes(datetime, t_oc, color = qc)) +
+         geom_line() +
+         geom_point() +
+         scale_colour_manual(values = 
+                               c("ok" = "mediumaquamarine",
+                                 "maybe" = "mediumorchid1",
+                                 "bad" = "darkorange1")) +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
+```
+
+## double pot tests
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15, fig.show=FALSE}
   p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
                                        & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
 
