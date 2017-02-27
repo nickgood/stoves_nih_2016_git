@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-# Load libraries and functions
+# Libraries / source files
 
 ```{r setup, include=FALSE}
   library(tidyverse)
@@ -30,15 +30,15 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
-                                                  "Eucalyptus",
-                                                  "Oak",
-                                                  "Coconut Charcoal",
-                                                  "Lump Hardwood (Med.)",
-                                                  "Lump Hardwood (Sm.)",
-                                                  "Eucalyptus Pellets",
-                                                  "West Slope Pellets",
-                                                  "Kerosene",
-                                                  "Liquefied Petroleum Gas"),
+                                                 "Eucalyptus",
+                                                 "Oak",
+                                                 "Coconut Charcoal",
+                                                 "Lump Hardwood (Med.)",
+                                                 "Lump Hardwood (Sm.)",
+                                                 "Eucalyptus Pellets",
+                                                 "West Slope Pellets",
+                                                 "Kerosene",
+                                                 "Liquefied Petroleum Gas"),
                                          lhv = c(18658, 19427, 18658, 16628,
                                                  28611, 28611, 17501, 17501,
                                                  43100, 46100),  # kJ/kg
