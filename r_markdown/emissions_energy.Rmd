@@ -53,6 +53,8 @@ output:
 
 # Energy
 
+## joules applied
+
 * timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -106,7 +108,8 @@ output:
                                        tidyr::separate(var, c("var", "rep")) %>%
                                        tidyr::spread(var, value) %>%
                                        dplyr::select(-date) %>%
-                                       dplyr::rename(mass_on = on, mass_off = off))
+                                       dplyr::rename(mass_on = on,
+                                                     mass_off = off))
 ```
 
 * extract temperature for periods of interest
@@ -117,32 +120,10 @@ output:
   e_temp <- filter_temp(e_times, e_temp)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
-  ggplot(dplyr::filter(e_temp, loc != "flue"),
-         aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius") +
-         theme(legend.position = "top")
-```
-
-* temperature timeseries
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
-    geom_point() +
-    facet_wrap(~id, scales = "free", ncol = 3) +
-    theme_minimal() +
-    theme(legend.position = "top")
-```
-
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <- dplyr::group_by(e_temp, id, rep) %>%
+  t_range <- dplyr::group_by(e_temp, id, rep) %>%
             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
                              t_max = quantile(t_oc, 0.95, na.rm = TRUE))
 ```
@@ -151,7 +132,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_data <- dplyr::left_join(e_times, e_pot_water_mass, by = c("id", "rep")) %>%
-            dplyr::left_join(e_temp, by = c("id", "rep")) %>%
+            dplyr::left_join(t_range, by = c("id", "rep")) %>%
             dplyr::left_join(e_pot_mass, by = "id") %>%
             dplyr::left_join(e_pot, by = c("id", "rep")) %>%
             dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
@@ -184,6 +165,35 @@ output:
             dplyr::group_by(id) %>%
             dplyr::summarise(joules = sum(joules, na.rm = TRUE))
 ```
+
+# Plots
+
+## hjn
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  ggplot(dplyr::filter(e_temp, loc != "flue"),
+         aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius") +
+         theme(legend.position = "top")
+```
+
+## temperature
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
+    geom_point() +
+    facet_wrap(~id, scales = "free", ncol = 3) +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab("temperature oC")
+```
+
+## energy delivered
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
