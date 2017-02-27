@@ -103,7 +103,7 @@ output:
         ylab("fuel burnt (g)")
 ```
 
-## save fuel file
+# Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
