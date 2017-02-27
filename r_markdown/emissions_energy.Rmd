@@ -1,5 +1,5 @@
 ---
-title: "Emissions"
+title: "Energy applied"
 output:
   html_document:
     toc: true
