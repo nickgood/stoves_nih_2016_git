@@ -99,7 +99,7 @@ output:
         geom_point() +
         theme_minimal() + 
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-        theme(legend.position = "top")
+        theme(legend.position = "top") +
         ylab("fuel burnt (g)")
 ```
 
