@@ -56,7 +56,9 @@ output:
   load("../r_files/test_times.Rda")
 ```
 
-# Test timestamps
+# timestamps
+
+* integrated sample start & end times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
