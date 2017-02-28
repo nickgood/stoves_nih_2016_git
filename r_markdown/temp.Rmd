@@ -69,7 +69,8 @@ output:
                           id !="25A" & id !="25B" & id !="25C" &
                           grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                           loc = ifelse(loc == "t_4", "flue", loc))
+                           loc = ifelse(loc == "t_4", "flue", loc)) %>%
+             dplyr::filter(loc == "flue" | loc == "front")
 
 ```
 
