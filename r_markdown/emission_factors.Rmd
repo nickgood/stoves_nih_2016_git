@@ -19,6 +19,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/emissions.Rda")
   load("../r_files/fuel_burnt.Rda")
+  load(".../r_files/samples.Rda")
   # load("../r_files/energy.Rda") # not yet created
 ```
 
@@ -27,10 +28,7 @@ output:
   load("../r_files/pol_properties.Rda")
   load("../r_files/inst_constants.Rda")
   load("../r_files/calc_constants.Rda")
-```
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbon_fraction <- 0.5 # where should this come from kb?
+  load("../r_files/fuel_properties.Rda")
 ```
 
 # Mass carbon per test
@@ -42,22 +40,31 @@ output:
                  dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
+# Merge with fuel properties
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  mass_carbon <- dplyr::left_join(mass_carbon,
+                                  dplyr::select(samples, id, fuel),
+                                  by = "id") %>%
+                 dplyr::left_join(fuel_properties, by = "fuel")
+```
+
 # Carbon balance
 
 * Calculate fuel burned using carbon balance method
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
-            dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
-            dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+  mass_fuel_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
+                 dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
+                 dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
 * Filter out bad tests and only include summed species variables
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  emissions_p <- dplyr::filter(emissions, qc != "bad") %>%
-                 dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
-                 dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
+  emissions <- dplyr::filter(emissions, qc != "bad") %>%
+               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
+               dplyr::filter(grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
                                      |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol))
 ```
 
@@ -95,7 +102,7 @@ output:
 ## fuel burnt vs carbon (bug)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, eval=FALSE}  
-  ggplot(mass_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) + # fuel missing kb?
+  ggplot(mass_fuel_p, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) + # fuel missing kb?
     geom_point() +
     theme_minimal() +
     ylim(0, 2) +
