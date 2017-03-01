@@ -72,7 +72,11 @@ output:
   emissions <- dplyr::mutate(emissions,
                              mass_ef = ((mass_emitted * 1e-3) /
                                          mass_fuel$mass_fuel_kg),  # mg / kg
+                             mass_c_ef = ((mass_emitted * 1e-3) /
+                                         mass_fuel$mass_fuel_c),  # mg / kg
                              energy_ef = ((mass_ef * 1e-3) *
+                                           mass_fuel$lhv * 1e-3), 
+                             energy_c_ef = ((mass_c_ef * 1e-3) *
                                            mass_fuel$lhv * 1e-3))  # g / MJ
 ```
 
@@ -88,7 +92,7 @@ output:
 ## carbon emitted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(mass_carbon, aes(x = id, y = ug)) +
+  ggplot(mass_fuel, aes(x = id, y = mass_carbon)) +
     geom_point() +
     theme_minimal() +
     scale_y_log10() +
@@ -107,9 +111,9 @@ output:
     ggtitle("mass carbon emitted")
 ```
 
-## fuel burnt vs carbon (bug)
+## fuel burnt vs carbon
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, eval=FALSE}  
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10}  
   ggplot(mass_fuel, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
     geom_point() +
     theme_minimal() +
@@ -121,9 +125,7 @@ output:
 ## carbon emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(dplyr::filter(emissions, grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
-                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol)),
-         aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
+  ggplot(emissions, aes(x = id, y = mass_carbon, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -135,9 +137,7 @@ output:
 ## mass emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(dplyr::filter(emissions, grepl("^total_vocs$|^total_ions$|^total_carbonyls$|
-                                     |^ec$|^oc$|^grav$|^co$|^ch4$|^co2$", pol)),
-         aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+  ggplot(emissions, aes(x = id, y = mass_emitted, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
