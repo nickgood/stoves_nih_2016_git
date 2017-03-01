@@ -59,9 +59,10 @@ output:
                dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
-* Filter out bad tests and only include summed species variables
+* Filter out bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+  # NG: are these still unrealistic?
   emissions <- dplyr::filter(emissions, qc != "bad") %>%
                dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
                
