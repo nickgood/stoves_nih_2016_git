@@ -34,10 +34,7 @@ output:
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_carbon <- dplyr::group_by(dplyr::filter(emissions,
-                                 grepl("^total_vocs$|^total_ions$|^total_carbonyls$",
-                                 pol) == FALSE), id) %>%
-                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+  mass_carbon <- dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
 # Merge with fuel properties
@@ -63,7 +60,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   emissions <- dplyr::filter(emissions, qc != "bad") %>%
-               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>%  # unrealistic values
+               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
                
 ```
 
