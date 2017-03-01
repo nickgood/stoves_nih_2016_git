@@ -34,7 +34,7 @@ output:
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_carbon <- dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+  mass_carbon <- dplyr::summarise(emissions, ug = sum(mass_carbon, na.rm = TRUE))
 ```
 
 # Merge with fuel properties
