@@ -35,6 +35,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mass_fuel <- dplyr::group_by(emissions, id) %>%
+               dplyr::filter(mass_carbon >= 0) %>%  # ignore negatives
                dplyr::summarise(mass_carbon = sum(mass_carbon, na.rm = TRUE))
 ```
 
