@@ -6,7 +6,14 @@ shinyUI(fluidPage(
 
   navbarPage(theme = shinytheme("united"), "STOVES",
 
-    tabPanel("Summary"),
+    tabPanel("Overview",
+      fluidRow(
+        column(width = 12,
+        includeText("text/intro.txt"))),
+      fluidRow(
+        column(width = 12,
+        includeText("text/intro.txt")))
+    ),
 
     tabPanel("Compare Pollutants",
       sidebarLayout(
@@ -23,6 +30,8 @@ shinyUI(fluidPage(
        )
       )
     ),
+    tabPanel("Stove info"),
+    tabPanel("Fuel info"),
     tabPanel("About")
   )
 ))
