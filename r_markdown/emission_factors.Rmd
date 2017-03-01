@@ -34,17 +34,17 @@ output:
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_carbon <- dplyr::group_by(emissions, id) %>%
-                 dplyr::summarise(ug = sum(mass_carbon, na.rm = TRUE))
+  mass_fuel <- dplyr::group_by(emissions, id) %>%
+               dplyr::summarise(mass_carbon = sum(mass_carbon, na.rm = TRUE))
 ```
 
 # Merge with fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_carbon <- dplyr::left_join(mass_carbon,
-                                  dplyr::select(samples, id, fuel),
-                                  by = "id") %>%
-                 dplyr::left_join(fuel_properties, by = "fuel")
+  mass_fuel <- dplyr::left_join(mass_fuel,
+                                dplyr::select(samples, id, fuel),
+                                by = "id") %>%
+               dplyr::left_join(fuel_properties, by = "fuel")
 ```
 
 # Carbon balance
@@ -52,8 +52,9 @@ output:
 * Calculate fuel burned using carbon balance method
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
-               dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
+  mass_fuel <- dplyr::left_join(mass_fuel, fuel_burnt, by = "id") %>%
+               dplyr::mutate(mass_fuel_c = mass_carbon * (1e-9) *
+                               (1 / carbon_fraction)) %>%
                dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
