@@ -54,9 +54,9 @@ output:
 * Calculate fuel burned using carbon balance method
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel_p <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
-                 dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
-                 dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+  mass_fuel <- dplyr::left_join(mass_carbon, fuel_burnt, by = "id") %>%
+               dplyr::mutate(mass_fuel_c = ug * (1e-9) * (1 / carbon_fraction)) %>%
+               dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
 * Filter out bad tests and only include summed species variables
@@ -72,7 +72,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   save(mass_carbon, file = "../r_files/mass_carbon.Rda")
-  save(emissions, file = "../r_files/mass_carbon.Rda")
+  save(emissions, file = "../r_files/emissions.Rda")
 ```
 
 # Plots
@@ -113,7 +113,7 @@ output:
 ## carbon emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(emissions_p, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
+  ggplot(emissions, aes(x = id, y = mass_carbon, fill = pol), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -125,7 +125,7 @@ output:
 ## mass emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(emissions_p, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
+  ggplot(emissions, aes(x = id, y = mass_emitted, fill = pol), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
