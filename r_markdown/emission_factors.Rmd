@@ -70,14 +70,16 @@ output:
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::mutate(emissions,
-                             mass_ef = ((mass_emitted * 1e-3) / (mass_fuel * 1e-3)),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * (lhv * 1e-3)))  # g / MJ
+                             mass_ef = ((mass_emitted * 1e-3) /
+                                         mass_fuel$mass_fuel_kg),  # mg / kg
+                             energy_ef = ((mass_ef * 1e-3) *
+                                           mass_fuel$lhv * 1e-3))  # g / MJ
 ```
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(mass_carbon, file = "../r_files/mass_carbon.Rda")
+  save(mass_fuel, file = "../r_files/mass_fuel.Rda")
   save(emissions, file = "../r_files/emissions.Rda")
 ```
 
