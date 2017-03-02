@@ -57,12 +57,25 @@ output:
                                                              mass_ef))
 ```
 
+* Remove outliers
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+```
+
 # CO data
 
 * Plot emissions factors by mass, energy of fuel and energy delivered
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^co$', pol)), 'CO')
+  ef_sum <- dplyr::filter(emission_factors, grepl('^co$', pol)) %>%
+            dplyr::group_by(emission_factors, stove) %>%
+            dplyr::summarise(mean_ef = mean(mass_ef, na.rm = TRUE),
+                             min_ef = min(mass_ef, na.rm = TRUE),
+                             max_ef = max(mass_ef, na.rm = TRUE),
+                             std_ef = sd(mass_ef, na.rm = TRUE))
+
+  plot_mass_ef(ef_sum, 'CO')
 ```
 
 # PM data
