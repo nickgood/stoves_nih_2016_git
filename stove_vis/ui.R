@@ -17,9 +17,9 @@ shinyUI(fluidPage(
       fluidRow(
         column(width = 12,
                align="center",
-          tags$img(height = 90,
-                  width = 925,
-                  src = "stoves.png"))),
+          tags$img(height = 180,
+                  width = 700,
+                  src = "stoves_stacked.png"))),
       fluidRow(
         column(width = 12,
                align="center",
@@ -27,9 +27,9 @@ shinyUI(fluidPage(
       fluidRow(
         column(width = 12,
                align="center",
-          tags$img(height = 95,
-                   width = 925,
-                   src = "fuels.png"))),
+          tags$img(height = 180,
+                   width = 600,
+                   src = "fuels_stacked.png"))),
       fluidRow(
         column(width = 12,
                align="center",
@@ -37,7 +37,7 @@ shinyUI(fluidPage(
         includeText("text/protocol.txt"),
         tags$h4(""),
         tags$img(height = 150,
-                 width = 800,
+                 width = "90%",
                  src = "pic_all_stoves.png"),
         tags$h4(""))),
       fluidRow(
