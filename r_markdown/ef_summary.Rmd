@@ -42,11 +42,18 @@ output:
                                        by = "id")
 ```
 
+* Add combined stove/fuel variable
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::mutate(emission_factors, stove_fuel = 
+                                                      paste0(stove, ":", fuel))
+```
+
 # CO data
 
 * Plot emissions factors by mass, energy of fuel and energy delivered
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 6}
   plot_mass_ef(dplyr::filter(emission_factors, grepl('^co', pol)), 'CO')
 ```
 
