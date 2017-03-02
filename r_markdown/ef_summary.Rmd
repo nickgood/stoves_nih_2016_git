@@ -53,22 +53,46 @@ output:
 
 * Plot emissions factors by mass, energy of fuel and energy delivered
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^co', pol)), 'CO')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^co$', pol)), 'CO')
 ```
 
 # PM data
 
-* Plot emissions factors by mass, energy of fuel and energy delivered
+* Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
-  plot_mass_ef(dplyr::filter(emissions, grepl('grav', pol)), 'PM')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
 ```
 
 # VOC data
 
-* Plot emissions factors by mass, energy of fuel and energy delivered
+* Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
-  plot_mass_ef(dplyr::filter(emissions, grepl('^voc_benzene', pol)), 'VOCs')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Benzene')
+```
+
+# Carbonyl data
+
+* Plot emissions factors by mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
+```
+
+# EC and OC data
+
+* Plot emissions factors by mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```
