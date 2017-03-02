@@ -111,3 +111,4 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```
+
