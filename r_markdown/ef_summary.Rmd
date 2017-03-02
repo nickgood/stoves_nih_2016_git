@@ -49,6 +49,14 @@ output:
                                                       paste0(stove, ":", fuel))
 ```
 
+* Use carbon balance method for missing emissions factors
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::mutate(emission_factors, ifelse(is.na(mass_ef), 
+                                                             mass_c_ef,
+                                                             mass_ef))
+```
+
 # CO data
 
 * Plot emissions factors by mass, energy of fuel and energy delivered
