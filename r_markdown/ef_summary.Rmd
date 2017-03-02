@@ -52,9 +52,14 @@ output:
 * Use carbon balance method for missing emissions factors
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::mutate(emission_factors, ifelse(is.na(mass_ef), 
-                                                             mass_c_ef,
-                                                             mass_ef))
+  # Better variable name?
+  emission_factors <- dplyr::mutate(emission_factors, 
+                                    mass_ef_comb = 
+                                      ifelse(is.na(mass_ef),
+                                             mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_ef_comb =
+                                      ifelse(is.na(energy_ef), energy_c_ef,
+                                             energy_ef))
 ```
 
 * Remove outliers
@@ -71,10 +76,10 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
   ef_sum <- dplyr::filter(emission_factors, grepl('^co$', pol)) %>%
             dplyr::group_by(stove) %>%
-            dplyr::summarise(mean_ef = mean(mass_ef, na.rm = TRUE),
-                             min_ef = min(mass_ef, na.rm = TRUE),
-                             max_ef = max(mass_ef, na.rm = TRUE),
-                             std_ef = sd(mass_ef, na.rm = TRUE))
+            dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
+                             min_ef = min(mass_ef_comb, na.rm = TRUE),
+                             max_ef = max(mass_ef_comb, na.rm = TRUE),
+                             std_ef = sd(mass_ef_comb, na.rm = TRUE))
 
   plot_mass_ef(ef_sum, 'CO')
 ```

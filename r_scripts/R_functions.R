@@ -253,6 +253,27 @@ plot_energy_ef <- function(df, pol_name){
 #________________________________________________________
 
 #________________________________________________________
+# plot ef summary
+plot_ef_summary <- function(df, pol_name){
+  
+  p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
+    geom_point(size = 1) +
+    facet_grid(pol ~ stovecat, scales = 'free') +
+    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
+    xlab("stove type") +
+    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
+    theme_minimal() +
+    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
+    theme(text = element_text(size=18),
+          legend.position = "top",
+          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
+          panel.spacing = unit(2, "lines"))
+
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
 # filter data for time periods of interest only
 # requires df with time windows (id, start, end)
 # df with id, time
