@@ -264,18 +264,18 @@ plot_ef_summary <- function(emission_factors, pol_name){
                                  stove = first(stove),
                                  fuel = first(fuel))
   
-  ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
-                         ymin = min_ef, group = fuel, fill = fuel)) +   
-    geom_col(position = "dodge") +
-    geom_errorbar(position = "dodge", size = 2) +
-    #scale_y_log10() +
-    theme_minimal() +
-    ylab("") +
-    xlab("") +
-    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-    theme(text = element_text(size=18),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5))
+  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
+                               ymin = min_ef, group = fuel, fill = fuel)) +   
+          geom_col(position = "dodge") +
+          geom_errorbar(position = "dodge", size = 2) +
+          #scale_y_log10() +
+          theme_minimal() +
+          ylab("") +
+          xlab("") +
+          ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+          theme(text = element_text(size=18),
+                legend.position = "top",
+                axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5))
 
   print(p1)
 }
