@@ -17,7 +17,7 @@ output:
 * Load data and meta data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/emissions_factors.Rda")
+  load("../r_files/emission_factors.Rda")
   load("../r_files/samples.Rda")
 ```
 
