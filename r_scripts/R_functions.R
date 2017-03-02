@@ -200,8 +200,8 @@ plot_mass_ef <- function(df, pol_name){
           panel.spacing = unit(2, "lines"))
   
   print(p1)
-  print(p2)
-  print(p3)
+  #print(p2)
+  #print(p3)
 }
 #________________________________________________________
 
