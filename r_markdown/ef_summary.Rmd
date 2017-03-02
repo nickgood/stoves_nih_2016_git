@@ -73,7 +73,7 @@ output:
 * Calculate summary statistics 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^co$', pol)), "CO")
 ```
 
@@ -81,7 +81,7 @@ output:
 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
 ```
 
