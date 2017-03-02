@@ -256,8 +256,7 @@ plot_energy_ef <- function(df, pol_name){
 # plot ef summary
 plot_ef_summary <- function(emission_factors, pol_name){
   
-  ef_summary <- dplyr::filter(emission_factors, grepl('^co$', pol)) %>%
-                dplyr::group_by(emissions_factors, stove_fuel) %>%
+  ef_summary <- dplyr::group_by(emissions_factors, stove_fuel) %>%
                 dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
                                  min_ef = min(mass_ef_comb, na.rm = TRUE),
                                  max_ef = max(mass_ef_comb, na.rm = TRUE),
