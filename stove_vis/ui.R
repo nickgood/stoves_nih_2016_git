@@ -60,7 +60,7 @@ shinyUI(fluidPage(
             tags$strong("bottom axis"),
             selectInput("x_metric", "metric:", unit_list),
             selectInput("x_inst", "instrument:", inst_list),
-            selectInput('x_pol', 'pollutant:', colnames(df))
+            selectInput('x_pol', 'pollutant:', choices=character(0))
           ),
           wellPanel(
             tags$strong("appearance"),
