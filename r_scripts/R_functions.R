@@ -305,18 +305,16 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
                                  std_ef_2 = sd(mass_ef_comb, na.rm = TRUE)) %>%
                dplyr::left_join(ef_1, by = "stove_fuel")
 
-  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
-                               ymin = min_ef, group = fuel, fill = fuel)) +   
-        geom_col(position = "dodge") +
-        geom_errorbar(position = "dodge", size = 1) +
-        facet_grid( ~ stovecat, scales = 'free') +
-        theme_minimal() +
-        ylab("") +
-        xlab("") +
-        ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-        theme(text = element_text(size = 20),
-              legend.position = "top",
-              axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
+  p1 <- ggplot(ef_summary, aes(x = mean_ef_1, y = mean_ef_2, fill = stove)) + 
+          geom_errorbar(aes(ymin = min_ef_2, ymax = max_ef_2)) +
+          geom_errorbarh(aes(xmin = min_ef_1, xmax = max_ef_1, height = 0)) +
+          geom_point(size = 2) +
+          theme_minimal() +
+          ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
+          xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
+          ggtitle("EF Correlation Plot") +
+          theme(text = element_text(size = 20),
+                legend.position = "top")
 
   print(p1)
 }
