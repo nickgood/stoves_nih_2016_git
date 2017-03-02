@@ -256,7 +256,7 @@ plot_energy_ef <- function(df, pol_name){
 # plot ef summary
 plot_ef_summary <- function(emission_factors, pol_name){
   
-  ef_summary <- dplyr::group_by(emission_factors, paste(stove, ":", fuel)) %>%
+  ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
                 dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
                                  min_ef = min(mass_ef_comb, na.rm = TRUE),
                                  max_ef = max(mass_ef_comb, na.rm = TRUE),
@@ -279,6 +279,44 @@ plot_ef_summary <- function(emission_factors, pol_name){
           theme(text = element_text(size = 20),
                 legend.position = "top",
                 axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
+
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot correlation
+plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
+
+  ef_summary_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
+                  dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
+                                   min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
+                                   max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
+                                   std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
+                                   stove = first(stove),
+                                   fuel = first(fuel),
+                                   stovecat = first(stovecat),
+                                   fuelcat = first(fuelcat))
+  
+  ef_summary <- dplyr::group_by(ef_2, stove_fuel = paste(stove, ":", fuel)) %>%
+                dplyr::summarise(mean_ef_2 = mean(mass_ef_comb, na.rm = TRUE),
+                                 min_ef_2 = min(mass_ef_comb, na.rm = TRUE),
+                                 max_ef_2 = max(mass_ef_comb, na.rm = TRUE),
+                                 std_ef_2 = sd(mass_ef_comb, na.rm = TRUE)) %>%
+               dplyr::left_join(ef_1, by = "stove_fuel")
+
+  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
+                               ymin = min_ef, group = fuel, fill = fuel)) +   
+        geom_col(position = "dodge") +
+        geom_errorbar(position = "dodge", size = 1) +
+        facet_grid( ~ stovecat, scales = 'free') +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+        theme(text = element_text(size = 20),
+              legend.position = "top",
+              axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
 
   print(p1)
 }
