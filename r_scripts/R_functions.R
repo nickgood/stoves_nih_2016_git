@@ -275,7 +275,7 @@ plot_ef_summary <- function(emission_factors, pol_name){
           ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
           theme(text = element_text(size=18),
                 legend.position = "top",
-                axis.text.x = element_text(angle = 45, hjust = 1, size=16))
+                axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=16))
 
   print(p1)
 }
