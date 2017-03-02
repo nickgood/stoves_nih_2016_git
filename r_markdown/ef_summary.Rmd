@@ -72,6 +72,7 @@ output:
 
 * Calculate summary statistics 
 * Plot emissions factors by mass
+* Error bars represent min and max values
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^co$', pol)), "CO")
@@ -79,7 +80,9 @@ output:
 
 # PM data
 
+* Calculate summary statistics 
 * Plot emissions factors by mass
+* Error bars represent min and max values
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
@@ -87,7 +90,9 @@ output:
 
 # VOC data
 
+* Calculate summary statistics 
 * Plot emissions factors by mass
+* Error bars represent min and max values
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
@@ -99,7 +104,9 @@ output:
 
 # Carbonyl data
 
+* Calculate summary statistics 
 * Plot emissions factors by mass
+* Error bars represent min and max values
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
@@ -107,7 +114,9 @@ output:
 
 # EC and OC data
 
+* Calculate summary statistics 
 * Plot emissions factors by mass
+* Error bars represent min and max values
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
