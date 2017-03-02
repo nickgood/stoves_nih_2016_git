@@ -73,7 +73,7 @@ output:
 * Calculate summary statistics 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^co$', pol)), "CO")
 ```
 
@@ -81,7 +81,7 @@ output:
 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 5}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
 ```
 
@@ -89,11 +89,11 @@ output:
 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Benzene')
 ```
 
@@ -101,7 +101,7 @@ output:
 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
 ```
 
@@ -109,10 +109,10 @@ output:
 
 * Plot emissions factors by mass
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
   plot_ef_summary(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```

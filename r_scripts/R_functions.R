@@ -262,20 +262,23 @@ plot_ef_summary <- function(emission_factors, pol_name){
                                  max_ef = max(mass_ef_comb, na.rm = TRUE),
                                  std_ef = sd(mass_ef_comb, na.rm = TRUE),
                                  stove = first(stove),
-                                 fuel = first(fuel))
+                                 fuel = first(fuel),
+                                 stovecat = first(stovecat),
+                                 fuelcat = first(fuelcat))
   
   p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
                                ymin = min_ef, group = fuel, fill = fuel)) +   
           geom_col(position = "dodge") +
           geom_errorbar(position = "dodge", size = 1) +
+          facet_grid( ~ stovecat, scales = 'free') +
           #scale_y_log10() +
           theme_minimal() +
           ylab("") +
           xlab("") +
           ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-          theme(text = element_text(size=18),
+          theme(text = element_text(size = 20),
                 legend.position = "top",
-                axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=16))
+                axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
 
   print(p1)
 }
