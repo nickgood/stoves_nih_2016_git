@@ -74,8 +74,10 @@ output:
 # Calculate emissions factors
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::mutate(emissions,
-                             mass_ef = ((mass_emitted * 1e-3) /
+  emissions <- dplyr::left_join(emissions, 
+                                dplyr::select(mass_fuel, id, mass_fuel_c, 
+                                                         mass_fuel_kg), by = "id" ) %>%
+               dplyr::mutate(mass_ef = ((mass_emitted * 1e-3) /
                                          mass_fuel$mass_fuel_kg),  # mg / kg
                              mass_c_ef = ((mass_emitted * 1e-3) /
                                          mass_fuel$mass_fuel_c),  # mg / kg
