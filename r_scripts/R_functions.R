@@ -288,15 +288,15 @@ plot_ef_summary <- function(emission_factors, pol_name){
 # plot correlation
 plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
-  ef_summary_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
-                  dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
-                                   min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
-                                   max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
-                                   std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
-                                   stove = first(stove),
-                                   fuel = first(fuel),
-                                   stovecat = first(stovecat),
-                                   fuelcat = first(fuelcat))
+  ef_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
+          dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
+                           min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
+                           max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
+                           std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
+                           stove = first(stove),
+                           fuel = first(fuel),
+                           stovecat = first(stovecat),
+                           fuelcat = first(fuelcat))
   
   ef_summary <- dplyr::group_by(ef_2, stove_fuel = paste(stove, ":", fuel)) %>%
                 dplyr::summarise(mean_ef_2 = mean(mass_ef_comb, na.rm = TRUE),
