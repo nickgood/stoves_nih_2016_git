@@ -211,20 +211,20 @@ ___
 * combine pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg_co <- dplyr::mutate(bg_co,
-                         ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+  bg_co <- dplyr::left_join(dplyr::select(samples, id), bg_co) %>%
+           dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
                          conc_bg = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
                          pol = "co")
 
-  bg_co2 <- dplyr::mutate(bg_co2,
-                         ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
-                         conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
-                         pol = "co2")
- 
-  bg_ch4 <- dplyr::mutate(bg_ch4,
-                         ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
-                         conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
-                         pol = "ch4")
+  bg_co2 <- dplyr::left_join(dplyr::select(samples, id), bg_co2) %>%
+            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+                          conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
+                          pol = "co2")
+
+  bg_ch4 <- dplyr::left_join(dplyr::select(samples, id), bg_ch4) %>%
+            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+                          conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
+                          pol = "ch4")
 
   bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
 ```
