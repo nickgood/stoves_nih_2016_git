@@ -74,14 +74,7 @@ output:
 * Plot emissions factors by mass
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  ef_sum <- dplyr::filter(emission_factors, grepl('^co$', pol)) %>%
-            dplyr::group_by(stove_fuel) %>%
-            dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
-                             min_ef = min(mass_ef_comb, na.rm = TRUE),
-                             max_ef = max(mass_ef_comb, na.rm = TRUE),
-                             std_ef = sd(mass_ef_comb, na.rm = TRUE))
-
-  plot_mass_ef(ef_sum, 'CO')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^co$', pol)), "CO")
 ```
 
 # PM data
@@ -89,7 +82,7 @@ output:
 * Plot emissions factors by mass
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'PM')
 ```
 
 # VOC data
@@ -97,11 +90,11 @@ output:
 * Plot emissions factors by mass
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Benzene')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Benzene')
 ```
 
 # Carbonyl data
@@ -109,7 +102,7 @@ output:
 * Plot emissions factors by mass
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
 ```
 
 # EC and OC data
@@ -117,9 +110,9 @@ output:
 * Plot emissions factors by mass
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_mass_ef(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```
