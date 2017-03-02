@@ -163,7 +163,7 @@ filter_times <- function(times, df){
 plot_mass_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
-    geom_point(size = 1) +
+    geom_point(size = 2) +
     facet_grid(pol ~ stovecat, scales = 'free') +
     ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
     xlab("stove type") +
@@ -199,8 +199,8 @@ plot_mass_ef <- function(df, pol_name){
           axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
           panel.spacing = unit(2, "lines"))
   
-  print(p1)
-  #print(p2)
+  #print(p1)
+  print(p2)
   #print(p3)
 }
 #________________________________________________________
