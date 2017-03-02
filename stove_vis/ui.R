@@ -63,11 +63,14 @@ shinyUI(fluidPage(
             selectInput('x_pol', 'pollutant:', colnames(df))
           ),
           wellPanel(
-            tags$strong("tweak"),
+            tags$strong("appearance"),
             selectInput('p_col', 'color by:', colnames(df)),
             selectInput('p_facet', 'facet by:', colnames(df)),
             selectInput('p_filter', 'filter by:', colnames(df)),
             selectInput('p_group', 'group by:', colnames(df))
+          ),
+          wellPanel(
+            actionButton("updateButton", "update")
           )
         ),
         mainPanel(
