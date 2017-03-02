@@ -12,7 +12,38 @@ shinyUI(fluidPage(
         includeText("text/intro.txt"))),
       fluidRow(
         column(width = 12,
-        includeText("text/intro.txt")))
+               align="center",
+          tags$h2("Stoves"))),
+      fluidRow(
+        column(width = 12,
+               align="center",
+          tags$img(height = 90,
+                  width = 925,
+                  src = "stoves.png"))),
+      fluidRow(
+        column(width = 12,
+               align="center",
+          tags$h2("Fuels"))),
+      fluidRow(
+        column(width = 12,
+               align="center",
+          tags$img(height = 95,
+                   width = 925,
+                   src = "fuels.png"))),
+      fluidRow(
+        column(width = 12,
+               align="center",
+        tags$h2("Protocol"),
+        includeText("text/protocol.txt"),
+        tags$h4(""),
+        tags$img(height = 150,
+                 width = 800,
+                 src = "pic_all_stoves.png"),
+        tags$h4(""))),
+      fluidRow(
+        column(width = 12,
+               align="left",
+               includeText("text/acknowledge.txt")))
     ),
 
     tabPanel("Compare Pollutants",
