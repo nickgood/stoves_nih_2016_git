@@ -30,7 +30,16 @@ output:
 * Output emissions factors column names 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(emissions_factors)
+  colnames(emission_factors)
+```
+
+* Add stove/fuel information
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::left_join(emission_factors, 
+                                       dplyr::select(samples, id, stove, fuel,
+                                                              fuelcat, stovecat),
+                                       by = "id")
 ```
 
 # CO data
@@ -38,7 +47,7 @@ output:
 * Plot emissions factors by mass, energy of fuel and energy delivered
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_mass_ef(dplyr::filter(emissions, grepl('^co', pol)), 'CO')
+  plot_mass_ef(dplyr::filter(emission_factors, grepl('^co', pol)), 'CO')
 ```
 
 # PM data
