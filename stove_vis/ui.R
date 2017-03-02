@@ -43,7 +43,8 @@ shinyUI(fluidPage(
       fluidRow(
         column(width = 12,
                align="left",
-               includeText("text/acknowledge.txt")))
+               tags$footer(includeText("text/acknowledge.txt"),
+                           style = "padding: 10px;")))
     ),
 
     tabPanel("Compare Pollutants",
