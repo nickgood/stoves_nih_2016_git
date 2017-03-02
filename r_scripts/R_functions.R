@@ -160,7 +160,7 @@ filter_times <- function(times, df){
 
 #________________________________________________________
 # plot mass based emission factors 
-plot_mass_ef <- function(df, pol_name, type){
+plot_mass_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
     geom_point(size = 1) +
@@ -207,7 +207,7 @@ plot_mass_ef <- function(df, pol_name, type){
 
 #________________________________________________________
 # plot energy based emission factors 
-plot_energy_ef <- function(df, pol_name, type){
+plot_energy_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
     geom_point(size = 1) +
