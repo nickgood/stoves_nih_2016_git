@@ -254,20 +254,29 @@ plot_energy_ef <- function(df, pol_name){
 
 #________________________________________________________
 # plot ef summary
-plot_ef_summary <- function(df, pol_name){
+plot_ef_summary <- function(emission_factors, pol_name){
   
-  p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ stovecat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
-    xlab("stove type") +
-    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
+  ef_summary <- dplyr::filter(emission_factors, grepl('^co$', pol)) %>%
+                dplyr::group_by(emissions_factors, stove_fuel) %>%
+                dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
+                                 min_ef = min(mass_ef_comb, na.rm = TRUE),
+                                 max_ef = max(mass_ef_comb, na.rm = TRUE),
+                                 std_ef = sd(mass_ef_comb, na.rm = TRUE),
+                                 stove = first(stove),
+                                 fuel = first(fuel))
+  
+  ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
+                         ymin = min_ef, group = fuel, fill = fuel)) +   
+    geom_col(position = "dodge") +
+    geom_errorbar(position = "dodge", size = 2) +
+    #scale_y_log10() +
     theme_minimal() +
-    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
+    ylab("") +
+    xlab("") +
+    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
     theme(text = element_text(size=18),
           legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
-          panel.spacing = unit(2, "lines"))
+          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5))
 
   print(p1)
 }
