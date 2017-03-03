@@ -64,17 +64,16 @@ shinyUI(fluidPage(
           ),
           wellPanel(
             tags$strong("appearance"),
-            selectInput('p_col', 'color by:', colnames(df)),
-            selectInput('p_facet', 'facet by:', colnames(df)),
-            selectInput('p_filter', 'filter by:', colnames(df)),
-            selectInput('p_group', 'group by:', colnames(df))
+            selectInput('p_col', 'color by:', by_color),
+            selectInput('p_facet', 'facet by:', by_facet),
+            selectInput('p_group', 'group by:', by_group)
           ),
           wellPanel(
             actionButton("updateButton", "update")
           )
         ),
         mainPanel(
-          plotOutput("stove_plot")
+          plotOutput('stove_plot')
        )
       )
     ),
