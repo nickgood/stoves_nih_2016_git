@@ -160,10 +160,10 @@ filter_times <- function(times, df){
 
 #________________________________________________________
 # plot mass based emission factors 
-plot_mass_ef <- function(df, pol_name, type){
+plot_mass_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
-    geom_point(size = 1) +
+    geom_point(size = 2) +
     facet_grid(pol ~ stovecat, scales = 'free') +
     ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
     xlab("stove type") +
@@ -199,15 +199,15 @@ plot_mass_ef <- function(df, pol_name, type){
           axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
           panel.spacing = unit(2, "lines"))
   
-  print(p1)
+  #print(p1)
   print(p2)
-  print(p3)
+  #print(p3)
 }
 #________________________________________________________
 
 #________________________________________________________
 # plot energy based emission factors 
-plot_energy_ef <- function(df, pol_name, type){
+plot_energy_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
     geom_point(size = 1) +
@@ -249,6 +249,73 @@ plot_energy_ef <- function(df, pol_name, type){
   print(p1)
   print(p2)
   print(p3)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_summary <- function(emission_factors, pol_name){
+  
+  ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
+                dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
+                                 min_ef = min(mass_ef_comb, na.rm = TRUE),
+                                 max_ef = max(mass_ef_comb, na.rm = TRUE),
+                                 std_ef = sd(mass_ef_comb, na.rm = TRUE),
+                                 stove = first(stove),
+                                 fuel = first(fuel),
+                                 stovecat = first(stovecat),
+                                 fuelcat = first(fuelcat))
+  
+  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
+                               ymin = min_ef, group = fuel, fill = fuel)) +   
+          geom_col(position = "dodge") +
+          geom_errorbar(position = "dodge", size = 1) +
+          facet_grid( ~ fuelcat, scales = 'free') +
+          theme_minimal() +
+          ylab("") +
+          xlab("") +
+          ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+          theme(text = element_text(size = 20),
+                legend.position = "top",
+                axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
+
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot correlation
+plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
+
+  ef_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
+          dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
+                           min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
+                           max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
+                           std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
+                           stove = first(stove),
+                           fuel = first(fuel),
+                           stovecat = first(stovecat),
+                           fuelcat = first(fuelcat))
+  
+  ef_summary <- dplyr::group_by(ef_2, stove_fuel = paste(stove, ":", fuel)) %>%
+                dplyr::summarise(mean_ef_2 = mean(mass_ef_comb, na.rm = TRUE),
+                                 min_ef_2 = min(mass_ef_comb, na.rm = TRUE),
+                                 max_ef_2 = max(mass_ef_comb, na.rm = TRUE),
+                                 std_ef_2 = sd(mass_ef_comb, na.rm = TRUE)) %>%
+               dplyr::left_join(ef_1, by = "stove_fuel")
+
+  p1 <- ggplot(ef_summary, aes(x = mean_ef_1, y = mean_ef_2, colour = stove)) + 
+          geom_errorbar(aes(ymin = min_ef_2, ymax = max_ef_2), width = .1) +
+          geom_errorbarh(aes(xmin = min_ef_1, xmax = max_ef_1, height = 0), width = .1) +
+          geom_point(size = 4) +
+          theme_minimal() +
+          ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
+          xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
+          ggtitle("EF Correlation Plot") +
+          theme(text = element_text(size = 20),
+                legend.position = "right")
+
+  print(p1)
 }
 #________________________________________________________
 
