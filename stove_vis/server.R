@@ -24,10 +24,21 @@ shinyServer(function(input, output, clientData, session){
                                  by = "id")
 
   p <- ggplot(p_data, aes(value.x, value.y)) +
-         geom_point() +
          theme_minimal() +
          ylab(paste0(input$y_pol, " (", input$y_metric, ")")) +
          xlab(paste0(input$x_pol, " (", input$x_metric, ")"))
+  # color
+  if(input$p_col != "none"){
+    p <- p + geom_point(aes_string(color = input$p_col)) +
+         theme(legend.position = "hide")
+  }else{
+    p <- p + geom_point()
+  }
+  # facet
+  if(input$p_facet != "none"){
+    p <- p + facet_wrap(~as_name(input$p_facet), scales = "free", ncol = 3)
+  }
+  # plot
   print(p)
   })
 #_______________________________________________________________________________
