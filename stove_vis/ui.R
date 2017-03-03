@@ -3,9 +3,13 @@ library(shinythemes)
 
 # define UI
 shinyUI(fluidPage(
-
+#_______________________________________________________________________________
+# naigation bar
   navbarPage(theme = shinytheme("united"), "STOVES",
+#_______________________________________________________________________________
 
+#_______________________________________________________________________________
+# overview tab
     tabPanel("Overview",
       fluidRow(
         column(width = 12,
@@ -46,37 +50,47 @@ shinyUI(fluidPage(
                tags$footer(includeText("text/acknowledge.txt"),
                            style = "padding: 10px;")))
     ),
+# end overview tab
+#_______________________________________________________________________________
 
+#_______________________________________________________________________________
+# interactive plot tab
     tabPanel("Compare Pollutants",
-      sidebarLayout(
-        sidebarPanel(
-          wellPanel(
-            tags$strong("left axis"),
-            selectInput("y_metric", "metric:", unit_list),
-            selectInput("y_inst", "instrument:", inst_list),
-            selectInput('y_pol', 'pollutant:', choices=character(0))
-          ),
-          wellPanel(
-            tags$strong("bottom axis"),
-            selectInput("x_metric", "metric:", unit_list),
-            selectInput("x_inst", "instrument:", inst_list),
-            selectInput('x_pol', 'pollutant:', choices=character(0))
-          ),
-          wellPanel(
-            tags$strong("appearance"),
-            selectInput('p_col', 'color by:', by_color),
-            selectInput('p_facet', 'facet by:', by_facet),
-            selectInput('p_group', 'group by:', by_group)
-          ),
-          wellPanel(
-            actionButton("updateButton", "update")
-          )
-        ),
-        mainPanel(
-          plotOutput('stove_plot')
-       )
+      fluidRow(column(width = 4,
+                      wellPanel(
+                      tags$strong("left axis"),
+                      selectInput("y_metric", "metric:", unit_list),
+                      selectInput("y_inst", "instrument:", inst_list),
+                      selectInput('y_pol', 'pollutant:', choices=character(0))
+                      )),
+               column(width = 4,
+                      wellPanel(
+                      tags$strong("bottom axis"),
+                      selectInput("x_metric", "metric:", unit_list),
+                      selectInput("x_inst", "instrument:", inst_list),
+                      selectInput('x_pol', 'pollutant:', choices=character(0))
+                      )),
+               column(width = 4,
+                      wellPanel(
+                      tags$strong("appearance"),
+                      selectInput('p_col', 'color by:', by_color),
+                      selectInput('p_facet', 'facet by:', by_facet),
+                      selectInput('p_group', 'group by:', by_group)
+                      ))
+               ),
+      fluidRow(column(width = 12,
+        plotOutput('stove_plot'))),
+
+      absolutePanel(id = "controls", class = "panel panel-default", fixed = FALSE,
+        draggable = TRUE, top = 400, left = 100, right = "auto", bottom = "auto",
+                    width = "auto", height = "auto",
+                    actionButton("updateButton", "update")
+
       )
     ),
+
+# end interactive plot tab
+#_______________________________________________________________________________
     tabPanel("Stove info"),
     tabPanel("Fuel info"),
     tabPanel("About")
