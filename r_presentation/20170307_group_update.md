@@ -1,37 +1,54 @@
-20170307_group_update
+
+NIH Aim 1 Data Analysis Update
 ========================================================
-author: 
-date: 
+author: Nick Good, Kristen Fedak, and Kelsey Bilsback 
+date: March 7, 2017
 autosize: true
 
-First Slide
+
+
+Emissions Measurement Overview
 ========================================================
 
-For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "emissions_overview.png" width = 1500>
+</div>
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+Stove Type & Fuel Type Overview
+========================================================
 
-Slide With Code
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "stoves_photo.png" width = 1500>
+</div>
+
+Firepower Sweep Protocol
+========================================================
+
+![my image](jetter_plot.png)
+
+Data Examples
 ========================================================
 
 
-```r
-summary(cars)
-```
 
-```
-     speed           dist       
- Min.   : 4.0   Min.   :  2.00  
- 1st Qu.:12.0   1st Qu.: 26.00  
- Median :15.0   Median : 36.00  
- Mean   :15.4   Mean   : 42.98  
- 3rd Qu.:19.0   3rd Qu.: 56.00  
- Max.   :25.0   Max.   :120.00  
-```
-
-Slide With Plot
+Data Examples
 ========================================================
 
-![plot of chunk unnamed-chunk-2](20170307_group_update-figure/unnamed-chunk-2-1.png)
+<img src="20170307_group_update-figure/unnamed-chunk-3-1.png" title="plot of chunk unnamed-chunk-3" alt="plot of chunk unnamed-chunk-3" style="display: block; margin: auto;" />
+
+Data Examples
+========================================================
+
+<img src="20170307_group_update-figure/unnamed-chunk-4-1.png" title="plot of chunk unnamed-chunk-4" alt="plot of chunk unnamed-chunk-4" style="display: block; margin: auto;" />
+
+Data Examples
+========================================================
+
+<img src="20170307_group_update-figure/unnamed-chunk-5-1.png" title="plot of chunk unnamed-chunk-5" alt="plot of chunk unnamed-chunk-5" style="display: block; margin: auto;" />
+
+Jetter et al., 2012 
+========================================================
+
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "jetter_plot.png" width = 1000>
+</div>
