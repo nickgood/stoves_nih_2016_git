@@ -55,7 +55,7 @@ shinyUI(fluidPage(
 
 #_______________________________________________________________________________
 # interactive plot tab
-    tabPanel("Compare Pollutants",
+    tabPanel("Compare pollutants",
       fluidRow(column(width = 3,
                       wellPanel(style = "padding: 5px;",
                       tags$strong("left axis"),
@@ -89,6 +89,18 @@ shinyUI(fluidPage(
 
 # end interactive plot tab
 #_______________________________________________________________________________
+
+#_______________________________________________________________________________
+# interactive plot tab 2
+    tabPanel("Single pollutant",
+      fluidRow(column(width = 3,
+               wellPanel(style = "padding: 5px;",
+               selectInput("sin_metric", "metric:", unit_list),
+               selectInput("sin_inst", "instrument:", inst_list),
+               selectInput('sin_pol', 'pollutant:', choices=character(0))
+               )))),
+#_______________________________________________________________________________
+
     tabPanel("Stove info"),
     tabPanel("Fuel info"),
     tabPanel("About")
