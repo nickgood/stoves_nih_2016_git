@@ -27,35 +27,35 @@ shinyUI(fluidPage(
       fluidRow(
         column(width = 12,
                align="center",
-        tags$img(height = 180,
-                 width = 600,
-                 src = "fuels_stacked.png"))),
+          tags$img(height = 180,
+                   width = 600,
+                   src = "fuels_stacked.png"))),
       fluidRow(
         column(width = 12,
                align="center",
-               tags$h2("Protocol"),
+        tags$h2("Protocol"),
         includeText("text/protocol.txt"),
         tags$h4(""),
         tags$img(height = 150,
                  width = "90%",
                  src = "pic_all_stoves.png"),
-                               tags$h4(""))),
+        tags$h4(""))),
       fluidRow(
         column(width = 12,
                align="left",
-        tags$footer(includeText("text/acknowledge.txt"),
-                                style = "padding: 10px;")))
-  ),
+               tags$footer(includeText("text/acknowledge.txt"),
+                           style = "padding: 10px;")))
+      ),
 
-  tabPanel("Compare Pollutants",
-    sidebarLayout(
-      sidebarPanel(
-        selectInput('x_var', 'x axis:', colnames(df)),
-        selectInput('y_var', 'y axis:', colnames(df)),
-        selectInput('p_col', 'color by:', colnames(df)),
-        selectInput('p_facet', 'facet by:', colnames(df)),
-        selectInput('p_filter', 'filter by:', colnames(df)),
-        checkboxInput("p_bad","exclude bad data")
+    tabPanel("Compare Pollutants",
+        sidebarLayout(
+        sidebarPanel(
+          selectInput('x_var', 'x axis:', colnames(df)),
+          selectInput('y_var', 'y axis:', colnames(df)),
+          selectInput('p_col', 'color by:', colnames(df)),
+          selectInput('p_facet', 'facet by:', colnames(df)),
+          selectInput('p_filter', 'filter by:', colnames(df)),
+          checkboxInput("p_bad","exclude bad data")
         ),
         mainPanel(
           plotOutput("stove_plot")
