@@ -26,6 +26,8 @@ output:
                       dplyr::filter(mass_ef_comb > 0)
 ```
 
+# Experimental Overview
+
 ## Emissions measurement overview
 
 <div align = "center">
@@ -55,6 +57,8 @@ output:
 <div align = "center">
 <img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/firepower_sweep.png" width = 700>
 </div>
+
+# Data Overview
 
 ## Data Examples {#margins}
 
