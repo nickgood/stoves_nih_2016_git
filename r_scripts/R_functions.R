@@ -290,20 +290,9 @@ plot_ef_bar <- function(emission_factors, pol_name){
 #________________________________________________________
 # plot ef summary
 plot_ef_box <- function(emission_factors, pol_name){
-  
-  ef_summary <- dplyr::group_by(emission_factors, stovecat) %>%
-    dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
-                     min_ef = min(mass_ef_comb, na.rm = TRUE),
-                     max_ef = max(mass_ef_comb, na.rm = TRUE),
-                     std_ef = sd(mass_ef_comb, na.rm = TRUE),
-                     stove = first(stove),
-                     fuel = first(fuel),
-                     stovecat = first(stovecat),
-                     fuelcat = first(fuelcat))
-  
-  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, fill = stovecat)) +   
+
+  p1 <- ggplot(emission_factors, aes(x = stovecat, y = mass_ef_comb, fill = stovecat)) +   
     geom_boxplot() +
-    geom_errorbar(position = "dodge", size = 1) +
     theme_bw() +
     ylab("") +
     xlab("") +
@@ -311,11 +300,8 @@ plot_ef_box <- function(emission_factors, pol_name){
     scale_y_log10() +
     scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
     ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-    theme(text = element_text(size = 10),
-          legend.position = "top",
-          legend.text=element_text(size = 10),
-          legend.key.size = unit(0.5, "cm"),
-          axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size=8))
+    theme(text = element_text(size = 12),
+          legend.position = "none")
   
   print(p1)
 }

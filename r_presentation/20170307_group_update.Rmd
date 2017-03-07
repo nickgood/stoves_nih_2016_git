@@ -76,10 +76,24 @@ output: ioslides_presentation
 
 ## Data Examples {#margins}
 
-```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
+```
+
+## Data Examples {#margins}
+
+```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
+```
+
+# Appendix
+
+## Data Examples {#margins}
+
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
-                   'Carbon monoxide', 'Formaldehyde')
+                   'Particulate matter', 'Formaldehyde')
 ```
 
 ## Jetter et al., 2012 
