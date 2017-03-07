@@ -6,8 +6,8 @@
  df <- readRDS("data/emissions_long.RDS")
 
 # Define server logic required to draw a histogram
-shinyServer(function(input, output, clientData, session){
-	
+  shinyServer(function(input, output, clientData, session){
+
 #_______________________________________________________________________________
  # plot one pollutant versus another
   stove_plot <- eventReactive(input$updateButton, 
@@ -36,7 +36,7 @@ shinyServer(function(input, output, clientData, session){
   }
   # facet
   if(input$p_facet != "none"){
-    p <- p + facet_wrap(~as_name(input$p_facet), scales = "free", ncol = 3)
+    p <- p + facet_wrap(input$p_facet, scales = "free", ncol = 3)
   }
   # plot
   print(p)
@@ -55,7 +55,7 @@ shinyServer(function(input, output, clientData, session){
 # watch for updates to menu items
   observe({
   #_______________________________________________________________________________
-  # pollutant list to display - left axis
+  # instrument selected
     inst_y <- input$y_inst
     inst_x <- input$x_inst
   #_______________________________________________________________________________
@@ -63,49 +63,49 @@ shinyServer(function(input, output, clientData, session){
   #_______________________________________________________________________________
   # update y axis pol menu based on instrument selection
     if(inst_y == "carbs"){
-      inst_y <- pol_carb
+      pol_y <- pol_carb
     }else if(inst_y == "ecoc"){
-      inst_y <- pol_ecoc
+      pol_y <- pol_ecoc
     }else if(inst_y == "fivegas"){
-      inst_y <-  pol_fivegas
+      pol_y <-  pol_fivegas
     }else if(inst_y == "grav"){
-      inst_y <-  pol_grav  
+      pol_y <-  pol_grav  
     }else if(inst_y == "ions"){
-      inst_y <-  pol_ions
+      pol_y <-  pol_ions
     }else if(inst_y == "voc"){
-      inst_y <-  pol_voc
-    }else(inst_y <-  "select instrument")
+      pol_y <-  pol_voc
+    }else(pol_y <-  "select instrument")
   #_______________________________________________________________________________
 
   #_______________________________________________________________________________
   # update y axis pollutant menu
     updateSelectInput(session,
                       "y_pol",
-                       choices = inst_y)
+                       choices = pol_y)
   #_______________________________________________________________________________
 
   #_______________________________________________________________________________
   # update x axis pol menu based on instrument selection
     if(inst_x == "carbs"){
-      inst_x <- pol_carb
+      pol_x <- pol_carb
     }else if(inst_x == "ecoc"){
-      inst_x <- pol_ecoc
+      pol_x <- pol_ecoc
     }else if(inst_x == "fivegas"){
-      inst_x <-  pol_fivegas
+      pol_x <-  pol_fivegas
   }else if(inst_x == "grav"){
-      inst_x <-  pol_grav
+      pol_x <-  pol_grav
   }else if(inst_x == "ions"){
-      inst_x <-  pol_ions
+      pol_x <-  pol_ions
   }else if(inst_x == "voc"){
-      inst_x <-  pol_voc
-    }else(inst_x <-  "select instrument")
+      pol_x <-  pol_voc
+  }else(pol_x <-  "select instrument")
   #_______________________________________________________________________________
 
   #_______________________________________________________________________________
    # update x axis pollutant menu
     updateSelectInput(session,
                       "x_pol",
-                      choices = inst_x)
+                      choices = pol_x)
     })
-}) # close obsere expression
+}) # close observe expression
 #_______________________________________________________________________________
