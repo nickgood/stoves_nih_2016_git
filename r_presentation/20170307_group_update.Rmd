@@ -52,7 +52,7 @@ output:
     xlab("") + ylab("")
 ```
 
-## Firepower Sweep Protocol {#margins}
+## Firepower Sweep Protocol
 
 ```{r, out.width = "750px"}
   knitr::include_graphics("images/firepower_sweep.png")
@@ -112,6 +112,6 @@ output:
 
 ## Jetter et al., 2012 
 
-```{r, out.width = "850px"}
+```{r, out.width = "600px"}
   knitr::include_graphics("images/jetter_plot.png")
 ```
