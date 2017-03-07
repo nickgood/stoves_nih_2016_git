@@ -7,7 +7,7 @@ output:
   beamer_presentation: default
 ---
 
- <style> #margins > p { margin-top: -50px;  margin-left: -50px;} </style>
+ <style> #margins > p {margin-left: -50px;} </style>
 
 ```{r setup, include=FALSE}
   knitr::opts_chunk$set(echo = FALSE)
