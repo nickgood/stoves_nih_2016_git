@@ -73,17 +73,18 @@ shinyUI(fluidPage(
                column(width = 3,
                       wellPanel(style = "padding: 5px;",
                       tags$strong("appearance"),
-                      selectInput('p_col', 'color by:', by_color)
+                      selectInput('p_col', 'color by:', by_color),
+                      actionButton("updateButton", "update")
                       ))
                ),
       fluidRow(column(width = 12,
-        plotOutput('stove_plot'))),
+        plotOutput('stove_plot')))#,
 
-      absolutePanel(id = "controls", class = "panel panel-default", fixed = FALSE,
-        draggable = TRUE, top = 200, left = 425, right = "auto", bottom = "auto",
-                    width = "auto", height = "auto",
-                    actionButton("updateButton", "update")
-      )
+      #absolutePanel(id = "controls", class = "panel panel-default", fixed = FALSE,
+      # draggable = TRUE, top = 200, left = 425, right = "auto", bottom = "auto",
+      #              width = "auto", height = "auto",
+      #              actionButton("updateButton", "update")
+      #)
     ),
 
 # end interactive plot tab
@@ -97,16 +98,17 @@ shinyUI(fluidPage(
                    selectInput("sin_metric", "metric:", unit_list),
                    selectInput("sin_inst", "instrument:", inst_list),
                    selectInput("sin_pol", "pollutant:", choices=character(0)),
-                   selectInput('sin_group', 'group by:', by_sin_group)
+                   selectInput('sin_group', 'group by:', by_sin_group),
+                   actionButton("updateButton_sin", "update")
                  )),
                column(width = 9,
-                plotOutput('single_stove_plot'))),
+                plotOutput('single_stove_plot')))
 
-      absolutePanel(id = "control_sin", class = "panel panel-default", fixed = FALSE,
-        draggable = TRUE, top = 400, left = 70, right = "auto", bottom = "auto",
-        width = "auto", height = "auto",
-        actionButton("updateButton_sin", "update")
-      )
+      #absolutePanel(id = "control_sin", class = "panel panel-default", fixed = FALSE,
+      #  draggable = TRUE, top = 400, left = 70, right = "auto", bottom = "auto",
+      #  width = "auto", height = "auto",
+      #  actionButton("updateButton_sin", "update")
+      #)
             ),
 #_______________________________________________________________________________
 
