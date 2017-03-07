@@ -34,7 +34,7 @@ output:
   knitr::include_graphics("images/emissions_overview.png")
 ```
 
-## Stove Type & Fuel Type Overview{#margins}
+## Stove Type & Fuel Type Overview {#margins}
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=8.5, fig.height=5}
   test_list <- dplyr::filter(samples, type == "SF") %>%
@@ -52,10 +52,9 @@ output:
     xlab("") + ylab("")
 ```
 
-## Firepower Sweep Protocol
+## Firepower Sweep Protocol {#margins}
 
-
-```{r, out.width = "850px"}
+```{r, out.width = "650px"}
   knitr::include_graphics("images/firepower_sweep.png")
 ```
 
