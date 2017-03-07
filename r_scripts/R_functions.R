@@ -278,11 +278,12 @@ plot_ef_bar <- function(emission_factors, pol_name){
           scale_y_log10() +
           scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
           ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-          theme(text = element_text(size = 10),
+          theme(text = element_text(size = 14),
                 legend.position = "top",
-                legend.text=element_text(size = 10),
+                legend.text=element_text(size = 14),
                 legend.key.size = unit(0.5, "cm"),
-                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 10))
+                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                strip.text.x = element_text(size = 16))
 
   print(p1)
 }

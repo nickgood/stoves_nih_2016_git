@@ -7,7 +7,7 @@ output:
   beamer_presentation: default
 ---
 
- <style> #margins > p {margin-left: -50px;} </style>
+ <style> #margins > p {margin-top: -25px; margin-left: -50px;} </style>
 
 ```{r setup, include=FALSE}
   knitr::opts_chunk$set(echo = FALSE)
@@ -102,7 +102,7 @@ output:
   plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
 ```
 
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
