@@ -39,6 +39,33 @@
   })
 #_______________________________________________________________________________
 
+  #_______________________________________________________________________________
+  # plot one pollutant versus another
+  single_stove_plot <- eventReactive(input$updateButton_sin, 
+                         {p_data <- dplyr::filter_(df,
+                                    ~pol == input$sin_pol,
+                                    ~units ==  input$sin_metric)
+
+                          p <- ggplot(p_data, aes(y = value)) +
+                               theme_minimal()
+                            # group
+                             if(input$sin_group == "none" | input$sin_group == "id"){
+                                 p <- p + geom_point(aes(x = id)) + 
+                                      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+                                      theme(text = element_text(size = 18)) +
+                                      ylab(paste0(input$sin_pol, " (", input$sin_metric, ")"))
+                                        
+                             }else{
+                             p <- p + geom_boxplot(aes_string(x = input$sin_group, fill = input$sin_group)) +
+                                  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+                                  ylab(paste0(input$sin_pol, " (", input$sin_metric, ")")) +
+                                  theme(text = element_text(size = 18))
+                             }
+                            # plot
+                              print(p)
+                       })
+#_______________________________________________________________________________  
+
 #_______________________________________________________________________________
 # output plot
   output$stove_plot <- renderPlot({
@@ -46,6 +73,13 @@
   })
 #_______________________________________________________________________________
 
+#_______________________________________________________________________________
+  # output plot
+  output$single_stove_plot <- renderPlot({
+    single_stove_plot()
+  })
+#_______________________________________________________________________________
+  
   
 #_______________________________________________________________________________
 # watch for updates to menu items
@@ -107,5 +141,38 @@
                       "x_pol",
                       choices = pol_x)
   }) # close observe expression
-}) 
 #_______________________________________________________________________________
+  
+#_______________________________________________________________________________
+  # watch for updates to menu items
+  observe({
+  #_______________________________________________________________________________
+  # instrument selected
+   sin_inst <- input$sin_inst
+  #_______________________________________________________________________________
+
+  #_______________________________________________________________________________
+  # update single pol menu based on instrument selection
+   if(sin_inst == "carbs"){
+     pol_sin <- pol_carb
+   }else if(sin_inst == "ecoc"){
+     pol_sin <- pol_ecoc
+   }else if(sin_inst == "fivegas"){
+     pol_sin <-  pol_fivegas
+   }else if(sin_inst == "grav"){
+     pol_sin <-  pol_grav  
+   }else if(sin_inst == "ions"){
+     pol_sin <-  pol_ions
+   }else if(sin_inst == "voc"){
+     pol_sin <-  pol_voc
+   }else(sin_inst <- "select instrument")
+  #_______________________________________________________________________________
+
+  #_______________________________________________________________________________
+  # update single pollutant menu
+    updateSelectInput(session,
+                      "sin_pol",
+                      choices = pol_sin)
+  #_______________________________________________________________________________
+  }) # close observe expression
+})

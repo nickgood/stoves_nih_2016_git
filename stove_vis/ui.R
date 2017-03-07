@@ -83,7 +83,6 @@ shinyUI(fluidPage(
         draggable = TRUE, top = 200, left = 425, right = "auto", bottom = "auto",
                     width = "auto", height = "auto",
                     actionButton("updateButton", "update")
-
       )
     ),
 
@@ -91,14 +90,24 @@ shinyUI(fluidPage(
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
-# interactive plot tab 2
+# interactive single pol plot tab
     tabPanel("Single pollutant",
       fluidRow(column(width = 3,
-               wellPanel(style = "padding: 5px;",
-               selectInput("sin_metric", "metric:", unit_list),
-               selectInput("sin_inst", "instrument:", inst_list),
-               selectInput('sin_pol', 'pollutant:', choices=character(0))
-               )))),
+                 wellPanel(style = "padding: 5px;",
+                   selectInput("sin_metric", "metric:", unit_list),
+                   selectInput("sin_inst", "instrument:", inst_list),
+                   selectInput("sin_pol", "pollutant:", choices=character(0)),
+                   selectInput('sin_group', 'group by:', by_sin_group)
+                 )),
+               column(width = 9,
+                plotOutput('single_stove_plot'))),
+
+      absolutePanel(id = "control_sin", class = "panel panel-default", fixed = FALSE,
+        draggable = TRUE, top = 400, left = 70, right = "auto", bottom = "auto",
+        width = "auto", height = "auto",
+        actionButton("updateButton_sin", "update")
+      )
+            ),
 #_______________________________________________________________________________
 
     tabPanel("Stove info"),
