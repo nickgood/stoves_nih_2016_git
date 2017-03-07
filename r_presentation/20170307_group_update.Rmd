@@ -54,14 +54,16 @@ output: ioslides_presentation
 <img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/firepower_sweep.png" width = 700>
 </div>
 
-## Data Examples
+## Data Examples {#margins}
 
-
+```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
+```
 
 ## Data Examples {#margins}
 
 ```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
 ## Data Examples {#margins}
