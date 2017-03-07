@@ -54,7 +54,7 @@ output:
 
 ## Firepower Sweep Protocol {#margins}
 
-```{r, out.width = "650px"}
+```{r, out.width = "750px"}
   knitr::include_graphics("images/firepower_sweep.png")
 ```
 
