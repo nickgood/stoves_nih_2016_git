@@ -5,6 +5,8 @@ date: "March 7, 2017"
 output: ioslides_presentation
 ---
 
+ <style> #margins > p { margin-top: -50px;  margin-left: -50px;} </style>
+
 ```{r setup, include=FALSE}
   knitr::opts_chunk$set(echo = FALSE)
   load("../r_files/emission_factors.Rda")
@@ -60,7 +62,7 @@ output: ioslides_presentation
 
 ## Data Examples
 
-```{r, echo=FALSE, cache=FALSE, fig.width=20, fig.height=16, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
    # fix facets (less minimual) and font size
    # add return
    # remove title
@@ -68,17 +70,17 @@ output: ioslides_presentation
   plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
-## Data Examples
+## Data Examples {#margins}
 
-```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=8, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^co$', pol)), 
                    'Particulate matter', 'Carbon monoxide')
 ```
 
-## Data Examples
+## Data Examples {#margins}
 
-```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=8, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
                    'Carbon monoxide', 'Formaldehyde')

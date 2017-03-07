@@ -274,6 +274,8 @@ plot_ef_summary <- function(emission_factors, pol_name){
           theme_minimal() +
           ylab("") +
           xlab("") +
+          theme_bw() +
+          scale_y_log10() +
           ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
           theme(text = element_text(size = 20),
                 legend.position = "top",
@@ -293,13 +295,16 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
                                  by = "id")
 
     p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = stove)) + 
-          geom_point(size = 5) +
+          geom_point(size = 3) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
           scale_x_log10() +
+          theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 28),
-                legend.position = "top")
+          theme(text = element_text(size = 14),
+                legend.position = "top",
+                legend.text=element_text(size = 6),
+                legend.key.size = unit(0.1, "cm"))
 
   print(p1)
 }
