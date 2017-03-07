@@ -1,3 +1,4 @@
+
 df <- readRDS("data/emissions_long.RDS")
 samples <- readRDS("data/samples.RDS")
 unit_list <- unique(df$units)
@@ -16,3 +17,5 @@ inst_list <- unique(df$inst)
   by_facet <- c("none", "id", "fuel", "stove", "stove + fuel")
   by_color <- c("none", "id", "fuel", "stove", "stove + fuel")
   by_sin_group <- c("none", "id", "fuel", "stove", "stovecat", "fuelcat")
+
+

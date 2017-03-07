@@ -80,6 +80,7 @@ shinyUI(fluidPage(
       fluidRow(column(width = 12,
         plotOutput('stove_plot')))#,
 
+
       #absolutePanel(id = "controls", class = "panel panel-default", fixed = FALSE,
       # draggable = TRUE, top = 200, left = 425, right = "auto", bottom = "auto",
       #              width = "auto", height = "auto",

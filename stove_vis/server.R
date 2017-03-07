@@ -1,11 +1,9 @@
-# libararies
-  library(shiny)
-  library(tidyverse)
-
-# read data
- df <- readRDS("data/emissions_long.RDS")
+library(shiny)
+library(tidyverse)
+df <- readRDS("data/emissions.RDS")
 
 # Define server logic required to draw a histogram
+
   shinyServer(function(input, output, clientData, session){
 
 #_______________________________________________________________________________
@@ -176,4 +174,5 @@
                       choices = pol_sin)
   #_______________________________________________________________________________
   }) # close observe expression
+
 })
