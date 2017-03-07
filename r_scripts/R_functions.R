@@ -282,7 +282,7 @@ plot_ef_bar <- function(emission_factors, pol_name){
                 legend.position = "top",
                 legend.text=element_text(size = 10),
                 legend.key.size = unit(0.5, "cm"),
-                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size=10))
+                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 10))
 
   print(p1)
 }
