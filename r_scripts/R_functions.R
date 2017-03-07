@@ -287,33 +287,19 @@ plot_ef_summary <- function(emission_factors, pol_name){
 # plot correlation
 plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
-  ef_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
-          dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
-                           min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
-                           max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
-                           std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
-                           stove = first(stove),
-                           fuel = first(fuel),
-                           stovecat = first(stovecat),
-                           fuelcat = first(fuelcat))
-  
-  ef_summary <- dplyr::group_by(ef_2, stove_fuel = paste(stove, ":", fuel)) %>%
-                dplyr::summarise(mean_ef_2 = mean(mass_ef_comb, na.rm = TRUE),
-                                 min_ef_2 = min(mass_ef_comb, na.rm = TRUE),
-                                 max_ef_2 = max(mass_ef_comb, na.rm = TRUE),
-                                 std_ef_2 = sd(mass_ef_comb, na.rm = TRUE)) %>%
-               dplyr::left_join(ef_1, by = "stove_fuel")
+  ef_2 <- dplyr::mutate(ef_2, mass_ef_comb_2 = mass_ef_comb)
 
-  p1 <- ggplot(ef_summary, aes(x = mean_ef_1, y = mean_ef_2, colour = stove)) + 
-          geom_errorbar(aes(ymin = min_ef_2, ymax = max_ef_2), width = .1) +
-          geom_errorbarh(aes(xmin = min_ef_1, xmax = max_ef_1, height = 0), width = .1) +
-          geom_point(size = 4) +
-          theme_minimal() +
+  ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
+                                 by = "id")
+
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = stove)) + 
+          geom_point(size = 5) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
-          ggtitle("EF Correlation Plot") +
-          theme(text = element_text(size = 20),
-                legend.position = "right")
+          scale_x_log10() +
+          scale_y_log10() +
+          theme(text = element_text(size = 28),
+                legend.position = "top")
 
   print(p1)
 }

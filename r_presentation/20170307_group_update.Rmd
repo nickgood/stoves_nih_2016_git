@@ -70,14 +70,7 @@ output: ioslides_presentation
 
 ## Data Examples
 
-```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
-  #fix to be single test for each point
-  #remove NA
-  #increase font size
-  #remove the title from the plot
-  #grid lines darker
-  #log scale
-
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=8, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^co$', pol)), 
                    'Particulate matter', 'Carbon monoxide')
@@ -85,14 +78,7 @@ output: ioslides_presentation
 
 ## Data Examples
 
-```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
-  #fix to be single test for each point
-  #remove NA
-  #increase font size
-  #remove the title from the plot
-  #grid lines darker
-  #log scale
-
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=8, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
                    'Carbon monoxide', 'Formaldehyde')
