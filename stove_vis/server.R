@@ -23,7 +23,7 @@
                                  d_bottom,
                                  by = "id")
 
-  p <- ggplot(p_data, aes(value.x, value.y)) +
+  p <- ggplot(p_data, aes(x = value.y, y = value.x)) +
          theme_minimal() +
          ylab(paste0(input$y_pol, " (", input$y_metric, ")")) +
          xlab(paste0(input$x_pol, " (", input$x_metric, ")"))
