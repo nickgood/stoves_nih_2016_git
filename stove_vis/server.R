@@ -26,7 +26,8 @@
   p <- ggplot(p_data, aes(x = value.y, y = value.x)) +
          theme_minimal() +
          ylab(paste0(input$y_pol, " (", input$y_metric, ")")) +
-         xlab(paste0(input$x_pol, " (", input$x_metric, ")"))
+         xlab(paste0(input$x_pol, " (", input$x_metric, ")")) +
+         theme(text = element_text(size = 18))
   # color
   if(input$p_col != "none"){
     p <- p + geom_point(aes_string(color = input$p_col)) +
