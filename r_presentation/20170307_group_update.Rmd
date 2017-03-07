@@ -34,9 +34,9 @@ output:
 <img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/emissions_overview.png" width = 800>
 </div>
 
-## Stove Type & Fuel Type Overview
+## Stove Type & Fuel Type Overview{#margins}
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=8, fig.height=5}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=8.5, fig.height=5}
   test_list <- dplyr::filter(samples, type == "SF") %>%
                dplyr::select(id, stove, fuel, type) %>%
                dplyr::group_by(stove, fuel) %>%
