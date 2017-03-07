@@ -94,8 +94,8 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
-                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
-                   'Particulate matter', 'Formaldehyde')
+                   dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
+                   'Particulate matter', 'Benzene')
 ```
 
 ## Jetter et al., 2012 
