@@ -322,9 +322,8 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
           scale_x_log10() +
           theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 14),
+          theme(text = element_text(size = 16),
                 legend.position = "top",
-                legend.text=element_text(size = 6),
                 legend.key.size = unit(0.1, "cm"))
 
   print(p1)
