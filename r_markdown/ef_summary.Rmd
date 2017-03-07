@@ -64,7 +64,7 @@ output:
 * Remove outliers
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
 ```
 
 # Plot summary data
@@ -75,40 +75,68 @@ output:
 
 ## CO data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^co$', pol)), "Carbon monoxide")
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^co$', pol)), "Carbon monoxide")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^co$', pol)), "Carbon monoxide")
 ```
 
 ## PM data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
 ## VOC data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Toluene')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Toluene')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Toluene')
 ```
 
 ## Carbonyl data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
 ```
 
 ## EC and OC data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 15}
-  plot_ef_summary(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_ef_bar(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```
 
 # Exploring pollutant relationships
