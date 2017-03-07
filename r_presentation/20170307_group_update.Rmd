@@ -2,7 +2,9 @@
 title: "NIH Aim 1 Data Analysis Update"
 author: "Nick Good, Kristen Fedak, and Kelsey Bilsback"
 date: "March 7, 2017"
-output: ioslides_presentation
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
 ---
 
  <style> #margins > p { margin-top: -50px;  margin-left: -50px;} </style>
