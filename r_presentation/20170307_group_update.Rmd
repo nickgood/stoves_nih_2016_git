@@ -21,9 +21,7 @@ output: ioslides_presentation
                                     mass_ef_comb = 
                                       ifelse(is.na(mass_ef),
                                              mass_c_ef, mass_ef)) %>%
-                      dplyr::mutate(energy_ef_comb =
-                                      ifelse(is.na(energy_ef), energy_c_ef,
-                                             energy_ef))
+                      dplyr::filter(mass_ef_comb > 0)
 ```
 
 ## Emissions measurement overview
@@ -60,13 +58,9 @@ output: ioslides_presentation
 
 
 
-## Data Examples
+## Data Examples {#margins}
 
 ```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
-   # fix facets (less minimual) and font size
-   # add return
-   # remove title
-   # try log scale - may have to filter out points
   plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
