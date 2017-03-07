@@ -58,21 +58,21 @@ output:
 <img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/firepower_sweep.png" width = 700>
 </div>
 
-# Data Overview
+# Data Examples
 
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
   plot_ef_box(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
   plot_ef_bar(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
 ```
 
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
@@ -80,26 +80,26 @@ output:
                    'Particulate matter', 'Carbon monoxide')
 ```
 
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
   plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
 ```
 
-## Data Examples {#margins}
-
-```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
-```
-
-# Appendix
-
-## Data Examples {#margins}
+## {#margins}
 
 ```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
                    'Particulate matter', 'Benzene')
+```
+
+# Appendix
+
+## {#margins}
+
+```{r, echo=FALSE, cache=FALSE, warning=FALSE,  fig.height=6, fig.width=9, fig.show='hold', fig.align='center'}
+  plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
 ```
 
 ## Data Examples {#margins}
