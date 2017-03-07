@@ -254,7 +254,7 @@ plot_energy_ef <- function(df, pol_name){
 
 #________________________________________________________
 # plot ef summary
-plot_ef_summary <- function(emission_factors, pol_name){
+plot_ef_bar <- function(emission_factors, pol_name){
   
   ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
                 dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
@@ -274,11 +274,35 @@ plot_ef_summary <- function(emission_factors, pol_name){
           theme_minimal() +
           ylab("") +
           xlab("") +
+          theme_bw() +
+          scale_y_log10() +
+          scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
           ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-          theme(text = element_text(size = 20),
+          theme(text = element_text(size = 14),
                 legend.position = "top",
-                axis.text.x = element_text(angle = 75, vjust = 1, hjust = 1, size=14))
+                legend.text = element_text(size = 10),
+                legend.key.size = unit(0.5, "cm"),
+                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                strip.text.x = element_text(size = 16))
 
+  print(p1)
+}
+#________________________________________________________
+#________________________________________________________
+# plot ef summary
+plot_ef_box <- function(emission_factors, pol_name){
+
+  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = mass_ef_comb, fill = fuelcat)) +   
+    geom_boxplot() +
+    theme_bw() +
+    ylab("") +
+    xlab("") +
+    theme_bw() +
+    scale_y_log10() +
+    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+    theme(text = element_text(size = 18),
+          legend.position = "none")
+  
   print(p1)
 }
 #________________________________________________________
@@ -287,33 +311,22 @@ plot_ef_summary <- function(emission_factors, pol_name){
 # plot correlation
 plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
-  ef_1 <- dplyr::group_by(ef_1, stove_fuel = paste(stove, ":", fuel)) %>%
-          dplyr::summarise(mean_ef_1 = mean(mass_ef_comb, na.rm = TRUE),
-                           min_ef_1 = min(mass_ef_comb, na.rm = TRUE),
-                           max_ef_1 = max(mass_ef_comb, na.rm = TRUE),
-                           std_ef_1 = sd(mass_ef_comb, na.rm = TRUE),
-                           stove = first(stove),
-                           fuel = first(fuel),
-                           stovecat = first(stovecat),
-                           fuelcat = first(fuelcat))
-  
-  ef_summary <- dplyr::group_by(ef_2, stove_fuel = paste(stove, ":", fuel)) %>%
-                dplyr::summarise(mean_ef_2 = mean(mass_ef_comb, na.rm = TRUE),
-                                 min_ef_2 = min(mass_ef_comb, na.rm = TRUE),
-                                 max_ef_2 = max(mass_ef_comb, na.rm = TRUE),
-                                 std_ef_2 = sd(mass_ef_comb, na.rm = TRUE)) %>%
-               dplyr::left_join(ef_1, by = "stove_fuel")
+  ef_2 <- dplyr::mutate(ef_2, mass_ef_comb_2 = mass_ef_comb)
 
-  p1 <- ggplot(ef_summary, aes(x = mean_ef_1, y = mean_ef_2, colour = stove)) + 
-          geom_errorbar(aes(ymin = min_ef_2, ymax = max_ef_2), width = .1) +
-          geom_errorbarh(aes(xmin = min_ef_1, xmax = max_ef_1, height = 0), width = .1) +
-          geom_point(size = 4) +
-          theme_minimal() +
+  ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
+                                 by = "id")
+
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
+          geom_point(size = 3) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
-          ggtitle("EF Correlation Plot") +
-          theme(text = element_text(size = 20),
-                legend.position = "right")
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
 
   print(p1)
 }
