@@ -56,33 +56,31 @@ shinyUI(fluidPage(
 #_______________________________________________________________________________
 # interactive plot tab
     tabPanel("Compare Pollutants",
-      fluidRow(column(width = 4,
-                      wellPanel(
+      fluidRow(column(width = 3,
+                      wellPanel(style = "padding: 5px;",
                       tags$strong("left axis"),
                       selectInput("y_metric", "metric:", unit_list),
                       selectInput("y_inst", "instrument:", inst_list),
                       selectInput('y_pol', 'pollutant:', choices=character(0))
                       )),
-               column(width = 4,
-                      wellPanel(
+               column(width = 3,
+                      wellPanel(style = "padding: 5px;",
                       tags$strong("bottom axis"),
                       selectInput("x_metric", "metric:", unit_list),
                       selectInput("x_inst", "instrument:", inst_list),
                       selectInput('x_pol', 'pollutant:', choices=character(0))
                       )),
-               column(width = 4,
-                      wellPanel(
+               column(width = 3,
+                      wellPanel(style = "padding: 5px;",
                       tags$strong("appearance"),
-                      selectInput('p_col', 'color by:', by_color),
-                      selectInput('p_facet', 'facet by:', by_facet),
-                      selectInput('p_group', 'group by:', by_group)
+                      selectInput('p_col', 'color by:', by_color)
                       ))
                ),
       fluidRow(column(width = 12,
         plotOutput('stove_plot'))),
 
       absolutePanel(id = "controls", class = "panel panel-default", fixed = FALSE,
-        draggable = TRUE, top = 400, left = 100, right = "auto", bottom = "auto",
+        draggable = TRUE, top = 200, left = 425, right = "auto", bottom = "auto",
                     width = "auto", height = "auto",
                     actionButton("updateButton", "update")
 

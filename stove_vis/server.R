@@ -34,10 +34,6 @@
   }else{
     p <- p + geom_point()
   }
-  # facet
-  if(input$p_facet != "none"){
-    p <- p + facet_wrap(input$p_facet, scales = "free", ncol = 3)
-  }
   # plot
   print(p)
   })
@@ -57,7 +53,6 @@
   #_______________________________________________________________________________
   # instrument selected
     inst_y <- input$y_inst
-    inst_x <- input$x_inst
   #_______________________________________________________________________________
 
   #_______________________________________________________________________________
@@ -83,7 +78,12 @@
                       "y_pol",
                        choices = pol_y)
   #_______________________________________________________________________________
-
+}) # close observe expression
+  
+#_______________________________________________________________________________
+# watch for updates to menu items
+  observe({ 
+  inst_x <- input$x_inst
   #_______________________________________________________________________________
   # update x axis pol menu based on instrument selection
     if(inst_x == "carbs"){
@@ -106,6 +106,6 @@
     updateSelectInput(session,
                       "x_pol",
                       choices = pol_x)
-    })
-}) # close observe expression
+  }) # close observe expression
+}) 
 #_______________________________________________________________________________
