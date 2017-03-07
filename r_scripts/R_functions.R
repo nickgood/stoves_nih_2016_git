@@ -282,7 +282,7 @@ plot_ef_bar <- function(emission_factors, pol_name){
                 legend.position = "top",
                 legend.text=element_text(size = 10),
                 legend.key.size = unit(0.5, "cm"),
-                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size=8))
+                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size=10))
 
   print(p1)
 }
@@ -299,7 +299,7 @@ plot_ef_box <- function(emission_factors, pol_name){
     theme_bw() +
     scale_y_log10() +
     ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-    theme(text = element_text(size = 16),
+    theme(text = element_text(size = 18),
           legend.position = "none")
   
   print(p1)
@@ -322,10 +322,10 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
           scale_x_log10() +
           theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 16),
+          theme(text = element_text(size = 18),
                 legend.position = "top",
                 legend.key.size = unit(0.1, "cm"),
-                legend.title=element_blank())
+                legend.title = element_blank())
 
   print(p1)
 }
