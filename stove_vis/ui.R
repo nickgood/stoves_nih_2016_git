@@ -45,10 +45,10 @@ shinyUI(fluidPage(
                align="left",
                tags$footer(includeText("text/acknowledge.txt"),
                            style = "padding: 10px;")))
-      ),
+    ),
 
     tabPanel("Compare Pollutants",
-        sidebarLayout(
+      sidebarLayout(
         sidebarPanel(
           selectInput('x_var', 'x axis:', colnames(df)),
           selectInput('y_var', 'y axis:', colnames(df)),
