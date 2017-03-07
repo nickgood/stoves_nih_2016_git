@@ -98,6 +98,14 @@ output:
                    'Particulate matter', 'Benzene')
 ```
 
+## Data Examples {#margins}
+
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=9, fig.height=6, fig.show='hold', fig.align='center'}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
+                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
+                   'Carbon monoxide', 'Formaldehyde')
+```
+
 ## Jetter et al., 2012 
 
 <div align = "center">

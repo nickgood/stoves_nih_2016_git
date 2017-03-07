@@ -291,16 +291,15 @@ plot_ef_bar <- function(emission_factors, pol_name){
 # plot ef summary
 plot_ef_box <- function(emission_factors, pol_name){
 
-  p1 <- ggplot(emission_factors, aes(x = stovecat, y = mass_ef_comb, fill = stovecat)) +   
+  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = mass_ef_comb, fill = fuelcat)) +   
     geom_boxplot() +
     theme_bw() +
     ylab("") +
     xlab("") +
     theme_bw() +
     scale_y_log10() +
-    scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
     ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
-    theme(text = element_text(size = 12),
+    theme(text = element_text(size = 16),
           legend.position = "none")
   
   print(p1)
@@ -316,7 +315,7 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
   ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
                                  by = "id")
 
-    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = stove)) + 
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
           geom_point(size = 3) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
