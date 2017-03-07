@@ -70,7 +70,7 @@ output: ioslides_presentation
 
 ## Data Examples
 
-```{r, echo=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
   #fix to be single test for each point
   #remove NA
   #increase font size
@@ -85,7 +85,7 @@ output: ioslides_presentation
 
 ## Data Examples
 
-```{r, echo=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
+```{r, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
   #fix to be single test for each point
   #remove NA
   #increase font size
