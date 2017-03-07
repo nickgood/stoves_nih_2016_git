@@ -1,0 +1,105 @@
+---
+title: "NIH Aim 1 Data Analysis Update"
+author: "Nick Good, Kristen Fedak, and Kelsey Bilsback"
+date: "March 7, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(echo = FALSE)
+  load("../r_files/emission_factors.Rda")
+  load("../r_files/samples.Rda")
+  source("../r_scripts/R_functions.R")
+  
+  emission_factors <- dplyr::left_join(emission_factors, 
+                                       dplyr::select(samples, id, stove, fuel,
+                                                              fuelcat, stovecat),
+                                       by = "id")
+  emission_factors <- dplyr::mutate(emission_factors, 
+                                    mass_ef_comb = 
+                                      ifelse(is.na(mass_ef),
+                                             mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_ef_comb =
+                                      ifelse(is.na(energy_ef), energy_c_ef,
+                                             energy_ef))
+```
+
+## Emissions measurement overview
+
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/emissions_overview.png" width = 800>
+</div>
+
+## Stove Type & Fuel Type Overview
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=8, fig.height=5}
+  test_list <- dplyr::filter(samples, type == "SF") %>%
+               dplyr::select(id, stove, fuel, type) %>%
+               dplyr::group_by(stove, fuel) %>%
+               dplyr::summarise(id = paste(id, collapse = ","))
+
+  ggplot(test_list, aes(y=stove, x=fuel)) + 
+    geom_tile(colour = "white", width= 0.9, height = 0.9, aes(fill = id)) +
+    scale_fill_discrete(na.value = 'grey95') +
+    theme_minimal() +
+    theme(legend.position="none") +
+    theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
+    theme(axis.text = element_text(size = 10)) +
+    xlab("") + ylab("")
+```
+
+## Firepower Sweep Protocol
+
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/firepower_sweep.png" width = 700>
+</div>
+
+## Data Examples
+
+
+
+## Data Examples
+
+```{r, echo=FALSE, cache=FALSE, fig.width=20, fig.height=16, fig.show='hold', fig.align='center'}
+   # fix facets (less minimual) and font size
+   # add return
+   # remove title
+   # try log scale - may have to filter out points
+  plot_ef_summary(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
+```
+
+## Data Examples
+
+```{r, echo=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
+  #fix to be single test for each point
+  #remove NA
+  #increase font size
+  #remove the title from the plot
+  #grid lines darker
+  #log scale
+
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^co$', pol)), 
+                   'Particulate matter', 'Carbon monoxide')
+```
+
+## Data Examples
+
+```{r, echo=FALSE, cache=FALSE, fig.width=16, fig.height=12, fig.show='hold', fig.align='center'}
+  #fix to be single test for each point
+  #remove NA
+  #increase font size
+  #remove the title from the plot
+  #grid lines darker
+  #log scale
+
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
+                   'Carbon monoxide', 'Formaldehyde')
+```
+
+## Jetter et al., 2012 
+
+<div align = "center">
+<img style="background-color:transparent; border:0px; box-shadow:none;" src = "figures/jetter_plot.png" width = 600>
+</div>
