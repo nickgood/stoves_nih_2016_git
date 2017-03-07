@@ -30,7 +30,9 @@ output:
 
 ## Emissions measurement overview
 
-![testing schematic](images/emissions_overview.png)
+```{r, out.width = "850px"}
+  knitr::include_graphics("images/emissions_overview.png")
+```
 
 ## Stove Type & Fuel Type Overview{#margins}
 
@@ -52,7 +54,10 @@ output:
 
 ## Firepower Sweep Protocol
 
-![firepower sweep schematic](images/firepower_sweep.png)
+
+```{r, out.width = "850px"}
+  knitr::include_graphics("images/firepower_sweep.png")
+```
 
 # Data Examples
 
@@ -108,4 +113,6 @@ output:
 
 ## Jetter et al., 2012 
 
-![jetter plot](figures/jetter_plot.png)
+```{r, out.width = "850px"}
+  knitr::include_graphics("images/jetter_plot.png")
+```
