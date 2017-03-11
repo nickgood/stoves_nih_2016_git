@@ -160,10 +160,10 @@ filter_times <- function(times, df){
 
 #________________________________________________________
 # plot mass based emission factors 
-plot_mass_ef <- function(df, pol_name, type){
+plot_mass_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
-    geom_point(size = 1) +
+    geom_point(size = 2) +
     facet_grid(pol ~ stovecat, scales = 'free') +
     ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
     xlab("stove type") +
@@ -199,15 +199,15 @@ plot_mass_ef <- function(df, pol_name, type){
           axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
           panel.spacing = unit(2, "lines"))
   
-  print(p1)
+  #print(p1)
   print(p2)
-  print(p3)
+  #print(p3)
 }
 #________________________________________________________
 
 #________________________________________________________
 # plot energy based emission factors 
-plot_energy_ef <- function(df, pol_name, type){
+plot_energy_ef <- function(df, pol_name){
   
   p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
     geom_point(size = 1) +
@@ -249,6 +249,86 @@ plot_energy_ef <- function(df, pol_name, type){
   print(p1)
   print(p2)
   print(p3)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_bar <- function(emission_factors, pol_name){
+  
+  ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
+                dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
+                                 min_ef = min(mass_ef_comb, na.rm = TRUE),
+                                 max_ef = max(mass_ef_comb, na.rm = TRUE),
+                                 std_ef = sd(mass_ef_comb, na.rm = TRUE),
+                                 stove = first(stove),
+                                 fuel = first(fuel),
+                                 stovecat = first(stovecat),
+                                 fuelcat = first(fuelcat))
+  
+  p1 <- ggplot(ef_summary, aes(x = stove, y = mean_ef, ymax = max_ef,
+                               ymin = min_ef, group = fuel, fill = fuel)) +   
+          geom_col(position = "dodge") +
+          geom_errorbar(position = "dodge", size = 1) +
+          facet_grid( ~ fuelcat, scales = 'free') +
+          theme_minimal() +
+          ylab("") +
+          xlab("") +
+          theme_bw() +
+          scale_y_log10() +
+          scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
+          ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+          theme(text = element_text(size = 14),
+                legend.position = "top",
+                legend.text = element_text(size = 10),
+                legend.key.size = unit(0.5, "cm"),
+                axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                strip.text.x = element_text(size = 16))
+
+  print(p1)
+}
+#________________________________________________________
+#________________________________________________________
+# plot ef summary
+plot_ef_box <- function(emission_factors, pol_name){
+
+  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = mass_ef_comb, fill = fuelcat)) +   
+    geom_boxplot() +
+    theme_bw() +
+    ylab("") +
+    xlab("") +
+    theme_bw() +
+    scale_y_log10() +
+    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+    theme(text = element_text(size = 18),
+          legend.position = "none")
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot correlation
+plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
+
+  ef_2 <- dplyr::mutate(ef_2, mass_ef_comb_2 = mass_ef_comb)
+
+  ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
+                                 by = "id")
+
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
+          geom_point(size = 3) +
+          ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
+          xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+
+  print(p1)
 }
 #________________________________________________________
 
