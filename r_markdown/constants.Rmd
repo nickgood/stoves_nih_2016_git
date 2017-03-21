@@ -1,0 +1,196 @@
+---
+title: "Constants"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+# Libraries / source files
+
+```{r setup, include=FALSE}
+  library(tidyverse)
+  library(tibble)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
+```
+
+# Hood flow
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  hood_flow <- 4  # m^3/min
+
+  save(hood_flow, file = "../r_files/hood_flow.Rda")
+```
+
+# Fuel properties
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
+                                                 "Eucalyptus",
+                                                 "Oak",
+                                                 "Coconut Charcoal",
+                                                 "Lump Hardwood (Med.)",
+                                                 "Lump Hardwood (Sm.)",
+                                                 "Eucalyptus Pellets",
+                                                 "West Slope Pellets",
+                                                 "Kerosene",
+                                                 "Liquefied Petroleum Gas"),
+                                         lhv = c(18658, 19427, 18658, 16628,
+                                                 28611, 28611, 17501, 17501,
+                                                 43100, 46100),  # kJ/kg
+                                         carbon_fraction = c(0.497733333, 0.521166667,
+                                                             0.5, 0.488, 0.840833333,
+                                                             0.840833333, 0.4852,
+                                                             0.4852, 0.82, 0.82))  # kg_C/kg_fuel
+
+  save(fuel_properties, file = "../r_files/fuel_properties.Rda")
+```
+
+# Molecular formula and weight 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "ec", "oc",
+                                                "tc", "grav", "ultrafines",
+                                                "voc_ethane", "voc_ethene",
+                                                "voc_propane", "voc_propene",
+                                                "voc_i_butane", "voc_n_butane",
+                                                "voc_ethyne", "voc_t_2_butene",
+                                                "voc_1_butene", "voc_i_butene",
+                                                "voc_c_2_butene", "voc_cyclopentane",
+                                                "voc_i_pentane", "voc_n_pentane",
+                                                "voc_t_2_pentene",
+                                                "voc_2_methyl_2_butene",
+                                                "voc_1_pentene", "voc_c_2_pentene",
+                                                "voc_cyclohexane", "voc_n_hexane",
+                                                "voc_isoprene", "voc_1_hexene",
+                                                "voc_c_2_hexene",
+                                                "voc_2_4_dimethylpentane",
+                                                "voc_methylcyclohexane",
+                                                "voc_n_heptane", "voc_benzene",
+                                                "voc_3_methylpentane",
+                                                "voc_2_3_dimethylpentane",
+                                                "voc_2_methylhexane",
+                                                "voc_3_methylhexane",
+                                                "voc_2_2_4_trimethylpentane",
+                                                "voc_2_3_4_trimethylpentane",
+                                                "voc_toluene", "voc_2_methylheptane",
+                                                "voc_3_methylheptane", "voc_n_octane",
+                                                "voc_ethylbenzene", "voc_m_p_xylene",
+                                                "voc_styrene", "voc_o_xylene",
+                                                "voc_n_no_8888ne", "voc_i_propylbenzene",
+                                                "voc_a_pinene", "voc_n_propylbenzene",
+                                                "voc_3_ethyltoluene", "voc_4_ethyltoluene",
+                                                "voc_1_3_5_trimethylbenzene",
+                                                "voc_2_ethyltoluene",
+                                                "voc_1_2_4_trimethylbenzene",
+                                                "voc_n_decane",
+                                                "voc_1_2_3_trimethylbenzene",
+                                                "voc_1_3_diethylbenzene",
+                                                "voc_1_4_diethylbenzene",
+                                                "voc_1_2_diethylbenzene",
+                                                "levoglucosan", "mannosan",
+                                                "galactosan", "galactose",
+                                                "glucose", "mannose",
+                                                "glycerol", "threitol",
+                                                "mannitol", "arabinose",
+                                                "xylose", "wsoc", "sodium",
+                                                "ammonium", "potassium",
+                                                "magnesium", "calcium",
+                                                "chloride", "nitrite",
+                                                "nitrate", "sulfate",
+                                                "formaldehyde",
+                                                "acetaldehyde",
+                                                "acetone", "acrolein",
+                                                "propionaldehyde",
+                                                "crotonaldehyde",
+                                                "butanone", "methacrolein",
+                                                "butyraldehyde", "benzaldehyde",
+                                                "isovaleraldehyde", "valeraldehyde",
+                                                "o_tolualdehyde", "m_p_tolualdehyde",
+                                                "hexaldehyde", "2_5_dimethylbenzaldehyde"),
+                                       num_c = c(1, 1, 1, NA, NA, NA, NA, NA,
+                                                 2, 2, 3, 3, 4, 4, 2,
+                                                 4, 4, 4, 4, 5, 5, 5, 5, 5,
+                                                 5, 5, 6, 6, 5, 6, 6, 7, 7,
+                                                 7, 6, 6, 7, 7, 7, 8, 8, 7,
+                                                 8, 8, 8, 8, 8, 8, 8, 9, 9,
+                                                 10, 9, 9, 9, 9, 9, 9, 10,
+                                                 9, 10, 10, 10, 6, 6, 6, 6,
+                                                 6, 6, 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                                 2, 3, 3, 3, 4, 4, 4, 4, 7,
+                                                 5, 5, 8, 8, 6, 9),
+                                       num_h = c(0, 0, 4, NA, NA, NA, NA, NA,
+                                                 6, 4, 8, 6, 10, 10,
+                                                 2, 8, 8, 8, 8, 10, 12, 12,
+                                                 10, 10, 10, 10, 12, 14, 8,
+                                                 12, 12, 16, 14, 16, 16,
+                                                 14, 16, 16, 16, 18, 18,
+                                                 8, 18, 18, 18, 10, 10,
+                                                 18, 10, 20, 12, 16, 12,
+                                                 12, 12, 12, 12, 12, 22,
+                                                 12, 14, 14, 14, 10, 10,
+                                                 10, 12, 12, 12, 8, 10,
+                                                 14, 10, 10, NA, 0, 4,
+                                                 0, 0, 0, 0, 0, 0, 0, 2,
+                                                 4, 6, 4, 6, 6, 8, 6, 8,
+                                                 6, 10, 10, 8, 8, 12, 10),
+                                       num_o = c(2, 1, 0, NA, NA, NA,
+                                                 NA, NA, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 5, 5, 5, 6, 6, 6,
+                                                 3, 4, 6, 5, 5, NA, 0,
+                                                 0, 0, 0, 0, 0, 2, 3, 4,
+                                                 1, 1, 1, 1, 1, 1, 1, 1,
+                                                 1, 1, 1, 1, 1, 1, 1, 1),
+                                       ions = c(NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, "Na",
+                                                 "N", "K", "Mg", "Ca", "Cl",
+                                                 "N", "N", "S", NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA))
+
+  pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties)) %>%
+                    dplyr::select(pol, mw, num_c)
+
+  mw_c <- 12.0106
+
+  save(pol_properties, mw_c, file = "../r_files/pol_properties.Rda")
+```
+
+# Instrument specific
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  filter_area <- 11.79  # cm^2
+  voc_flow <- 0.0135  # L/min
+  smps_dlogdp <- 0.015625355  # dlogDp
+
+  save(filter_area, voc_flow, smps_dlogdp, file = "../r_files/inst_constants.Rda")
+```
+
+# Thermodynamic
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  hfg_water <- 2257  # J/g
+  c_water <- 4.186  # J/g C
+  R <- 8.314  # J/K mol
+
+  save(hfg_water, c_water, R, file = "../r_files/calc_constants.Rda")
+```

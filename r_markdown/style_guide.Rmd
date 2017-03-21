@@ -1,0 +1,232 @@
+---
+author: "Nicholas Good"
+date: "1/11/2017"
+title: "Style Guide"
+output: html_document
+---
+
+The purpose of this guide is to facilitate R programming consistancy in the project. This guide is based on [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml).
+
+## Assignment
+
+Use `<-` not `=`.
+
+## Brackets
+
+* curely brackets `{` should open on an existing line and close own a new line
+
+```
+ # good
+  if(a < b){
+ 
+  }else{
+
+  }
+```
+
+* round brackets should open and close immediately before or after the code they enclose 
+
+## Colors
+
+* Plots colored by `ok`, `maybe` and `bad` should use:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', eval=FALSE}
+  scale_colour_manual(values = c("ok" = "mediumaquamarine",
+                                 "maybe" = "mediumorchid",
+                                 "bad" = "mistyrose4"))
+```
+
+## Comments
+
+Comments should be in lower case.
+
+Comment according to the file type `.R` or `.Rmd`.
+
+### Comments .R files
+
+Try to describe the purpose of the code, avoid saying what the code is doing when it is obvious. 
+
+Functions in `.R` files should begin and end with `#_____` at least as wide as the longest line of code. The function header should also include a`# consise description of purpose`, `# other information` and `# units` (no idention).
+
+```
+#____________________________________________
+# load and organize smps data
+# accepts data in tsi row-wise .csv format
+# units embeded in file header
+function_name <- function(){
+
+}
+#___________________________________________
+```
+
+Full line comments lines should begin with one space, a # and one space.
+
+Comments after code should be preceded by two spaces, a # and one space.
+
+```
+  ug <- conc * flow  # convert to micrograms
+  
+ # output data in wide format
+  out <- dplyr::select(var_1, var_2,) %>%
+         tidyr::spread(var_1, var_2)
+```
+
+### Comments .Rmd files
+
+Try to describe the code in the narrative text. Use inline comments sparely to clarify specific steps in the code.
+
+## Empty lines
+
+Add a line between lines with the following exceptions:
+
+* below a comment line
+* piped code
+* repeated function call
+* within a function call
+* before a curely bracket
+
+```
+ # good
+# comment
+function(){
+
+  load(data_1)
+  load(data_2)
+ 
+  ug <- data_1$flow * data_1$mass
+ 
+  kg_per_kw <- ug / data_2$kw
+ 
+  out <- dplyr::select(data_1, var_1, var_2) %>%
+        dplyr::mutate(new_var = var_1 * var_2)
+}
+
+ # bad
+# comment
+
+function(){
+ load(data_1)
+
+ load(data_2)
+
+ ug <- data_1$flow * data_1$mass
+ kg_per_kw <- ug / data_2$kw
+ out <- dplyr::select(data_1, var_1, var_2) %>%
+
+        dplyr::mutate(new_var = var_1 * var_2)
+
+}
+```
+
+## Function definitions
+
+List arguments without default values should come first. Break line after comma if required.
+
+```
+# good
+function_name <- function(val_1, val_2,
+                          plot = TRUE)
+                  
+# bad
+function_name <- function(val_1 = FALSE, val_2, plot =
+                          TRUE)                      
+```
+
+## Indents
+
+* Indent two spaces, except for function delcarations (incl. `}`) and function header and footer comments (never tab)
+
+```
+# good
+function(var){
+  
+  new_var <- var*2
+  
+  return(new_var)
+}
+
+```
+
+* align multiline functions and pipes with comparible code on the line above
+
+```
+ # good
+  out <- dplyr::select(in, var_1, va_2) %>%
+         dplyr::filter(var_1 > 10,
+                       var_2 > 50)
+```
+
+## Libraries
+
+Your first preference should be to use `tidyverse` packages. The current project `2017-01-11` contains legacy code e.g. `subset`, `merge`, `levels` etc which will be phased out.
+
+## Line length
+
+* Limit to 80 characters where possible
+
+## Names
+
+### Folder names
+
+Folder names should comprise lowercase characters `[a-z]` with `_` as the separator. Folders containing `R` code and `R` output should be prefixed by `r_`. Folder names should concisely describe their contents.
+
+### File names
+
+File names should comprise lowercase characters `[a-z]` with `_` as the separator. File names should concisely describe their contents/purpose and end with the appropriate file extensione e.g. `.R`.
+
+```
+ # good
+  style_guide.Rmd
+  load_data.R
+
+ # bad
+  Test-A4-v7-finalv6.r
+  some_code.r
+```
+
+### Object names
+
+Object name should comprise lowercase alpha numeric characters `[a-z] [0-9]` with `_` as the separator. Object names should concisely describe their contents/purpose. 
+
+* Function names should describe what the function does (verbs).
+
+* Variable names should describe what the variable contains (nouns).
+
+* Avoid using names of existing functions and variables
+
+```
+ # good
+  pm25_data
+  split_date_id_col
+
+ # bad
+  df (used in portion of existing code!)
+  Run.Analysis
+```
+
+## Namespace
+
+* Declare the namespace for non-base function
+
+```
+ # good
+  dplyr::select(...)
+  
+ # bad
+  lmer(...)
+```
+
+## Spaces
+
+Place spaces around binary operators (e.g. =, +, -, <-)
+
+```
+# good
+ mass <- conc * vol
+```
+
+No spaces around brackets
+
+```
+# good
+ if(a > b){...
+```

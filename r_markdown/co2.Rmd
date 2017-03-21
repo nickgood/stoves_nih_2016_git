@@ -1,0 +1,250 @@
+---
+title: "$CO_{2}$ data analysis"
+author: "Nicholas Good"
+date: "11/20/2016"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(forcats)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")  # sample info
+```
+
+# Load data
+
+The $CO_{2}$ data is loaded from three files. There are separate files for the mixing ratios recorded in the lab and the sample. The third file contains raw voltages for both the lab and sample $CO_{2}$ measurements. A periodic calibration was performed for the voltage measurements which must be applied in the post-analysis. The data recorded as a mixing ratio has the calibration already applied.  
+
+## Load $CO_{2}$ lab data mixing ratios
+
+Load $CO_{2}$ mixing ratios (ppm) in the lab.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/co2_lab.Rda")  # lab co2 mixing ratio
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_lab, 2)
+```
+
+Remove superfluous variables and add a location variable.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_lab <- dplyr::select(co2_lab, id, datetime, date, time, co2) %>%
+             dplyr::mutate(loc = "lab")  %>%
+             dplyr::rename(ppm = co2)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_lab, 2)
+```
+
+## Load $CO_{2}$ sample mixing ratios
+
+Load $CO_{2}$ mixing ratios (ppm) in the in the sample.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/co2_sample.Rda")  # sample co2 mixing ratio
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_sample, 2)
+```
+
+Remove superfluous variables and add a location variable.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_sample <- dplyr::select(co2_sample, id, datetime, date, time, co2) %>%
+                dplyr::mutate(loc = "sample") %>%
+                dplyr::rename(ppm = co2)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_sample, 2)
+```
+
+## Load lab and sample mixing ratios voltages files
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/co2_lab_sample.Rda")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_lab_sample, 2)
+```
+
+Convert to longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_volts <- dplyr::select(co2_lab_sample, id, datetime, date, time, lab, sample) %>%
+               tidyr::gather(loc, val, c(lab,sample))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_volts, 2)
+```
+
+## Calibration data
+
+Load calibration file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/cal_2.Rda")  # calibration data
+```
+
+Extract calibration data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_lab_cal <- tidy_date(cal_2, "^sensor_1", "sensor_1_") %>%
+                 dplyr::mutate(loc = as.factor("lab"))
+  
+  co2_sample_cal <- tidy_date(cal_2, "^sensor_2", "sensor_2_") %>%
+                    dplyr::mutate(loc = as.factor("sample"))
+   
+  co2_cal <- rbind(co2_lab_cal, co2_sample_cal)  # combine lab and sample data
+  
+  co2_cal <- split_co2_cal(co2_cal)              # reorganize
+```
+
+## Extract span and remove dates with no calibration data and add calibration date
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_cal_lab <- dplyr::filter(co2_cal,
+                         type == "std" & pol == "co2" & !is.na(value) & loc == "lab")
+  
+  co2_volts_lab <- add_caldate(dplyr::filter(co2_volts, loc == "lab"), co2_cal_lab)
+  
+  co2_cal_sample <- dplyr::filter(co2_cal,
+                           type == "std" & pol == "co2" & !is.na(value) & loc == "sample")
+  
+  co2_volts_sample <- add_caldate(dplyr::filter(co2_volts,
+                                         loc == "sample"), co2_cal_sample)
+  
+  co2_volts <- rbind(co2_volts_lab, co2_volts_sample)
+  
+  co2_cal <- rbind(co2_cal_lab, co2_cal_sample)
+```
+
+## Merge and apply calibration
+
+Merge voltage data and calibration span, then apply calibration.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_volts <- dplyr::left_join(co2_volts, 
+               dplyr::select(co2_cal, date, pol, loc, value),
+                       by = c("cal_date" = "date", "loc" = "loc")) %>%
+               dplyr::rename(span = value, volts = val) %>%
+               dplyr::mutate(ppm = volts*span/5) %>%
+               dplyr::select(-cal_date, -volts, -span, -pol)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co2_volts, 2)
+```
+
+## Combine data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_merged <- tibble::as_tibble(rbind(co2_lab, co2_sample, co2_volts)) %>%
+                dplyr::mutate(loc = as.factor(loc))
+```
+
+## Flip lab and sample
+
+* Tests where the lab line was connected to the sample and visa versa
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flipped <- dplyr::filter(co2_merged, id == "23B" | id == "G8" | id == "G3") %>%
+             dplyr::mutate(loc = ifelse(loc == "sample","lab", "sample"))
+  
+  unflipped <- dplyr::filter(co2_merged, id != "23B" & id != "G8" & id != "G3")
+    
+  co2_merged <- rbind(flipped, unflipped)
+```
+
+## Plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+  ggplot(co2_merged,  aes(datetime, ppm, colour = loc)) +
+         geom_line() +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         xlab("") + ylab("ppm")
+```
+
+## QC
+
+Load notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/notes.Rda")
+  
+  notes <- dplyr::filter(notes, grepl("co2|all", notes$inst) == TRUE) %>%
+           dplyr::select(-date)
+```
+
+Set one flag per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+Merge with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_merged <- dplyr::left_join(co2_merged, flags, by = "id") %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+Additional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_merged$qc[co2_merged$id == "G3"] <- "maybe"
+
+  co2_merged$qc[co2_merged$id == "7B"] <- "maybe"
+  
+  co2_merged$qc[co2_merged$id == "21C"] <- "maybe"
+  
+  co2_merged$qc[co2_merged$id == "13A"] <- "maybe"
+  
+  co2_merged$qc[co2_merged$id == "17A"] <- "bad"
+```
+
+## Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(co2_merged, file="../r_files/co2_merged.Rda")
+```
+
+## Plot QC
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+  ggplot(co2_merged,  aes(datetime, ppm, colour = qc, group = loc)) +
+         geom_line() +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         xlab("") + ylab("ppm") +
+         theme(legend.position = "top")
+```
+
+## Data summary
+
+$CO_{2}$ was measured during `r length(unique(co2_merged$id))` experiments between `r min(co2_merged$date, na.rm = TRUE)` and `r max(co2_merged$date, na.rm = TRUE)`. There is no $CO_{2}$ data for tests: `r setdiff(as.character(samples$id), as.character(co2_merged$id))`.
+
+$CO2$ data is expected to be missing for: 
+
+All "G" tests: dilution system was not run during backgrounds.
+
+17C: test date 4/1/2016. Appears, based on timing of tests and the dilution file for the study day, that we just were not logging dilution C02 data on this day even though the system was runnng. Can probably apply the dilution ratio from other tests of the day to this test.

@@ -1,0 +1,273 @@
+---
+title: "ecoc background analysis"
+author: "Kelsey Bilsback; Nicholas Good"
+date: "1/5/2017"
+output: html_document
+---
+
+# Setup
+
+1. Create working directory
+2. Download lastest .Rda files folder from server (r_files) and place in working directory
+3. Create RStudio project in working directory
+
+# Libraries
+
+The dataset has been optimized to work with `tidyverse`. It is strongly recommended you use `tidyverse` packages for data manipulation and plotting.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
+# Load data
+
+* First we'll load the sample info data.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda") 
+  load("../r_files/data_1.Rda") 
+```
+
+* Next we'll load the pollutnant data we're interested in. In this case we're going to look at the VOCs:
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/ecoc_merged.Rda")
+```
+
+## Convert to ecoc to longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  names(ecoc_merged)[names(ecoc_merged) == 'date'] <- 'analysis_date'
+  ecoc_merged <- tidyr::gather(ecoc_merged, "pol", "val", one_of("ec_ug_sq_cm","oc_ug_sq_cm"))
+```
+
+# Extract all ecoc tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ec <- filter(ecoc_merged, grepl("^[0-9]|^G", id) == TRUE, pol == "ec_ug_sq_cm")
+  oc <- filter(ecoc_merged, grepl("^[0-9]|^G", id) == TRUE, pol == "oc_ug_sq_cm")
+```
+
+# Filter out test ec artifact filters and correct oc filters for artifact
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ec <- filter(ec, cassette == "E")    
+  oc_e <- filter(oc, cassette == "E")
+  oc_a <- filter(oc, cassette == "A")
+  oc <- dplyr::left_join(oc_e, oc_a, by = "id")
+  oc <- filter(oc, !is.na(cassette.y))
+  oc$delta_oc <- oc$val.x - oc$val.y
+```
+
+# Merge and calculate
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec <- left_join(ec, select(samples, id, fuel, stove, date), by = "id")
+  oc <- left_join(oc, select(samples, id, fuel, stove, date), by = "id")
+  ec <- left_join(ec, select(data_1, id, time_start_cart_white_orange, time_end_cart_white_orange), by = "id")
+  oc <- left_join(oc, select(data_1, id, time_start_cart_white_orange, time_end_cart_white_orange), by = "id")
+  names(ec)[names(ec) == 'time_start_cart_white_orange'] <- 'sample_start'
+  names(oc)[names(oc) == 'time_start_cart_white_orange'] <- 'sample_start'
+  names(ec)[names(ec) == 'time_end_cart_white_orange'] <- 'sample_end'
+  names(oc)[names(oc) == 'time_end_cart_white_orange'] <- 'sample_end'
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ec$test_length <- ec$sample_end - ec$sample_start
+  ec$ec_rate <- ec$val / (ec$test_length /(60*60))
+  oc$test_length <- oc$sample_end - oc$sample_start
+  oc$oc_rate <- oc$delta_oc / (oc$test_length /(60*60))
+```
+
+# Extract background tests and ecoc data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ec_bg <- filter(ec, grepl("^G", id) == TRUE, pol == "ec_ug_sq_cm")
+  oc_bg <- filter(oc, grepl("^G", id) == TRUE, pol.x == "oc_ug_sq_cm")
+```
+
+
+## Plot background ecoc rate (units in ug per sq cm per hour)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ggplot(ec_bg, aes(x=ec_rate)) +
+    geom_histogram(alpha = 0.4) +
+    theme_minimal() + ggtitle("EC rate")
+
+  ggplot(oc_bg, aes(x=oc_rate)) +
+    geom_histogram(alpha = 0.4) +
+    theme_minimal() + ggtitle("OC rate")
+```
+
+## Plot background ecoc levels by date
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ggplot(ec_bg, aes(date, ec_rate, color = qc)) +
+    geom_point() +
+    theme_minimal()
+  ggplot(oc_bg, aes(date, oc_rate, color = qc.x)) +
+    geom_point() +
+    theme_minimal() + ggtitle("E cassette qaqc")
+  ggplot(oc_bg, aes(date, oc_rate, color = qc.y)) +
+    geom_point() +
+    theme_minimal() + ggtitle("A cassette qaqc")
+```
+
+## Plot background ecoc levels by time of day
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ggplot(ec_bg, aes(sample_start, ec_rate, color = qc)) +
+    geom_point() +
+    theme_minimal()  + ggtitle("EC rate")
+  ggplot(oc_bg, aes(sample_start, oc_rate, color = qc.x)) +
+    geom_point() +
+    theme_minimal() + ggtitle("OC rate (E cassette qaqc)")
+  ggplot(oc_bg, aes(sample_start, oc_rate, color = qc.y)) +
+    geom_point() +
+    theme_minimal() + ggtitle("OC rate (A cassette qaqc)")
+```
+
+
+## Remove bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ec_bg <- filter(ec_bg, qc == "ok")
+  oc_bg <- filter(oc_bg, qc.x == "ok" & qc.y == "ok")
+  ec <- filter(ec, qc == "ok")
+  oc <- filter(oc, qc.x == "ok" & qc.y == "ok")
+``` 
+
+## Negative value summary
+
+`r sum(ec_bg$ec_rate < 0)` of the background EC measurements are negative and `r sum(oc_bg$oc_rate < 0)` of the background OC measurements are negative. 
+
+`r sum(ec$ec_rate[ec$type == "test"] < 0, na.rm = TRUE)` of the test EC measurements are negative and `r sum(oc$oc_rate[oc$type.x == "test"] < 0, na.rm = TRUE)` of the test OC measurements are negative. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ 
+print_ec_neg <- dplyr::select(ec, id, ec_rate, stove, fuel, qc) %>%
+             filter(ec_rate < 0) %>%
+            rename("Test ID" = id, "EC rate" = ec_rate, "Stove" = stove, "Fuel" = fuel, "QA/QC" = qc)
+kable(print_ec_neg, align = 'c')
+
+print_oc_neg <- dplyr::select(oc, id, oc_rate, stove, fuel, qc.x, qc.y) %>%
+             filter(oc_rate < 0)  %>%
+            rename("Test ID" = id, "OC rate" = oc_rate, "Stove" = stove, "Fuel" = fuel,  "QA/QC - E" = qc.x,  "QA/QC - A" = qc.y)
+kable(print_oc_neg, align = 'c')
+
+```
+
+## Remove negative values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ec_bg <- filter(ec_bg, ec_rate > 0)
+  oc_bg <- filter(oc_bg, oc_rate > 0)
+  
+  ec <- filter(ec, ec_rate > 0)
+  oc <- filter(oc, oc_rate > 0)
+``` 
+
+
+## Plot (all) stove/fuel test and background distributions
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ggplot(ec, aes(x=ec_rate, y=..count../sum(..count..), fill = type)) +
+    geom_density(alpha = 0.4) +
+    theme_minimal() + ggtitle("EC rate") + ylab("normalized counts") +
+    scale_x_log10()
+  ggplot(oc, aes(x=oc_rate, y=..count../sum(..count..), fill = type.x)) +
+    geom_density(alpha = 0.4) +
+    theme_minimal() + ggtitle("OC rate") + ylab("normalized counts") +
+    scale_x_log10()
+``` 
+
+## Plot a stacked histogram of each fuel type and background distributions
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ggplot(ec, aes(x=ec_rate, y=..count.., fill = fuel)) +
+    geom_density(position = "stack") +
+    theme_minimal() + ggtitle("EC rate") + ylab("counts") +
+    scale_x_log10()
+  ggplot(oc, aes(x=oc_rate, y=..count.., fill = fuel)) +
+    geom_density(position = "stack") +
+    theme_minimal() + ggtitle("OC rate") + ylab("counts") +
+    scale_x_log10()
+``` 
+
+## Plot a stacked histogram of each stove type and background distributions
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ggplot(ec, aes(x=ec_rate, y=..count.., fill = stove)) +
+    geom_density(position = "stack") +
+    theme_minimal() + ggtitle("EC rate") + ylab("counts") +
+    scale_x_log10()
+  ggplot(oc, aes(x=oc_rate, y=..count.., fill = stove)) +
+    geom_density(position = "stack") +
+    theme_minimal() + ggtitle("OC rate") + ylab("counts") +
+    scale_x_log10()
+``` 
+
+## Summary Descriptive Statistics 
+
+The mean ec background emissions rate is `r round(mean(ec_bg$ec_rate), 3)` [in units of ug per sq cm per hour] (range: `r round(min(ec_bg$ec_rate), 3)` to `r round(max(ec_bg$ec_rate), 3)`). The mean oc background emissions rate is `r round(mean(oc_bg$oc_rate), 3)` [in units of ug per sq cm per hour] (range: `r round(min(oc_bg$oc_rate), 3)` to `r round(max(oc_bg$oc_rate), 3)`).   
+
+The average test EC emissions rate  is `r round(mean(ec$ec_rate[ec$type == "test"], na.rm = TRUE), 3)`; range `r round(min(ec$ec_rate[ec$type == "test"], na.rm = TRUE), 3)` to `r round(max(ec$ec_rate[ec$type == "test"], na.rm = TRUE), 3)`. The average test OC emissions rate  is `r round(mean(oc$oc_rate[oc$type.x == "test"], na.rm = TRUE), 3)`; range `r round(min(oc$oc_rate[oc$type.x == "test"], na.rm = TRUE), 3)` to `r round(max(oc$oc_rate[oc$type.x == "test"], na.rm = TRUE), 3)`. 
+
+`r sum(ec$ec_rate[ec$type == "test"] < mean(ec_bg$ec_rate), na.rm = TRUE)` of `r sum(ec$ec_rate[ec$type == "test"], na.rm = TRUE)` EC test measurements are less than the mean background rate and `r sum(oc$oc_rate[oc$type.x == "test"] < mean(oc_bg$oc_rate), na.rm = TRUE)` of `r sum(oc$oc_rate[oc$type.x == "test"], na.rm = TRUE)` OC test measurements are less than the mean background rate. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ 
+print_ec_low <- filter(ec, type == "test") 
+print_ec_low <- dplyr::select(print_ec_low, id, ec_rate, stove, fuel, qc) %>%
+            filter(ec_rate < mean(ec_bg$ec_rate)) %>%
+            rename("Test ID" = id, "EC rate" = ec_rate, "Stove" = stove, "Fuel" = fuel, "QA/QC" = qc)
+kable(print_ec_low, align = 'c')
+
+print_oc_low <- filter(oc, type.x == "test") 
+print_oc_low <- dplyr::select(print_oc_low, id, oc_rate, stove, fuel, qc.x, qc.y) %>%
+               filter(oc_rate < mean(oc_bg$oc_rate))  %>%
+              rename("Test ID" = id, "OC rate" = oc_rate, "Stove" = stove, "Fuel" = fuel,  "QA/QC - E" = qc.x,  "QA/QC - A" = qc.y)
+kable(print_oc_low, align = 'c')
+
+```
+
+`r sum(ec$ec_rate[ec$type == "test"] < mean(ec_bg$ec_rate)*3, na.rm = TRUE)` of `r sum(ec$type == "test", na.rm = TRUE)` EC test measurements are less than the three times the mean background rate and `r sum(oc$oc_rate[oc$type.x == "test"] < mean(oc_bg$oc_rate)*3, na.rm = TRUE)` of `r sum(oc$type.x == "test", na.rm = TRUE)` OC test measurements are less than three times the mean background rate. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+print_ec_low_2 <- filter(ec, type == "test") 
+print_ec_low_2 <- dplyr::select(print_ec_low_2, id, ec_rate, stove, fuel, qc) %>%
+            filter(ec_rate < mean(ec_bg$ec_rate)*3) %>%
+            rename("Test ID" = id, "EC rate" = ec_rate, "Stove" = stove, "Fuel" = fuel, "QA/QC" = qc)
+kable(print_ec_low_2, align = 'c')
+
+print_oc_low_2 <- filter(oc, type.x == "test") 
+print_oc_low_2 <- dplyr::select(print_oc_low_2, id, oc_rate, stove, fuel, qc.x, qc.y) %>%
+               filter(oc_rate < mean(oc_bg$oc_rate)*3)  %>%
+              rename("Test ID" = id, "OC rate" = oc_rate, "Stove" = stove, "Fuel" = fuel,  "QA/QC - E" = qc.x,  "QA/QC - A" = qc.y)
+kable(print_oc_low_2, align = 'c')
+
+```
+
+## Bonus EC/OC ratio test results 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  ecoc <- left_join(ec, oc, by = "id")
+  ecoc$ratio <- ecoc$ec_rate / ecoc$oc_rate
+  ecoc$ratio[37] <- NA # major outlier
+  ecoc <- filter(ecoc, fuel.x != "Background") %>%
+          filter(fuel.y != "Background")
+``` 
+
+## Plot ECOC ratio by stove an fuel type
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  p <- ggplot(ecoc, aes(x=stove.x, y = ratio, color = stove.x), na.rm = TRUE) +
+    geom_point() +
+    theme_minimal() + xlab("ec/oc ratio") + ylab("stove type")
+  p + theme(axis.text.x=element_blank())
+  p <- ggplot(ecoc, aes(x=fuel.x, y = ratio, color = fuel.x), na.rm = TRUE) +
+    geom_point() +
+    theme_minimal() + ylab("ec/oc ratio") + xlab("fuel type")
+    p + theme(axis.text.x=element_blank())
+``` 
