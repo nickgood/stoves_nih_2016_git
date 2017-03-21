@@ -1,0 +1,1 @@
+Welcome to STOVES study web app. The STOVES study compares the emissions of air pollutants from multiple stove types. The app provides information on the stove and fuel types studied and an interactive data plotter to compare emissions.
