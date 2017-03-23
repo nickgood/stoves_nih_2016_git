@@ -81,8 +81,40 @@ output:
                         dplyr::group_by(id) %>%
                         dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
   emission_factors_w <- emission_factors_w[-2]
-  
-  ef_corr <- round(cor(emission_factors_w),2)
+  emission_factors_w <- emission_factors_w[-1]
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ef_corr <- round(cor(emission_factors_w, use = "na.or.complete"),2)
+  dd <- as.dist((1 - ef_corr) / 2)
+  hc <- hclust(dd)
+  ef_corr <-ef_corr[hc$order, hc$order]
+  ef_corr[lower.tri(ef_corr)] <- NA
+  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
+    geom_tile(color = "white")+
+    geom_text(color = "black", size = 4) +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+    midpoint = 0, limit = c(-1,1), space = "Lab", 
+    name="Pearson\nCorrelation") +
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1),
+          axis.text.y = element_text(size = 12),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          axis.ticks = element_blank(),
+          legend.justification = c(1, 0),
+          legend.position = c(0.4, 0.8),
+          legend.direction = "horizontal") + 
+          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+                title.position = "top", title.hjust = 0.5)) +
+    coord_fixed()
 ```
 
 ## Correlations by stove type
@@ -98,8 +130,6 @@ output:
                    dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
                    'Carbon monoxide', 'Formaldehyde')
 ```
-
-## CO vs acetaldehyde
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
