@@ -340,12 +340,18 @@ output:
   emission_factors_w <- emission_factors_w[-1]
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 40}
-  ggduo(
-        emission_factors_w,
-        mapping = aes(color = fuelcat),
-        types = list(continuous = wrap(lm_with_cor, alpha = 0.25)),
-        showStrips = FALSE) +
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 20}
+  
+  ggpairs(
+        emission_factors_w, 1:10,
+        mapping = aes(color = fuelcat, alpha = 0.4),
+        types = list(continuous = "smooth_lm"),
+        lower = list(continuous = add_smooth)) +
     theme_bw() +
-    theme(legend.position = "bottom") 
+    theme(legend.position = "top",
+          axis.text.y = element_text(size = 16),
+          axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
+          strip.text.x = element_text(size = 16),
+          strip.text.y = element_text(size = 16))
+    
 ```
