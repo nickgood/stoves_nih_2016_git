@@ -10,42 +10,30 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
   library(forcats)
+  library(reshape2)
 ```
 
-# Load and tidy data
-
-* Load data and meta data
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load data and meta data
   load("../r_files/emission_factors.Rda")
   load("../r_files/samples.Rda")
 ```
 
-* Load functions
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load functions
   source("../r_scripts/R_functions.R")
 ```
 
-* Output emissions factors column names 
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(emission_factors)
-```
-
-* Add stove/fuel information
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Add stove/fuel information
   emission_factors <- dplyr::left_join(emission_factors, 
                                        dplyr::select(samples, id, stove, fuel,
                                                               fuelcat, stovecat),
                                        by = "id")
 ```
 
-* Use carbon balance method for missing emissions factors
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Better variable name?
+  # Use carbon balance method for missing emissions factors
   emission_factors <- dplyr::mutate(emission_factors, 
                                     mass_ef_comb = 
                                       ifelse(is.na(mass_ef),
@@ -55,15 +43,13 @@ output:
                                              energy_ef))
 ```
 
-* Remove outliers
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Remove outliers
   emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
 ```
 
-* Select a subset of pollutants
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Select a subset of pollutants
   emission_factors <- dplyr::filter(emission_factors,
                                     grepl("^grav$|^co$|^formaldehyde$|^acetaldehyde$|
                                           |^levoglucosan$|^voc_benzene$|^voc_toluene$|
@@ -91,18 +77,18 @@ output:
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)
 ```
 
-## Overall pollutant correlation heat map
+## Overall pollutant correlation map
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
     geom_tile(color = "white")+
-    geom_text(color = "black", size = 4) +
+    geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
     name="Pearson\nCorrelation") +
     theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1),
-          axis.text.y = element_text(size = 12),
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
+          axis.text.y = element_text(size = 18),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
           panel.grid.major = element_blank(),
@@ -112,8 +98,8 @@ output:
           legend.justification = c(1, 0),
           legend.position = c(0.4, 0.8),
           legend.direction = "horizontal", 
-          legend.title = element_text(size = 12),
-          legend.text = element_text(size = 12)) +
+          legend.title = element_text(size = 18),
+          legend.text = element_text(size = 18)) +
           guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
                 title.position = "top", title.hjust = 0.5)) +
     coord_fixed()
