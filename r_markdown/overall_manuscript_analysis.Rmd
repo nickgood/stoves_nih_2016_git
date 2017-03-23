@@ -70,8 +70,6 @@ output:
                                           |^oc$|^ec$|^sodium$", pol))
 ```
 
-## Pollutant correlation heat map
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
 
@@ -93,6 +91,8 @@ output:
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)
 ```
 
+## Overall pollutant correlation heat map
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
     geom_tile(color = "white")+
@@ -111,7 +111,9 @@ output:
           axis.ticks = element_blank(),
           legend.justification = c(1, 0),
           legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal") + 
+          legend.direction = "horizontal", 
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 12)) +
           guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
                 title.position = "top", title.hjust = 0.5)) +
     coord_fixed()
