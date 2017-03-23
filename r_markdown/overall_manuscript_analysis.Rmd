@@ -1,0 +1,143 @@
+---
+title: "Overall Manuscript Analysis"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(forcats)
+```
+
+# Load and tidy data
+
+* Load data and meta data
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/emission_factors.Rda")
+  load("../r_files/samples.Rda")
+```
+
+* Load functions
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
+```
+
+* Output emissions factors column names 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(emission_factors)
+```
+
+* Add stove/fuel information
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::left_join(emission_factors, 
+                                       dplyr::select(samples, id, stove, fuel,
+                                                              fuelcat, stovecat),
+                                       by = "id")
+```
+
+* Use carbon balance method for missing emissions factors
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Better variable name?
+  emission_factors <- dplyr::mutate(emission_factors, 
+                                    mass_ef_comb = 
+                                      ifelse(is.na(mass_ef),
+                                             mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_ef_comb =
+                                      ifelse(is.na(energy_ef), energy_c_ef,
+                                             energy_ef))
+```
+
+* Remove outliers
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
+```
+
+* Select a subset of pollutants
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- dplyr::filter(emission_factors,
+                                    grepl("^grav$|^co$|^formaldehyde$|^acetaldehyde$|
+                                          |^levoglucosan$|^voc_benzene$|^voc_toluene$|
+                                          |^oc$|^ec$|^sodium$", pol))
+```
+
+# Pollutant correlation heat map
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  cormap <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
+            tidyr::spread(id, pol, mass_ef_comb)
+  round(cor(emission_factors),2)
+```
+
+## CO vs formaldehyde
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
+                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
+                   'Carbon monoxide', 'Formaldehyde')
+```
+
+## PM vs formaldehyde
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
+                   'Carbon monoxide', 'Formaldehyde')
+```
+
+## CO vs acetaldehyde
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
+                   dplyr::filter(emission_factors, grepl('^acetaldehyde$', pol)), 
+                   'Carbon monoxide', 'Acetaldehyde')
+```
+
+## PM vs acetaldehyde
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^acetaldehyde$', pol)), 
+                   'Carbon monoxide', 'Acetaldehyde')
+```
+
+## CO vs benzene
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
+                   dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
+                   'Carbon monoxide', 'Benzene')
+```
+
+## PM vs benzene
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
+                   'Particulate matter', 'Benzene')
+```
+
+## CO vs black carbon
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
+                   dplyr::filter(emission_factors, grepl('^ec$', pol)), 
+                   'Carbon monoxide', 'Black carbon')
+```
+
+## PM vs benzene
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
+                   dplyr::filter(emission_factors, grepl('^ec$', pol)), 
+                   'Particulate matter', 'Black carbon')
+```
