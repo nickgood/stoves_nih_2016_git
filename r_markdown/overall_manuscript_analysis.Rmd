@@ -70,23 +70,28 @@ output:
                                           |^oc$|^ec$|^sodium$", pol))
 ```
 
-# Pollutant correlation heat map
+## Pollutant correlation heat map
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  cormap <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
-            tidyr::spread(id, pol, mass_ef_comb)
-  round(cor(emission_factors),2)
+  emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
+
+  emission_factors_w$row <- 1:nrow(emission_factors_w)
+
+  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
+                        dplyr::group_by(id) %>%
+                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
+  emission_factors_w <- emission_factors_w[-2]
+  
+  ef_corr <- round(cor(emission_factors_w),2)
 ```
 
-## CO vs formaldehyde
+## Correlations by stove type
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
                    dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
                    'Carbon monoxide', 'Formaldehyde')
 ```
-
-## PM vs formaldehyde
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
@@ -102,15 +107,11 @@ output:
                    'Carbon monoxide', 'Acetaldehyde')
 ```
 
-## PM vs acetaldehyde
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^acetaldehyde$', pol)), 
                    'Carbon monoxide', 'Acetaldehyde')
 ```
-
-## CO vs benzene
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
@@ -118,23 +119,17 @@ output:
                    'Carbon monoxide', 'Benzene')
 ```
 
-## PM vs benzene
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
                    dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
                    'Particulate matter', 'Benzene')
 ```
 
-## CO vs black carbon
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
                    dplyr::filter(emission_factors, grepl('^ec$', pol)), 
                    'Carbon monoxide', 'Black carbon')
 ```
-
-## PM vs benzene
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
   plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
