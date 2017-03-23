@@ -318,7 +318,7 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
     p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
           geom_point(size = 3) +
-          geom_smooth(method = "lm") +
+          geom_smooth(method = "rlm") +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
           scale_x_log10() +
@@ -331,6 +331,26 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
   print(p1)
 }
+#________________________________________________________
+
+#________________________________________________________
+# add citation
+lm_with_cor <- function(data, mapping, ..., method = "pearson") {
+    x <- data[[deparse(mapping$x)]]
+    y <- data[[deparse(mapping$y)]]
+    cor <- cor(x, y, method = method)
+    ggally_smooth_lm(data, mapping, ...) +
+      ggplot2::geom_label(
+        data = data.frame(
+          x = min(x, na.rm = TRUE),
+          y = max(y, na.rm = TRUE),
+          lab = round(cor, digits = 3)
+        ),
+        mapping = ggplot2::aes(x = x, y = y, label = lab, color = NULL),
+        hjust = 0, vjust = 1,
+        size = 5, fontface = "bold"
+      )
+  }
 #________________________________________________________
 
 #________________________________________________________
