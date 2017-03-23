@@ -318,6 +318,7 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
     p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
           geom_point(size = 3) +
+          geom_smooth(method = "lm") +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
           scale_x_log10() +
