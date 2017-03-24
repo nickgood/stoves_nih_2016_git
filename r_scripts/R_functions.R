@@ -334,12 +334,44 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 #________________________________________________________
 
 #________________________________________________________
-
-add_smooth <- function(data, mapping, method = "lm", ...){
-  p <- ggplot(data = data, mapping = mapping) + 
-    geom_point() + 
-    geom_smooth(method = method, ...)
-  p
+# plot correlation maps
+plot_cormap <- function(data, method = "spearman"){
+  ef_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
+          dplyr::distinct() %>%
+          dplyr::group_by_(.dots = c("id","pol")) %>% 
+          dplyr::summarise(mass_ef_comb = mean(mass_ef_comb, na.rm = TRUE))%>% 
+          tidyr::spread(pol, mass_ef_comb)
+  
+  ef_corr <- round(cor(emission_factors_w,
+                       use = "pairwise.complete.obs",
+                       method = method), 2)
+  
+  ef_corr[lower.tri(ef_corr)] <- NA
+  ef_corr_l <- tidyr::gather(ef_corr, na.rm = TRUE)
+  
+  p <- ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
+       geom_tile(color = "white")+
+       geom_text(color = "black", size = 7) +
+       scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                             midpoint = 0, limit = c(-1,1), space = "Lab", 
+                             name="Spearman\nCorrelation") +
+       theme_bw() + 
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
+             axis.text.y = element_text(size = 18),
+             axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             panel.grid.major = element_blank(),
+             panel.border = element_blank(),
+             panel.background = element_blank(),
+             axis.ticks = element_blank(),
+             legend.justification = c(1, 0),
+             legend.position = c(0.4, 0.8),
+             legend.direction = "horizontal", 
+             legend.title = element_text(size = 18),
+             legend.text = element_text(size = 18)) +
+       guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+                                    title.position = "top", title.hjust = 0.5)) +
+       coord_fixed()
 }
 #________________________________________________________
 

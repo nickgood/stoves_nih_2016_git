@@ -61,24 +61,15 @@ output:
 # Correlation heat maps
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
-
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
-
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
-
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
+  emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
+                        dplyr::distinct() %>%
+                        dplyr::group_by_(.dots = c("id","pol")) %>% 
+                        dplyr::summarise(mass_ef_comb = mean(mass_ef_comb, na.rm = TRUE))%>% 
+                        tidyr::spread(pol, mass_ef_comb)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs"),2)
-  dd <- as.dist((1 - ef_corr) / 2)
-  hc <- hclust(dd)
-  ef_corr <-ef_corr[hc$order, hc$order]
+  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
   ef_corr[lower.tri(ef_corr)] <- NA
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)
 ```
@@ -91,7 +82,7 @@ output:
     geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Pearson\nCorrelation") +
+    name="Spearman\nCorrelation") +
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
           axis.text.y = element_text(size = 18),
@@ -128,7 +119,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs"),2)
+  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
   dd <- as.dist((1 - ef_corr) / 2)
   hc <- hclust(dd)
   ef_corr <-ef_corr[hc$order, hc$order]
@@ -144,7 +135,7 @@ output:
     geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Pearson\nCorrelation") +
+    name="Spearman\nCorrelation") +
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
           axis.text.y = element_text(size = 18),
@@ -181,7 +172,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs"),2)
+  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
   dd <- as.dist((1 - ef_corr) / 2)
   hc <- hclust(dd)
   ef_corr <-ef_corr[hc$order, hc$order]
@@ -197,7 +188,7 @@ output:
     geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Pearson\nCorrelation") +
+    name="Spearman\nCorrelation") +
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
           axis.text.y = element_text(size = 18),
@@ -234,7 +225,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs"),2)
+  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
   dd <- as.dist((1 - ef_corr) / 2)
   hc <- hclust(dd)
   ef_corr <-ef_corr[hc$order, hc$order]
@@ -250,7 +241,7 @@ output:
     geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Pearson\nCorrelation") +
+    name="Spearman\nCorrelation") +
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
           axis.text.y = element_text(size = 18),
@@ -287,7 +278,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs"), 2)
+  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"), 2)
   dd <- as.dist((1 - ef_corr) / 2)
   hc <- hclust(dd)
   ef_corr <-ef_corr[hc$order, hc$order]
@@ -303,7 +294,7 @@ output:
     geom_text(color = "black", size = 7) +
     scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Pearson\nCorrelation") +
+    name="Spearman\nCorrelation") +
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
           axis.text.y = element_text(size = 18),
@@ -323,35 +314,33 @@ output:
     coord_fixed()
 ```
 
-# Correlation pairs
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
+  #emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
 
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
+ # emission_factors_w$row <- 1:nrow(emission_factors_w)
 
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE))) %>%
-                        dplyr::left_join(dplyr::select(emission_factors, id, fuelcat))
+ # emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
+                  #      dplyr::group_by(id) %>%
+                 #       dplyr::summarise_each(funs(mean(., na.rm = TRUE))) %>%
+                   #     dplyr::left_join(dplyr::select(emission_factors, id, fuelcat))
   
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
+ # emission_factors_w <- unique(emission_factors_w)
+  #emission_factors_w <- emission_factors_w[-2]
+  #emission_factors_w <- emission_factors_w[-1]
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 20}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 25,  fig.height = 25}
   
-  ggpairs(
-        emission_factors_w, 1:10,
-        mapping = aes(color = fuelcat, alpha = 0.4),
-        types = list(continuous = "smooth_lm"),
-        lower = list(continuous = add_smooth)) +
-    theme_bw() +
-    theme(legend.position = "top",
-          axis.text.y = element_text(size = 16),
-          axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
-          strip.text.x = element_text(size = 16),
-          strip.text.y = element_text(size = 16))
+  #ggpairs(
+        #emission_factors_w, 1:10,
+        #mapping = aes(color = fuelcat, alpha = 0.4),
+        #types = list(continuous = "smooth_lm"),
+        #lower = list(continuous = add_smooth)) +
+    #theme_bw() +
+    #theme(legend.position = "top",
+          #axis.text.y = element_text(size = 16),
+          #axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
+          #strip.text.x = element_text(size = 16),
+          #strip.text.y = element_text(size = 16))
     
 ```
