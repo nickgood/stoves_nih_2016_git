@@ -372,6 +372,7 @@ plot_cormap <- function(data, method = "spearman"){
        guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
                                     title.position = "top", title.hjust = 0.5)) +
        coord_fixed()
+  return(p)
 }
 #________________________________________________________
 
