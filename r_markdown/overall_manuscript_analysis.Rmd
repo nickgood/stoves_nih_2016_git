@@ -50,8 +50,14 @@ output:
   emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # convert to long format
+# Correlation heat maps
+* Spearman correlation plots (Spearman's rho)
+* Correlations are for emissions factors on a energy delivered from the fuel basis
+
+## All stove types
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
   ef_w <- dplyr::distinct(emission_factors) %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
@@ -60,44 +66,76 @@ output:
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
           dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
-```
 
-# Correlation heat maps
-* Spearman correlation plots (Spearman's rho)
-* Correlations are for emissions factors on a energy delivered from the fuel basis
-
-## All stove types
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_cormap(dplyr::select(emission_factors, id, pol, energy_ef_comb), "spearman")
+  plot_cormap(ef_w, "spearman")
 ```
 
 ## Wood fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "wood"),
-                            id, pol, energy_ef_comb), "spearman")
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "wood") %>%
+          dplyr::distinct() %>%
+          dplyr::filter(inst != "ions") %>%
+          dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+          dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::select(id, inst, energy_ef_comb) %>%
+          dplyr::group_by_(.dots = c("id", "inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          tidyr::spread(inst, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
 ```
 
 ## Charcoal fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "charcoal"),
-                            id, pol, energy_ef_comb), "spearman")
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "charcoal") %>%
+          dplyr::distinct() %>%
+          dplyr::filter(inst != "ions") %>%
+          dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+          dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::select(id, inst, energy_ef_comb) %>%
+          dplyr::group_by_(.dots = c("id", "inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          tidyr::spread(inst, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
 ```
 
 ## Pellet fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "pellets"),
-                            id, pol, energy_ef_comb), "spearman")
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "pellets") %>%
+          dplyr::distinct() %>%
+          dplyr::filter(inst != "ions") %>%
+          dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+          dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::select(id, inst, energy_ef_comb) %>%
+          dplyr::group_by_(.dots = c("id", "inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          tidyr::spread(inst, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
 ```
 
 ## Advanced fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "advanced"),
-                            id, pol, energy_ef_comb), "spearman")
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "advanced") %>%
+          dplyr::distinct() %>%
+          dplyr::filter(inst != "ions") %>%
+          dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+          dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::select(id, inst, energy_ef_comb) %>%
+          dplyr::group_by_(.dots = c("id", "inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          tidyr::spread(inst, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
