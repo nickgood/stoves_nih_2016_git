@@ -30,7 +30,7 @@ output:
   # Add stove/fuel information
   emission_factors <- dplyr::left_join(emission_factors, 
                                        dplyr::select(samples, id, stove, fuel,
-                                                              fuelcat, stovecat),
+                                                     fuelcat, stovecat),
                                        by = "id")
 ```
 
@@ -51,267 +51,51 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Select a subset of pollutants
-  emission_factors <- dplyr::filter(emission_factors,
-                                    grepl("^grav$|^co$|^formaldehyde$|^acetaldehyde$|
-                                          |^levoglucosan$|^voc_benzene$|^voc_toluene$|
-                                          |^oc$|^ec$", pol))
+  # convert to long format
+  ef_w <- dplyr::distinct(emission_factors) %>%
+          dplyr::filter(inst == "ions") %>%
+          dplyr::select(emission_factors, id, pol, energy_ef_comb) %>%
+          dplyr::group_by_(.dots = c("id", "inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE))%>% 
+          tidyr::spread(pol, energy_ef_comb)
 ```
 
 # Correlation heat maps
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
-                        dplyr::distinct() %>%
-                        dplyr::group_by_(.dots = c("id","pol")) %>% 
-                        dplyr::summarise(mass_ef_comb = mean(mass_ef_comb, na.rm = TRUE))%>% 
-                        tidyr::spread(pol, mass_ef_comb)
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
-  ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
-```
+* Spearman correlation plots (Spearman's rho)
+* Correlations are for emissions factors on a energy delivered from the fuel basis
 
 ## All stove types
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
-    geom_tile(color = "white")+
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-    midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Spearman\nCorrelation") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.justification = c(1, 0),
-          legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 18)) +
-          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_wood <- dplyr::filter(emission_factors, fuelcat == "wood")
-
-  emission_factors_w <- dplyr::select(emission_factors_wood, id, pol, mass_ef_comb)
-
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
-
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
-  
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
-  dd <- as.dist((1 - ef_corr) / 2)
-  hc <- hclust(dd)
-  ef_corr <-ef_corr[hc$order, hc$order]
-  ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
+  plot_cormap(dplyr::select(emission_factors, id, pol, energy_ef_comb), "spearman")
 ```
 
 ## Wood fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
-    geom_tile(color = "white")+
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-    midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Spearman\nCorrelation") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.justification = c(1, 0),
-          legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 18)) +
-          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_charcoal <- dplyr::filter(emission_factors, fuelcat == "charcoal")
-
-  emission_factors_w <- dplyr::select(emission_factors_charcoal, id, pol, mass_ef_comb)
-
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
-
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
-  
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
-  dd <- as.dist((1 - ef_corr) / 2)
-  hc <- hclust(dd)
-  ef_corr <-ef_corr[hc$order, hc$order]
-  ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
+  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "wood"),
+                            id, pol, energy_ef_comb), "spearman")
 ```
 
 ## Charcoal fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
-    geom_tile(color = "white")+
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-    midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Spearman\nCorrelation") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.justification = c(1, 0),
-          legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 18)) +
-          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_pellets <- dplyr::filter(emission_factors, fuelcat == "pellets")
-
-  emission_factors_w <- dplyr::select(emission_factors_pellets, id, pol, mass_ef_comb)
-
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
-
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
-  
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"),2)
-  dd <- as.dist((1 - ef_corr) / 2)
-  hc <- hclust(dd)
-  ef_corr <-ef_corr[hc$order, hc$order]
-  ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
+  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "charcoal"),
+                            id, pol, energy_ef_comb), "spearman")
 ```
 
 ## Pellet fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
-    geom_tile(color = "white")+
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-    midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Spearman\nCorrelation") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.justification = c(1, 0),
-          legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 18)) +
-          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors_advanced <- dplyr::filter(emission_factors, fuelcat == "advanced")
-
-  emission_factors_w <- dplyr::select(emission_factors_advanced, id, pol, mass_ef_comb)
-
-  emission_factors_w$row <- 1:nrow(emission_factors_w)
-
-  emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                        dplyr::group_by(id) %>%
-                        dplyr::summarise_each(funs(mean(., na.rm = TRUE)))
-  
-  emission_factors_w <- unique(emission_factors_w)
-  emission_factors_w <- emission_factors_w[-2]
-  emission_factors_w <- emission_factors_w[-1]
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ef_corr <- round(cor(emission_factors_w, use = "pairwise.complete.obs", method = "spearman"), 2)
-  dd <- as.dist((1 - ef_corr) / 2)
-  hc <- hclust(dd)
-  ef_corr <-ef_corr[hc$order, hc$order]
-  ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- melt(ef_corr, na.rm = TRUE)
+  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "pellets"),
+                            id, pol, energy_ef_comb), "spearman")
 ```
 
 ## Advanced fuels
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
-    geom_tile(color = "white")+
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-    midpoint = 0, limit = c(-1,1), space = "Lab", 
-    name="Spearman\nCorrelation") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.justification = c(1, 0),
-          legend.position = c(0.4, 0.8),
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 18),
-          legend.text = element_text(size = 18)) +
-          guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
+  plot_cormap(dplyr::select(dplyr::filter(emission_factors, fuelcat == "advanced"),
+                            id, pol, energy_ef_comb), "spearman")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
