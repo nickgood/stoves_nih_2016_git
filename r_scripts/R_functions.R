@@ -335,19 +335,14 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
 
 #________________________________________________________
 # plot correlation maps
-plot_cormap <- function(data, method = "spearman"){
-  ef_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb) %>%
-          dplyr::distinct() %>%
-          dplyr::group_by_(.dots = c("id","pol")) %>% 
-          dplyr::summarise(mass_ef_comb = mean(mass_ef_comb, na.rm = TRUE))%>% 
-          tidyr::spread(pol, mass_ef_comb)
-  
-  ef_corr <- round(cor(emission_factors_w,
+plot_cormap <- function(data, cor_method){
+
+  ef_corr <- round(cor(data[-1],
                        use = "pairwise.complete.obs",
-                       method = method), 2)
+                       method = cor_method), 2)
   
   ef_corr[lower.tri(ef_corr)] <- NA
-  ef_corr_l <- tidyr::gather(ef_corr, na.rm = TRUE)
+  ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
   
   p <- ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
        geom_tile(color = "white")+
