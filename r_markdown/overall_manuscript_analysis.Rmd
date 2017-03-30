@@ -59,6 +59,7 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
     # convert to long format
   ef_w <- dplyr::distinct(emission_factors) %>%
+          dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
@@ -76,6 +77,7 @@ output:
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "wood") %>%
           dplyr::distinct() %>%
+          dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
@@ -93,6 +95,7 @@ output:
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "charcoal") %>%
           dplyr::distinct() %>%
+          dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
@@ -110,12 +113,13 @@ output:
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "pellets") %>%
           dplyr::distinct() %>%
+          dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
-          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
@@ -127,12 +131,13 @@ output:
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "advanced") %>%
           dplyr::distinct() %>%
+          dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
-          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
