@@ -79,7 +79,7 @@ output:
                                                          mass_fuel_kg, lhv), by = "id" ) %>%
                dplyr::mutate(mass_ef = ((mass_emitted * 1e-3) / mass_fuel_kg),  # mg / kg
                              mass_c_ef = ((mass_emitted * 1e-3) / mass_fuel_c),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3), 
+                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),  # g / MJ
                              energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
 ```
 

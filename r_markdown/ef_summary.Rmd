@@ -58,7 +58,8 @@ output:
 * Remove outliers
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
+                      dplyr::filter(emission_factors, energy_ef_comb > 0) 
 ```
 
 # Plot summary data
