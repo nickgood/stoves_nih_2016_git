@@ -292,14 +292,14 @@ plot_ef_bar <- function(emission_factors, pol_name){
 # plot ef summary
 plot_ef_box <- function(emission_factors, pol_name){
 
-  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = mass_ef_comb, fill = fuelcat)) +   
+  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = energy_ef_comb, fill = fuelcat)) +   
     geom_boxplot() +
     theme_bw() +
     ylab("") +
     xlab("") +
     theme_bw() +
     scale_y_log10() +
-    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+    ggtitle(paste(pol_name, "EF (g/MJ of fuel) ")) +
     theme(text = element_text(size = 18),
           legend.position = "none")
   
