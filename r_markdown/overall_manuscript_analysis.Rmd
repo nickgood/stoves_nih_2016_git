@@ -47,10 +47,33 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Remove outliers
-  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
+                      dplyr::filter(energy_ef_comb > 0)
 ```
 
-# Correlation heat maps
+# Bar plots in polar coordinates
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
+  plot_ef_polar_all(emission_factors)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
+  plot_ef_polar(dplyr::filter(emission_factors, grepl('wood', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
+  plot_ef_polar(dplyr::filter(emission_factors, grepl('charcoal', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
+  plot_ef_polar(dplyr::filter(emission_factors, grepl('pellets', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
+  plot_ef_polar(dplyr::filter(emission_factors, grepl('advanced', fuelcat)))
+```
+
+# Correlation heat maps for pollutant categories
 * Spearman correlation plots (Spearman's rho)
 * Correlations are for emissions factors on a energy delivered from the fuel basis
 
@@ -63,9 +86,11 @@ output:
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
-          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
@@ -81,9 +106,11 @@ output:
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
-          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
@@ -99,9 +126,11 @@ output:
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
-          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
@@ -117,6 +146,8 @@ output:
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
           dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
@@ -135,10 +166,88 @@ output:
           dplyr::filter(inst != "ions") %>%
           dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
           dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
           dplyr::select(id, inst, energy_ef_comb) %>%
           dplyr::group_by_(.dots = c("id", "inst")) %>% 
           dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
           tidyr::spread(inst, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
+```
+
+# Correlation heat maps for carcinogenic compounds
+
+## All stove types
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
+  ef_w <- dplyr::distinct(emission_factors) %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::filter(grepl("^co$|^grav$|^voc_benzene$|^formaldehyde$|^acetaldehyde$", pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb) %>%
+          tidyr::spread(pol, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
+```
+
+## Wood fuels
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "wood") %>%
+          dplyr::distinct() %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::filter(grepl("^co$|^grav$|^voc_benzene$|^formaldehyde$|^acetaldehyde$", pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb) %>%
+          tidyr::spread(pol, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
+```
+
+## Charcoal fuels
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "charcoal") %>%
+          dplyr::distinct() %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::filter(grepl("^co$|^grav$|^voc_benzene$|^formaldehyde$|^acetaldehyde$", pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb) %>%
+          tidyr::spread(pol, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
+```
+
+## Pellet fuels
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "pellets") %>%
+          dplyr::distinct() %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::filter(grepl("^co$|^grav$|^voc_benzene$|^formaldehyde$|^acetaldehyde$", pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb) %>%
+          tidyr::spread(pol, energy_ef_comb)
+
+  plot_cormap(ef_w, "spearman")
+```
+
+## Advanced fuels
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+    # convert to long format
+  ef_w <- dplyr::filter(emission_factors, fuelcat == "advanced") %>%
+          dplyr::distinct() %>%
+          dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::filter(grepl("^co$|^grav$|^voc_benzene$|^formaldehyde$|^acetaldehyde$", pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb) %>%
+          tidyr::spread(pol, energy_ef_comb)
 
   plot_cormap(ef_w, "spearman")
 ```

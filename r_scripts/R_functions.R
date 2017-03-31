@@ -257,10 +257,10 @@ plot_energy_ef <- function(df, pol_name){
 plot_ef_bar <- function(emission_factors, pol_name){
   
   ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
-                dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
-                                 min_ef = min(mass_ef_comb, na.rm = TRUE),
-                                 max_ef = max(mass_ef_comb, na.rm = TRUE),
-                                 std_ef = sd(mass_ef_comb, na.rm = TRUE),
+                dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE),
+                                 std_ef = sd(energy_ef_comb, na.rm = TRUE),
                                  stove = first(stove),
                                  fuel = first(fuel),
                                  stovecat = first(stovecat),
@@ -275,9 +275,9 @@ plot_ef_bar <- function(emission_factors, pol_name){
           ylab("") +
           xlab("") +
           theme_bw() +
-          scale_y_log10() +
+          #scale_y_log10() +
           scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
-          ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+          ggtitle(paste(pol_name, "EF (g/MJ of fuel) ")) +
           theme(text = element_text(size = 14),
                 legend.position = "top",
                 legend.text = element_text(size = 10),
@@ -288,6 +288,91 @@ plot_ef_bar <- function(emission_factors, pol_name){
   print(p1)
 }
 #________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                #dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/2, energy_ef_comb)) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+                dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, group = fuel, fill = inst)) +   
+        geom_col(position = "dodge") +
+        facet_grid(~ fuelcat) +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        scale_y_log10() + 
+        theme_bw() +
+        theme(text = element_text(size = 20),
+              legend.position = "none",
+              legend.text = element_text(size = 20),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 20),
+              strip.text.x = element_text(size = 20),
+              strip.text.y = element_text(size = 20))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                #dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/2, energy_ef_comb)) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE),
+                                 mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE))
+
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, ymax = max_ef,
+                               ymin = min_ef, group = fuel, fill = inst)) +   
+    geom_col(position = "dodge") +
+    facet_grid(stove ~ fuel) +
+    theme_minimal() +
+    ylab("") +
+    xlab("") +
+    coord_polar(theta = "y") +
+    scale_y_log10() + 
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          legend.position = "none",
+          legend.text = element_text(size = 20),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          strip.text.y = element_text(size = 20))
+  
+  print(p1)
+}
+#________________________________________________________
+
 #________________________________________________________
 # plot ef summary
 plot_ef_box <- function(emission_factors, pol_name){
@@ -298,7 +383,7 @@ plot_ef_box <- function(emission_factors, pol_name){
     ylab("") +
     xlab("") +
     theme_bw() +
-    scale_y_log10() +
+    #scale_y_log10() +
     ggtitle(paste(pol_name, "EF (g/MJ of fuel) ")) +
     theme(text = element_text(size = 18),
           legend.position = "none")
