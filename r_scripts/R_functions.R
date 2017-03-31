@@ -309,7 +309,7 @@ plot_ef_polar_all <- function(emission_factors){
                 dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
   
   
-  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, group = fuel, fill = inst)) +   
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) +   
         geom_col(position = "dodge") +
         facet_grid(~ fuelcat) +
         theme_minimal() +
@@ -351,23 +351,22 @@ plot_ef_polar <- function(emission_factors){
                                  max_ef = max(energy_ef_comb, na.rm = TRUE))
 
   
-  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, ymax = max_ef,
-                               ymin = min_ef, group = fuel, fill = inst)) +   
-    geom_col(position = "dodge") +
-    facet_grid(stove ~ fuel) +
-    theme_minimal() +
-    ylab("") +
-    xlab("") +
-    coord_polar(theta = "y") +
-    scale_y_log10() + 
-    theme_bw() +
-    theme(text = element_text(size = 20),
-          legend.position = "none",
-          legend.text = element_text(size = 20),
-          legend.key.size = unit(0.5, "cm"),
-          axis.text.x = element_text(size = 20),
-          strip.text.x = element_text(size = 20),
-          strip.text.y = element_text(size = 20))
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) +   
+        geom_col(position = "dodge") +
+        facet_grid(stove ~ fuel) +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        scale_y_log10() + 
+        theme_bw() +
+        theme(text = element_text(size = 20),
+              legend.position = "none",
+              legend.text = element_text(size = 20),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 20),
+              strip.text.x = element_text(size = 20),
+              strip.text.y = element_text(size = 20))
   
   print(p1)
 }
