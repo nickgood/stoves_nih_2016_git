@@ -360,13 +360,13 @@ plot_ef_polar <- function(emission_factors){
         coord_polar(theta = "y") +
         scale_y_log10() + 
         theme_bw() +
-        theme(text = element_text(size = 20),
-              legend.position = "none",
-              legend.text = element_text(size = 20),
+        theme(text = element_text(size = 25),
+              legend.position = "top",
+              legend.text = element_text(size = 25),
               legend.key.size = unit(0.5, "cm"),
-              axis.text.x = element_text(size = 20),
-              strip.text.x = element_text(size = 20),
-              strip.text.y = element_text(size = 20))
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 25),
+              strip.text.y = element_text(size = 25))
   
   print(p1)
 }
