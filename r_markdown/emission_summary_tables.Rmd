@@ -41,6 +41,7 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emission_factors <- dplyr::mutate(pol = forcats::fct_recode(pol, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "pm" = "grav"),
+                                    inst = forcats::fct_recode(inst, "vocs" = "voc"),
                                     inst = forcats::fct_recode(inst, "carbonyls" = "carbs"))
 ```
 
@@ -72,9 +73,17 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
   summarise_reps(emission_factors, "ecoc|pm")
 ```
+## Carbonyls
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
+  summarise_reps(emission_factors, "carbs")
+```
 
+## Volatile organic compounds
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
+  summarise_reps(emission_factors, "voc")
+```
 
 
 
