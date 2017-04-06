@@ -484,7 +484,7 @@ plot_cormap <- function(data, cor_method){
 summarise_reps <- function(emission_factors, measure_names)
   
   replicates <- dplyr::distinct(emission_factors) %>%
-    dplyr::filter(grepl(measure_names, inst)) %>%
+                dplyr::filter(grepl(measure_names, inst)) %>%
     dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
     dplyr::count() %>%
     tidyr::spread(pol, n) %>%
@@ -492,32 +492,35 @@ summarise_reps <- function(emission_factors, measure_names)
     tidyr::gather("pol", "n", 4:ncol(.)) %>%
     dplyr::mutate(stove_fuel = paste(stove, ":", fuel))
   
-  ggplot(data = replicates, aes(stove_fuel, pol, fill = n, label = n))+
-    geom_tile(color = "white") +
-    geom_text(color = "black", size = 7) +
-    scale_fill_gradient2(low = "white", high = "blue",
-                         midpoint = 0, limit = c(0, max(replicates$n)), space = "Lab", 
-                         name = "Number of\nreplicates") +
-    facet_grid(~ fuelcat, scales = "free", space = "free") +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-          axis.text.y = element_text(size = 18),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          legend.position = "top",
-          legend.direction = "horizontal", 
-          legend.title = element_text(size = 22),
-          legend.text = element_text(size = 20),
-          strip.text.x = element_text(size = 20),
-          plot.margin = margin(10, 10, 10, 150)) +
-    scale_x_discrete(label=function(x) sub(" [: : :]", "\n", x)) +
-    guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
-                                 title.position = "top", title.hjust = 0.5)) +
-    coord_fixed()
+  p <- ggplot(data = replicates, aes(stove_fuel, pol, fill = n, label = n))+
+       geom_tile(color = "white") +
+       geom_text(color = "black", size = 7) +
+       scale_fill_gradient2(low = "white", high = "blue",
+                            midpoint = 0, limit = c(0, max(replicates$n)), space = "Lab", 
+                            name = "Number of\nreplicates") +
+       facet_grid(~ fuelcat, scales = "free", space = "free") +
+       theme_bw() + 
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
+             axis.text.y = element_text(size = 18),
+             axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             panel.grid.major = element_blank(),
+             panel.border = element_blank(),
+             panel.background = element_blank(),
+             axis.ticks = element_blank(),
+             legend.position = "top",
+             legend.direction = "horizontal", 
+             legend.title = element_text(size = 22),
+             legend.text = element_text(size = 20),
+             strip.text.x = element_text(size = 20),
+             plot.margin = margin(10, 10, 10, 150)) +
+       scale_x_discrete(label=function(x) sub(" [: : :]", "\n", x)) +
+       guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+                                    title.position = "top", title.hjust = 0.5)) +
+       coord_fixed()
+
+  print(p)
+
 #________________________________________________________
 
 #________________________________________________________

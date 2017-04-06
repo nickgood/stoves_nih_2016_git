@@ -39,7 +39,8 @@ output:
 * rename variables
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::mutate(pol = forcats::fct_recode(pol, "pm" = "grav"),
+  emission_factors <- dplyr::mutate(emission_factors,
+                                    pol = forcats::fct_recode(pol, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "vocs" = "voc"),
                                     inst = forcats::fct_recode(inst, "carbonyls" = "carbs"))
@@ -85,5 +86,9 @@ output:
   summarise_reps(emission_factors, "voc")
 ```
 
+## Five gas
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
+  summarise_reps(emission_factors, "fivegas")
+```
 
