@@ -481,7 +481,7 @@ plot_cormap <- function(data, cor_method){
 #________________________________________________________
 # plot color maps of replicate counts
 
-summarise_reps <- function(emission_factors, measure_names)
+summarise_reps <- function(emission_factors, measure_names){
   
   replicates <- dplyr::distinct(emission_factors) %>%
                 dplyr::filter(grepl(measure_names, inst)) %>%
@@ -519,8 +519,8 @@ summarise_reps <- function(emission_factors, measure_names)
                                     title.position = "top", title.hjust = 0.5)) +
        coord_fixed()
 
-  print(p)
-
+  return(p)
+}
 #________________________________________________________
 
 #________________________________________________________
