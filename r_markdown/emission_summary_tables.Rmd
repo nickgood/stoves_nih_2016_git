@@ -71,7 +71,7 @@ output:
                 dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
                 dplyr::count() %>%
                 tidyr::spread(pol, n) %>%
-                dplyr::mutate(n = ifelse(is.na(n), 0, n)) %>%
+                tidyr::replace_na(replace = list("ec", "grav", "oc")) %>%
                 tidyr::gather(po1, n) %>%
                 dplyr::mutate(stove_fuel = paste(stove, ":", fuel))
 
