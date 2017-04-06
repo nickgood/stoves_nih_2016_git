@@ -497,11 +497,11 @@ summarise_reps <- function(emission_factors, measure_names){
        geom_text(color = "black", size = 7) +
        scale_fill_gradient2(low = "white", high = "blue",
                             midpoint = 0, limit = c(0, max(replicates$n)), space = "Lab", 
-                            name = "Number of\nreplicates") +
-       facet_grid(~ fuelcat, scales = "free", space = "free") +
+                            name = "Number of replicates") +
+       facet_wrap(~ fuelcat, ncol = 1, scales = "free", as.table = TRUE) + # space = "free") +
        theme_bw() + 
-       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-             axis.text.y = element_text(size = 18),
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
+             axis.text.y = element_text(size = 20),
              axis.title.x = element_blank(),
              axis.title.y = element_blank(),
              panel.grid.major = element_blank(),
@@ -515,9 +515,9 @@ summarise_reps <- function(emission_factors, measure_names){
              strip.text.x = element_text(size = 20),
              plot.margin = margin(10, 10, 10, 150)) +
        scale_x_discrete(label=function(x) sub(" [: : :]", "\n", x)) +
-       guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+       guides(fill = guide_colorbar(barwidth = 20, barheight = 2,
                                     title.position = "top", title.hjust = 0.5)) +
-       coord_fixed()
+       coord_equal()
 
   return(p)
 }
