@@ -1,5 +1,5 @@
 ---
-title: "Emission Factor Summary"
+title: "Emission Factor Summary Figures"
 output:
   html_document:
     toc: true
