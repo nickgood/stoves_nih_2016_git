@@ -7,6 +7,9 @@ output:
     theme: united
 ---
 
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE)
+```
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
   library(forcats)
@@ -51,26 +54,134 @@ output:
                       dplyr::filter(energy_ef_comb > 0)
 ```
 
-# Bar plots in polar coordinates
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
-  plot_ef_polar_all(emission_factors)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Remove outliers
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
+                      dplyr::filter(energy_ef_comb > 0)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
-  plot_ef_polar(dplyr::filter(emission_factors, grepl('wood', fuelcat)))
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  vocs <- dplyr::filter(emission_factors, grepl('voc_benzene|voc_toluene', pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb, stove, fuel, stovecat, fuelcat) %>%
+          dplyr::group_by_(.dots = c("id", "pol", "stove", "fuel", "fuelcat")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::group_by(id) %>% 
+          tidyr::spread(pol, energy_ef_comb) %>%
+          dplyr::mutate(benz_tol_ratio = voc_benzene/voc_toluene) %>%
+          dplyr::group_by_(.dots = c("stove", "fuel", "fuelcat")) %>% 
+          dplyr::summarise(ratio = mean(benz_tol_ratio, na.rm = TRUE))
+  
+  sum_vocs <- dplyr::group_by(vocs, stove) %>%
+              dplyr::summarise(ratio = mean(ratio, na.rm = TRUE))
+  
+   ggplot(vocs, aes(x = stove, y = ratio, group = fuel, fill = fuel)) +   
+    geom_col(position = "dodge") +
+    facet_grid( ~ fuelcat, scales = 'free') +
+    ylab("") +
+    xlab("") +
+    theme_bw() +
+    theme(text = element_text(size = 14),
+                 legend.position = "top",
+                 legend.text = element_text(size = 10),
+                 legend.key.size = unit(0.5, "cm"),
+                 axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                 strip.text.x = element_text(size = 16))
+
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
-  plot_ef_polar(dplyr::filter(emission_factors, grepl('charcoal', fuelcat)))
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  btex <- dplyr::filter(emission_factors, grepl('voc_benzene|voc_toluene|voc_ethylbenzene|m_p_xylene|o_xylene', pol)) %>%
+          dplyr::select(id, pol, mass_emitted, mass_fuel_kg, mass_fuel_c, lhv, stove, fuel, stovecat, fuelcat) %>%
+          dplyr::group_by_(.dots = c("id", "pol", "stove", "fuel", "fuelcat")) %>% 
+          dplyr::summarise(mass_emitted = mean(mass_emitted, na.rm = TRUE),
+                           mass_fuel_kg = mean(mass_fuel_kg, na.rm = TRUE),
+                           mass_fuel_c = mean(mass_fuel_c, na.rm = TRUE),
+                           lhv = mean(lhv)) %>%
+          dplyr::group_by(id) %>% 
+          tidyr::spread(pol, mass_emitted) %>%
+          dplyr::mutate(btex = voc_benzene + voc_toluene + voc_ethylbenzene + voc_m_p_xylene + voc_o_xylene) %>%
+          dplyr::group_by_(.dots = c("stove", "fuel", "fuelcat")) %>% 
+          dplyr::mutate(btex_ef = (btex * 1e-3) / mass_fuel_kg,  # mg / kg
+                           btex_c_ef = (btex * 1e-3) / mass_fuel_c,  # mg / kg
+                           btex_energy_ef = ((btex_ef * 1e-3) * lhv * 1e-3),  # g / MJ
+                           btex_c_energy_ef = ((btex_c_ef * 1e-3) * lhv * 1e-3)) %>% # g / MJ
+          dplyr::mutate(btex_energy_ef_comb = ifelse(is.na(btex_energy_ef), btex_c_energy_ef, btex_energy_ef))
+  
+  sum_btex <- dplyr::group_by(btex, stove) %>%
+              dplyr::summarise(mean_btex_energy_ef = mean(btex_energy_ef_comb, na.rm = TRUE))
+  
+   ggplot(vocs, aes(x = stove, y = ratio, group = fuel, fill = fuel)) +   
+    geom_col(position = "dodge") +
+    facet_grid( ~ fuelcat, scales = 'free') +
+    ylab("") +
+    xlab("") +
+    theme_bw() +
+    theme(text = element_text(size = 14),
+                 legend.position = "top",
+                 legend.text = element_text(size = 10),
+                 legend.key.size = unit(0.5, "cm"),
+                 axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                 strip.text.x = element_text(size = 16))
+
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
-  plot_ef_polar(dplyr::filter(emission_factors, grepl('pellets', fuelcat)))
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::filter(emission_factors, grepl('voc_benzene', pol)) %>%
+          dplyr::select(id, pol, energy_ef_comb, stove, fuel, stovecat, fuelcat) %>%
+          dplyr::group_by_(.dots = c("id", "pol", "stove", "fuel", "fuelcat")) %>% 
+          dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+          dplyr::group_by_(.dots = c("stove")) %>% 
+          dplyr::summarise(energy_mean = mean(energy_ef_comb, na.rm = TRUE),
+                           energy_min = min(energy_ef_comb, na.rm = TRUE),
+                           energy_max = max(energy_ef_comb, na.rm = TRUE))
+  
+  sum_vocs <- dplyr::group_by(vocs, stove) %>%
+              dplyr::summarise(ratio = mean(ratio, na.rm = TRUE))
+  
+   ggplot(vocs, aes(x = stove, y = ratio, group = fuel, fill = fuel)) +   
+    geom_col(position = "dodge") +
+    facet_grid( ~ fuelcat, scales = 'free') +
+    ylab("") +
+    xlab("") +
+    theme_bw() +
+    theme(text = element_text(size = 14),
+                 legend.position = "top",
+                 legend.text = element_text(size = 10),
+                 legend.key.size = unit(0.5, "cm"),
+                 axis.text.x = element_text(angle = 35, vjust = 1, hjust = 1, size = 8.5),
+                 strip.text.x = element_text(size = 16))
+
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 30}
-  plot_ef_polar(dplyr::filter(emission_factors, grepl('advanced', fuelcat)))
+# Overall plot ideas
+
+## Polar coordinates
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 10}
+  #plot_ef_polar_all(emission_factors)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 10}
+  plot_ef_bar_all(emission_factors)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 10}
+  #plot_ef_bar_2_all(emission_factors)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 40}
+  #plot_ef_polar(dplyr::filter(emission_factors, grepl('wood', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 20}
+  #plot_ef_polar(dplyr::filter(emission_factors, grepl('charcoal', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 20}
+  #plot_ef_polar(dplyr::filter(emission_factors, grepl('pellets', fuelcat)))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 20}
+  #plot_ef_polar(dplyr::filter(emission_factors, grepl('advanced', fuelcat)))
 ```
 
 # Correlation heat maps for pollutant categories

@@ -300,7 +300,6 @@ plot_ef_polar_all <- function(emission_factors){
                 dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
                 dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
                 dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
-                #dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/2, energy_ef_comb)) %>%
                 dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
                 dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
                 dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
@@ -318,14 +317,133 @@ plot_ef_polar_all <- function(emission_factors){
         coord_polar(theta = "y") +
         scale_y_log10() + 
         theme_bw() +
-        theme(text = element_text(size = 20),
+        theme(text = element_text(size = 25),
               legend.position = "none",
-              legend.text = element_text(size = 20),
+              legend.text = element_text(size = 25),
               legend.key.size = unit(0.5, "cm"),
-              axis.text.x = element_text(size = 20),
-              strip.text.x = element_text(size = 20),
-              strip.text.y = element_text(size = 20))
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 30),
+              strip.text.y = element_text(size = 30))
   
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_bar_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(pol != "co2") %>%
+    dplyr::filter(inst != "ions") %>%
+    dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+    dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = inst)) +   
+    geom_bar(position = "dodge", stat = "identity") +
+    theme_minimal() +
+    ylab("") +
+    xlab("") +
+    scale_y_log10() + 
+    theme_bw() +
+    theme(text = element_text(size = 25),
+          legend.position = "top",
+          legend.text = element_text(size = 25),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 25),
+          strip.text.x = element_text(size = 30),
+          strip.text.y = element_text(size = 30))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_bar_2_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(pol != "co2") %>%
+    dplyr::filter(inst != "ions") %>%
+    dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+    dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) + 
+    geom_bar(stat = "identity", width = 1) +
+    facet_grid(~ fuelcat) +
+    theme_minimal() +
+    ylab("") +
+    xlab("") +
+    scale_y_log10() + 
+    coord_polar() +
+    theme_bw() +
+    theme(text = element_text(size = 25),
+          legend.position = "none",
+          legend.text = element_text(size = 25),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 25),
+          strip.text.x = element_text(size = 30),
+          strip.text.y = element_text(size = 30))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar_2_all <- function(emission_factors){
+
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE),
+                                 mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = factor(inst), y = mean_ef, fill = inst)) +   
+        geom_bar(width = 1) +
+        facet_grid(stove ~ fuel) +
+        coord_polar() +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        scale_y_log10() + 
+        theme_bw() +
+        theme(text = element_text(size = 25),
+              legend.position = "none",
+              legend.text = element_text(size = 25),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 25),
+              strip.text.y = element_text(size = 25))
+
   print(p1)
 }
 #________________________________________________________
@@ -341,7 +459,7 @@ plot_ef_polar <- function(emission_factors){
                 dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
                 dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
                 dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
-                #dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/2, energy_ef_comb)) %>%
+                dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/5, energy_ef_comb)) %>%
                 dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel")) %>% 
                 dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
                 dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel")) %>% 
@@ -358,10 +476,9 @@ plot_ef_polar <- function(emission_factors){
         ylab("") +
         xlab("") +
         coord_polar(theta = "y") +
-        scale_y_log10() + 
         theme_bw() +
         theme(text = element_text(size = 25),
-              legend.position = "top",
+              legend.position = "none",
               legend.text = element_text(size = 25),
               legend.key.size = unit(0.5, "cm"),
               axis.text.x = element_text(size = 25),
