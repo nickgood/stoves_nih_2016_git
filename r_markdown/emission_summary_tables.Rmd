@@ -8,39 +8,29 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE, results='markup')
 
   library(tidyverse)
   library(forcats)
 ```
 
-## Load and tidy data
-
-* Load data and meta data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_data}
   load("../r_files/emission_factors.Rda")
   load("../r_files/samples.Rda")
 ```
 
-* Load functions
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_functions}
   source("../r_scripts/R_functions.R")
 ```
 
-* Add stove/fuel information
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r add_stov_fuel}
   emission_factors <- dplyr::left_join(emission_factors, 
                                        dplyr::select(samples, id, stove, fuel,
                                                               fuelcat, stovecat),
                                        by = "id")
 ```
 
-* rename variables
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r rename_vars}
   emission_factors <- dplyr::mutate(emission_factors,
                                     pol = forcats::fct_recode(pol, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "pm" = "grav"),
@@ -48,9 +38,7 @@ output:
                                     inst = forcats::fct_recode(inst, "carbonyls" = "carbs"))
 ```
 
-* Use carbon balance method for missing emissions factors
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r comb_cal_methods}
   emission_factors <- dplyr::mutate(emission_factors, 
                                     mass_ef_comb = 
                                       ifelse(is.na(mass_ef),
@@ -60,37 +48,33 @@ output:
                                              energy_ef))
 ```
 
-* Remove outliers
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r remove_outliers}
   emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
                       dplyr::filter(energy_ef_comb > 0) 
 ```
 
-## Plot summary tables
-
-# Replicate by instrument
+# Plot replicate tables
 
 ## Filter measurements
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
+```{r filter_rep_summary, fig.width = 25,  fig.height = 8}
   summarise_reps(emission_factors, "ecoc|pm")
 ```
+
 ## Carbonyls
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  summarise_reps(emission_factors, "carbs")
+  #summarise_reps(emission_factors, "carbs")
 ```
 
 ## Volatile organic compounds
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  summarise_reps(emission_factors, "voc")
+  #summarise_reps(emission_factors, "voc")
 ```
 
 ## Five gas
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  summarise_reps(emission_factors, "fivegas")
+  #summarise_reps(emission_factors, "fivegas")
 ```
-
