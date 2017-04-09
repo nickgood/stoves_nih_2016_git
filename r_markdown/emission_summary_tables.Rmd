@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE, results='markup')
+  knitr::opts_chunk$set(fig.path='figures/', include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE, results='hide')
 
   library(tidyverse)
   library(forcats)
@@ -35,7 +35,8 @@ output:
                                     pol = forcats::fct_recode(pol, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "vocs" = "voc"),
-                                    inst = forcats::fct_recode(inst, "carbonyls" = "carbs"))
+                                    inst = forcats::fct_recode(inst, "carbonyls" = "carbs")) %>%
+                      dplyr::filter(!grepl("Mimi Moto|Prototype", stove))
 ```
 
 ```{r comb_cal_methods}
@@ -57,24 +58,24 @@ output:
 
 ## Filter measurements
 
-```{r filter_rep_summary, fig.width = 15,  fig.height = 25}
+```{r filter_rep_summary, fig.width = 23,  fig.height = 15}
   summarise_reps(emission_factors, "ecoc|pm")
 ```
 
 ## Carbonyls
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  summarise_reps(emission_factors, "carbs")
+```{r carb_rep_summary, fig.width = 15,  fig.height = 50}
+  summarise_reps(emission_factors, "carbonyls")
 ```
 
 ## Volatile organic compounds
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  #summarise_reps(emission_factors, "voc")
+```{r voc_rep_summary, fig.width = 15,  fig.height = 125}
+  summarise_reps(emission_factors, "voc")
 ```
 
 ## Five gas
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 35,  fig.height = 10}
-  #summarise_reps(emission_factors, "fivegas")
+```{r fivegas_rep_summary, fig.width = 15,  fig.height = 25}
+  summarise_reps(emission_factors, "fivegas")
 ```
