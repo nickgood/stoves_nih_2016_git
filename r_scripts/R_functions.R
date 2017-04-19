@@ -481,19 +481,33 @@ plot_cormap <- function(data, cor_method){
 #________________________________________________________
 # plot color maps of replicate counts
 summarise_reps <- function(emission_factors, measure_names){
+
+  if(type = "inst") {
+    replicates <- dplyr::distinct(emission_factors) %>%
+                  dplyr::filter(grepl(measure_names, inst)) %>%
+                  dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
+                  dplyr::count() %>%
+                  tidyr::spread(pol, n) %>%
+                  dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
+                  tidyr::gather("pol", "n", 4:ncol(.)) %>%
+                  dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
+                  dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
+                                                                     "charcoal", "advanced")))
+  } else {
+    replicates <- dplyr::distinct(emission_factors) %>%
+                  dplyr::group_by_(.dots = c("inst", "id")) %>% 
+                  dplyr::summarise(conc = mean(conc)) %>%
+                  dplyr::group_by_(.dots = c("inst", "id", "stove", "fuel", "fuelcat")) %>% 
+      dplyr::count() %>%
+      tidyr::spread(inst, n) %>%
+      dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
+      tidyr::gather("pol", "n", 4:ncol(.)) %>%
+      dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
+      dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
+                                                         "charcoal", "advanced")))
+  }
   
-  replicates <- dplyr::distinct(emission_factors) %>%
-                dplyr::filter(grepl(measure_names, inst)) %>%
-                dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
-                dplyr::count() %>%
-                tidyr::spread(pol, n) %>%
-                dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
-                tidyr::gather("pol", "n", 4:ncol(.)) %>%
-                dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
-                dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
-                                                                   "charcoal", "advanced"))) #%>%
-                #dplyr::mutate(test_type = forcats::fct_collapse(fuelcat, batch = c("pellets", "charcoal", "advanced")))
-  
+
   p <- ggplot(data = replicates, aes(stove_fuel, pol, fill = n, label = n))+
        geom_tile(color = "black") +
        geom_text(color = "black", size = 7) +

@@ -59,7 +59,7 @@ output:
 ## Filter measurements
 
 ```{r filter_rep_summary, fig.width = 23,  fig.height = 25}
-  summarise_reps(emission_factors, "ecoc|pm")
+  summarise_reps(emission_factors)
 ```
 
 ## Carbonyls
@@ -72,6 +72,12 @@ output:
 
 ```{r voc_rep_summary, fig.width = 15,  fig.height = 125}
   summarise_reps(emission_factors, "voc")
+```
+
+## Volatile organic compounds
+
+```{r voc_rep_summary, fig.width = 15,  fig.height = 125}
+  summarise_reps(emission_factors, "ions")
 ```
 
 ## Five gas
