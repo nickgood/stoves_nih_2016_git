@@ -133,3 +133,7 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
   plot_ef_bar(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
+  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)), dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Particulate Matter', 'Benzene')
+```

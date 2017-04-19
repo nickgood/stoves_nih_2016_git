@@ -257,7 +257,7 @@ plot_ef_bar_all <- function(emission_factors){
   p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = inst)) +   
     geom_bar(position = "dodge", stat = "identity") +
     theme_minimal() +
-    ylab("") +
+    ylab("Emission Factor (g/kJ fuel)") +
     xlab("") +
     scale_y_log10() + 
     theme_bw() +
@@ -491,8 +491,8 @@ summarise_reps <- function(emission_factors, measure_names){
                 tidyr::gather("pol", "n", 4:ncol(.)) %>%
                 dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
                 dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
-                                                                   "charcoal", "advanced"))) %>%
-                dplyr::mutate(test_type = forcats::fct_collapse(fuelcat, batch = c("pellets", "charcoal", "advanced")))
+                                                                   "charcoal", "advanced"))) #%>%
+                #dplyr::mutate(test_type = forcats::fct_collapse(fuelcat, batch = c("pellets", "charcoal", "advanced")))
   
   p <- ggplot(data = replicates, aes(stove_fuel, pol, fill = n, label = n))+
        geom_tile(color = "black") +
@@ -500,7 +500,7 @@ summarise_reps <- function(emission_factors, measure_names){
        scale_fill_gradient2(low = "blue", high = "white",
                             midpoint = 3, limit = c(0, max(replicates$n)), space = "Lab", 
                             name = "Number of replicates") +
-       facet_wrap(test_type ~ fuelcat, scales = "free") +
+       facet_wrap( ~ fuelcat, scales = "free", ncol = 1) +
        theme_bw() + 
        theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
              axis.text.y = element_text(size = 20),
