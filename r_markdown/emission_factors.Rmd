@@ -35,9 +35,10 @@ output:
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_fuel <- dplyr::group_by(emissions, id) %>%
-               dplyr::filter(mass_carbon >= 0) %>%  # ignore negatives
-               dplyr::summarise(mass_carbon = sum(mass_carbon, na.rm = TRUE)) %>%
+  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
+               dplyr::group_by(id) %>%
+               dplyr::filter(value >= 0) %>%  # ignore negatives
+               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
                dplyr::mutate(mass_carbon = 
                                ifelse(grepl("^1A$|^2A$", id),
                                       NA, mass_carbon))  # ignore tests with missing fivegas data
