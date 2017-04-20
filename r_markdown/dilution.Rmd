@@ -1,8 +1,13 @@
 ---
 title: "dilution"
-author: "Nicholas Good"
-date: "12/7/2016"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo
 ---
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
