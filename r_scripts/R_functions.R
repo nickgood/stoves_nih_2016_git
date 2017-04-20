@@ -480,9 +480,9 @@ plot_cormap <- function(data, cor_method){
 
 #________________________________________________________
 # plot color maps of replicate counts
-summarise_reps <- function(emission_factors, measure_names){
+summarise_reps <- function(emission_factors, type){
 
-  if(type = "inst") {
+  if(type == "pol") {
     replicates <- dplyr::distinct(emission_factors) %>%
                   dplyr::filter(grepl(measure_names, inst)) %>%
                   dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
@@ -495,16 +495,16 @@ summarise_reps <- function(emission_factors, measure_names){
                                                                      "charcoal", "advanced")))
   } else {
     replicates <- dplyr::distinct(emission_factors) %>%
-                  dplyr::group_by_(.dots = c("inst", "id")) %>% 
-                  dplyr::summarise(conc = mean(conc)) %>%
                   dplyr::group_by_(.dots = c("inst", "id", "stove", "fuel", "fuelcat")) %>% 
-      dplyr::count() %>%
-      tidyr::spread(inst, n) %>%
-      dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
-      tidyr::gather("pol", "n", 4:ncol(.)) %>%
-      dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
-      dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
-                                                         "charcoal", "advanced")))
+                  dplyr::summarise(conc = mean(conc)) %>%
+                  dplyr::group_by_(.dots = c("inst", "stove", "fuel", "fuelcat")) %>% 
+                  dplyr::count() %>%
+                  tidyr::spread(inst, n) %>%
+                  dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
+                  tidyr::gather("pol", "n", 4:ncol(.)) %>%
+                  dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
+                  dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
+                                                                     "charcoal", "advanced")))
   }
   
 
@@ -514,10 +514,10 @@ summarise_reps <- function(emission_factors, measure_names){
        scale_fill_gradient2(low = "blue", high = "white",
                             midpoint = 3, limit = c(0, max(replicates$n)), space = "Lab", 
                             name = "Number of replicates") +
-       facet_wrap( ~ fuelcat, scales = "free", ncol = 1) +
+       facet_wrap( ~ fuelcat, scales = "free") +
        theme_bw() + 
-       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 16, hjust = 1),
-             axis.text.y = element_text(size = 20),
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1),
+             axis.text.y = element_text(size = 12),
              axis.title.x = element_blank(),
              axis.title.y = element_blank(),
              panel.grid.major = element_blank(),
@@ -526,13 +526,13 @@ summarise_reps <- function(emission_factors, measure_names){
              axis.ticks = element_blank(),
              legend.position = "top",
              legend.direction = "horizontal", 
-             legend.title = element_text(size = 22),
-             legend.text = element_text(size = 20),
-             strip.text.x = element_text(size = 20),
-             strip.text.y = element_text(size = 30),
+             legend.title = element_text(size = 16),
+             legend.text = element_text(size = 12),
+             strip.text.x = element_text(size = 18),
+             strip.text.y = element_text(size = 12),
              plot.margin = margin(10, 10, 10, 150)) +
        scale_x_discrete(label=function(x) sub(" [: : :]", "\n", x)) +
-       guides(fill = guide_colorbar(barwidth = 20, barheight = 2,
+       guides(fill = guide_colorbar(barwidth = 20, barheight = 1,
                                     title.position = "top", title.hjust = 0.5)) +
        coord_equal()
 

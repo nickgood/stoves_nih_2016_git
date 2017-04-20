@@ -1,11 +1,13 @@
 ---
-title: "Emission Factor Summary Tables"
+title: "NIH Aim 1 Data Analysis"
+author: "Nick Good, Kristen Fedak, and Kelsey Bilsback"
+date: "April 21, 2017"
 output:
-  html_document:
-    toc: true
-    toc_float: true
-    theme: united
+  ioslides_presentation: default
+  beamer_presentation: default
 ---
+
+ <style> #margins > p {margin-top: -25px; margin-left: -125px;} </style>
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE)
@@ -14,32 +16,28 @@ output:
   library(forcats)
 ```
 
-```{r load_data}
+```{r setup}
   load("../r_files/emission_factors.Rda")
   load("../r_files/samples.Rda")
-```
-
-```{r load_functions}
   source("../r_scripts/R_functions.R")
-```
-
-```{r add_stov_fuel}
+  
   emission_factors <- dplyr::left_join(emission_factors, 
                                        dplyr::select(samples, id, stove, fuel,
                                                               fuelcat, stovecat),
                                        by = "id")
-```
+  emission_factors <- dplyr::mutate(emission_factors, 
+                                    mass_ef_comb = 
+                                      ifelse(is.na(mass_ef),
+                                             mass_c_ef, mass_ef)) %>%
+                      dplyr::filter(mass_ef_comb > 0)
 
-```{r rename_vars}
   emission_factors <- dplyr::mutate(emission_factors,
                                     pol = forcats::fct_recode(pol, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "pm" = "grav"),
                                     inst = forcats::fct_recode(inst, "vocs" = "voc"),
                                     inst = forcats::fct_recode(inst, "carbonyls" = "carbs")) %>%
                       dplyr::filter(!grepl("Mimi Moto|Prototype", stove))
-```
 
-```{r comb_cal_methods}
   emission_factors <- dplyr::mutate(emission_factors, 
                                     mass_ef_comb = 
                                       ifelse(is.na(mass_ef),
@@ -49,45 +47,27 @@ output:
                                              energy_ef))
 ```
 
-```{r remove_outliers}
-  #emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
-                      #dplyr::filter(energy_ef_comb > 0) 
+## Missing Test Overview {#margins}
+
+```{r missing_wood_tests, fig.width=9, fig.height=6}
+  summarise_reps(dplyr::filter(emission_factors, fuelcat == "wood"), "inst")
 ```
 
-# Plot replicate tables
+## Missing Test Overview {#margins}
 
-## All measurements
-
-```{r rep_summary, fig.width = 23,  fig.height = 50}
-  summarise_reps(emission_factors, "inst")
+```{r missing_charcoal_tests, fig.width=9, fig.height=6}
+  summarise_reps(dplyr::filter(emission_factors, fuelcat == "charcoal"), "inst")
 ```
 
-## Filters
+## Missing Test Overview {#margins}
 
-```{r filter_rep_summary, fig.width = 15,  fig.height = 50}
-  summarise_reps(emission_factors, "pm|ecoc")
+```{r missing_gasifier_advanced_tests, fig.width=9, fig.height=6}
+  summarise_reps(dplyr::filter(emission_factors, grepl("pellets|advanced",fuelcat)), "inst")
 ```
 
-## Carbonyls
+## Emissions Overview {#margins}
 
-```{r carb_rep_summary, fig.width = 15,  fig.height = 50}
-  summarise_reps(emission_factors, "carbonyls")
-```
+## PM vs. CO {#margins}
 
-## Volatile organic compounds
+## Correlation Analysis {#margins}
 
-```{r voc_rep_summary, fig.width = 15,  fig.height = 125}
-  summarise_reps(emission_factors, "voc")
-```
-
-## Volatile organic compounds
-
-```{r ion_rep_summary, fig.width = 15,  fig.height = 125}
-  summarise_reps(emission_factors, "ions")
-```
-
-## Five gas
-
-```{r fivegas_rep_summary, fig.width = 15,  fig.height = 25}
-  summarise_reps(emission_factors, "fivegas")
-```
