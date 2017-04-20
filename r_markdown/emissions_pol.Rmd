@@ -461,7 +461,7 @@ ___
 * convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- tidyr::gather(emissions, "metric", "value", 3:6)
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
 ```
 
 * number based
@@ -475,7 +475,7 @@ ___
 * combine mass and number instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions_long  <- dplyr::bind_rows(emissions, number)
+  emissions_long  <- dplyr::bind_rows(emissions_long, number)
 ```
 
 ## save
