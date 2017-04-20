@@ -20,6 +20,7 @@ output:
   load("../r_files/samples.Rda")
   load("../r_files/emissions.Rda")
   load("../r_files/fuel_burnt.Rda")
+  emissions_long <- readRDS("../r_files/emissions_long.RDS")
   # load("../r_files/energy.Rda") # not yet created
 ```
 
