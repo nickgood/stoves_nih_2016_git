@@ -130,7 +130,8 @@ output:
 ## carbon emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(emission_factors, aes(x = id, y = mass_carbon, fill = inst), na.rm = TRUE) +
+  ggplot(dplyr::filter(emission_factors, metric == "mass_carbon"),
+                       aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
