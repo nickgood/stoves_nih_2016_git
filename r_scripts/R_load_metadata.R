@@ -55,8 +55,24 @@ load_metadata <- function(file, sheet = "metadata"){
  # read excel file
   out <- as_data_frame(read_excel(path = file, sheet = sheet, col_names = TRUE))
   out <- out[-1,1:(ncol(out)-3)]
+ # read test info
+  test_info <- dplyr::select(readRDS("r_files/test_info.RDS"), id, id_test)
  # date
   out <- dplyr::mutate(out, date = as.Date(as.numeric(date), origin = "1899-12-30"))
+ # test id
+  out <- dplyr::rename(out, id_test = test_id) %>%
+         dplyr::right_join(test_info, by = "id_test")
+ # flows
+  flows <- dplyr::select(out, id, id_test, date, matches(".*pax.*|.*white.*|.*carbonyl.*|.*isokinetic.*")) %>%
+           tidyr::gather("var", "val", 4:37) %>%
+           dplyr::filter(grepl(".*outlet.*", var) == FALSE, grepl(".*average.*", var) == FALSE) %>%
+           dplyr::mutate(var = sub("_inlet", "", var)) %>%
+           tidyr::separate(var, c("when", "inst", "rep")) %>%
+           dplyr::mutate(val = as.numeric(val),
+                         id_test = as.factor(id_test),
+                         when = as.factor(when),
+                         inst = as.factor(inst),
+                         rep = as.factor(rep))
 }
 
 
