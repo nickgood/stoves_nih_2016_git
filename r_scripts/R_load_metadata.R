@@ -6,6 +6,17 @@
 #________________________________________________________
 
 #________________________________________________________
+# Load the test matrix
+# file <- "data/logs/test_matrix.xlsx"
+# df <- load_matrix(file) 
+load_matrix <- function(file, sheet = "matrix"){
+  out <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+}
+
+#________________________________________________________
+  
+  
+#________________________________________________________
 # Load sample tracking log
 # file <- "data/logs/Sample Tracking Log.xlsx"
 # df <- load.samples(file)
