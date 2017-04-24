@@ -72,7 +72,16 @@ load_metadata <- function(file, sheet = "metadata"){
                          id_test = as.factor(id_test),
                          when = as.factor(when),
                          inst = as.factor(inst),
-                         rep = as.factor(rep))
+                         rep = as.factor(rep)) %>%
+           dplyr::group_by(id, date, id_test, when, inst) %>%
+           dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+           dplyr::group_by(id, date, id_test, inst) %>%
+           tidyr::spread(when, val) %>%
+           dplyr::ungroup() %>%
+           dplyr::mutate(delta = post - pre,
+                         mean = (post + pre)/ 2)
+           dplyr::group_by(date, inst)
+
 }
 
 
