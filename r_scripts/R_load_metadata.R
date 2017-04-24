@@ -48,9 +48,18 @@ load_matrix <- function(file, sheet = "matrix"){
 #________________________________________________________
 
 #________________________________________________________
-# Load sample tracking log
-# file <- "data/logs/Sample Tracking Log.xlsx"
-# df <- load.samples(file)
+# Load metadata
+# file <- "data/logs/metadata.xlsx"
+# out <- load_metadata(file)
+load_metadata <- function(file, sheet = "metadata"){
+ # read excel file
+  out <- as_data_frame(read_excel(path = file, sheet = sheet, col_names = TRUE))
+  out <- out[-1,1:(ncol(out)-3)]
+ # date
+  out <- dplyr::mutate(out, date = as.Date(as.numeric(date), origin = "1899-12-30"))
+}
+
+
 load_samples <- function(file, sheet = "Completed Test Log"){
 
   df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
