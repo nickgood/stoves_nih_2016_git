@@ -10,7 +10,15 @@
 # file <- "data/logs/test_matrix.xlsx"
 # df <- load_matrix(file) 
 load_matrix <- function(file, sheet = "matrix"){
+ # read excel file
   out <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+ # remove rows with no test_id
+  out <- dplyr::filter(out, !is.na(test_id))
+ # test id
+  out <- dplyr::mutate(out, id = row_number())
+ # date
+  out <- dplyr::mutate(out, date = as.Date(testing_date, origin = "1899-12-30"))
+  
 }
 
 #________________________________________________________
