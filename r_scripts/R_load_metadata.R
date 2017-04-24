@@ -8,14 +8,15 @@
 #________________________________________________________
 # Load the test matrix
 # file <- "data/logs/test_matrix.xlsx"
-# df <- load_matrix(file) 
+# out <- load_matrix(file)
+# returns a list of 2 data tables
 load_matrix <- function(file, sheet = "matrix"){
  # read excel file
-  out <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+  out <- as_data_frame(read_excel(path = file, sheet = sheet, col_names = TRUE))
  # remove rows with no test_id
   out <- dplyr::filter(out, !is.na(test_id))
  # test id
-  out <- dplyr::mutate(out, test_id = as.factor(test_id))
+  out <- dplyr::mutate(out, id_test = as.factor(test_id))
  # id number (create simplified id number)
   out <- dplyr::mutate(out, id = as.factor(row_number()))
  # date
@@ -25,12 +26,27 @@ load_matrix <- function(file, sheet = "matrix"){
   out$fuel_quant[28] <- 6 # fix change in format
  # fuel_type
   out <- dplyr::mutate(out, fuel_type = as.factor(tolower(material)))
- 
-}
+ # extract test information
+  test_info <- dplyr::select(out, id, id_test, date, fuel_type, fuel_quant)
+  
+ # convert integrate sample ids to long format
+  ids_int <- dplyr::select(out, date, matches(".*id.*")) %>%
+             dplyr::select(-test_id) %>%
+             tidyr::gather("sample", "id_sample", 2:12) %>%
+             dplyr::mutate(sample = as.factor(sample),
+                           id_sample = as.factor(id_sample))
 
+ # save test info
+  saveRDS(test_info, "r_files/test_info.RDS")
+
+ # save integrated sample ids
+  saveRDS(ids_int, "r_files/ids_int.RDS")
+
+ # return
+  return(list(test_info, ids_int))
+}
 #________________________________________________________
-  
-  
+
 #________________________________________________________
 # Load sample tracking log
 # file <- "data/logs/Sample Tracking Log.xlsx"
