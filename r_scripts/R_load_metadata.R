@@ -15,10 +15,17 @@ load_matrix <- function(file, sheet = "matrix"){
  # remove rows with no test_id
   out <- dplyr::filter(out, !is.na(test_id))
  # test id
-  out <- dplyr::mutate(out, id = row_number())
+  out <- dplyr::mutate(out, test_id = as.factor(test_id))
+ # id number (create simplified id number)
+  out <- dplyr::mutate(out, id = as.factor(row_number()))
  # date
   out <- dplyr::mutate(out, date = as.Date(testing_date, origin = "1899-12-30"))
-  
+ # fuel_quant
+  out <- dplyr::mutate(out, fuel_quant = as.numeric(number_pieces))
+  out$fuel_quant[28] <- 6 # fix change in format
+ # fuel_type
+  out <- dplyr::mutate(out, fuel_type = as.factor(tolower(material)))
+ 
 }
 
 #________________________________________________________
