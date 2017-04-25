@@ -2,69 +2,6 @@
 # Libraries
   library(tidyverse)
   library(readxl)
-  library(reshape)
-#________________________________________________________
-
-#________________________________________________________
-# Load CO2 file
-# file <- "data/co2/20160105_2A_DILUTION1.csv" # ppm
-# file <- "data/co2/20160615_8D_DILUTION.csv"  # voltage
-load_co2_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, sep = " ",
-                 fill = TRUE, na.strings = c("NAN"), colClasses = "character")
-
-  type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-
-
-  # load based on type
-    
-  if(type == "ppm"){
-    
-    classes = c("character", "numeric", "numeric", "numeric")
-
-    col_names = c("time", "co2", "toc", "pkpa")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 2, 
-                         fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-
-    df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time),
-                              format = "%Y%m%d %T") # error if fil crosses midnight
-
-    df$date <- as.Date(df$datetime)
-    
-    df$time <- as.character(df$datetime)
-    
-    df$time <- as.numeric(substr(df$time,12,13))*60*60 + 
-               as.numeric(substr(df$time,15,16))*60 +
-               as.numeric(substr(df$time,18,19))
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  if(type == "volts"){
-
-    classes = c("character", "character", "numeric", 
-                  "numeric", "numeric", "numeric")
-
-    col_names = c("date", "time", "lab", "sample", "ch3", "ch4")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 7, 
-                   fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-    
-    df$datetime <- as.POSIXct(paste(df$date, df$time),
-                              format = "%m/%d/%Y %I:%M:%S %p") 
-
-    df$time <- posixct_secsofday(df$datetime)
-      
-    df$date <- as.Date(df$datetime)
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  # return
-    return(df)
-}
 #________________________________________________________
 
 #________________________________________________________
@@ -162,93 +99,6 @@ load_ecoc_file <- function(file){
 
  # return
   return(ecoc)
-}
-#________________________________________________________
-
-#________________________________________________________
-# Load fivegas file
-# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
-# file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
-# df <- load_fivegas_file(file)
-load_fivegas_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ")  # check file type from first line
-
- # load 
-  if(grepl("^Device", df[1][1])){
-
-  classes = c(rep("character",2), rep("numeric",4))
-
-  col_names = c("date", "time", "co2", "o2", "co", "ch4")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes,
-                       skip = 7, fill = TRUE, col.names = col_names)
-    
- # check year format
-  if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
-  }else{
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
-  }
-
- # convert time string to seconds of day
-  df$time <- as.character(df$datetime)
-  df$time <- as.numeric(substr(df$time,12,13))*60*60 +
-             as.numeric(substr(df$time,15,16))*60 +
-             as.numeric(substr(df$time,18,19)) 
-
- # convert date
-  df$date <- as.Date(df$datetime)
-
-  }else{
- # check time format
-  df <- read.csv(file, header = FALSE,
-                   nrows = 1,
-                   colClasses = "character",
-                   skip = 1)
-
-  time_format <- ifelse(grepl("AM$|PM$", df$V7[1]), "us", "mil")
-    
-  classes = c(rep("numeric",6), "character")
-
-  col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
-                       skip = 1, fill = TRUE, col.names = col_names)
-
-  if(time_format == "mil"){
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %H:%M:%S"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                                 as.numeric(substr(datetime, 15, 16)) * 60 +
-                                 as.numeric(substr(datetime, 18, 19)))
-  }else{
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %I:%M:%S %p"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                            as.numeric(substr(datetime, 15, 16)) * 60 +
-                            as.numeric(substr(datetime, 18, 19)))
-  }
-}
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
- # convert percents to ppm
-  df$co2 <- df$co2*10^4
-  df$o2 <- df$o2*10^4  
-
- # return
-  return(df)
 }
 #________________________________________________________
 
@@ -837,39 +687,55 @@ load_multifile <- function(fldr, pattern, inst){
 #________________________________________________________
 
 #________________________________________________________
-# Load fivegas
-# file <- "data/fivegas/20160105_6A_FIVEGAS_OLD.csv"
-# file <- "data/fivegas/20160615_2D_FIVEGAS_FIXED.csv"
+# Load fivegas files
+load_fivegas <- function(fldr = "../data/fivegas"){
 
-load_fivegas <- function(fldr = "../data/fivegas", 
-                         pattern = "[0-9][A-Z]_FIVEGAS_FIXED.csv$|[0-9][A-Z]_FIVEGAS_OLD.csv$",
-                         type = "conc"){
-
-  filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
+  filelist <- list.files(fldr, pattern = ".csv$", full.names = TRUE)
 
  # loop files
   for(i in 1:length(filelist)){
-
- # determine file type
-  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
-
- # check type
-  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
-
- # load 
-  if(filetype == type){
-
-  if(exists("out", inherits = FALSE)==FALSE){
-    out <- load_fivegas_file(filelist[i])
-  }else{
-    out <- rbind(out, load_fivegas_file(filelist[i]))
-  }
- # end if
-  }
- # end for
+   print(filelist[i])
+    if(exists("out", inherits = FALSE)==FALSE){
+      out <- load_fivegas_file(filelist[i])
+    }else{
+      out <- rbind(out, load_fivegas_file(filelist[i]))
+    }
   }
 
  # return
   return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# Load fivegas file
+# file <- "../data/fivegas/20161001_FIVEGAS.csv"
+# df <- load_fivegas_file(file)
+load_fivegas_file <- function(file){
+ 
+ # load 
+ out <- read_tsv(file, col_names = TRUE)
+ 
+ # rename
+ names(out)[1] <- "ch4"
+ names(out)[2] <- "o2"
+ names(out)[3] <- "nox"
+ names(out)[4] <- "co"
+ names(out)[5] <- "co2"
+ names(out)[6] <- "time_s"
+ names(out)[7] <- "datetime"
+ 
+ # datetime format
+ out$time <-  as.numeric(substr(out$datetime, 12, 13)) * 60 * 60 + 
+  as.numeric(substr(out$datetime, 15, 16)) * 60 +
+  as.numeric(substr(out$datetime,18, 19))
+ 
+ out <- dplyr::mutate(out, datetime =
+                       as.POSIXct(datetime, format = "%m/%d/%Y %H:%M:%OS"),
+                      o2 = o2 * 10^4,
+                      co2 = co2 * 10^4,
+                      date = as.Date(datetime))
+ # return
+ return(out)
 }
 #________________________________________________________
