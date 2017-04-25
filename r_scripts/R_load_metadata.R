@@ -29,7 +29,7 @@ load_matrix <- function(file, sheet = "matrix"){
  # extract test information
   test_info <- dplyr::select(out, id, id_test, date, fuel_type, fuel_quant)
   
- # convert integrate sample ids to long format
+ # convert integrated sample ids to long format
   ids_int <- dplyr::select(out, date, matches(".*id.*")) %>%
              dplyr::select(-test_id) %>%
              tidyr::gather("sample", "id_sample", 2:12) %>%
@@ -79,8 +79,39 @@ load_metadata <- function(file, sheet = "metadata"){
            tidyr::spread(when, val) %>%
            dplyr::ungroup() %>%
            dplyr::mutate(delta = post - pre,
-                         mean = (post + pre)/ 2)
-           dplyr::group_by(date, inst)
+                         mean = (post + pre) / 2)
+ # canister pressure
+   pressure_can <- dplyr::select(out, id, id_test, date, matches(".*pressure.*")) %>%
+                   dplyr::rename(pre = pre_canister_pressure,
+                                 post = post_canister_pressure) %>%
+                   dplyr::mutate(pre = as.numeric(pre),
+                                 post = as.numeric(post),
+                                 dp = pre - post,
+                                 units = "hg")
+ # background times
+  times_bg <- dplyr::select(out, id, id_test, date, 
+                            matches(".*background_start.*|.*background_end")) %>%
+              tidyr::gather("var", "val", 4:7) %>%
+              tidyr::separate(var, c("when", "type", "time")) %>%
+              dplyr::mutate(val = as.numeric(val) * 60 * 60)
+  
+ # test times
+  times_test <- dplyr::select(out, id, id_test, date, 
+                               matches("^test_start.*|^test_end.*")) %>%
+                dplyr::rename(start = test_start,
+                              end = test_end) %>%
+                dplyr::mutate(start = as.numeric(start) * 60 * 60,
+                              end = as.numeric(end) * 60 * 60)
+   
+  
+
+    dplyr::rename(pre = pre_canister_pressure,
+                  post = post_canister_pressure) %>%
+    dplyr::mutate(pre = as.numeric(pre),
+                  post = as.numeric(post),
+                  dp = pre - post,
+                  units = "hg")
+   
 
 }
 
