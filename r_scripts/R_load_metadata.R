@@ -126,10 +126,20 @@ load_metadata <- function(file, sheet = "metadata"){
                dplyr::rename(pre = preweigh, post = postweigh) %>%
                dplyr::mutate(dm = pre - post,
                              units = "g")
- 
- 
 
-   
+ # notes
+  notes <- dplyr::select(out, id, id_test, date, notes)
+
+ # save
+  saveRDS(flows, "r_files/flows.RDS")
+  saveRDS(pressure_can, "r_files/pressure_can.RDS")
+  saveRDS(times_bg, "r_files/times_bg.RDS")
+  saveRDS(times_fuel, "r_files/times_fuel.RDS")
+  saveRDS(mass_fuel, "r_files/mass_fuel.RDS")
+  saveRDS(notes, "r_files/notes.RDS")
+
+ # return
+  return(list(flows, pressure_can, times_bg, times_fuel, mass_fuel, notes)) 
 
 }
 
