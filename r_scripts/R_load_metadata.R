@@ -102,7 +102,16 @@ load_metadata <- function(file, sheet = "metadata"){
                               end = test_end) %>%
                 dplyr::mutate(start = as.numeric(start) * 60 * 60,
                               end = as.numeric(end) * 60 * 60)
-   
+ # fuel times
+  times_fuel <- dplyr::select(out, id, id_test, date,
+                              matches("^fuel_added.*|^fuel_remove.*")) %>%
+                tidyr::gather("var", "val", 4:17) %>%
+                dplyr::rename(time = val) %>%
+                dplyr::mutate(time = as.numeric(time) * 60 * 60) %>%
+                tidyr::separate(var, c("type", "when", "rep")) %>%
+                dplyr::group_by(id, id_test, date, type, rep) %>%
+                tidyr::spread(when, time) %>%
+                dplyr::rename(on = added, off = remove)
   
 
     dplyr::rename(pre = pre_canister_pressure,
