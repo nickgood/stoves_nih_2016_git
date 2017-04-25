@@ -112,14 +112,23 @@ load_metadata <- function(file, sheet = "metadata"){
                 dplyr::group_by(id, id_test, date, type, rep) %>%
                 tidyr::spread(when, time) %>%
                 dplyr::rename(on = added, off = remove)
-  
 
-    dplyr::rename(pre = pre_canister_pressure,
-                  post = post_canister_pressure) %>%
-    dplyr::mutate(pre = as.numeric(pre),
-                  post = as.numeric(post),
-                  dp = pre - post,
-                  units = "hg")
+ # fuel mass
+  mass_fuel <- dplyr::select(out, id, id_test, date,
+                              matches(".*fuel.*weigh.*")) %>%
+               tidyr::gather("var", "val", 4:17) %>%
+               dplyr::rename(mass = val) %>%
+               dplyr::mutate(mass = as.numeric(mass)) %>%
+               tidyr::separate(var, c("type", "when", "rep")) %>%
+               dplyr::group_by(id, id_test, date, type, rep, when) %>%
+               dplyr::summarise(mass = mean(mass, na.rm = TRUE)) %>%
+               tidyr::spread(when, mass) %>%
+               dplyr::rename(pre = preweigh, post = postweigh) %>%
+               dplyr::mutate(dm = pre - post,
+                             units = "g")
+ 
+ 
+
    
 
 }
