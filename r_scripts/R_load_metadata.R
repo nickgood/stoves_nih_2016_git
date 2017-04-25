@@ -10,25 +10,37 @@
 # file <- "data/logs/test_matrix.xlsx"
 # out <- load_matrix(file)
 # returns a list of 2 data tables
+  
 load_matrix <- function(file, sheet = "matrix"){
  # read excel file
-  out <- as_data_frame(read_excel(path = file, sheet = sheet, col_names = TRUE))
- # remove rows with no test_id
+  out <- as_data_frame(read_excel(path = file, 
+                                  sheet = sheet, col_names = TRUE))
+
+  # remove rows with no test_id
   out <- dplyr::filter(out, !is.na(test_id))
+
  # test id
   out <- dplyr::mutate(out, id_test = as.factor(test_id))
+
  # id number (create simplified id number)
   out <- dplyr::mutate(out, id = as.factor(row_number()))
+
  # date
-  out <- dplyr::mutate(out, date = as.Date(testing_date, origin = "1899-12-30"))
+  out <- dplyr::mutate(out, date = as.Date(testing_date,
+                                           origin = "1899-12-30"))
+
  # fuel_quant
-  out <- dplyr::mutate(out, fuel_quant = as.numeric(number_pieces))
-  out$fuel_quant[28] <- 6 # fix change in format
+  out <- dplyr::mutate(out, 
+                       fuel_quant = as.numeric(number_pieces))
+
+  out$fuel_quant[28] <- 6 # fixes change in format
+  
  # fuel_type
   out <- dplyr::mutate(out, fuel_type = as.factor(tolower(material)))
+
  # extract test information
   test_info <- dplyr::select(out, id, id_test, date, fuel_type, fuel_quant)
-  
+
  # convert integrated sample ids to long format
   ids_int <- dplyr::select(out, date, matches(".*id.*")) %>%
              dplyr::select(-test_id) %>%
@@ -36,10 +48,8 @@ load_matrix <- function(file, sheet = "matrix"){
              dplyr::mutate(sample = as.factor(sample),
                            id_sample = as.factor(id_sample))
 
- # save test info
+ # save to file
   saveRDS(test_info, "r_files/test_info.RDS")
-
- # save integrated sample ids
   saveRDS(ids_int, "r_files/ids_int.RDS")
 
  # return
@@ -53,19 +63,31 @@ load_matrix <- function(file, sheet = "matrix"){
 # out <- load_metadata(file)
 load_metadata <- function(file, sheet = "metadata"){
  # read excel file
-  out <- as_data_frame(read_excel(path = file, sheet = sheet, col_names = TRUE))
-  out <- out[-1,1:(ncol(out)-3)]
+  out <- as_data_frame(read_excel(path = file, 
+                                  sheet = sheet,
+                                  col_names = TRUE))
+
+  out <- out[-1,1:(ncol(out)-3)] # remove empty rows and columns
+
  # read test info
-  test_info <- dplyr::select(readRDS("r_files/test_info.RDS"), id, id_test)
+  test_info <- dplyr::select(readRDS("r_files/test_info.RDS"),
+                             id,
+                             id_test)
  # date
-  out <- dplyr::mutate(out, date = as.Date(as.numeric(date), origin = "1899-12-30"))
+  out <- dplyr::mutate(out, date = as.Date(as.numeric(date),
+                            origin = "1899-12-30"))
+
  # test id
   out <- dplyr::rename(out, id_test = test_id) %>%
          dplyr::right_join(test_info, by = "id_test")
+
  # flows
-  flows <- dplyr::select(out, id, id_test, date, matches(".*pax.*|.*white.*|.*carbonyl.*|.*isokinetic.*")) %>%
+  flows <- dplyr::select(out, 
+                         id, id_test, date,
+                         matches(".*pax.*|.*white.*|.*carbonyl.*|.*isokinetic.*")) %>%
            tidyr::gather("var", "val", 4:37) %>%
-           dplyr::filter(grepl(".*outlet.*", var) == FALSE, grepl(".*average.*", var) == FALSE) %>%
+           dplyr::filter(grepl(".*outlet.*", var) == FALSE,
+                         grepl(".*average.*", var) == FALSE) %>%
            dplyr::mutate(var = sub("_inlet", "", var)) %>%
            tidyr::separate(var, c("when", "inst", "rep")) %>%
            dplyr::mutate(val = as.numeric(val),
@@ -80,6 +102,7 @@ load_metadata <- function(file, sheet = "metadata"){
            dplyr::ungroup() %>%
            dplyr::mutate(delta = post - pre,
                          mean = (post + pre) / 2)
+
  # canister pressure
    pressure_can <- dplyr::select(out, id, id_test, date, matches(".*pressure.*")) %>%
                    dplyr::rename(pre = pre_canister_pressure,
@@ -142,4 +165,4 @@ load_metadata <- function(file, sheet = "metadata"){
   return(list(flows, pressure_can, times_bg, times_fuel, mass_fuel, notes)) 
 
 }
-
+#_______________________________________________________________________________
