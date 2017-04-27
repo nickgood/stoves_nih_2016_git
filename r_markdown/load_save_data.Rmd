@@ -101,13 +101,13 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 ## sample matrix
 
-Load sample matrix. Function ssave two .RDS files (ids_int and test_info)
+Load sample matrix. Function saves two .RDS files (ids_int and test_info).
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- load_singlefiles("sample")
 ```
 
-Load metadata. Funtion save multiple files for flows, times, canister pressure, fuel mass, and notes.
+Load metadata. Function to save files for: flows, times, canister pressure, fuel mass, and notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   metadata <- load_singlefiles("meta")
