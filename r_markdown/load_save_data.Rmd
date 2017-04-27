@@ -95,7 +95,7 @@ Loads the microgram sheet  and resaves data as an .Rda.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- load_singlefiles("voc")
 
-  save(voc, file = "../r_files/voc.Rda")
+  saveRDS(voc, file = "../r_files/voc.RDS")
 ```
 
 # Metadata
