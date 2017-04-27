@@ -72,7 +72,7 @@ Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax <- load_multifile(fldr = "../data/pax",
-                        pattern = "ALLDAY_PAX.csv$", inst = "pax")
+                        pattern = ".*_PAX.csv$", inst = "pax")
 
   save(pax, file = "../r_files/pax.Rda")
 ```
