@@ -571,8 +571,8 @@ load_singlefiles <- function(log){
   
  # sample log
   if(log == "sample"){
-    filelist <- list.files("../data/logs", "^Sample Tracking Log.xlsx$", full.names = TRUE)
-    out <- load_samples(filelist[1])
+    filelist <- list.files("../data/logs", "^test_matrix.xlsx$", full.names = TRUE)
+    out <- load_matrix(filelist[1])
   }
   
  # batch sample log
