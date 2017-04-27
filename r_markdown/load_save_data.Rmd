@@ -77,17 +77,6 @@ Loads and resaves data as .Rda.
   saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
-## smps
-
-Loads and resaves data as an .Rda.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  smps <- load_multifile(fldr = "../data/smps",
-                         pattern = "_SMPS.csv$", inst = "smps")
-
-  save(smps, file = "../r_files/smps.Rda")
-```
-
 ## temperature
 
 Loads and resaves data as an .Rda.
