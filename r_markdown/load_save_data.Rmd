@@ -107,4 +107,7 @@ Load sample matrix. Function ssave two .RDS files (ids_int and test_info)
   samples <- load_singlefiles("sample")
 ```
 
+Load metadata. Funtion save multiple files for flows, times, canister pressure, fuel mass, and notes.
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+metadata <- load_metadata("meta")
