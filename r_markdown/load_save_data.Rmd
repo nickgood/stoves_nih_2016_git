@@ -88,16 +88,6 @@ Loads and resaves data as an .Rda.
   saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
-## transmissometer
-
-Loads and resaves data as an .Rda.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans <- load_singlefiles("trans")
-
-  save(trans, file = "../r_files/trans.Rda")
-```
- 
 ## vocs
 
 Loads the microgram sheet  and resaves data as an .Rda.
