@@ -576,9 +576,9 @@ load_singlefiles <- function(log){
   }
   
  # batch sample log
-  if(log == "batch"){
-    filelist <- list.files("../data/logs", "^Transcribed Batch Fed Stove Sampling Forms.xlsx$", full.names = TRUE)
-    out <- load_batch(filelist[1])
+  if(log == "meta"){
+    filelist <- list.files("../data/logs", "^metadata.xlsx$", full.names = TRUE)
+    out <- load_metadata(filelist[1])
   }
   
  # wood sample log
