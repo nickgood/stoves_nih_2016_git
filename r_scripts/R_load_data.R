@@ -321,6 +321,8 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   names(df) <- gsub("-", "_", colnames(df))
   names(df) <- gsub("\\+", "_", colnames(df))
   names(df) <- gsub(",", "_", colnames(df))
+  
+  df <- as_data_frame(df)
     
   names(df)[1] <- "id_can"
   names(df)[2] <- "id_voc"
@@ -331,16 +333,10 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(x)))
 
-  df_fac <- subset(df, select = c(id_can, id_voc))
-  df_fac <- as.data.frame(lapply(df_fac, 
-                                 function(x) as.factor(x))) 
-
-  df <- cbind(df_fac, df_num)
-      
   df$type <- as.character("NA")
-  df$type <- ifelse(grepl("SF",substr(df$id_voc,1,2)),"test", df$type) 
-  df$type <- ifelse(grepl("P",substr(df$id_voc,1,1)),"pilot", df$type) 
-  df$type <- ifelse(grepl("BG",substr(df$id_voc,1,2)),"bg", df$type)
+  df$type <- ifelse(grepl("SF", substr(df$id_voc,1,2)), "test", df$type) 
+  df$type <- ifelse(grepl("P", substr(df$id_voc,1,1)), "pilot", df$type) 
+  df$type <- ifelse(grepl("BG", substr(df$id_voc,1,2)), "bg", df$type)
   df$type <- as.factor(df$type)
 
   df$id_voc <- gsub(" ", "", df$id_voc)
