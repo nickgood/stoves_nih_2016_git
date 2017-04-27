@@ -32,7 +32,7 @@ Loads ecoc data file and resave as .RDS
 
 ## fivegas
 
-The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
+The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .RDS files.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas <- load_fivegas()
@@ -41,7 +41,7 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 
 ## gravimetric
 
-Loads filter weight data and resaves as .Rda.
+Loads filter weight data and resaves as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- load_singlefiles("grav")
@@ -59,16 +59,16 @@ Loads and resaves data as .RDS.
 
 ## pahs
 
-Loads and resaves data as .Rda.
+Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
   # pah <- load_singlefiles("pah")
-  # save(pah, file = "../r_files/pah.Rda")
+  # save(pah, file = "../r_files/pah.RDS")
 ```
 
 ## pax
 
-Loads and resaves data as .Rda.
+Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax <- load_multifile(fldr = "../data/pax",
@@ -79,7 +79,7 @@ Loads and resaves data as .Rda.
 
 ## temperature
 
-Loads and resaves data as an .Rda.
+Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
@@ -90,7 +90,7 @@ Loads and resaves data as an .Rda.
 
 ## vocs
 
-Loads the microgram sheet  and resaves data as an .Rda.
+Loads the microgram sheet  and resaves data as an .RDS.
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- load_singlefiles("voc")
