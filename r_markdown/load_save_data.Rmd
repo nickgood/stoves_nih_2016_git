@@ -99,7 +99,7 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 # Metadata
 
-## sample logs
+## sample matrix
 
 Reference for test id, stove and fuel types.
 
