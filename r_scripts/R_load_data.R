@@ -106,13 +106,13 @@ load_ecoc_file <- function(file){
 # Load gravimetric file
 # file <- "data/grav/Teflon Filter Weight Log.xlsx"
 #
-load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
+load_grav_file <- function(file, sheet = "filters"){
 
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
+  out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
   
-  df <- as_tibble(t(df[1:29,-1]))  # transpose
+  out <- as_tibble(t(out[1:27,-1]))  # transpose
     
-  names(df) <- c("id_filter", 
+  names(out) <- c("id_filter", 
                  "date_pre",
                  "person_pre",
                  "toc_pre",
@@ -127,7 +127,6 @@ load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
                  "wgt_pre_avg",
                  "date_post",
                  "id_grav",
-                 "time_post",
                  "person_post",
                  "toc_post",
                  "rh_post",
@@ -139,32 +138,26 @@ load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
                  "wgt_post_3",
                  "wgt_post_avg",
                  "wgt_dif",
-                 "notes",
-                 "lod")
+                 "notes")
 
-  cols <- subset(colnames(df), grepl("^date",colnames(df))==TRUE)
-  df_dat <- subset(df, select = cols)
-  df_dat <- as.data.frame(lapply(df_dat, 
+  cols <- subset(colnames(out), grepl("^date", colnames(out)) == TRUE)
+  out_dat <- subset(out, select = cols)
+  out_dat <- as.data.frame(lapply(out_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
-  cols <- subset(colnames(df), grepl("^toc_|^rh_|^phpa_|^wgt_|lod",colnames(df))==TRUE)
-  df_num <- subset(df, select = cols)
-  df_num <- as.data.frame(lapply(df_num, 
+  cols <- subset(colnames(out), grepl("^toc_|^rh_|^phpa_|^wgt_", colnames(out))==TRUE)
+  out_num <- subset(out, select = cols)
+  out_num <- as.data.frame(lapply(out_num, 
                                  function(x) as.numeric(as.character(x))))
 
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-  df_time <- subset(df, select = cols)
-  df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60))  
-
-  df_char <- subset(df, select = notes)
+  out_char <- subset(out, select = notes)
     
-  cols <- subset(colnames(df), grepl("^person_|^id",colnames(df))==TRUE)
-  df_fac <- subset(df, select = cols)
-  df_fac <- as.data.frame(lapply(df_fac, 
+  cols <- subset(colnames(out), grepl("^person_|^id",colnames(out)) == TRUE)
+  out_fac <- subset(out, select = cols)
+  out_fac <- as.data.frame(lapply(out_fac, 
                                  function(x) as.factor(x)))
 
-  out <- cbind(df_dat, df_num, df_time, df_char, df_fac)               
+  out <- cbind(out_dat, out_num, out_char, out_fac)
 
   out$id <- as.factor(sub("-.*", "", out$id_grav))
   
@@ -567,7 +560,7 @@ load_singlefiles <- function(log){
   
  # grav
   if(log == "grav"){
-    filelist <- list.files("../data/grav", "^Teflon Filter Weight Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/grav", "^Teflon Filters.xlsx$", full.names = TRUE)
     out <- load_grav_file(filelist[1])
   }
   
