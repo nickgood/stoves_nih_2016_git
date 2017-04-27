@@ -565,7 +565,7 @@ load_singlefiles <- function(log){
 
  # vocs
   if(log == "voc"){
-    filelist <- list.files("../data/voc", ".xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/voc", "^VOC data.xlsx$", full.names = TRUE)
     out <- load_voc_file(filelist[1])
   }
   
