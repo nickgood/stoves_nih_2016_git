@@ -179,13 +179,6 @@ load_ions_file <- function(file, sheet = "ug"){
     names(df) <- tolower(colnames(df))
     names(df) <- sub(" \\(ug\\)|\\(ug c\\)", "", colnames(df))
     names(df) <- gsub("/|-|,", "_", colnames(df))
-
-  # test type
-    df$type <- df$id_ions
-    df$type <- ifelse(grepl("[0-9]",substr(df$id_ions,1,1)),"test", df$type) 
-    df$type <- ifelse(grepl("P",substr(df$id_ions,1,1)),"pilot", df$type) 
-    df$type <- ifelse(grepl("G",substr(df$id_ions,1,1)),"bg", df$type)
-    df$type <- as.factor(df$type)
     
   # id
     df$id <- as.factor(ifelse(grepl("^[0-9]|^G[0-9]",df$id_ions), sub("-.*","",df$id_ions),"NA"))
