@@ -168,7 +168,7 @@ load_grav_file <- function(file, sheet = "filters"){
 
 #________________________________________________________
 # Load ions and carbonyls file
-# file <- "../data/ions/20161230_IONS.xls"
+# file <- "../data/ions/Cookstove Substudy Data.xlsx"
 # set sheet to "ug" or "ug_m3"
 load_ions_file <- function(file, sheet = "ug"){
 
