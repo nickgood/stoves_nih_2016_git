@@ -85,7 +85,7 @@ Loads and resaves data as an .Rda.
   temp <- load_multifile(fldr = "../data/temp",
                          pattern = ".*TEMPERATURE.CSV$", inst = "temp")
 
-  save(temp, file = "../r_files/temp.Rda")
+  saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
 ## transmissometer
