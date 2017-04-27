@@ -50,11 +50,10 @@ Loads filter weight data and resaves as .Rda.
 
 ## ions and carbonyls
 
-Loads and resaves data as .Rda.
+Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   ions <- load_singlefiles("ions")
-
   save(ions, file = "../r_files/ions.Rda")
 ```
 
