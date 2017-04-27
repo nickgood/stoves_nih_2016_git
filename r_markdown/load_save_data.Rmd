@@ -21,54 +21,22 @@ output:
 
 # Pollutant data
 
-## co2
-
-Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  co2_lab <- load_multifile(fldr = "../data/co2",
-                            pattern = "DILUTION1.csv$", inst = "co2")
-
-  save(co2_lab, file = "../r_files/co2_lab.Rda")
-
-  co2_sample <- load_multifile(fldr = "../data/co2",
-                               pattern = "DILUTION2.csv$", inst = "co2")
-
-  save(co2_sample, file = "../r_files/co2_sample.Rda")
-
-  co2_lab_sample <- load_multifile(fldr = "../data/co2",
-                                   pattern = "DILUTION.csv$", inst = "co2")
-
-  save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
-```
-
 ## ecoc
 
-Loads ecoc data file and resave as .Rda
+Loads ecoc data file and resave as .RDS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ecoc <- load_singlefiles("ecoc")
-
-  save(ecoc, file = "../r_files/ecoc.Rda")
-```  
+  # ecoc <- load_singlefiles("ecoc")
+  # saveRDS(ecoc, file = "../r_files/ecoc.RDS")
+```
 
 ## fivegas
 
 The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_conc <- load_fivegas(type = "conc")
-
-  save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
-
-  fivegas_volts <- load_fivegas(type = "volts")
-
-  save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
-
-  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",
-                                      type = "volts")
-
-  save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
+  fivegas <- load_fivegas()
+  saveRDS(fivegas, file = "../r_files/fivegas.RDS")
 ```
 
 ## gravimetric
@@ -77,8 +45,7 @@ Loads filter weight data and resaves as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- load_singlefiles("grav")
-
-  save(grav, file = "../r_files/grav.Rda")
+  saveRDS(grav, file = "../r_files/grav.RDS")
 ```
 
 ## ions and carbonyls
