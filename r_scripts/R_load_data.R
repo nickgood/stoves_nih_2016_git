@@ -342,13 +342,7 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   df$id_voc <- gsub(" ", "", df$id_voc)
   df$id <- sub(".*-", "", df$id_voc)
   df$id <- as.factor(df$id)
-    
-  df$datetime_start <- as.POSIXct(df$datetime_start*60*60*24, origin = "1899-12-30", tz = "GMT")
-  df$datetime_end <- as.POSIXct(df$datetime_end*60*60*24, origin = "1899-12-30", tz = "GMT")
 
-  df$date_start <- as.Date(df$datetime_start)
-  df$date_end <- as.Date(df$datetime_end)
-    
   # return 
     return(df)
 }
