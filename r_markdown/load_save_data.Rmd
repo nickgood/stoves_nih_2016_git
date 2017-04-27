@@ -77,17 +77,6 @@ Loads and resaves data as .Rda.
   saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
-## scale
-
-Loads and resaves data as .Rda.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  scale <- load_multifile(fldr = "../data/scale",
-                          pattern = "_SCALE.xlsx$", inst = "scale")
-
-  save(scale, file = "../r_files/scale.Rda")
-```
-
 ## smps
 
 Loads and resaves data as an .Rda.
