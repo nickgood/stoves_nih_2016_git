@@ -310,13 +310,12 @@ load_trans_file <- function(file, sheet = "Transmissometer Log"){
 
 #________________________________________________________
 # Load vocs
-# file <- "../data/voc/20161215_VOC.xlsx"
+# file <- "../data/voc/VOC data.xlsx"
+# tmp <- load_voc_file(file)
 load_voc_file <- function(file, sheet = "Sheet1"){
 
   df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
-    
-  df <- df[-1,]
-    
+
   names(df) <- paste0("voc_",colnames(df))
   names(df) <- tolower(gsub(" ", "_", colnames(df)))
   names(df) <- gsub("-", "_", colnames(df))
