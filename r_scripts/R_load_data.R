@@ -580,39 +580,9 @@ load_singlefiles <- function(log){
     filelist <- list.files("../data/logs", "^metadata.xlsx$", full.names = TRUE)
     out <- load_metadata(filelist[1])
   }
-  
- # wood sample log
-  if(log == "wood"){
-  filelist <- list.files("../data/logs", "^Transcribed Wood Stove Sampling Forms.xlsx$", full.names = TRUE)
-    out <- load_wood(filelist[1])
-  }
 
- # calibration tester 1 log
-  if(log == "cal_1"){
-    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 1 Calibration Log.xlsx$", full.names = TRUE)
-    out <- load_fivegascal(filelist[1])
-  }
-  
-# data sheet tester 1
-  if(log == "data_1"){
-    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 1 Data Sheets.xlsx$", full.names = TRUE)
-    out <- load_fivegas_filter_meta(filelist[1])
-  }
-  
- # calibration tester 2 log
-  if(log == "cal_2"){
-    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 2 Calibration Log.xlsx$", full.names = TRUE)
-    out <- load_co2_cal_flows_meta(filelist[1])
-  }
-  
- # data sheet tester 2
-  if(log == "data_2"){
-    filelist <- list.files("../data/logs", "^Transcribed Emissions Tester 2 Data Sheets.xlsx$", full.names = TRUE)
-    out <- load_flow_fivegas_meta(filelist[1])
-  }
-  
  # return
-    return(out)
+  return(out)
 }
 #________________________________________________________
 
