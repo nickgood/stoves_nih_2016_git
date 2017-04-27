@@ -49,8 +49,8 @@ load_matrix <- function(file, sheet = "matrix"){
                            id_sample = as.factor(id_sample))
 
  # save to file
-  saveRDS(test_info, "r_files/test_info.RDS")
-  saveRDS(ids_int, "r_files/ids_int.RDS")
+  saveRDS(test_info, "../r_files/test_info.RDS")
+  saveRDS(ids_int, "../r_files/ids_int.RDS")
 
  # return
   return(list(test_info, ids_int))
