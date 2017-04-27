@@ -101,7 +101,7 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 ## sample matrix
 
-Reference for test id, stove and fuel types.
+Load sample matrix. Function ssave two .RDS files (ids_int and test_info)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- load_singlefiles("sample")
