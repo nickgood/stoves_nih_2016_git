@@ -181,9 +181,8 @@ load_ions_file <- function(file, sheet = "ug"){
     names(df) <- gsub("/|-|,", "_", colnames(df))
     
   # id
-    df$id <- as.factor(ifelse(grepl("^[0-9]|^G[0-9]",df$id_ions), sub("-.*","",df$id_ions),"NA"))
-    df <- dplyr::mutate(df, id = sub("F$","",id))  # remove trailing "F" from id
-    
+    df$id <- as.factor(df$id_ions)
+
   # return 
     return(df)
 }
@@ -559,7 +558,7 @@ load_singlefiles <- function(log){
   
  # ions
   if(log == "ions"){
-    filelist <- list.files("../data/ions", "IONS.xls$", full.names = TRUE)
+    filelist <- list.files("../data/ions", "^Cookstove Substudy Data.xlsx$", full.names = TRUE)
     out <- load_ions_file(filelist[1])
   }
   
