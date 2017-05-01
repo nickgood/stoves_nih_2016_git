@@ -35,6 +35,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times_fuel <- readRDS("../r_files/times_fuel.RDS")
   times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
 * notes
