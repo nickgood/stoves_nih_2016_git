@@ -70,6 +70,14 @@ output:
   out_rep <- filter_times_rep(times_fuel, out)
 ```
 
+## Background
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::group_by(out_bg, id, type, pol) %>%
+        dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+        tidyr::spread(type, mean)
+```
+
 # QC
 
 # Save to file
