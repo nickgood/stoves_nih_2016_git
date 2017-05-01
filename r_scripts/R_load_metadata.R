@@ -104,19 +104,20 @@ load_metadata <- function(file, sheet = "metadata"){
                          mean = (post + pre) / 2)
 
  # canister pressure
-   pressure_can <- dplyr::select(out, id, id_test, date, matches(".*pressure.*")) %>%
-                   dplyr::rename(pre = pre_canister_pressure,
-                                 post = post_canister_pressure) %>%
-                   dplyr::mutate(pre = as.numeric(pre),
-                                 post = as.numeric(post),
-                                 dp = pre - post,
-                                 units = "hg")
+  pressure_can <- dplyr::select(out, id, id_test, date, matches(".*pressure.*")) %>%
+                  dplyr::rename(pre = pre_canister_pressure,
+                                post = post_canister_pressure) %>%
+                  dplyr::mutate(pre = as.numeric(pre),
+                                post = as.numeric(post),
+                                dp = pre - post,
+                                units = "hg")
  # background times
   times_bg <- dplyr::select(out, id, id_test, date, 
                             matches(".*background_start.*|.*background_end")) %>%
               tidyr::gather("var", "val", 4:7) %>%
               tidyr::separate(var, c("when", "type", "time")) %>%
-              dplyr::mutate(val = as.numeric(val) * 60 * 60)
+              dplyr::mutate(val = as.numeric(val) * 60 * 60) %>%
+              tidyr::spread("time", "val")
 
  # test times
   times_test <- dplyr::select(out, id, id_test, date, 
