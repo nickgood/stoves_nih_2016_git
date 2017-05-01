@@ -90,7 +90,7 @@ Loads and resaves data as an .RDS.
 
 ## vocs
 
-Loads the microgram sheet  and resaves data as an .RDS.
+Loads the microgram sheet and resaves data as an .RDS.
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- load_singlefiles("voc")
