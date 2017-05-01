@@ -67,7 +67,7 @@ load_metadata <- function(file, sheet = "metadata"){
                                   sheet = sheet,
                                   col_names = TRUE))
 
-  out <- out[-1,1:(ncol(out)-3)]  # remove empty rows and columns
+  out <- out[-1,1:(ncol(out)-1)]  # remove empty rows and columns
 
  # read test info
   test_info <- dplyr::select(readRDS("../r_files/test_info.RDS"),
@@ -140,7 +140,7 @@ load_metadata <- function(file, sheet = "metadata"){
  # fuel mass
   mass_fuel <- dplyr::select(out, id, id_test, date,
                               matches(".*fuel.*weigh.*")) %>%
-               tidyr::gather("var", "val", 4:16) %>%
+               tidyr::gather("var", "val", 4:17) %>%
                dplyr::rename(mass = val) %>%
                dplyr::mutate(mass = as.numeric(mass)) %>%
                tidyr::separate(var, c("type", "when", "rep")) %>%
