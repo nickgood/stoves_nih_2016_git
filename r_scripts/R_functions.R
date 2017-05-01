@@ -158,6 +158,7 @@ filter_times <- function(times, df){
 }
 #________________________________________________________
 
+#________________________________________________________
 filter_times_startup <- function(times, df){
  
  ids <- unique(times$id)
@@ -176,6 +177,69 @@ filter_times_startup <- function(times, df){
    out <- tmp
   }
 
+  # if not first match with data
+  if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+   out <- rbind(out, tmp)
+  }
+  # end for loop
+ }
+
+ # return
+ return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+filter_times_background <- function(times, df){
+
+ num <- nrow(times)
+
+ # loop ids
+ for(i in 1:num){
+  
+  tmp <- dplyr::filter(df,
+                       date == times$date[i],
+                       time >= times$start[i],
+                       time <= times$end[i]) %>%
+   dplyr::mutate(id = times$id[i],
+                 type = times$when[i])
+  
+  # if first match
+  if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+   out <- tmp
+  }
+  
+  # if not first match with data
+  if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+   out <- rbind(out, tmp)
+  }
+  # end for loop
+ }
+ 
+ # return
+ return(out)
+}
+#________________________________________________________
+
+filter_times_rep <- function(times, df){
+ 
+ num <- nrow(times)
+ 
+ # loop ids
+ for(i in 1:num){
+
+  tmp <- dplyr::filter(df,
+                       date == times$date[i],
+                       time >= times$on[i],
+                       time <= times$off[i]) %>%
+   dplyr::mutate(id = times$id[i],
+                 rep = times$rep[i])
+
+ # if first match
+  if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+   out <- tmp
+  }
+  
   # if not first match with data
   if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
    out <- rbind(out, tmp)
