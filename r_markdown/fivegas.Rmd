@@ -44,6 +44,10 @@ output:
   notes <- readRDS("../r_files/notes.RDS")
 ```
 
+# Filter times
+
+
+
 # QC
 
 No notes indicating bad qc data.
@@ -52,42 +56,17 @@ No notes indicating bad qc data.
   notes$qc <- "ok"
 ```
 
-#
-
-# Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
-```
+# Save to file
 
 # Summary
 
-The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
-
-$Fivegas$ data is expected to be missing for: 
-
-* all "G" tests: five gas not run during backgrounds.
-
-* 1B, 2A: "no data" noted on QC log
-
-* 4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
-
-* calibration files for 2016/03/09 and 2016/04/01 missing (check)
 
 # Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
-        dplyr::arrange(id) %>%
-        dplyr::mutate(id = as.factor(id))
-
-  ggplot(df, aes(datetime, ppm, colour = qc, group = pol)) + 
+  ggplot(data, aes(datetime, co)) + 
     geom_line() +
     scale_y_log10(limits = c(1, 10^5)) +
-    scale_colour_manual(values = 
-                        c("ok" = "mediumaquamarine",
-                          "maybe" = "mediumorchid1",
-                          "bad" = "darkorange1")) +
     facet_wrap(~id, ncol = 3, scale = "free") +
     theme_minimal() +
     xlab("") +
