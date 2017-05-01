@@ -46,8 +46,9 @@ output:
 
 # Filter times
 
-
-
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  tmp <- id_time(test_times, data)
+```
 # QC
 
 No notes indicating bad qc data.
