@@ -74,6 +74,12 @@ output:
 
 # Save to file
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(out_full, file = "../r_files/fivegas_full.RDS")
+  saveRDS(out_bg, file = "../r_files/fivegas_background.RDS")
+  saveRDS(out_rep, file = "../r_files/fivegas_byrep.RDS")
+```
+
 # Summary
 
 # Plots
