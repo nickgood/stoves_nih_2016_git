@@ -116,7 +116,7 @@ load_metadata <- function(file, sheet = "metadata"){
                             matches(".*background_start.*|.*background_end")) %>%
               tidyr::gather("var", "val", 4:7) %>%
               tidyr::separate(var, c("when", "type", "time")) %>%
-              dplyr::mutate(val = as.numeric(val) * 60 * 60) %>%
+              dplyr::mutate(val = as.numeric(val) * 24 * 60 * 60) %>%
               tidyr::spread("time", "val")
 
  # test times
@@ -124,14 +124,14 @@ load_metadata <- function(file, sheet = "metadata"){
                                matches("^test_start.*|^test_end.*")) %>%
                 dplyr::rename(start = test_start,
                               end = test_end) %>%
-                dplyr::mutate(start = as.numeric(start) * 60 * 60,
-                              end = as.numeric(end) * 60 * 60)
+                dplyr::mutate(start = as.numeric(start) * 24 * 60 * 60,
+                              end = as.numeric(end) * 24 * 60 * 60)
  # fuel times
   times_fuel <- dplyr::select(out, id, id_test, date,
                               matches("^fuel_added.*|^fuel_remove.*")) %>%
                 tidyr::gather("var", "val", 4:17) %>%
                 dplyr::rename(time = val) %>%
-                dplyr::mutate(time = as.numeric(time) * 60 * 60) %>%
+                dplyr::mutate(time = as.numeric(time) * 24 * 60 * 60) %>%
                 tidyr::separate(var, c("type", "when", "rep")) %>%
                 dplyr::group_by(id, id_test, date, type, rep) %>%
                 tidyr::spread(when, time) %>%
