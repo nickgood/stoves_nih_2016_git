@@ -44,10 +44,30 @@ output:
   notes <- readRDS("../r_files/notes.RDS")
 ```
 
-# Filter times
+# Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out <- filter_times_startup(times_test, data)
+ out <- tidyr::gather(data, "pol", "val", 1:5)
+```
+
+# Filter times
+
+* full test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_full <- filter_times_startup(times_test, out)
+```
+
+* background levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_bg <- filter_times_background(times_bg, out)
+```
+
+* levels by replicate
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_rep <- filter_times_rep(times_fuel, out)
 ```
 
 # QC
@@ -58,8 +78,33 @@ output:
 
 # Plots
 
+* tests
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(out, aes(datetime, co)) + 
+  ggplot(out_full, aes(datetime, val, color = pol )) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+* background
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(out_bg, aes(datetime, val, color = pol )) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+* background
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(out_rep, aes(datetime, val, color = rep)) + 
     geom_point() +
     scale_y_log10() +
     facet_wrap(~id, ncol = 3, scale = "free") +
