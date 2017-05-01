@@ -158,6 +158,36 @@ filter_times <- function(times, df){
 }
 #________________________________________________________
 
+filter_times_startup <- function(times, df){
+ 
+ ids <- unique(times$id)
+ 
+ # loop ids
+ for(i in 1:length(ids)){
+  
+  tmp <- dplyr::filter(df,
+                       date == times$date[i],
+                       time >= times$start[i],
+                       time <= times$end[i]) %>%
+         dplyr::mutate(id = times$id[i])
+  
+  # if first match
+  if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
+   out <- tmp
+  }
+
+  # if not first match with data
+  if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
+   out <- rbind(out, tmp)
+  }
+  # end for loop
+ }
+
+ # return
+ return(out)
+}
+#________________________________________________________
+
 #________________________________________________________
 # plot mass based emission factors 
 plot_mass_ef <- function(df, pol_name){
