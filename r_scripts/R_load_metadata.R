@@ -59,7 +59,7 @@ load_matrix <- function(file, sheet = "matrix"){
 
 #_______________________________________________________________________________
 # Load metadata
-# file <- "data/logs/metadata.xlsx"
+# file <- "../data/logs/metadata.xlsx"
 # out <- load_metadata(file)
 load_metadata <- function(file, sheet = "metadata"){
  # read excel file
@@ -67,7 +67,7 @@ load_metadata <- function(file, sheet = "metadata"){
                                   sheet = sheet,
                                   col_names = TRUE))
 
-  out <- out[-1,1:(ncol(out)-3)] # remove empty rows and columns
+  out <- out[-1,1:(ncol(out)-3)]  # remove empty rows and columns
 
  # read test info
   test_info <- dplyr::select(readRDS("../r_files/test_info.RDS"),
@@ -117,7 +117,7 @@ load_metadata <- function(file, sheet = "metadata"){
               tidyr::gather("var", "val", 4:7) %>%
               tidyr::separate(var, c("when", "type", "time")) %>%
               dplyr::mutate(val = as.numeric(val) * 60 * 60)
-  
+
  # test times
   times_test <- dplyr::select(out, id, id_test, date, 
                                matches("^test_start.*|^test_end.*")) %>%
@@ -156,6 +156,7 @@ load_metadata <- function(file, sheet = "metadata"){
  # save
   saveRDS(flows, "../r_files/flows.RDS")
   saveRDS(pressure_can, "../r_files/pressure_can.RDS")
+  saveRDS(times_test, "../r_files/times_test.RDS")
   saveRDS(times_bg, "../r_files/times_bg.RDS")
   saveRDS(times_fuel, "../r_files/times_fuel.RDS")
   saveRDS(mass_fuel, "../r_files/mass_fuel.RDS")
