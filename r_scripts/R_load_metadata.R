@@ -140,7 +140,7 @@ load_metadata <- function(file, sheet = "metadata"){
  # fuel mass
   mass_fuel <- dplyr::select(out, id, id_test, date,
                               matches(".*fuel.*weigh.*")) %>%
-               tidyr::gather("var", "val", 4:17) %>%
+               tidyr::gather("var", "val", 4:16) %>%
                dplyr::rename(mass = val) %>%
                dplyr::mutate(mass = as.numeric(mass)) %>%
                tidyr::separate(var, c("type", "when", "rep")) %>%
