@@ -164,7 +164,7 @@ output:
 # filter data associated with open circut
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #temp_merged <- dplyr::filter(temp_merged, t_oc < 200 | t_oc < - 200 )
+  temp_merged <- dplyr::filter(temp_merged, t_oc < 200 | t_oc < - 200 )
 ```
 
 ## additional bad tests
