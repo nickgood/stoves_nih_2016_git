@@ -140,22 +140,15 @@ Is B[0-9] background as well?
         dplyr::summarise(bg = mean(conc, na.rm = TRUE))
 ```
 
-# Blanks
+# Blanks (LOD/LOQ)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bk <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
+  bk <- dplyr::filter(grav, type == "bk") %>%
+        dplyr::summarise(lod = 3 * sd(conc, na.rm = TRUE),
+                         loq = 10 * sd(conc, na.rm = TRUE))
 ```
 
-The LOD is `r lod_var`, the LOQ is `r loq_var`.
-
-* flag the measurements
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
-                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
-```
+The LOD is `r bk$lod[1]`, the LOQ is `r bk$loq[1]`.
 
 # Background analysis
 
