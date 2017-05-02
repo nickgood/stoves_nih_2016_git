@@ -40,9 +40,9 @@ output:
 * make longer
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_ <- dplyr::filter(grav, !is.na(id)) %>%
+  grav <- dplyr::filter(grav, !is.na(id)) %>%
            tidyr::gather("var", "val", matches("^wgt.*")) %>%
-           dplyr::filter(grepl(".*avg.*", var) == FALSE) %>%
+           dplyr::filter(grepl(".*avg.*|.*dif.*", var) == FALSE) %>%
            tidyr::separate("var", c("type", "when", "rep")) %>%
            dplyr::mutate(type = ifelse(when == "cal", "cal", "sample"),
                          when = ifelse(when == "cal", rep, when),
@@ -53,8 +53,17 @@ output:
 * average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_ <- dplyr::group_by(
-   dplyr::summarise()
+  grav <- dplyr::group_by(grav, id, type, 
+                           when, date_pre, date_post,
+                           toc_pre, rh_pre,
+                           toc_post, rh_post,
+                           id_filter,
+                           id_grav,
+                           id_blank) %>%
+           dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+           dplyr::ungroup() %>%
+           tidyr::spread(when, mean) %>%
+           dplyr::mutate(delta = post - pre)
 ```
 
 
