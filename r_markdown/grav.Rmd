@@ -102,10 +102,17 @@ Spread data
 ## Test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- grav_ <- dplyr::left_join(grav,
+ grav <- dplyr::left_join(grav,
                            dplyr::select(times_test, id, start, end))
 ```
 
+## Concentrations
+
+* update conc units?
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ grav <- dplyr::mutate(grav, conc = (delta - cal_delta) / (60 * flow_mean / 1000 * (end - start))) # mg/m^3???
+```
 
 ## Test type
 
