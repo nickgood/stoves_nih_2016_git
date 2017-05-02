@@ -60,13 +60,13 @@ output:
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_ <- dplyr::mutate(voc,
-                            lod = as.factor(ifelse(ppb == -8888,
-                            "below",
-                            "above")),
-                        ppb = ifelse(ppb == -8888,
-                                      NA,
-                                      ppb))
+  voc <- dplyr::mutate(voc,
+                           lod = as.factor(ifelse(ppb == -8888,
+                           "below",
+                           "above")),
+                       ppb = ifelse(ppb == -8888,
+                                    NA,
+                                    ppb))
 ```
 
 # QC
@@ -98,7 +98,6 @@ output:
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
         na.omit() %>%
         dplyr::select(-id_can, -id_voc)
-
 ```
 
 * plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
