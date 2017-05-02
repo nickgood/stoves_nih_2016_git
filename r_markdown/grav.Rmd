@@ -156,44 +156,14 @@ The LOD is `r bk$lod[1]`, the LOQ is `r bk$loq[1]`.
 * remove missing data
 * calculate average concentration emitted ( and other stats)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
-        dplyr::select(id, flow,
-                         start, end,
-                         wgt_delta) %>%
-        na.omit() %>%
-        dplyr::mutate(dur = (end - start) / 60,
-                      conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(conc_bg = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n()) %>%
-        dplyr::mutate(type = factor("test", levels_type))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
-```
-
-* add background to main dataframe
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  dplyr::select(bg, type, conc_bg),
-                                                by = "type")
-```
-
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
-
-Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
+Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
 
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(grav_merged, file = "../r_files/grav_merged.Rda")
+  saveRDS(grav, file = "../r_files/grav_merged.RDS")
 ```
 
 # Plots
@@ -201,43 +171,9 @@ Gravimetric data is expected to be missing for: 17A only. Filter ruptured so cou
 ## weights
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav_merged, grepl("^[0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[1][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[2-3][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[G]", id)==TRUE),
-         aes(id, wgt_delta, color= qc)) +
+  ggplot(dplyr::filter(grav, type == "sample"),
+         aes(id, conc)) +
   geom_point() +
   theme_minimal()
 ```
 
-## calibration
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_cal_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Cal weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
-```
-
-## blanks
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_blank_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Blanks weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
-```
