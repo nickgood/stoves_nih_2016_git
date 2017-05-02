@@ -38,26 +38,28 @@ output: html_document
 * full test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out_full <- filter_times_startup(times_test, out)
+  pax_full <- filter_times_startup(times_test, pax)
 ```
 
 * background levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out_bg <- filter_times_background(times_bg, out)
+  pax_bg <- filter_times_background(times_bg, pax)
 ```
 
 * levels by replicate
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out_rep <- filter_times_rep(times_fuel, out)
+  pax_rep <- filter_times_rep(times_fuel, pax)
 ```
 
-
-Extract measured flows.
+## Flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- tidy_date(cal_2, "^preflow_pax|^postflow_pax", "")
+  flow_ <- dplyr::filter(flow, inst == "pax") %>%
+           dplyr::select(id, mean, delta) %>%
+           dplyr::rename(flow_mean = mean,
+                         flow_delta = delta)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
