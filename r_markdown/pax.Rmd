@@ -13,26 +13,21 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-```
-
 ## Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/pax.Rda")
+  loadRDS("../r_files/pax.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(pax)
-```
-
-## Load flow data and test times
+## Load metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_2.Rda")       # measured flowrates
-
-  load("../r_files/test_times.Rda")  # test times and ids
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
 * extract start and end times
