@@ -167,13 +167,13 @@ VOCs data is expected to be missing for: ?
 ## plot by fuel type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(voc, aes(id, ppb, colour = fuel_type)) + 
-         geom_point() +
+  ggplot(voc, aes(id, ppb, colour = fuel_type)) +
+         geom_point(size = 5) +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
          ylab("ppb") +
          xlab("") +
-         theme(text = element_text(size=28),
+         theme(text = element_text(size = 28),
                axis.text.x = element_text(angle = 60, hjust = 1))
 ```
