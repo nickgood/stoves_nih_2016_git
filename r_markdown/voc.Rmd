@@ -27,7 +27,6 @@ output:
 
 * metadata
 
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_info <- readRDS("../r_files/test_info.RDS")
   times_fuel <- readRDS("../r_files/times_fuel.RDS")
