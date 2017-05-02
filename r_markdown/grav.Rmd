@@ -121,7 +121,8 @@ Is B[0-9] background as well?
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                          type = ifelse(grepl("^BG.*", id_test),
-                         "bg", type))
+                         "bg", type),
+                         type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
 ```
 
 # QC
@@ -136,12 +137,14 @@ Is B[0-9] background as well?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(bg = mean(conc, na.rm = TRUE)
+        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
 ```
 
+# Blanks
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_var <- signal$lod[1]
-  loq_var <- signal$loq[1]
+  bk <- dplyr::filter(grav, type == "bg") %>%
+        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
 ```
 
 The LOD is `r lod_var`, the LOQ is `r loq_var`.
