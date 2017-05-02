@@ -76,40 +76,9 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(dplyr::filter(notes, grepl(".*voc.*", inst)) %>%
-               dplyr::select(-inst, -date),
+  knitr::kable(dplyr::filter(notes, grepl(".*voc.*", notes)) %>%
+               dplyr::select(-date),
                "markdown", digits = 2)
-```
-
-* flag bad data from notes and plots
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33:36] <- "maybe"
-```
-
-* apply flags: `bad` preceeds `maybe` preceeds `good`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
-```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::left_join(voc_merged, flags, by = "id") %>%
-                dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
-                                                    "ok",
-                                                    as.character(qc))))
-```
-
-* additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # voc_merged$qc[grav_merged$id == ""] <- "bad"
 ```
 
 # Background
