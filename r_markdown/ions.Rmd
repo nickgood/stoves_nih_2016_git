@@ -23,7 +23,7 @@ output:
 * load ions
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  readRDS("../r_files/ions.RDS")
+  ions <- readRDS("../r_files/ions.RDS")
 ```
 
 * metadata
@@ -39,14 +39,22 @@ output:
 
 # Organize
 
-## extract ions data
-
-* separate from carbonyls in same file
-* remove G8B (breakthrough test)
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::select(ions, 1:23, type, id) %>%
-                 dplyr::filter(type == "test" | type == "bg", id != "G8B")
+  ions <- tidyr::gather(ions, "var", "val", 2:17) %>%
+          dplyr::select(-id)
+
+  info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
+
+  flow <- dplyr::filter(flow, inst == "carbonyl") %>%
+           dplyr::select(id, mean, delta) %>%
+           dplyr::rename(flow_mean = mean,
+                         flow_delta = delta)
+
+  times <- dplyr::select(times_test, id, start, end)
+
+  ions_ <- dplyr::left_join(ions, info, by = c("id_ions" = "id_test")) %>%
+           dplyr::left_join(flow, by = "id") %>%
+           dplyr::left_join(times, by = "id")
 ```
 
 ## flows and times
