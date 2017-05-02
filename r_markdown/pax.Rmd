@@ -11,12 +11,13 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ## Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  loadRDS("../r_files/pax.RDS")
+  pax <- readRDS("../r_files/pax.RDS")
 ```
 
 ## Load metadata
@@ -30,13 +31,28 @@ output: html_document
   notes <- readRDS("../r_files/notes.RDS")
 ```
 
-* extract start and end times
+# Organize
+
+## sample times
+
+* full test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
+  out_full <- filter_times_startup(times_test, out)
 ```
+
+* background levels
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_bg <- filter_times_background(times_bg, out)
+```
+
+* levels by replicate
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_rep <- filter_times_rep(times_fuel, out)
+```
+
 
 Extract measured flows.
 
