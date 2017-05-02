@@ -103,10 +103,11 @@ Spread data
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
 ```
 
 # LOD/LOQ
+
 
 * remove backgrounds and bad data then calculate the limit of detection and quantification
 
