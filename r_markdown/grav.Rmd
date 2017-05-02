@@ -74,7 +74,8 @@ output:
 
   flow <- dplyr::filter(flow, inst == "isokinetic") %>%
            dplyr::select(id, mean, delta) %>%
-           dplyr::rename(delta_flow = delta)
+           dplyr::rename(flow_delta = delta,
+                         flow_mean = mean)
   
   grav <- left_join(grav, flow, by = "id")
 ```
@@ -103,7 +104,7 @@ Spread data
 Is B[0-9] background as well?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_ <- dplyr::mutate(grav, 
+  grav <- dplyr::mutate(grav, 
                          type = ifelse(grepl("^BG.*", id_test),
                          "bg", type))
 ```
@@ -121,10 +122,9 @@ Is B[0-9] background as well?
 * remove backgrounds and bad data then calculate the limit of detection and quantification
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav, type = )
-  signal <- dplyr::filter(grav_merged, type == "test", qc != "bad") %>%
-            dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
-                             loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
+  bg <- dplyr::filter(grav, type == "bg")
+
+  
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
