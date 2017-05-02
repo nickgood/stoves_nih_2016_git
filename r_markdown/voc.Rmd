@@ -72,7 +72,15 @@ output:
 # QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl(".*voc.*|.*all.*", notes))
+  notes <- dplyr::filter(notes, grepl(".*voc.*|.*all.*", notes)) %>%
+           dplyr::mutate(qc = "ok")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- dplyr::left_join(voc,
+                          dplyr::select(notes, id, qc),
+                          by = "id") %>%
+         dplyr::mutate(qc = "ok")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -86,7 +94,7 @@ output:
 * extract good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(voc, type == "bg", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
         na.omit() %>%
         dplyr::select(-id_can, -id_voc)
