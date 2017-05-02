@@ -21,28 +21,24 @@ output:
 * gravimetric
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/grav.Rda")
+  grav <- readRDS("../r_files/grav.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/filter_times.Rda")
-  load("../r_files/filter_flows.Rda")
-  load("../r_files/notes.Rda")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
 # Organize
 
-## filter tests
-
-* select stove and background tests only. Remove pre-calculated LOD.
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id)) %>%
-                 dplyr::select(-lod) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
+  
 ```
 
 ## set levels
