@@ -41,13 +41,13 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::filter(grav, !is.na(id)) %>%
-           tidyr::gather("var", "val", matches("^wgt.*")) %>%
-           dplyr::filter(grepl(".*avg.*|.*dif.*", var) == FALSE) %>%
-           tidyr::separate("var", c("type", "when", "rep")) %>%
-           dplyr::mutate(type = ifelse(when == "cal", "cal", "sample"),
-                         when = ifelse(when == "cal", rep, when),
-                         rep = ifelse(rep == "pre" | rep == "post",
-                                      "1", rep))
+          tidyr::gather("var", "val", matches("^wgt.*")) %>%
+          dplyr::filter(grepl(".*avg.*|.*dif.*", var) == FALSE) %>%
+          tidyr::separate("var", c("type", "when", "rep")) %>%
+          dplyr::mutate(type = ifelse(when == "cal", "cal", "sample"),
+                        when = ifelse(when == "cal", rep, when),
+                        rep = ifelse(rep == "pre" | rep == "post",
+                                     "1", rep))
 ```
 
 * average
