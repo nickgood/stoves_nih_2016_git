@@ -174,5 +174,6 @@ VOCs data is expected to be missing for: ?
          theme(legend.position = "top") +
          ylab("ppb") +
          xlab("") +
-         theme(axis.text.x = element_text(angle = 60, hjust = 1))
+         theme(text = element_text(size=28),
+               axis.text.x = element_text(angle = 60, hjust = 1))
 ```
