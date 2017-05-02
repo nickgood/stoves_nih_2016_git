@@ -18,119 +18,49 @@ output:
 
 # Load data
 
-* pot and hood temperature
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/temp.Rda")
+  temp <- readRDS("../r_files/temp.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/samples.Rda")
-  load("../r_files/notes.Rda")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
-# Tidy
+# Organize
+
+## sample times
+
+* full test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- tidyr::gather(temp, loc, t_oc,
-                               t_1, t_2, t_3, t_4) %>%
-                 dplyr::arrange(id)
+  temp_full <- filter_times_startup(times_test, temp)
 ```
 
-# Switch probes
+* background levels
 
-* standard set-up is `t_1 = t_pot` and `t_4 = flue`
-* test `10x, 11x and 12x` have two pots and prob location locies
-* some tests have inconsistant prob locations
-
-* filter out `NAs`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_bg <- filter_times_background(times_bg, temp)
 ```
 
-* one pot stoves
+* levels by replicate
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  flipped_25a <- dplyr::filter(temp_merged,
-                           id =="25A") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                           loc = ifelse(loc == "t_4", "front", loc))
-
-  flipped_25bc <- dplyr::filter(temp_merged,
-                           id =="25B" |id =="25C") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                           loc = ifelse(loc == "t_2", "front", loc))
-
-  regular <- dplyr::filter(temp_merged,
-                          id !="25A" & id !="25B" & id !="25C" &
-                          grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                           loc = ifelse(loc == "t_4", "flue", loc))
-
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_rep <- filter_times_rep(times_fuel, temp)
 ```
 
-* two pot stoves
+## Info
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_10a <- dplyr::filter(temp_merged, id == "10A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 
-  temp_10b <- dplyr::filter(temp_merged, id == "10B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                            loc = ifelse(loc == "t_3", "front", loc),
-                            loc = ifelse(loc == "t_4", "back", loc))
-
-  temp_10c <- dplyr::filter(temp_merged, id == "10C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-  
-  temp_11a <- dplyr::filter(temp_merged, id == "11A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_11b <- dplyr::filter(temp_merged, id == "11B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_11c <- dplyr::filter(temp_merged, id == "11C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_12a <- dplyr::filter(temp_merged, id == "12A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                            loc = ifelse(loc == "t_3", "back", loc),
-                            loc = ifelse(loc == "t_4", "front", loc))
-
-  temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-```
-
-* combine
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_merged <- dplyr::bind_rows(regular,
-                                  flipped_25a,
-                                  flipped_25bc,
-                                  temp_10a, temp_10b, temp_10c,
-                                  temp_11a, temp_11b, temp_11c,
-                                  temp_12a, temp_12b, temp_12c)
-
+  temp <- dplyr::left_join(temp, info, "id")
 ```
 
 # QC
