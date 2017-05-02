@@ -70,30 +70,7 @@ output:
 * extract notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("temp|all", notes$inst) == TRUE)
-```
-
-* apply flags: `bad` preceeds `maybe` preceeds `good`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
-```
-
-* merge flags with data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- dplyr::left_join(temp_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
-## additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # temp_merged$qc[temp_merged$id == ""] <- "bad"
+  notes <- dplyr::filter(notes, grepl("temp|all", notes$notes) == TRUE)
 ```
 
 # Save merged file
