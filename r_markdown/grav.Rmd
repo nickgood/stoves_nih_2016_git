@@ -96,15 +96,16 @@ Spread data
          dplyr::rename(cal_delta = delta)
 
   grav <- dplyr::filter(grav, type == "sample") %>%
-           dplyr::left_join(cal)
+          dplyr::left_join(cal)
 ```
 
-## Concentrations
+## Test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-
+ grav_ <- dplyr::left_join(grav,
+                           dplyr::select(times_test, id, start, end))
 ```
+
 
 ## Test type
 
