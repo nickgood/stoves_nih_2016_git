@@ -22,42 +22,35 @@ output:
  * voc (ppbv)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")
+  data <- readRDS("../r_files/voc.RDS")
 ```
 
 * metadata
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")     # load sample meta data
-  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
-  load("../r_files/emissions.Rda")   # load pollutant emissions data
-  load("../r_files/data_1.Rda")
-  load("../r_files/notes.Rda")
-``` 
-
-* The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
-
-# Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
-## longer format
+# Organize
 
 * make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- tidyr::gather(voc_merged, "pol", "ppb", starts_with("voc_")) %>%
+  voc <- tidyr::gather(data, "pol", "ppb", starts_with("voc_")) %>%
                 dplyr::filter(!is.na(id) & id != "NA")
 ```
 
-## merge with meta data
+* merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::left_join(voc_merged,
-                                 dplyr::select(data_1,
-                                               matches("_voc|voc_|^id$|^date$")))
+  voc <- dplyr::rename(voc, id_test = id) %>%
+          dplyr::mutate(id_test = sub("\\.", "", id_test)) %>%
+          dplyr::left_join(test_info, voc, by = "id_test")
+                                 
 ```
 
 # LOD
@@ -66,13 +59,13 @@ output:
 * Replace pollutant values below LOD with `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::mutate(voc_merged,
-                              lod = as.factor(ifelse(ppb == -8888,
-                                                     "below",
-                                                     "above"))) %>%
-                dplyr::mutate(ppb = ifelse(ppb == -8888,
-                                           NA,
-                                           ppb))
+  voc_ <- dplyr::mutate(voc,
+                            lod = as.factor(ifelse(ppb == -8888,
+                            "below",
+                            "above")),
+                        ppb = ifelse(ppb == -8888,
+                                      NA,
+                                      ppb))
 ```
 
 # QC
