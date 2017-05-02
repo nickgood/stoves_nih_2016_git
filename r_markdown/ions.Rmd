@@ -46,9 +46,9 @@ output:
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 
   flow <- dplyr::filter(flow, inst == "carbonyl") %>%
-           dplyr::select(id, mean, delta) %>%
-           dplyr::rename(flow_mean = mean,
-                         flow_delta = delta)
+          dplyr::select(id, mean, delta) %>%
+          dplyr::rename(flow_mean = mean,
+                        flow_delta = delta)
 
   times <- dplyr::select(times_test, id, start, end)
 
