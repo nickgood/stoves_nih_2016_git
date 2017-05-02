@@ -76,43 +76,13 @@ output:
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(temp_merged, file = "../r_files/temp_merged.Rda")
+  saveRDS(temp, file = "../r_files/temp_merged.RDS")
 ```
 
 # Summary
 
-Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
+Temperature was measured for `r length(unique(temp$id))` experiments between `r min(temp$date, na.rm = TRUE)` and `r max(temp$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(test_info$id), as.character(temp$id))`.
 
-Temperature data is expected to be missing for: 
-All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated.
-
-13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost. It is possible that there were some thermocouple malfunctions resulting in this data loss (check "notes" on transcribed testing sheets).
+Temperature data is expected to be missing for:
 
 # Plots
-
-## all
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
-  ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
-```
-
-## pot
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
-  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
-                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
-
-  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
-```
