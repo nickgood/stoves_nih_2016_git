@@ -146,8 +146,8 @@ output:
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
-  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
-                dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
+  voc <- dplyr::left_join(voc, bg, by = "pol") %>%
+         dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
 ## rename variables
