@@ -99,6 +99,13 @@ Spread data
            dplyr::left_join(cal)
 ```
 
+## Concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+
+```
+
 ## Test type
 
 Is B[0-9] background as well?
@@ -117,14 +124,11 @@ Is B[0-9] background as well?
   notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
 ```
 
-# LOD/LOQ
-
-* remove backgrounds and bad data then calculate the limit of detection and quantification
+# Background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav, type == "bg")
-
-  
+  bg <- dplyr::filter(grav, type == "bg") %>%
+        dplyr::summarise(bg = mean(conc, na.rm = TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
