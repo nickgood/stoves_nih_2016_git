@@ -255,19 +255,58 @@ plot_ef_bar_all <- function(emission_factors){
   
   
   p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = inst)) +   
-    geom_bar(position = "dodge", stat = "identity") +
+    geom_bar(position = "stack", stat = "identity") +
     theme_minimal() +
     ylab("Emission Factor (g/kJ fuel)") +
     xlab("") +
     scale_y_log10() + 
     theme_bw() +
-    theme(text = element_text(size = 25),
+    coord_flip () +
+    scale_fill_brewer(palette = "Set1") + 
+    theme(text = element_text(size = 20),
           legend.position = "top",
-          legend.text = element_text(size = 25),
+          legend.text = element_text(size = 20),
           legend.key.size = unit(0.5, "cm"),
-          axis.text.x = element_text(size = 25),
-          strip.text.x = element_text(size = 30),
-          strip.text.y = element_text(size = 30))
+          axis.text.x = element_text(size = 20),
+          strip.text.x = element_text(size = 25),
+          strip.text.y = element_text(size = 25))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_pie_all <- function(emission_factors, pollutant){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(inst == pollutant) %>%
+    dplyr::group_by_(.dots = c("id", "pol", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE)) #%>%
+    #dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    #dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    #dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    #dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = pol)) +   
+    geom_bar(position = "stack") +
+    coord_polar("y") +
+    theme_minimal() +
+    ylab("Emission Factor (g/kJ fuel)") +
+    xlab("") +
+    scale_y_log10() + 
+    theme_bw() +
+    coord_flip () +
+    scale_fill_brewer(palette = "Set1") + 
+    theme(text = element_text(size = 20),
+          legend.position = "top",
+          legend.text = element_text(size = 20),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 20),
+          strip.text.x = element_text(size = 25),
+          strip.text.y = element_text(size = 25))
   
   print(p1)
 }
@@ -423,17 +462,18 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
   ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
                                  by = "id")
 
-    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
-          geom_point(size = 3) +
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat, shape = stove)) + 
+          geom_point(size = 3, stroke = 1.5) +
           geom_smooth(method = "rlm") +
+          scale_shape_manual(values=1:nlevels(ef_1$stove)) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
           scale_x_log10() +
           theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 18),
-                legend.position = "top",
-                legend.key.size = unit(0.1, "cm"),
+          theme(text = element_text(size = 12),
+                legend.key = element_rect(fill = 'white'),
+                legend.position = "right",
                 legend.title = element_blank())
 
   print(p1)
@@ -450,16 +490,17 @@ plot_cormap <- function(data, cor_method){
   
   ef_corr[lower.tri(ef_corr)] <- NA
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
+  ef_corr_l <- ef_corr_l[!(ef_corr_l$value == 1),]
   
   p <- ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
        geom_tile(color = "white")+
-       geom_text(color = "black", size = 7) +
+       geom_text(color = "black", size = 3.5) +
        scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                              midpoint = 0, limit = c(-1,1), space = "Lab", 
-                             name="Spearman\nCorrelation") +
+                             name="Spearman Correlation") +
        theme_bw() + 
-       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 18, hjust = 1),
-             axis.text.y = element_text(size = 18),
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 14, hjust = 1),
+             axis.text.y = element_text(size = 14),
              axis.title.x = element_blank(),
              axis.title.y = element_blank(),
              panel.grid.major = element_blank(),
@@ -469,8 +510,8 @@ plot_cormap <- function(data, cor_method){
              legend.justification = c(1, 0),
              legend.position = c(0.4, 0.8),
              legend.direction = "horizontal", 
-             legend.title = element_text(size = 18),
-             legend.text = element_text(size = 18)) +
+             legend.title = element_text(size = 12),
+             legend.text = element_text(size = 16)) +
        guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
                                     title.position = "top", title.hjust = 0.5)) +
        coord_fixed()

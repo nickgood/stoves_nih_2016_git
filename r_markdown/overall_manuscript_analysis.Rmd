@@ -159,8 +159,12 @@ output:
   #plot_ef_polar_all(emission_factors)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10,  fig.height = 5}
   plot_ef_bar_all(emission_factors)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 10,  fig.height = 5}
+  #plot_ef_pie_all(emission_factors, "voc")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 20,  fig.height = 10}
@@ -189,7 +193,7 @@ output:
 
 ## All stove types
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::distinct(emission_factors) %>%
           dplyr::filter(pol != "co2") %>% dplyr::filter(pol != "ch4") %>%
@@ -208,7 +212,7 @@ output:
 
 ## Wood fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "wood") %>%
           dplyr::distinct() %>%
@@ -228,7 +232,7 @@ output:
 
 ## Charcoal fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "charcoal") %>%
           dplyr::distinct() %>%
@@ -248,7 +252,7 @@ output:
 
 ## Pellet fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "pellets") %>%
           dplyr::distinct() %>%
@@ -268,7 +272,7 @@ output:
 
 ## Advanced fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "advanced") %>%
           dplyr::distinct() %>%
@@ -290,7 +294,7 @@ output:
 
 ## All stove types
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::distinct(emission_factors) %>%
           dplyr::group_by_(.dots = c("id", "pol","inst")) %>% 
@@ -304,7 +308,7 @@ output:
 
 ## Wood fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "wood") %>%
           dplyr::distinct() %>%
@@ -319,7 +323,7 @@ output:
 
 ## Charcoal fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "charcoal") %>%
           dplyr::distinct() %>%
@@ -334,7 +338,7 @@ output:
 
 ## Pellet fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "pellets") %>%
           dplyr::distinct() %>%
@@ -349,7 +353,7 @@ output:
 
 ## Advanced fuels
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 8,  fig.height = 6}
     # convert to long format
   ef_w <- dplyr::filter(emission_factors, fuelcat == "advanced") %>%
           dplyr::distinct() %>%
@@ -365,14 +369,14 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   #emission_factors_w <- dplyr::select(emission_factors, id, pol, mass_ef_comb)
 
- # emission_factors_w$row <- 1:nrow(emission_factors_w)
+  #emission_factors_w$row <- 1:nrow(emission_factors_w)
 
- # emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
-                  #      dplyr::group_by(id) %>%
-                 #       dplyr::summarise_each(funs(mean(., na.rm = TRUE))) %>%
-                   #     dplyr::left_join(dplyr::select(emission_factors, id, fuelcat))
+  #emission_factors_w <- tidyr::spread(emission_factors_w, pol, mass_ef_comb) %>%
+   #                     dplyr::group_by(id) %>%
+    #                    dplyr::summarise_each(funs(mean(., na.rm = TRUE))) %>%
+     #                   dplyr::left_join(dplyr::select(emission_factors, id, fuelcat))
   
- # emission_factors_w <- unique(emission_factors_w)
+  #emission_factors_w <- unique(emission_factors_w)
   #emission_factors_w <- emission_factors_w[-2]
   #emission_factors_w <- emission_factors_w[-1]
 ```
