@@ -150,50 +150,29 @@ output:
          dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
-## rename variables
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::rename(voc_merged,
-                                         start = time_start_voc,
-                                         end = time_end_voc)
-```
-
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(voc_merged, file="../r_files/voc_merged.Rda")
+  saveRDS(voc, file="../r_files/voc_merged.RDS")
 ```
 
 # Summary
 
-VOCs were measured for `r length(unique(voc_merged$id))` experiments between `r min(voc_merged$date, na.rm = TRUE)` and `r max(voc_merged$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(samples$id), as.character(voc_merged$id))`.
+VOCs were measured for `r length(unique(voc$id))` experiments between `r min(voc$date, na.rm = TRUE)` and `r max(voc$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(test_info$id), as.character(voc$id))`.
 
-VOCs data is expected to be missing for: G18 only. We did not collect a canister for this test due to supply shortage.
+VOCs data is expected to be missing for: ?
 
 # Plots
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- dplyr::select(samples, id, stove, fuel)
-```
-
 ## plot by fuel type
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  p_data <- dplyr::left_join(voc_merged, samples, by = "id") %>%
-            dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
-            dplyr::mutate(id = as.factor(id)) %>%
-            dplyr::filter(ppb > 0 &
-                          grepl("^P", id) == FALSE &
-                          grepl("^G", id)==FALSE)
-```
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
-  ggplot(p_data, aes(id, ppb, colour = fuel)) + 
+  ggplot(voc, aes(id, ppb, colour = fuel_type)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
-         ylab("ug/m3") +
+         ylab("ppb") +
          xlab("") +
          theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
