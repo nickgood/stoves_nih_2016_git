@@ -55,149 +55,49 @@ output: html_document
 
 ## Flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flow_ <- dplyr::filter(flow, inst == "pax") %>%
-           dplyr::select(id, mean, delta) %>%
-           dplyr::rename(flow_mean = mean,
-                         flow_delta = delta)
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(pax_flows,2)
-```
-
-Split variable to get measurement type, location and replicate information.
+* fix problem?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- split_pax_flows(pax_flows)
+  flow <- dplyr::filter(flow, inst == "pax") %>%
+          dplyr::select(id, mean, delta) %>%
+          dplyr::rename(flow_mean = mean,
+                        flow_delta = delta)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(pax_flows,2)
-```
-
-## Average measured flows
+* append to data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- dplyr::filter(pax_flows, loc == "inlet")  # select inlet flow (others not required)
-
-  pax_flows <- dplyr::arrange(group_by(pax_flows, date, type), date)  # group by date and type, and then order
-  
-  pax_flows <- dplyr::mutate(pax_flows, mean = mean(value, na.rm = TRUE), sd = sd(value, na.rm = TRUE))  # calc average and sdev
-  
-  pax_flows <- dplyr::select(filter(pax_flows, rep == 1), -rep, -loc, -value)   # drop duplicates
-    
-  pax_flows <- tidyr::gather(pax_flows, temp, val, mean, sd) %>% 
-               tidyr::unite(temp1, type, temp, sep = "_") %>% 
-               tidyr::spread(temp1, val)
+  pax <- dplyr::left_join(pax, flow, "id")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(pax_flows,2)
-```
-
-## Append measured flows to pax data
+## Info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- dplyr::left_join(pax, pax_flows, "date")
-```
+  info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 
-## Map experiment id to pax data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_id <-  map_id(pax, test_times)
-  
-  pax_noid <- dplyr::setdiff(pax, select(pax_id, -id)) %>%
-              dplyr::mutate(id = NA)
-  
- # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
-  pax_merged <- dplyr::arrange(rbind(pax_id, pax_noid), datetime)
+  pax <- dplyr::left_join(pax, info, "id")
 ```
 
 ## QC
 
-Load notes
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("pax|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("pax|all", notes$notes) == TRUE)
 ```
 
-Flag bad data from notes and plots
+## Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
-```
-
-Set one flag per test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
-```
-
-Merge pax with qc flags
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_merged <- dplyr::left_join(pax_merged, flags, by = "id") %>%
-                dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
-Addtional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # pax_merged$qc[pax_merged$id == ""] <- "bad"
-```
-
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(pax_merged, file="../r_files/pax_merged.Rda")
+  saveRDS(pax, file="../r_files/pax_merged.RDS")
 ```
 
 ## Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
-  p_data <- filter(pax_merged, !is.na(id) & mode == 0)
 
-  ggplot(p_data) +
-         geom_line(mapping = aes(datetime, babs_1_mm), colour = "black") +
-         geom_line(mapping = aes(datetime, bscat_1_mm), colour = "royalblue2") +
-         facet_wrap(~id, ncol = 2, scales = "free") +
-         theme_minimal() +
-         labs(x = "", y = expression(Mm^{-1}))
-```
-
-
-## Plot QC
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
- p_data <- filter(pax_merged, !is.na(id) & mode == 0)
-
-  ggplot(p_data) +
-         geom_line(mapping = aes(datetime, babs_1_mm, colour = qc)) +
-         geom_line(mapping = aes(datetime, bscat_1_mm, colour = qc)) +
-         facet_wrap(~id, ncol = 2, scales = "free") +
-        theme_minimal() +
-        labs(x = "", y = expression(Mm^{-1}))
-```
+## Plots
 
 ## Data summary
 
-The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
+The PAX measured during `r length(unique(pax$id))` experiments between `r min(pax$date, na.rm = TRUE)` and `r max(pax$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(test_info$id), as.character(pax$id))`.
 
 
-$PAX$ data is expected to be missing for:
-
-All "G" background tests. PAX was not run during backgrounds.
-
-26A: PAX stopped at 3pm this day, and this test was in late afternoon (after 3pm)
-29A, 2A: there is a file for these days, but looks like there is an issue with the wood log times that is causing them not to line up?
+PAX data is expected to be missing for:
