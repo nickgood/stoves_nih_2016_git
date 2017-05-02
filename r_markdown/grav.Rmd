@@ -98,6 +98,16 @@ Spread data
            dplyr::left_join(cal)
 ```
 
+## Test type
+
+Is B[0-9] background as well?
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_ <- dplyr::mutate(grav, 
+                         type = ifelse(grepl("^BG.*", id_test),
+                         "bg", type))
+```
+
 # QC
 
 * extract notes for gravimetric data
@@ -108,10 +118,10 @@ Spread data
 
 # LOD/LOQ
 
-
 * remove backgrounds and bad data then calculate the limit of detection and quantification
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(grav, type = )
   signal <- dplyr::filter(grav_merged, type == "test", qc != "bad") %>%
             dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
                              loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
