@@ -153,7 +153,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  kable(dplyr::slice(e_data),
+  kable(dplyr::slice(e_data, 1:5),
         align = 'c', caption = "Energy Numbers")
 ```
 
@@ -207,6 +207,25 @@ output:
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     theme(legend.position = "top") +
     ylab("energy delivered to pot (J)") +
+    theme(legend.position = "top")
+```
+
+## temperature data
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+  p_temp <- dplyr::distinct(e_data) %>%
+            dplyr::select(id, rep, t_min, t_max, dt) %>%
+            dplyr::group_by_(.dots = c("id", "rep")) %>% 
+            tidyr::gather("t_var", "val", 3:ncol(.))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(e_data, aes(id, t_min, colour = stove)) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    theme(legend.position = "top") +
+    ylab("temp (oC)") +
     theme(legend.position = "top")
 ```
 
