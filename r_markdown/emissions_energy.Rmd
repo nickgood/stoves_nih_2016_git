@@ -214,13 +214,14 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   p_temp <- dplyr::distinct(e_data) %>%
-            dplyr::select(id, rep, t_min, t_max, dt) %>%
+            dplyr::select(id, rep, t_min, t_max) %>%
             dplyr::group_by_(.dots = c("id", "rep")) %>% 
-            tidyr::gather("t_var", "val", 3:ncol(.))
+            tidyr::gather("t_var", "val", 3:ncol(.)) %>%
+            dplyr::left_join(dplyr::filter(samples, type == "SF"), energy, by = "id")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(e_data, aes(id, t_min, colour = stove)) +
+  ggplot(p_temp, aes(id, val, colour = t_var)) +
     geom_point() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
