@@ -72,7 +72,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::left_join(grav, test_info)
 
-  flow <- dplyr::filter(flow, inst == "isokinetic") %>%
+  flow <- dplyr::filter(flow, inst == "white") %>%
            dplyr::select(id, mean, delta) %>%
            dplyr::rename(flow_delta = delta,
                          flow_mean = mean)
