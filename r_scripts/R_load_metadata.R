@@ -85,7 +85,7 @@ load_metadata <- function(file, sheet = "metadata"){
  # flows
   flows <- dplyr::select(out, 
                          id, id_test, date,
-                         matches(".*pax.*|.*white.*|.*carbonyl.*|.*isokinetic.*")) %>%
+                         matches(".*pax.*|.*white.*|.*red.*|.*carbonyl.*|.*isokinetic.*")) %>%
            tidyr::gather("var", "val", 4:37) %>%
            dplyr::filter(grepl(".*outlet.*", var) == FALSE,
                          grepl(".*average.*", var) == FALSE) %>%
