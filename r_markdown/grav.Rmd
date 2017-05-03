@@ -111,7 +111,7 @@ Spread data
 * update conc units?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- grav <- dplyr::mutate(grav, conc = (delta - cal_delta) / (60 * flow_mean / 1000 * (end - start))) # mg/m^3???
+ grav <- dplyr::mutate(grav, conc = (delta - cal_delta) / (60 * flow_mean / 1000 * (end - start))) # ug/l converted to mg/m^3???
 ```
 
 ## Test type
