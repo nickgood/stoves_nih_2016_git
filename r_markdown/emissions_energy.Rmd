@@ -202,12 +202,12 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(p_data, aes(id, joules, colour = stove)) +
-  geom_point() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  theme(legend.position = "top") +
-  ylab("energy delivered to pot (J)") +
-  theme(legend.position = "top")
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    theme(legend.position = "top") +
+    ylab("energy delivered to pot (J)") +
+    theme(legend.position = "top")
 ```
 
 # Save (not implemented)
