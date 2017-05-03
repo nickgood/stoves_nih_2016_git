@@ -130,9 +130,11 @@ output:
 * temperature change v2.0
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  t_range <- dplyr::group_by(e_temp, id, rep) %>%
-             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
-                              t_max = quantile(t_oc, 0.95, na.rm = TRUE))
+  t_range_2 <- dplyr::left_join(e_times, e_temp, by = c("id" = "id", "rep" = "rep")) %>%
+               dplyr::mutate(dt_start = abs(start - time), dt_end = abs(end - time)) %>%
+               dplyr::group_by(id, rep, loc) %>%
+               dplyr::arrange(dt_start) %>%
+               dplyr::filter(dt_start %in% range(dt_start))
 ```
 
 * merge data
