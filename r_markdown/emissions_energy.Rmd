@@ -224,8 +224,8 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(p_temp, aes(id_rep, ymin = t_min, ymax = t_max , colour = fuel)) +
-    geom_linerange() +
-    facet_wrap(~ fuelcat, ncol = 1) +
+    geom_linerange(width = 1.2) +
+    facet_wrap(~ fuelcat, ncol = 1, scales = 'free') +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     theme(legend.position = "top") +
