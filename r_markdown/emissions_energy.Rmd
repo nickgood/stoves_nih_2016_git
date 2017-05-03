@@ -214,15 +214,18 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   p_temp <- dplyr::distinct(e_data) %>%
-            dplyr::select(id, rep, t_min, t_max) %>%
+            dplyr::select(id, rep, t_min, t_max, dt) %>%
             dplyr::group_by_(.dots = c("id", "rep")) %>% 
-            tidyr::gather("t_var", "val", 3:ncol(.)) %>%
-            dplyr::left_join(dplyr::filter(samples, type == "SF"), energy, by = "id")
+            #tidyr::gather("t_var", "val", 3:ncol(.)) %>%
+            dplyr::mutate(id_rep = paste(id, "; rep", rep)) %>%
+            dplyr::left_join(dplyr::select(dplyr::filter(samples, type == "SF"),
+                                           id, stove, fuel, fuelcat), energy, by = "id")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(p_temp, aes(id, val, colour = t_var)) +
-    geom_point() +
+  ggplot(p_temp, aes(id_rep, ymin = t_min, ymax = t_max , colour = fuel)) +
+    geom_linerange() +
+    facet_wrap(~ fuelcat, ncol = 1) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     theme(legend.position = "top") +
