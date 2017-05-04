@@ -130,11 +130,12 @@ output:
 * temperature change v2.0
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  t_range_2 <- dplyr::left_join(e_times, e_temp, by = c("id" = "id", "rep" = "rep")) %>%
-               dplyr::mutate(dt_start = abs(start - time), dt_end = abs(end - time)) %>%
-               dplyr::group_by(id, rep, loc) %>%
-               dplyr::arrange(dt_start) %>%
-               dplyr::filter(dt_start %in% range(dt_start))
+  #code not working
+  #t_range_2 <- dplyr::left_join(e_times, e_temp, by = c("id" = "id", "rep" = "rep")) %>%
+               #dplyr::distinct() %>%
+               #dplyr::mutate(dt_start = abs(start - time), dt_end = abs(end - time)) %>%
+               #dplyr::group_by(id, rep, loc) %>%
+               #dplyr::filter(as.integer(dt_end) %in% range(dt_end))
 ```
 
 * merge data
