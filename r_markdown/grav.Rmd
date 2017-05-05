@@ -210,3 +210,30 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   theme_minimal() +
   theme(text = element_text(size = 20))
 ```
+
+## plot concentration
+
+Black points = mean background
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, conc, colour = type)) +
+  geom_point(aes(id, bg_conc), colour = "black") +
+  theme_minimal() +
+  theme(text = element_text(size = 20)) +
+  ylab("conc. ug/m^3")
+```
+
+## plot flows
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, flow_mean, colour = "mean flow")) +
+  geom_point(aes(id, flow_delta, colour = "flow delta")) +
+  scale_colour_manual("", 
+                      breaks = c("mean flow", "flow delta"),
+                      values = c("dodgerblue1", "tomato4")) +
+  theme_minimal() +
+  theme(text = element_text(size = 20)) +
+  ylab("flow rate (L/min)")
+```
