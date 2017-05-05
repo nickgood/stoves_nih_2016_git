@@ -159,6 +159,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
   grav <- dplyr::mutate(grav, bg_conc = bg$mean[1])
 ```
+
 # Summary
 
 Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
@@ -171,12 +172,41 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
 
 # Plots
 
-## weights
+## plot environ
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav, type == "sample"),
-         aes(id, conc)) +
-  geom_point() +
-  theme_minimal()
+  ggplot(grav) +
+  geom_point(aes(id, toc_pre, colour = "t_pre")) +
+  geom_point(aes(id, toc_post, colour = "t_post")) +
+  geom_point(aes(id, rh_pre, colour = "rh_pre")) +
+  geom_point(aes(id, rh_post, colour = "rh_post")) +
+  scale_colour_manual("", 
+                      breaks = c("t_pre", "t_post",
+                                 "rh_pre", "rh_post"),
+                      values = c("dodgerblue1", "dodgerblue4",
+                                 "tomato1", "tomato4")) +
+  theme_minimal() +
+  theme(text = element_text(size=20))
 ```
 
+## plot mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, pre, colour = "pre")) +
+  geom_point(aes(id, post, colour = "post")) +
+  scale_colour_manual("", 
+                      breaks = c("pre", "post"),
+                      values = c("dodgerblue1", "tomato4")) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
+```
+
+## plot delta mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, delta, colour = type)) +
+  theme_minimal() +
+  theme(text = element_text(size = 20))
+```
