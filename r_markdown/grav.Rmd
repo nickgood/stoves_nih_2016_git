@@ -106,14 +106,6 @@ Spread data
                            dplyr::select(times_test, id, start, end))
 ```
 
-## Concentrations
-
-* update conc units?
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- grav <- dplyr::mutate(grav, conc = (delta - cal_delta) / (60 * flow_mean / 1000 * (end - start))) # ug/l converted to mg/m^3???
-```
-
 ## Test types
 
 Test are either a sample: `sample`, a background experiment: `bg`, or a filter blank: `bk`
@@ -135,29 +127,32 @@ Test are either a sample: `sample`, a background experiment: `bg`, or a filter b
   notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
 ```
 
-# Background
+The LOD is `r bk$lod[1]`, the LOQ is `r bk$loq[1]`.
+
+## Conc calculation
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
+ # (mg - mg) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
+  grav <- dplyr::mutate(grav, 
+                        conc = (delta - cal_delta) * 60 * 1000 /
+                               (flow_mean * (end - start)))
 ```
 
 # Blanks (LOD/LOQ)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bk <- dplyr::filter(grav, type == "bk") %>%
-        dplyr::summarise(lod = 3 * sd(conc, na.rm = TRUE),
-                         loq = 10 * sd(conc, na.rm = TRUE))
+        dplyr::summarise(lod = 3 * sd(delta, na.rm = TRUE),
+                         loq = 10 * sd(delta, na.rm = TRUE),
+                         mean_bk = mean(delta, na.rm = TRUE))
 ```
 
-The LOD is `r bk$lod[1]`, the LOQ is `r bk$loq[1]`.
+# Background
 
-# Background analysis
-
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
-
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(grav, type == "bg") %>%
+        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
+```
 # Summary
 
 Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
