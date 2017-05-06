@@ -53,8 +53,8 @@ output:
   times <- dplyr::select(times_test, id, start, end)
 
   ions <- dplyr::left_join(ions, info, by = c("id_ions" = "id_test")) %>%
-           dplyr::left_join(flow, by = "id") %>%
-           dplyr::left_join(times, by = "id")
+          dplyr::left_join(flow, by = "id") %>%
+          dplyr::left_join(times, by = "id")
 ```
 
 # QC
