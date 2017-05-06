@@ -109,3 +109,15 @@ Ion data was collected during `r length(unique(ions$id))` experiments. There is 
 
 # Plots
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, conc, colour = fuel_type)) +
+  geom_point(aes(size = 4)) +
+  geom_point(aes(id, bg_mean, size = 4), colour = "black") +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
