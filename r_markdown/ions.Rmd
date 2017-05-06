@@ -67,6 +67,13 @@ output:
 
 # Concentration calculations
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # (ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
+  ions <- dplyr::mutate(ions, 
+                        conc = (val) * 60 * 1000 /
+                               (flow_mean * (end - start)))
+```
+
 # Background analysis
 
 # Summary
