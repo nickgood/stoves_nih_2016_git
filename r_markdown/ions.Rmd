@@ -82,11 +82,19 @@ output:
 
 # Background analysis
 
+*  background average
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions_bg <- dplyr::filter(ions, fuel_type == "background") %>%
              dplyr::group_by(var) %>%
-             dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                              sd = sd(val, na.rm = TRUE))
+             dplyr::summarise(bg_mean = mean(val, na.rm = TRUE),
+                              bg_sd = sd(val, na.rm = TRUE))
+```
+
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::left_join(ions, ions_bg, by = "var")
 ```
 
 # Summary
