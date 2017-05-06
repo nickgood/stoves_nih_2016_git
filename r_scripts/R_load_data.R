@@ -653,7 +653,7 @@ load_fivegas <- function(fldr = "../data/fivegas"){
 
 #________________________________________________________
 # Load fivegas file
-# file <- "../data/fivegas/20161001_FIVEGAS.csv"
+# file <- "../data/fivegas/20161013_FIVEGAS.csv"
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
  
@@ -664,8 +664,8 @@ load_fivegas_file <- function(file){
  names(out)[1] <- "ch4"
  names(out)[2] <- "o2"
  names(out)[3] <- "nox"
- names(out)[4] <- "co"
- names(out)[5] <- "co2"
+ names(out)[4] <- "co2"
+ names(out)[5] <- "co"
  names(out)[6] <- "time_s"
  names(out)[7] <- "datetime"
  
