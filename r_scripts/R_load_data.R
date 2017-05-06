@@ -104,7 +104,7 @@ load_ecoc_file <- function(file){
 
 #________________________________________________________
 # Load gravimetric file
-# file <- "data/grav/Teflon Filter Weight Log.xlsx"
+# file <- "data/grav/Teflon Filters.xlsx"
 #
 load_grav_file <- function(file, sheet = "filters"){
 
