@@ -675,10 +675,9 @@ load_fivegas_file <- function(file){
   as.numeric(substr(out$datetime,18, 19))
  
  out <- dplyr::mutate(out, datetime =
-                       as.POSIXct(datetime, format = "%m/%d/%Y %H:%M:%OS"),
-                      o2 = o2 * 10^4,
-                      co2 = co2 * 10^4,
-                      date = as.Date(datetime))
+                           as.POSIXct(datetime,
+                                      format = "%m/%d/%Y %H:%M:%OS"),
+                           date = as.Date(datetime))
  # return
  return(out)
 }
