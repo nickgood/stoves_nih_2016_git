@@ -44,10 +44,18 @@ output:
   notes <- readRDS("../r_files/notes.RDS")
 ```
 
+# Units
+
+* Convert co2 from percent to ppm.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out <- dplyr::mutate(data, co2 = co2 * 10^4)
+```
+
 # Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- out <- tidyr::gather(data, "pol", "val", 1:5) %>%
+ out <- tidyr::gather(out, "pol", "val", 1:5) %>%
         dplyr::filter(grepl("^co$|^co2$|^ch4$", pol))
 ```
 
@@ -116,7 +124,7 @@ output:
     theme(legend.position = "top")
 ```
 
-* background
+* replicates
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_rep, aes(datetime, val, color = rep)) + 
