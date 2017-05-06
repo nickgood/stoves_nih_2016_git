@@ -186,7 +186,8 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
                       values = c("dodgerblue1", "dodgerblue4",
                                  "tomato1", "tomato4")) +
   theme_minimal() +
-  theme(text = element_text(size=20))
+  theme(text = element_text(size=20)) +
+  ylab("t (oC) / RH (%)")
 ```
 
 ## plot mass
@@ -199,7 +200,8 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
                       breaks = c("pre", "post"),
                       values = c("dodgerblue1", "tomato4")) +
   theme_minimal() +
-  theme(text = element_text(size = 20))
+  theme(text = element_text(size = 20)) +
+  ylab("filter mass (ug)")
 ```
 
 ## plot delta mass
@@ -209,6 +211,7 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   geom_point(aes(id, delta, colour = type)) +
   theme_minimal() +
   theme(text = element_text(size = 20))
+  ylab("delata mass (ug)")
 ```
 
 ## plot concentration
