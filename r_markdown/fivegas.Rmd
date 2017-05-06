@@ -47,7 +47,8 @@ output:
 # Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- out <- tidyr::gather(data, "pol", "val", 1:5)
+ out <- tidyr::gather(data, "pol", "val", 1:5) %>%
+        dplyr::filter(grepl("^co$|^co2$|^ch4$", pol))
 ```
 
 # Filter times
