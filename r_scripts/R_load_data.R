@@ -568,13 +568,13 @@ load_singlefiles <- function(log){
     filelist <- list.files("../data/voc", "^VOC data.xlsx$", full.names = TRUE)
     out <- load_voc_file(filelist[1])
   }
-  
+
  # sample log
   if(log == "sample"){
     filelist <- list.files("../data/logs", "^test_matrix.xlsx$", full.names = TRUE)
     out <- load_matrix(filelist[1])
   }
-  
+
  # batch sample log
   if(log == "meta"){
     filelist <- list.files("../data/logs", "^metadata.xlsx$", full.names = TRUE)
