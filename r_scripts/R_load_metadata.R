@@ -17,6 +17,9 @@ load_matrix <- function(file, sheet = "matrix"){
   out <- as_data_frame(read_excel(path = file, 
                                   sheet = sheet, col_names = TRUE))
 
+ # select first 15 cloumns
+  out <- out[,1:15]
+  
   # remove rows with no test_id
   out <- dplyr::filter(out, !is.na(test_id))
 
