@@ -99,7 +99,7 @@ output:
 
 # Summary
 
-Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(as.character(test_info$id), as.character(ions$id))`.
+Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
 
 # Save merged file
 
