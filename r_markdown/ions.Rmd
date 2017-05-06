@@ -57,6 +57,12 @@ output:
           dplyr::left_join(times, by = "id")
 ```
 
+# LOD
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, lod = ifelse(is.na(val), "below", "above"))
+```
+
 # QC
 
 * extract notes for ion data (should be carbonlys?)
@@ -75,6 +81,13 @@ output:
 ```
 
 # Background analysis
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions_bg <- dplyr::filter(ions, fuel_type == "background") %>%
+             dplyr::group_by(var) %>%
+             dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                              sd = sd(val, na.rm = TRUE))
+```
 
 # Summary
 
