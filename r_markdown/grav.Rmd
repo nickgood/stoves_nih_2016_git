@@ -131,7 +131,7 @@ Is B[0-9] background as well?
                         type = ifelse(grepl("^B[0-9].*", id_test),
                                       "bk",
                                       type))
->>>>>>> 4fffc02fca7837b8272a93bb8cced7ad10fe6b78
+
 ```
 
 # QC
