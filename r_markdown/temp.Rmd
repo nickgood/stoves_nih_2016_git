@@ -60,7 +60,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 
-  temp <- dplyr::left_join(temp, info, "id")
+  temp <- dplyr::left_join(temp_full, info, "id")
 ```
 
 # QC
