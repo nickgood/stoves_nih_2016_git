@@ -83,6 +83,6 @@ output:
 
 Temperature was measured for `r length(unique(temp$id))` experiments between `r min(temp$date, na.rm = TRUE)` and `r max(temp$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(test_info$id), as.character(temp$id))`.
 
-Temperature data is expected to be missing for:
+Temperature data is expected to be missing for: tests 36 through 43 (blanks).
 
 # Plots
