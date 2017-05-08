@@ -99,6 +99,13 @@ output:
 
 # Summary
 
+Fivegas data was collected during `r length(unique(out_full$id))` experiments between `r min(out_full$date, na.rm = TRUE)` and `r max(out_full$date, na.rm = TRUE)`. There is no fivegas data for tests: `r setdiff(as.character(test_info$id), as.character(out_full$id))`.
+
+Tests 36 through 43 are blanks; no fivegas data expected.
+Tests 4, 11, 16, 23, 29, 35 = all conducted on 1/12/2017 --> no fivegas file as of 5/8/17?
+Tests 44, 45, 46, and 47 = all conducted on 2/2/2017 --> no fivegas file as of 5/8/17?
+Test 2 (ID N1.1) = Conducted on 11/10/2016 --> no fivegas file as of 5/8/17? 
+
 # Plots
 
 * tests
