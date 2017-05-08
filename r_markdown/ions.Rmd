@@ -73,6 +73,11 @@ output:
 
 Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(as.character(test_info$id), as.character(ions$id))`.
 
+Tests 36 through 43 are blanks; no fivegas data expected.
+Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test. 
+
+30, 36, 37, 38, 39, 40, 41, 42, 43.
+
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
