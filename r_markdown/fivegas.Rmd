@@ -96,9 +96,13 @@ output:
 * append to fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- out_full_ <- dplyr::left_join(out_full,
+  out_full <- dplyr::left_join(out_full,
                                dplyr::select(bg, id, pol, bg_ppm),
                                by = c("id", "pol"))
+
+  out_rep <- dplyr::left_join(out_rep,
+                              dplyr::select(bg, id, pol, bg_ppm),
+                              by = c("id", "pol"))
 ```
 
 # QC
