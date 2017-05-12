@@ -61,8 +61,6 @@ Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
-
-  temp <- dplyr::left_join(temp, info, "id")
 ```
 
 ## Longer format
