@@ -43,6 +43,8 @@ output:
   temp_full <- filter_times_startup(times_test, temp)
 ```
 
+Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
+
 * background levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -63,6 +65,13 @@ output:
   temp <- dplyr::left_join(temp, info, "id")
 ```
 
+## Longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ temp_full <- tidyr::gather(temp_full, "t_sensor", "t_flue", 3:6) %>%
+               dplyr::filter(!is.na(t_flue))
+```
+
 # QC
 
 ## flags from notes
@@ -76,7 +85,7 @@ output:
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(temp, file = "../r_files/temp_merged.RDS")
+  saveRDS(temp_full, file = "../r_files/temp_merged.RDS")
 ```
 
 # Summary
@@ -86,3 +95,10 @@ Temperature was measured for `r length(unique(temp$id))` experiments between `r 
 Temperature data is expected to be missing for:
 
 # Plots
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=60}
+  ggplot(temp_full, aes(datetime, t_flue, color = t_sensor)) +
+   geom_point() +
+   facet_wrap(~id, ncol = 2, scales = "free")
+```
+
