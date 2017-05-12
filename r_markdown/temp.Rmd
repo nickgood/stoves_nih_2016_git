@@ -67,7 +67,8 @@ Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  temp_full <- tidyr::gather(temp_full, "t_sensor", "t_flue", 3:6) %>%
-               dplyr::filter(!is.na(t_flue))
+              dplyr::filter(!is.na(t_flue)) %>%
+              dplyr::left_join(info, by = "id")
 ```
 
 # QC
