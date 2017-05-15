@@ -47,7 +47,7 @@ output:
           dplyr::mutate(type = ifelse(when == "cal", "cal", "sample"),
                         when = ifelse(when == "cal", rep, when),
                         rep = ifelse(rep == "pre" | rep == "post",
-                                     "1", rep))
+                              "1", rep))
 ```
 
 * average
