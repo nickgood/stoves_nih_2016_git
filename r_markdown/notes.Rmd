@@ -21,32 +21,21 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- readRDS("../r_files/notes.RDS")
-  test_info <- readRDS("../r_files/test_info.RDS")
-  ids_int <- readRDS("../r_files/ids_int.RDS")
+  #test_info <- readRDS("../r_files/test_info.RDS")
+  #ids_int <- readRDS("../r_files/ids_int.RDS")
   notes_kf <- read.csv("../data/logs/startup_qc_notes.csv")
 ```
 
-# Compile notes
-
+# Add QC and instrument to "notes" file
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(notes_kf) <- c("id_test", "instrument", "qc", "notes")
+  notes$instrument <- ifelse(is.na(notes$notes), "all", "")
+  notes$qc <- ifelse(is.na(notes$notes), "good", "")
 
-  notes_all <- dplyr::left_join(notes, notes_kf, by = "id_test")
-  notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
-  notes_all$notes <- gsub("; NA", "", notes_all$notes)
-  notes_all$notes <- gsub("NA;", "", notes_all$notes)
-```
-
-# fill in QC and instrument values for "notes"
-
-With default value `good` for `all` instruments.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_all$qc <- as.character(notes_all$qc)
-  notes_all$qc <- ifelse(is.na(notes_all$qc), 'good', notes_all$qc)
-
-  notes_all$instrument <- as.character(notes_all$instrument)
-  notes_all$instrument <- ifelse(is.na(notes_all$instrument), 'all', notes_all$instrument)
+  notes$instrument <- ifelse(grepl("carbonyl", notes$notes), "carbonyl", notes$instrument)
+  notes$qc <- ifelse(grepl("carbonyl", notes$notes), "bad", notes$qc)
+  
+  notes$instrument <- ifelse(grepl("hood|charcoal", notes$notes), "all", notes$instrument)
+  notes$qc <- ifelse(grepl("hood|charcoal", notes$notes), "maybe", notes$qc)
 ```
 
 ## Create qc flag for other tests running
@@ -82,6 +71,30 @@ If noted that other test running in Thing2 Hood, change QC from `good` to `maybe
                                            ^No SMPS data.|^No 5-gas",
                                            notes),
                                            "bad", as.character(qc)))
+```
+
+
+# Compile two note files
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  colnames(notes_kf) <- c("id_test", "instrument", "qc", "notes")
+
+  notes_all <- dplyr::left_join(notes, notes_kf, by = "id_test")
+  notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
+  notes_all$notes <- gsub("; NA", "", notes_all$notes)
+  notes_all$notes <- gsub("NA;", "", notes_all$notes)
+```
+
+# fill in QC and instrument values for "notes"
+
+With default value `good` for `all` instruments.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes_all$qc <- as.character(notes_all$qc)
+  notes_all$qc <- ifelse(is.na(notes_all$qc), 'good', notes_all$qc)
+
+  notes_all$instrument <- as.character(notes_all$instrument)
+  notes_all$instrument <- ifelse(is.na(notes_all$instrument), 'all', notes_all$instrument)
 ```
 
 # Save QC flags
