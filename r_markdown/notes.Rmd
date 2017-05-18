@@ -17,57 +17,23 @@ output:
   source("../r_scripts/R_load_metadata.R")
 ```
 
-# Load files
+# Load files that contain any notes or test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_1.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
-  load("../r_files/grav.Rda")
+  notes <- readRDS("../r_files/notes.RDS")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  ids_int <- readRDS("../r_files/ids_int.RDS")
+  notes_kf <- read.csv("../data/logs/startup_qc_notes.csv")
 ```
 
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <- dplyr::select(samples, id, date)  # get id and date
+  colnames(notes_kf) <- c("id_test", "instrument", "qc", "notes")
 
-  notes_1 <- dplyr::select(cal_1, date, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "date") %>%
-             dplyr::mutate(inst = "fivegas")
-
-  notes_2 <- dplyr::select(cal_2, date, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "date") %>%
-             dplyr::mutate(inst = "co2")
-
-  notes_3 <- dplyr::select(data_1, id, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "id") %>%
-             dplyr::mutate(inst = "all")
-
-  notes_4 <- dplyr::select(data_2, id, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "id") %>%
-             dplyr::mutate(inst = "all")
-
-  notes_5 <- dplyr::select(grav, id, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "id") %>%
-             dplyr::mutate(inst = "grav:trans")
-
-  notes_6 <- dplyr::select(samples, id, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = 'id') %>%
-             dplyr::mutate(inst = "all")
-
-  notes <- dplyr::bind_rows(notes_1, notes_2,
-                            notes_3, notes_4,
-                            notes_5, notes_6) %>%
-           dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
-           dplyr::mutate(id = as.factor(id))
+  notes_all <- dplyr::left_join(notes, notes_kf, by = "id_test")
+  notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
+  
 ```
 
 # Break out instruments
@@ -146,14 +112,6 @@ With default value `maybe`.
   notes <- dplyr::mutate(notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
-## Combine with kf notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_kf <- load_qc_kb("../data/logs/startup_qc_notes.csv", "*")
-
-  notes <- dplyr::bind_rows(notes, notes_kf) %>%
-           dplyr::mutate(id = as.factor(id))
-```
 
 # Adjust some flags based on notes
 
