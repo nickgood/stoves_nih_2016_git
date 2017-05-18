@@ -33,7 +33,8 @@ output:
 
   notes_all <- dplyr::left_join(notes, notes_kf, by = "id_test")
   notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
-  
+  notes_all$notes <- gsub("; NA", "", notes_all$notes)
+  notes_all$notes <- gsub("NA;", "", notes_all$notes)
 ```
 
 # Break out instruments
