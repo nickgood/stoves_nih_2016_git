@@ -146,12 +146,12 @@ With default value `maybe`.
   notes <- dplyr::mutate(notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
-## Combine with kb notes
+## Combine with kf notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
+  notes_kf <- load_qc_kb("../data/logs/startup_qc_notes.csv", "*")
 
-  notes <- dplyr::bind_rows(notes, notes_kb) %>%
+  notes <- dplyr::bind_rows(notes, notes_kf) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
