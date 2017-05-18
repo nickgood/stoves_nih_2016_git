@@ -26,51 +26,20 @@ output:
 
 # Add QC and instrument to "notes" file
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$instrument <- ifelse(is.na(notes$notes), "all", "")
-  notes$qc <- ifelse(is.na(notes$notes), "good", "")
+  notes$instrument <- ifelse(grepl("", notes$notes), "all", "")
+  notes$qc <- ifelse(grepl("", notes$notes), "maybe", "")
+  
+  notes$instrument <- ifelse(is.na(notes$notes), "all", notes$instrument)
+  notes$qc <- ifelse(is.na(notes$notes), "good", notes$qc)
 
   notes$instrument <- ifelse(grepl("carbonyl", notes$notes), "carbonyl", notes$instrument)
   notes$qc <- ifelse(grepl("carbonyl", notes$notes), "bad", notes$qc)
   
   notes$instrument <- ifelse(grepl("hood|charcoal", notes$notes), "all", notes$instrument)
   notes$qc <- ifelse(grepl("hood|charcoal", notes$notes), "maybe", notes$qc)
-```
-
-## Create qc flag for other tests running
-
-If noted that other test running in Thing2 Hood, change QC from `good` to `maybe`.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_all2 <- notes_all
-  notes_all2$qc <- ifelse(grepl("hood|charcoal|Charcoal|Thing2", notes_all2$notes), paste(notes_all2$qc,"maybe"), notes_all2$qc)
-  #if "notes" column contains "hood|charcoal|Charcoal|Thing 2", set the QC ="maybe" for instruments = "all"
+  
 
 ```
-
-
-# Adjust some flags based on notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                            12.12$|^Size range|
-                                            Charcoal test in Thing 2|
-                                            Charcoal test running",
-                                            notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
-                                           ^Bleed|^CO2
-                                            |^5-Gas|^Out of CO2|^KF|^3|^New",
-                                            notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-                                           |^Dilution|^SMPS Malfunction|
-                                           ^No SMPS data.|^No 5-gas",
-                                           notes),
-                                           "bad", as.character(qc)))
-```
-
 
 # Compile two note files
 
