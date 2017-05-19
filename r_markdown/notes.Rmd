@@ -82,7 +82,7 @@ Compile the two note files into one.
                                        "instrument",
                                        "qc")) %>%
                dplyr::mutate(notes = paste0(notes.x,
-                                            "; ", 
+                                            "; ",
                                             notes.y),
                              notes = gsub("; NA", "", notes),
                              notes = gsub("NA;", "", notes)) %>%
@@ -92,7 +92,7 @@ Compile the two note files into one.
 
 # Save
 
-* Saves the QC flags into a RDS
+* Saves the QC flags into a .RDS file.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(notes_all, file = "../r_files/qc.RDS")
