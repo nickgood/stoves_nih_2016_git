@@ -85,7 +85,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("pax|all", inst))
 
-  pax_ <- dplyr::left_join(pax, notes, by = "id")
+  pax <- dplyr::left_join(pax, notes, by = "id")
 ```
 
 # Save
