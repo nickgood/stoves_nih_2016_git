@@ -52,6 +52,11 @@ With default value `good` for `all` instruments in no notes; `maybe` for `all` i
   notes$qc <- as.factor(notes$qc)
   notes_kf$notes <- as.character(notes_kf$notes)
   
+  notes_all <- dplyr::full_join(note, 
+                                notes_kf,
+                                by = c("id_test",
+                                       "instrument",
+                                       "qc"))
   notes_all <- merge(notes, notes_kf, by = c("id_test", "instrument", "qc"), all = TRUE)
   
   
