@@ -63,12 +63,15 @@ Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 ```
 
+
 ## Longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  temp_full <- tidyr::gather(temp_full, "t_sensor", "t_flue", 3:6) %>%
               dplyr::filter(!is.na(t_flue)) %>%
               dplyr::left_join(info, by = "id")
+
+  temp <- dplyr::left_join(temp_full, info, "id") # ng check this 05/19/2017 
 ```
 
 # QC
@@ -91,7 +94,7 @@ Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
 
 Temperature was measured for `r length(unique(temp$id))` experiments between `r min(temp$date, na.rm = TRUE)` and `r max(temp$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(test_info$id), as.character(temp$id))`.
 
-Temperature data is expected to be missing for:
+Temperature data is expected to be missing for: tests 36 through 43 (blanks).
 
 # Plots
 

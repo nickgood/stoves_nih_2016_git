@@ -67,7 +67,7 @@ output: html_document
 * append to data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- dplyr::left_join(pax, flow, "id")
+  pax <- dplyr::left_join(pax_full, flow, "id")
 ```
 
 ## Info
@@ -100,4 +100,5 @@ output: html_document
 The PAX measured during `r length(unique(pax$id))` experiments between `r min(pax$date, na.rm = TRUE)` and `r max(pax$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(test_info$id), as.character(pax$id))`.
 
 
-PAX data is expected to be missing for:
+Tests 36 through 43 are blanks; no fivegas data expected.
+PAX file currently missing for test day 11/17/2016 (tests 6, 9, 33). KF searching for file as of 5/8/17. 
