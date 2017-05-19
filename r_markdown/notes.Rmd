@@ -87,7 +87,8 @@ Compile the two note files into one.
                              notes = gsub("; NA", "", notes),
                              notes = gsub("NA;", "", notes)) %>%
                 dplyr::rename(notes_log = notes.x,
-                              notes_csv = notes.y)
+                              notes_csv = notes.y,
+                              inst = instrument)
 ```
 
 # Save
