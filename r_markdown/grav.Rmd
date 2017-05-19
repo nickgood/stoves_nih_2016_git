@@ -139,7 +139,7 @@ Is B[0-9] background as well?
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
+  qc <- dplyr::filter(qc, grepl("grav|all", qc$instrument) == TRUE)
 ```
 
 # Blanks (LOD/LOQ)
@@ -226,7 +226,7 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
     geom_point(aes(id, delta, colour = type)) +
     theme_minimal() +
     theme(text = element_text(size = 20)) +
-    ylab("delata mass (ug)")
+    ylab("delta mass (ug)")
 ```
 
 ## plot concentration
