@@ -16,13 +16,13 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-## Load pax data
+# Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax <- readRDS("../r_files/pax.RDS")
 ```
 
-## Load metadata
+# Load metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_info <- readRDS("../r_files/test_info.RDS")
@@ -72,7 +72,7 @@ output:
   pax <- dplyr::left_join(pax_full, flow, "id")
 ```
 
-## Info
+# Info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
@@ -80,27 +80,23 @@ output:
   pax <- dplyr::left_join(pax, info, "id")
 ```
 
-## QC
+# QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("pax|all", notes$notes) == TRUE)
 ```
 
-## Save
+# Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(pax, file="../r_files/pax_merged.RDS")
 ```
 
-## Summary
+# Plots
 
-
-## Plots
-
-## Data summary
+# Data summary
 
 The PAX measured during `r length(unique(pax$id))` experiments between `r min(pax$date, na.rm = TRUE)` and `r max(pax$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(test_info$id), as.character(pax$id))`.
-
 
 Tests 36 through 43 are blanks; no fivegas data expected.
 PAX file currently missing for test day 11/17/2016 (tests 6, 9, 33). KF searching for file as of 5/8/17. 
