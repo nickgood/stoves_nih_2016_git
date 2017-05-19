@@ -28,19 +28,35 @@ output:
 
 With default value `good` for `all` instruments in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby. 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$instrument <- ifelse(grepl("", notes$notes), "all", "")
-  notes$qc <- ifelse(grepl("", notes$notes), "maybe", "")
-  
-  notes$instrument <- ifelse(is.na(notes$notes), "all", notes$instrument)
-  notes$qc <- ifelse(is.na(notes$notes), "good", notes$qc)
-
-  notes$instrument <- ifelse(grepl("carbonyl", notes$notes), "carbonyl", notes$instrument)
-  notes$qc <- ifelse(grepl("carbonyl", notes$notes), "bad", notes$qc)
-  
-  notes$instrument <- ifelse(grepl("hood|charcoal", notes$notes), "all", notes$instrument)
-  notes$qc <- ifelse(grepl("hood|charcoal", notes$notes), "maybe", notes$qc)
-  
-
+  notes <- dplyr::mutate(notes,
+                          instrument = ifelse(grepl("", notes),
+                                              "all", 
+                                              ""),
+                          instrument = ifelse(grepl("", notes),
+                                               "all",
+                                               ""),
+                          qc = ifelse(grepl("", notes),
+                                             "maybe",
+                                             ""),
+                          instrument = ifelse(is.na(notes),
+                                               "all",
+                                               instrument),
+                          qc = ifelse(is.na(notes),
+                                       "good",
+                                       qc),
+                          instrument = ifelse(grepl("carbonyl", notes),                                                  "carbonyl",
+                                               instrument),
+                          qc = ifelse(grepl("carbonyl", notes),
+                                       "bad",
+                                       qc),
+                          instrument = ifelse(grepl("hood|charcoal",
+                                               notes),
+                                               "all",
+                                               instrument),
+                          qc = ifelse(grepl("hood|charcoal",
+                                             notes),
+                                             "maybe",
+                                             qc))
 ```
 
 # Compile two note files into one
