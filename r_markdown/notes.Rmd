@@ -75,7 +75,7 @@ Compile the two note files into one.
                             instrument = as.factor(instrument),
                             qc = as.factor(qc),
                             notes = as.character(notes))
-  
+
   notes_all <- dplyr::full_join(notes, 
                                 notes_kf,
                                 by = c("id_test",
