@@ -156,7 +156,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ## Conc calculation
 
-* accounting for calobration weight delta and blank delta
+* accounting for calibration weight delta and blank delta
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (ug - ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
@@ -176,7 +176,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
+Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
 
 # Save merged file
 
