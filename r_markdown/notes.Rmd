@@ -25,6 +25,8 @@ output:
 ```
 
 # Add QC and instrument to "notes" file
+
+With default value `good` for `all` instruments in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby. 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes$instrument <- ifelse(grepl("", notes$notes), "all", "")
   notes$qc <- ifelse(grepl("", notes$notes), "maybe", "")
@@ -41,30 +43,24 @@ output:
 
 ```
 
-# Compile two note files
+# Compile two note files into one
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   colnames(notes_kf) <- c("id_test", "instrument", "qc", "notes")
-
-  notes_all <- dplyr::left_join(notes, notes_kf, by = "id_test")
+  notes$id_test <- as.factor(notes$id_test)
+  notes$instrument <- as.factor(notes$instrument)
+  notes$qc <- as.factor(notes$qc)
+  notes_kf$notes <- as.character(notes_kf$notes)
+  
+  notes_all <- merge(notes, notes_kf, by = c("id_test", "instrument", "qc"), all = TRUE)
+  
+  
   notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
   notes_all$notes <- gsub("; NA", "", notes_all$notes)
   notes_all$notes <- gsub("NA;", "", notes_all$notes)
 ```
 
-# fill in QC and instrument values for "notes"
-
-With default value `good` for `all` instruments.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_all$qc <- as.character(notes_all$qc)
-  notes_all$qc <- ifelse(is.na(notes_all$qc), 'good', notes_all$qc)
-
-  notes_all$instrument <- as.character(notes_all$instrument)
-  notes_all$instrument <- ifelse(is.na(notes_all$instrument), 'all', notes_all$instrument)
-```
-
-# Save QC flags
+# Save QC flags into a RDS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(notes_all, file = "../r_files/qc.RDS")
