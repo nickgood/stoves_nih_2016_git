@@ -28,6 +28,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_info <- readRDS("../r_files/test_info.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 * sample times
@@ -41,7 +42,7 @@ output:
 * notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- readRDS("../r_files/notes.RDS")
+ 
 ```
 
 # Units
