@@ -32,7 +32,7 @@ output:
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
   flow <- readRDS("../r_files/flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
