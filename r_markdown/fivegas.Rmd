@@ -81,10 +81,28 @@ output:
 
 ## Background
 
+* calculate mean backgrounds
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::group_by(out_bg, id, type, pol) %>%
         dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
-        tidyr::spread(type, mean)
+        tidyr::spread(type, mean) %>%
+        mutate(delta = post - pre,
+               bg_ppm = (pre + post) / 2,
+               bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm),
+               bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm))
+```
+
+* append to fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_full <- dplyr::left_join(out_full,
+                               dplyr::select(bg, id, pol, bg_ppm),
+                               by = c("id", "pol"))
+
+  out_rep <- dplyr::left_join(out_rep,
+                              dplyr::select(bg, id, pol, bg_ppm),
+                              by = c("id", "pol"))
 ```
 
 # QC
