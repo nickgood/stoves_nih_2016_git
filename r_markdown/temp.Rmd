@@ -43,6 +43,8 @@ output:
   temp_full <- filter_times_startup(times_test, temp)
 ```
 
+Note tests have data in `t_1` column, except tests `15 20 22 28 34`.
+
 * background levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -59,8 +61,17 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
+```
 
-  temp <- dplyr::left_join(temp_full, info, "id")
+
+## Longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ temp_full <- tidyr::gather(temp_full, "t_sensor", "t_flue", 3:6) %>%
+              dplyr::filter(!is.na(t_flue)) %>%
+              dplyr::left_join(info, by = "id")
+
+  temp <- dplyr::left_join(temp_full, info, "id") # ng check this 05/19/2017 
 ```
 
 # QC
@@ -76,7 +87,7 @@ output:
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(temp, file = "../r_files/temp_merged.RDS")
+  saveRDS(temp_full, file = "../r_files/temp_merged.RDS")
 ```
 
 # Summary
@@ -86,3 +97,10 @@ Temperature was measured for `r length(unique(temp$id))` experiments between `r 
 Temperature data is expected to be missing for: tests 36 through 43 (blanks).
 
 # Plots
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=60}
+  ggplot(temp_full, aes(datetime, t_flue, color = fuel_type)) +
+   geom_point() +
+   facet_wrap(~id, ncol = 2, scales = "free")
+```
+

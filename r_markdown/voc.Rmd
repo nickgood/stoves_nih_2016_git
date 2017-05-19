@@ -107,7 +107,9 @@ output:
              dplyr::ungroup() %>%
              dplyr::filter(max > 10) %>%
              dplyr::group_by(pol) %>%
-             dplyr::mutate(outlier = ifelse(is_outlier(ppb), as.character(id), NA),
+             dplyr::mutate(outlier = ifelse(is_outlier(ppb),
+                                            as.character(id),
+                                            NA),
                            mean = mean(ppb, na.rm = TRUE)) %>%
              dplyr::ungroup() %>%
              dplyr::mutate(pct = round(percent_rank(mean), 1))
@@ -117,7 +119,8 @@ output:
     geom_point() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-    ylab("ppb") + xlab("pollutant") +
+    ylab("ppb") +
+    xlab("pollutant") +
     geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4)
 
 ```
@@ -146,7 +149,9 @@ output:
         dplyr::rename(ppb_bg = mean)
 
   voc <- dplyr::left_join(voc, bg, by = "pol") %>%
-         dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
+         dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 
+                                       0,
+                                       ppb_bg))
 ```
 
 # Save
@@ -167,12 +172,12 @@ VOCs data is expected to be missing for: ?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
   ggplot(voc, aes(id, ppb, colour = fuel_type)) +
-         geom_point(size = 5) +
-         facet_wrap(~pol, ncol = 1, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("ppb") +
-         xlab("") +
-         theme(text = element_text(size = 28),
-               axis.text.x = element_text(angle = 60, hjust = 1))
+    geom_point(size = 5) +
+    facet_wrap(~pol, ncol = 1, scales = "free") +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab("ppb") +
+    xlab("") +
+    theme(text = element_text(size = 28),
+          axis.text.x = element_text(angle = 60, hjust = 1))
 ```
