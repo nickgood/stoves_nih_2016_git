@@ -17,50 +17,83 @@ output:
   source("../r_scripts/R_load_metadata.R")
 ```
 
-# Load files that contain any notes or test metadata
+# Load notes
+
+Load files that contain any notes or test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- readRDS("../r_files/notes.RDS")
-  notes_kf <- read.csv("../data/logs/startup_qc_notes.csv")
+  notes_kf <- readr::read_csv("../data/logs/startup_qc_notes.csv")
 ```
 
-# Add QC and instrument to "notes" file
+# Add flags
 
-With default value `good` for `all` instruments in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby. 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$instrument <- ifelse(grepl("", notes$notes), "all", "")
-  notes$qc <- ifelse(grepl("", notes$notes), "maybe", "")
-  
-  notes$instrument <- ifelse(is.na(notes$notes), "all", notes$instrument)
-  notes$qc <- ifelse(is.na(notes$notes), "good", notes$qc)
+* Add qc status and instrument to `notes` file
 
-  notes$instrument <- ifelse(grepl("carbonyl", notes$notes), "carbonyl", notes$instrument)
-  notes$qc <- ifelse(grepl("carbonyl", notes$notes), "bad", notes$qc)
-  
-  notes$instrument <- ifelse(grepl("hood|charcoal", notes$notes), "all", notes$instrument)
-  notes$qc <- ifelse(grepl("hood|charcoal", notes$notes), "maybe", notes$qc)
-  
-
-```
-
-# Compile two note files into one
+With default value `good` for `all` instruments in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(notes_kf) <- c("id_test", "instrument", "qc", "notes")
-  notes$id_test <- as.factor(notes$id_test)
-  notes$instrument <- as.factor(notes$instrument)
-  notes$qc <- as.factor(notes$qc)
-  notes_kf$notes <- as.character(notes_kf$notes)
-  
-  notes_all <- merge(notes, notes_kf, by = c("id_test", "instrument", "qc"), all = TRUE)
-  
-  
-  notes_all$notes <- paste0(notes_all$notes.x,"; ", notes_all$notes.y)
-  notes_all$notes <- gsub("; NA", "", notes_all$notes)
-  notes_all$notes <- gsub("NA;", "", notes_all$notes)
+  notes <- dplyr::mutate(notes,
+                          instrument = ifelse(grepl("", notes),
+                                              "all", 
+                                              ""),
+                          instrument = ifelse(grepl("", notes),
+                                               "all",
+                                               ""),
+                          qc = ifelse(grepl("", notes),
+                                             "maybe",
+                                             ""),
+                          instrument = ifelse(is.na(notes),
+                                               "all",
+                                               instrument),
+                          qc = ifelse(is.na(notes),
+                                       "good",
+                                       qc),
+                          instrument = ifelse(grepl("carbonyl", notes),                                                  "carbonyl",
+                                               instrument),
+                          qc = ifelse(grepl("carbonyl", notes),
+                                       "bad",
+                                       qc),
+                          instrument = ifelse(grepl("hood|charcoal",
+                                               notes),
+                                               "all",
+                                               instrument),
+                          qc = ifelse(grepl("hood|charcoal",
+                                             notes),
+                                             "maybe",
+                                             qc))
 ```
 
-# Save QC flags into a RDS
+# Organize 
+
+Compile the two note files into one.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes_kf <- dplyr::rename(notes_kf,
+                            id_test = id) %>%
+              dplyr::mutate(id_test = as.factor(id_test),
+                            instrument = as.factor(instrument),
+                            qc = as.factor(qc),
+                            notes = as.character(notes))
+
+  notes_all <- dplyr::full_join(notes, 
+                                notes_kf,
+                                by = c("id_test",
+                                       "instrument",
+                                       "qc")) %>%
+               dplyr::mutate(notes = paste0(notes.x,
+                                            "; ",
+                                            notes.y),
+                             notes = gsub("; NA", "", notes),
+                             notes = gsub("NA;", "", notes)) %>%
+                dplyr::rename(notes_log = notes.x,
+                              notes_csv = notes.y,
+                              inst = instrument)
+```
+
+# Save
+
+* Saves the QC flags into a .RDS file.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(notes_all, file = "../r_files/qc.RDS")

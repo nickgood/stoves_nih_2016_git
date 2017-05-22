@@ -28,6 +28,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_info <- readRDS("../r_files/test_info.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 * sample times
@@ -41,7 +42,7 @@ output:
 * notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- readRDS("../r_files/notes.RDS")
+ 
 ```
 
 # Units
@@ -106,6 +107,22 @@ output:
 ```
 
 # QC
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes <- dplyr::filter(notes, grepl("fivegas|all", inst))
+
+  out_full <- dplyr::left_join(out_full, 
+                              dplyr::select(notes, id, qc),
+                              by = "id")
+  
+  out_rep <- dplyr::left_join(out_rep,
+                              dplyr::select(bg, id, pol, bg_ppm),
+                              by = c("id", "pol"))
+  
+  out_bg <- dplyr::left_join(out_bg,
+                             dplyr::select(bg, id, pol, bg_ppm),
+                             by = c("id", "pol")) 
+```
 
 # Save to file
 

@@ -32,8 +32,7 @@ output:
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
   flow <- readRDS("../r_files/flows.RDS")
-  #notes <- readRDS("../r_files/notes.RDS")
-  qc <- readRDS("../r_files/qc.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
@@ -139,7 +138,9 @@ Is B[0-9] background as well?
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  qc <- dplyr::filter(qc, grepl("grav|all", qc$instrument) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", inst))
+
+  ions <- dplyr::left_join(grav, notes, by = "id")
 ```
 
 # Blanks (LOD/LOQ)
