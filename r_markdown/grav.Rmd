@@ -32,7 +32,8 @@ output:
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
   flow <- readRDS("../r_files/flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  #notes <- readRDS("../r_files/notes.RDS")
+  qc <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
@@ -111,12 +112,26 @@ Spread data
 Test are either a sample: `sample`, a background experiment: `bg`, or a filter blank: `bk`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ grav <- dplyr::mutate(grav, conc = ((delta - cal_delta) * 60 * 1000) / (flow_mean / (end - start))) # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm. 
+```
+
+## Test type
+
+Is B[0-9] background as well?
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::mutate(grav, 
+                         type = ifelse(grepl("^BG.*", id_test),
+                         "bg", type),
+                         type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
+
   grav <- dplyr::mutate(grav,
                         type = ifelse(grepl("^BG.*", id_test),
                         "bg", type),
                         type = ifelse(grepl("^B[0-9].*", id_test),
                                       "bk",
                                       type))
+
 ```
 
 # QC
@@ -124,7 +139,7 @@ Test are either a sample: `sample`, a background experiment: `bg`, or a filter b
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
+  qc <- dplyr::filter(qc, grepl("grav|all", qc$instrument) == TRUE)
 ```
 
 # Blanks (LOD/LOQ)
@@ -142,7 +157,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ## Conc calculation
 
-* accounting for calobration weight delta and blank delta
+* accounting for calibration weight delta and blank delta
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (ug - ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
@@ -162,7 +177,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
+Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
 
 # Save merged file
 
@@ -211,7 +226,7 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
     geom_point(aes(id, delta, colour = type)) +
     theme_minimal() +
     theme(text = element_text(size = 20)) +
-    ylab("delata mass (ug)")
+    ylab("delta mass (ug)")
 ```
 
 ## plot concentration
