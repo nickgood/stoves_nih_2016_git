@@ -325,14 +325,14 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   names(df) <- gsub("\\+", "_", colnames(df))
   names(df) <- gsub(",", "_", colnames(df))
   
-  df_ <- dplyr::mutate(df, voc_ = gsub("\\\\", "_", df$voc_)) %>%
-         tidyr::separate(voc_,
+  df <- dplyr::mutate(df, voc_ = gsub("\\\\", "_", df$voc_)) %>%
+        tidyr::separate(voc_,
                          c("a", "b", "c", "d", "e", "date", "id_can"),
                          "_") %>%
-         dplyr::mutate(id_can = substr(id_can, 1, 4),
+        dplyr::mutate(id_can = substr(id_can, 1, 4),
                        units = "ppbv",
                        date = as.Date(date, "%Y%m%d")) %>%
-         dplyr::select(-a, -b, -c, -d, -e)
+        dplyr::select(-a, -b, -c, -d, -e)
   # return 
     return(df)
 }
