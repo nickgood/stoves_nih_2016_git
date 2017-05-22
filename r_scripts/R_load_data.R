@@ -314,35 +314,25 @@ load_trans_file <- function(file, sheet = "Transmissometer Log"){
 # tmp <- load_voc_file(file)
 load_voc_file <- function(file, sheet = "Sheet1"){
 
-  df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+  df <- as_data_frame(read_excel(path = file,
+                                 sheet = sheet,
+                                 col_names = TRUE)[,1:7])
+  
 
-  names(df) <- paste0("voc_",colnames(df))
+  names(df) <- paste0("voc_", colnames(df))
   names(df) <- tolower(gsub(" ", "_", colnames(df)))
   names(df) <- gsub("-", "_", colnames(df))
   names(df) <- gsub("\\+", "_", colnames(df))
   names(df) <- gsub(",", "_", colnames(df))
   
-  df <- as_data_frame(df)
-    
-  names(df)[1] <- "id_can"
-  names(df)[2] <- "id_voc"
-  names(df)[3] <- "datetime_start"
-  names(df)[4] <- "datetime_end"
-  
-  df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na)) 
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(x)))
-
-  df$type <- as.character("NA")
-  df$type <- ifelse(grepl("SF", substr(df$id_voc,1,2)), "test", df$type) 
-  df$type <- ifelse(grepl("P", substr(df$id_voc,1,1)), "pilot", df$type) 
-  df$type <- ifelse(grepl("BG", substr(df$id_voc,1,2)), "bg", df$type)
-  df$type <- as.factor(df$type)
-
-  df$id_voc <- gsub(" ", "", df$id_voc)
-  df$id <- sub(".*-", "", df$id_voc)
-  df$id <- as.factor(df$id)
-
+  df_ <- dplyr::mutate(df, voc_ = gsub("\\\\", "_", df$voc_)) %>%
+         tidyr::separate(voc_,
+                         c("a", "b", "c", "d", "e", "date", "id_can"),
+                         "_") %>%
+         dplyr::mutate(id_can = substr(id_can, 1, 4),
+                       units = "ppbv",
+                       date = as.Date(date, "%Y%m%d")) %>%
+         dplyr::select(-a, -b, -c, -d, -e)
   # return 
     return(df)
 }
