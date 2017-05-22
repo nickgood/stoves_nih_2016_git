@@ -2,6 +2,7 @@
 # Libraries
   library(tidyverse)
   library(readxl)
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
@@ -335,6 +336,42 @@ load_voc_file <- function(file, sheet = "Sheet1"){
         dplyr::select(-a, -b, -c, -d, -e)
   # return 
     return(df)
+}
+#________________________________________________________
+
+#________________________________________________________
+# Load voc log
+# file <- "../data/logs/VOCdropoff.csv"
+# tmp <- load_voc_log(file)
+load_voc_log <- function(file){
+ 
+ df <- as_data_frame(read_csv(file = file, col_names = FALSE))
+ 
+ df <- as_data_frame(t(df[, -1]))  # transpose
+ 
+ names(df) <- c("id_can_green", 
+                "id_can_white",
+                "date_pickup",
+                "pickup_person",
+                "date_test",
+                "type",
+                "id_test",
+                "p_start",
+                "p_end",
+                "time_start",
+                "time_end",
+                "id_reg",
+                "flow_reg",
+                "date_cal",
+                "date_dropoff")
+ 
+ df <- dplyr::mutate_each(df, funs(as.Date(.,"%m/%d/%Y")),
+                                starts_with("date")) %>%
+        dplyr::mutate(time_start = as.numeric(seconds(hms(time_start))),
+                      time_end = as.numeric(seconds(hms(time_end))))
+
+ # return 
+ return(df)
 }
 #________________________________________________________
 
