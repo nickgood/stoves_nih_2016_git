@@ -334,6 +334,10 @@ load_voc_file <- function(file, sheet = "Sheet1"){
                        units = "ppbv",
                        date = as.Date(date, "%Y%m%d")) %>%
         dplyr::select(-a, -b, -c, -d, -e)
+
+ # load voc log
+  log <- load_voc_log()
+  
   # return 
     return(df)
 }
@@ -343,7 +347,7 @@ load_voc_file <- function(file, sheet = "Sheet1"){
 # Load voc log
 # file <- "../data/logs/VOCdropoff.csv"
 # tmp <- load_voc_log(file)
-load_voc_log <- function(file){
+load_voc_log <- function(file = "../data/logs/VOCdropoff.csv"){
  
  df <- as_data_frame(read_csv(file = file, col_names = FALSE))
  
