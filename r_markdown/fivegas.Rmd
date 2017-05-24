@@ -109,7 +109,7 @@ output:
 # QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("fivegas|all", inst))
+  notes <- dplyr::filter(notes, grepl("fivegas|all", instrument))
 
   out_full <- dplyr::left_join(out_full, 
                               dplyr::select(notes, id, qc),
