@@ -71,6 +71,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax_full <- dplyr::left_join(pax_full, flow, "id")
   pax_rep <- dplyr::left_join(pax_rep, flow, "id")
+  pax_bg <- dplyr::left_join(pax_bg, flow, "id")
 ```
 
 # Info
@@ -80,6 +81,7 @@ output:
 
   pax_full <- dplyr::left_join(pax_full, info, "id")
   pax_rep <- dplyr::left_join(pax_rep, info, "id")
+  pax_bg <- dplyr::left_join(pax_bg, info, "id")
 ```
 
 # QC
@@ -89,13 +91,14 @@ output:
 
   pax_full <- dplyr::left_join(pax_full, notes, by = "id")
   pax_rep <- dplyr::left_join(pax_rep, notes, by = "id")
+  pax_bg <- dplyr::left_join(pax_bg, notes, by = "id")
 ```
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(pax_full, file="../r_files/pax_merged-full.RDS")
-  saveRDS(pax_rep, file="../r_files/pax_merged-rep.RDS")
+  saveRDS(pax_full, file="../r_files/pax_merged_full.RDS")
+  saveRDS(pax_rep, file="../r_files/pax_merged_byrep.RDS")
 ```
 
 # Plots
