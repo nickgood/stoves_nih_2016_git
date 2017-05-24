@@ -67,7 +67,7 @@ output: html_document
 * append to data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- dplyr::left_join(pax, flow, "id")
+  pax <- dplyr::left_join(pax_full, flow, "id")
 ```
 
 ## Info
