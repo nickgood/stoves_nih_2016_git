@@ -85,7 +85,7 @@ output:
 # QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("pax|all", inst))
+  notes <- dplyr::filter(notes, grepl("pax|all", instrument))
 
   pax_full <- dplyr::left_join(pax_full, notes, by = "id")
   pax_rep <- dplyr::left_join(pax_rep, notes, by = "id")
