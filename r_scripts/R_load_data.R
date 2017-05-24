@@ -104,7 +104,7 @@ load_ecoc_file <- function(file){
 
 #________________________________________________________
 # Load gravimetric file
-# file <- "data/grav/Teflon Filter Weight Log.xlsx"
+# file <- "data/grav/Teflon Filters.xlsx"
 #
 load_grav_file <- function(file, sheet = "filters"){
 
@@ -568,13 +568,13 @@ load_singlefiles <- function(log){
     filelist <- list.files("../data/voc", "^VOC data.xlsx$", full.names = TRUE)
     out <- load_voc_file(filelist[1])
   }
-  
+
  # sample log
   if(log == "sample"){
     filelist <- list.files("../data/logs", "^test_matrix.xlsx$", full.names = TRUE)
     out <- load_matrix(filelist[1])
   }
-  
+
  # batch sample log
   if(log == "meta"){
     filelist <- list.files("../data/logs", "^metadata.xlsx$", full.names = TRUE)
@@ -653,7 +653,7 @@ load_fivegas <- function(fldr = "../data/fivegas"){
 
 #________________________________________________________
 # Load fivegas file
-# file <- "../data/fivegas/20161001_FIVEGAS.csv"
+# file <- "../data/fivegas/20161013_FIVEGAS.csv"
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
  
@@ -664,8 +664,8 @@ load_fivegas_file <- function(file){
  names(out)[1] <- "ch4"
  names(out)[2] <- "o2"
  names(out)[3] <- "nox"
- names(out)[4] <- "co"
- names(out)[5] <- "co2"
+ names(out)[4] <- "co2"
+ names(out)[5] <- "co"
  names(out)[6] <- "time_s"
  names(out)[7] <- "datetime"
  
@@ -675,10 +675,9 @@ load_fivegas_file <- function(file){
   as.numeric(substr(out$datetime,18, 19))
  
  out <- dplyr::mutate(out, datetime =
-                       as.POSIXct(datetime, format = "%m/%d/%Y %H:%M:%OS"),
-                      o2 = o2 * 10^4,
-                      co2 = co2 * 10^4,
-                      date = as.Date(datetime))
+                           as.POSIXct(datetime,
+                                      format = "%m/%d/%Y %H:%M:%OS"),
+                           date = as.Date(datetime))
  # return
  return(out)
 }

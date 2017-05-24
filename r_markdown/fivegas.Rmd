@@ -28,6 +28,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_info <- readRDS("../r_files/test_info.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 * sample times
@@ -41,13 +42,22 @@ output:
 * notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- readRDS("../r_files/notes.RDS")
+ 
+```
+
+# Units
+
+* Convert co2 from percent to ppm.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out <- dplyr::mutate(data, co2 = co2 * 10^4)
 ```
 
 # Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- out <- tidyr::gather(data, "pol", "val", 1:5)
+ out <- tidyr::gather(out, "pol", "val", 1:5) %>%
+        dplyr::filter(grepl("^co$|^co2$|^ch4$", pol))
 ```
 
 # Filter times
@@ -72,13 +82,47 @@ output:
 
 ## Background
 
+* calculate mean backgrounds
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::group_by(out_bg, id, type, pol) %>%
         dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
-        tidyr::spread(type, mean)
+        tidyr::spread(type, mean) %>%
+        mutate(delta = post - pre,
+               bg_ppm = (pre + post) / 2,
+               bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm),
+               bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm))
+```
+
+* append to fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  out_full <- dplyr::left_join(out_full,
+                               dplyr::select(bg, id, pol, bg_ppm),
+                               by = c("id", "pol"))
+
+  out_rep <- dplyr::left_join(out_rep,
+                              dplyr::select(bg, id, pol, bg_ppm),
+                              by = c("id", "pol"))
 ```
 
 # QC
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes <- dplyr::filter(notes, grepl("fivegas|all", inst))
+
+  out_full <- dplyr::left_join(out_full, 
+                              dplyr::select(notes, id, qc),
+                              by = "id")
+  
+  out_rep <- dplyr::left_join(out_rep,
+                              dplyr::select(bg, id, pol, bg_ppm),
+                              by = c("id", "pol"))
+  
+  out_bg <- dplyr::left_join(out_bg,
+                             dplyr::select(bg, id, pol, bg_ppm),
+                             by = c("id", "pol")) 
+```
 
 # Save to file
 
@@ -89,6 +133,11 @@ output:
 ```
 
 # Summary
+
+Fivegas data was collected during `r length(unique(out_full$id))` experiments between `r min(out_full$date, na.rm = TRUE)` and `r max(out_full$date, na.rm = TRUE)`. There is no fivegas data for tests: `r setdiff(as.character(test_info$id), as.character(out_full$id))`.
+
+Tests 36 through 43 are blanks; no fivegas data expected.
+
 
 # Plots
 
@@ -115,7 +164,7 @@ output:
     theme(legend.position = "top")
 ```
 
-* background
+* replicates
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_rep, aes(datetime, val, color = rep)) + 

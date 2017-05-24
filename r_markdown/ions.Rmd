@@ -34,7 +34,7 @@ output:
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
   flow <- readRDS("../r_files/flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
@@ -53,8 +53,14 @@ output:
   times <- dplyr::select(times_test, id, start, end)
 
   ions <- dplyr::left_join(ions, info, by = c("id_ions" = "id_test")) %>%
-           dplyr::left_join(flow, by = "id") %>%
-           dplyr::left_join(times, by = "id")
+          dplyr::left_join(flow, by = "id") %>%
+          dplyr::left_join(times, by = "id")
+```
+
+# LOD
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, lod = ifelse(is.na(val), "below", "above"))
 ```
 
 # QC
@@ -62,16 +68,45 @@ output:
 * extract notes for ion data (should be carbonlys?)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("ions|all", notes) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carbonyl|all", inst))
+
+  ions <- dplyr::left_join(ions, notes, by = "id")
 ```
 
 # Concentration calculations
 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # (ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
+  ions <- dplyr::mutate(ions, 
+                        conc = (val) * 60 * 1000 /
+                               (flow_mean * (end - start)))
+```
+
 # Background analysis
+
+*  background average
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions_bg <- dplyr::filter(ions, fuel_type == "background") %>%
+             dplyr::group_by(var) %>%
+             dplyr::summarise(bg_mean = mean(val, na.rm = TRUE),
+                              bg_sd = sd(val, na.rm = TRUE))
+```
+
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::left_join(ions, ions_bg, by = "var")
+```
 
 # Summary
 
-Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(as.character(test_info$id), as.character(ions$id))`.
+Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
+
+Tests 36 through 43 are blanks; no fivegas data expected.
+Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test. 
+
+30, 36, 37, 38, 39, 40, 41, 42, 43.
 
 # Save merged file
 
@@ -80,4 +115,16 @@ Ion data was collected during `r length(unique(ions$id))` experiments. There is 
 ```
 
 # Plots
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, conc, colour = fuel_type)) +
+  geom_point(aes(size = 4)) +
+  geom_point(aes(id, bg_mean, size = 4), colour = "black") +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
 

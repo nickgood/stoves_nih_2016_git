@@ -32,7 +32,7 @@ output:
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
   flow <- readRDS("../r_files/flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
@@ -47,7 +47,7 @@ output:
           dplyr::mutate(type = ifelse(when == "cal", "cal", "sample"),
                         when = ifelse(when == "cal", rep, when),
                         rep = ifelse(rep == "pre" | rep == "post",
-                                     "1", rep))
+                              "1", rep))
 ```
 
 * average
@@ -73,8 +73,8 @@ output:
   grav <- dplyr::left_join(grav, test_info)
 
   flow <- dplyr::filter(flow, inst == "white") %>%
-           dplyr::select(id, mean, delta) %>%
-           dplyr::rename(flow_delta = delta,
+          dplyr::select(id, mean, delta) %>%
+          dplyr::rename(flow_delta = delta,
                          flow_mean = mean)
   
   grav <- left_join(grav, flow, by = "id")
@@ -106,9 +106,9 @@ Spread data
                            dplyr::select(times_test, id, start, end))
 ```
 
-## Concentrations
+## Test types
 
-* update conc units?
+Test are either a sample: `sample`, a background experiment: `bg`, or a filter blank: `bk`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  grav <- dplyr::mutate(grav, conc = ((delta - cal_delta) * 60 * 1000) / (flow_mean / (end - start))) # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm. 
@@ -123,6 +123,14 @@ Is B[0-9] background as well?
                          type = ifelse(grepl("^BG.*", id_test),
                          "bg", type),
                          type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
+
+  grav <- dplyr::mutate(grav,
+                        type = ifelse(grepl("^BG.*", id_test),
+                        "bg", type),
+                        type = ifelse(grepl("^B[0-9].*", id_test),
+                                      "bk",
+                                      type))
+
 ```
 
 # QC
@@ -130,35 +138,47 @@ Is B[0-9] background as well?
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$notes) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", inst))
+
+  ions <- dplyr::left_join(grav, notes, by = "id")
+```
+
+# Blanks (LOD/LOQ)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bk <- dplyr::filter(grav, type == "bk") %>%
+        dplyr::summarise(lod = 3 * sd(delta, na.rm = TRUE),
+                         loq = 10 * sd(delta, na.rm = TRUE),
+                         mean_bk = mean(delta, na.rm = TRUE))
+```
+
+The average blank has `r bk$mean_bk[1]`$\mu g$ of mass.
+
+The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
+
+## Conc calculation
+
+* accounting for calibration weight delta and blank delta
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # (ug - ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
+  grav <- dplyr::mutate(grav, 
+                        conc = (delta - cal_delta - bk$mean_bk[1]) * 60 * 1000 /
+                               (flow_mean * (end - start)))
 ```
 
 # Background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(bg = mean(conc, na.rm = TRUE))
+        dplyr::summarise(mean = mean(conc, na.rm = TRUE))
+
+  grav <- dplyr::mutate(grav, bg_conc = bg$mean[1])
 ```
-
-# Blanks (LOD/LOQ)
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bk <- dplyr::filter(grav, type == "bk") %>%
-        dplyr::summarise(lod = 3 * sd(conc, na.rm = TRUE),
-                         loq = 10 * sd(conc, na.rm = TRUE))
-```
-
-The LOD is `r bk$lod[1]`, the LOQ is `r bk$loq[1]`.
-
-# Background analysis
-
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
 
 # Summary
 
-Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.
+Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
 
 # Save merged file
 
@@ -168,12 +188,71 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
 
 # Plots
 
-## weights
+## plot environ
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav, type == "sample"),
-         aes(id, conc)) +
-  geom_point() +
-  theme_minimal()
+  ggplot(grav) +
+  geom_point(aes(id, toc_pre, colour = "t_pre")) +
+  geom_point(aes(id, toc_post, colour = "t_post")) +
+  geom_point(aes(id, rh_pre, colour = "rh_pre")) +
+  geom_point(aes(id, rh_post, colour = "rh_post")) +
+  scale_colour_manual("", 
+                      breaks = c("t_pre", "t_post",
+                                 "rh_pre", "rh_post"),
+                      values = c("dodgerblue1", "dodgerblue4",
+                                 "tomato1", "tomato4")) +
+  theme_minimal() +
+  theme(text = element_text(size=20)) +
+  ylab("t (oC) / RH (%)")
 ```
 
+## plot mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, pre, colour = "pre")) +
+  geom_point(aes(id, post, colour = "post")) +
+  scale_colour_manual("", 
+                      breaks = c("pre", "post"),
+                      values = c("dodgerblue1", "tomato4")) +
+  theme_minimal() +
+  theme(text = element_text(size = 20)) +
+  ylab("filter mass (ug)")
+```
+
+## plot delta mass
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+    geom_point(aes(id, delta, colour = type)) +
+    theme_minimal() +
+    theme(text = element_text(size = 20)) +
+    ylab("delta mass (ug)")
+```
+
+## plot concentration
+
+Black points = mean background
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+    geom_point(aes(id, conc, colour = type)) +
+    geom_point(aes(id, bg_conc), colour = "black") +
+    theme_minimal() +
+    theme(text = element_text(size = 20)) +
+    ylab("conc. ug/m^3")
+```
+
+## plot flows
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+    geom_point(aes(id, flow_mean, colour = "mean flow")) +
+    geom_point(aes(id, flow_delta, colour = "flow delta")) +
+    scale_colour_manual("", 
+                        breaks = c("mean flow", "flow delta"),
+                        values = c("dodgerblue1", "tomato4")) +
+    theme_minimal() +
+    theme(text = element_text(size = 20)) +
+    ylab("flow rate (L/min)")
+```
