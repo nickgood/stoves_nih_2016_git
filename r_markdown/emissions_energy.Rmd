@@ -73,7 +73,9 @@ output:
   e_times <- dplyr::filter(test_times, grepl("^start_[0-9]|^end_[0-9]", var)) %>%
              dplyr::select(-date) %>%
              tidyr::separate(var, c("var", "rep")) %>%
-             tidyr::spread(var, value)
+             tidyr::spread(var, value) %>%
+             dplyr::mutate(start_hms = round(seconds_to_period(start)),
+                           end_hms = round(seconds_to_period(end)))
 ```
 
 * which pot
