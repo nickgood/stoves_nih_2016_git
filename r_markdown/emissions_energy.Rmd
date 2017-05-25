@@ -149,7 +149,7 @@ output:
   time_tweak$dt[which(time_tweak$id == "8D")] <- -90
   time_tweak$dt[which(time_tweak$id == "5A")] <- 60
   time_tweak$dt[which(time_tweak$id == "3D")] <- -60
-  
+  time_tweak$dt[which(time_tweak$id == "29A")] <- -60
   temp_merged <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
                  dplyr::mutate(time = time - 130,
                                 datetime = datetime - 130,
