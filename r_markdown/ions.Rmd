@@ -98,6 +98,12 @@ output:
   ions$conc_bgadj <- ions$conc - ions$bg_mean
 ```
 
+* calculate mass per startup replicate
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions$mass_rep <- ions$val / ions$fuel_quant
+  ions$mass_rep <- gsub("Inf", "0", ions$mass_rep)
+```
+
 * merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
