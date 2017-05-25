@@ -69,7 +69,9 @@ output:
 * append to data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax <- dplyr::left_join(pax_full, flow, "id")
+  pax_full <- dplyr::left_join(pax_full, flow, "id")
+  pax_rep <- dplyr::left_join(pax_rep, flow, "id")
+  pax_bg <- dplyr::left_join(pax_bg, flow, "id")
 ```
 
 # Info
@@ -77,28 +79,33 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
 
-  pax <- dplyr::left_join(pax, info, "id")
+  pax_full <- dplyr::left_join(pax_full, info, "id")
+  pax_rep <- dplyr::left_join(pax_rep, info, "id")
+  pax_bg <- dplyr::left_join(pax_bg, info, "id")
 ```
 
 # QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("pax|all", inst))
+  notes <- dplyr::filter(notes, grepl("pax|all", instrument))
 
-  pax <- dplyr::left_join(pax, notes, by = "id")
+  pax_full <- dplyr::left_join(pax_full, notes, by = "id")
+  pax_rep <- dplyr::left_join(pax_rep, notes, by = "id")
+  pax_bg <- dplyr::left_join(pax_bg, notes, by = "id")
 ```
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(pax, file="../r_files/pax_merged.RDS")
+  saveRDS(pax_full, file="../r_files/pax_merged_full.RDS")
+  saveRDS(pax_rep, file="../r_files/pax_merged_byrep.RDS")
 ```
 
 # Plots
 
 # Data summary
 
-The PAX measured during `r length(unique(pax$id))` experiments between `r min(pax$date, na.rm = TRUE)` and `r max(pax$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(test_info$id), as.character(pax$id))`.
+The PAX measured during `r length(unique(pax_full$id))` experiments between `r min(pax_full$date, na.rm = TRUE)` and `r max(pax_full$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(test_info$id), as.character(pax_full$id))`.
 
 Tests 36 through 43 are blanks; no fivegas data expected.
-PAX file currently missing for test day 11/17/2016 (tests 6, 9, 33). KF searching for file as of 5/8/17. 
+All PAX files are present as expected as of 5/24/17. 

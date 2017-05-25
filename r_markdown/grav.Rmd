@@ -138,7 +138,7 @@ Is B[0-9] background as well?
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", inst))
+  notes <- dplyr::filter(notes, grepl("grav|all", instrument))
 
   ions <- dplyr::left_join(grav, notes, by = "id")
 ```
