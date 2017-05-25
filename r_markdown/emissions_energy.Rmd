@@ -147,8 +147,9 @@ output:
   time_tweak$dt[which(time_tweak$id == "2E")] <- -90
   time_tweak$dt[which(time_tweak$id == "6E")] <- -90
   time_tweak$dt[which(time_tweak$id == "8D")] <- -90
+  time_tweak$dt[which(time_tweak$id == "5A")] <- 60
   
-  temp_merged <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
+  temp_tweak <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
                   dplyr::mutate(time = time - 130,
                                 datetime = datetime - 130,
                                 time = time + dt,
@@ -156,13 +157,13 @@ output:
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #temp_tweak <- dplyr::filter(temp_tweak, loc != "flue", id == "8D")
+  temp_tweak <- dplyr::filter(temp_tweak, loc != "flue", id == "5A")
 
-  #temp_tweak <- filter_temp(e_times, temp_tweak)
+  temp_tweak <- filter_temp(e_times, temp_tweak)
 ```
 
 ```{r, eval=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=5, fig.height=5}
-  p_data <- dplyr::filter(temp_tweak, id == "8D")
+  p_data <- dplyr::filter(temp_tweak, id == "5A")
 
   ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
