@@ -137,9 +137,18 @@ output:
   time_tweak$dt[which(time_tweak$id == "13C")] <- 70
   time_tweak$dt[which(time_tweak$id == "13B")] <- 15
   time_tweak$dt[which(time_tweak$id == "16A")] <- 150
+  time_tweak$dt[which(time_tweak$id == "25A")] <- -90
+  time_tweak$dt[which(time_tweak$id == "25B")] <- -90
+  time_tweak$dt[which(time_tweak$id == "20C")] <- -30
+  time_tweak$dt[which(time_tweak$id == "21B")] <- 30
+  time_tweak$dt[which(time_tweak$id == "25A")] <- -90
+  time_tweak$dt[which(time_tweak$id == "25B")] <- -90
+  time_tweak$dt[which(time_tweak$id == "26B")] <- -90
+  time_tweak$dt[which(time_tweak$id == "2E")] <- -90
+  time_tweak$dt[which(time_tweak$id == "6E")] <- -90
+  time_tweak$dt[which(time_tweak$id == "8D")] <- -90
   
-  
-  temp_tweak <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
+  temp_merged <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
                   dplyr::mutate(time = time - 130,
                                 datetime = datetime - 130,
                                 time = time + dt,
@@ -147,13 +156,13 @@ output:
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_tweak <- dplyr::filter(temp_tweak, loc != "flue", id == "16A")
+  #temp_tweak <- dplyr::filter(temp_tweak, loc != "flue", id == "8D")
 
-  temp_tweak <- filter_temp(e_times, temp_tweak)
+  #temp_tweak <- filter_temp(e_times, temp_tweak)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=5, fig.height=5}
-  p_data <- dplyr::filter(temp_tweak, id == "16A")
+  p_data <- dplyr::filter(temp_tweak, id == "8D")
 
   ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
