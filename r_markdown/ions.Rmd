@@ -116,6 +116,8 @@ All carbonyl data is present as expected as of 5/24/17.
 
 # Plots
 
+## Concentrations (ug/m3) by pollutant
+Not background adjusted -  mean background shown in black. 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
   ggplot(ions, aes(id, conc, colour = fuel_type)) +
   geom_point(aes(size = 4)) +
