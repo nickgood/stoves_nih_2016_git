@@ -2,6 +2,7 @@
 # Libraries
   library(tidyverse)
   library(readxl)
+  library(lubridate)
 #________________________________________________________
 
 #________________________________________________________
@@ -314,37 +315,67 @@ load_trans_file <- function(file, sheet = "Transmissometer Log"){
 # tmp <- load_voc_file(file)
 load_voc_file <- function(file, sheet = "Sheet1"){
 
-  df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
+  df <- as_data_frame(read_excel(path = file,
+                                 sheet = sheet,
+                                 col_names = TRUE)[,1:7])
+  
 
-  names(df) <- paste0("voc_",colnames(df))
+  names(df) <- paste0("voc_", colnames(df))
   names(df) <- tolower(gsub(" ", "_", colnames(df)))
   names(df) <- gsub("-", "_", colnames(df))
   names(df) <- gsub("\\+", "_", colnames(df))
   names(df) <- gsub(",", "_", colnames(df))
   
-  df <- as_data_frame(df)
-    
-  names(df)[1] <- "id_can"
-  names(df)[2] <- "id_voc"
-  names(df)[3] <- "datetime_start"
-  names(df)[4] <- "datetime_end"
+  df <- dplyr::mutate(df, voc_ = gsub("\\\\", "_", df$voc_)) %>%
+        tidyr::separate(voc_,
+                         c("a", "b", "c", "d", "e", "date", "id_can"),
+                         "_") %>%
+        dplyr::mutate(id_can = substr(id_can, 1, 4),
+                       units = "ppbv",
+                       date = as.Date(date, "%Y%m%d")) %>%
+        dplyr::select(-a, -b, -c, -d, -e)
+
+ # load voc log
+  log <- load_voc_log()
   
-  df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na)) 
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(x)))
-
-  df$type <- as.character("NA")
-  df$type <- ifelse(grepl("SF", substr(df$id_voc,1,2)), "test", df$type) 
-  df$type <- ifelse(grepl("P", substr(df$id_voc,1,1)), "pilot", df$type) 
-  df$type <- ifelse(grepl("BG", substr(df$id_voc,1,2)), "bg", df$type)
-  df$type <- as.factor(df$type)
-
-  df$id_voc <- gsub(" ", "", df$id_voc)
-  df$id <- sub(".*-", "", df$id_voc)
-  df$id <- as.factor(df$id)
-
   # return 
     return(df)
+}
+#________________________________________________________
+
+#________________________________________________________
+# Load voc log
+# file <- "../data/logs/VOCdropoff.csv"
+# tmp <- load_voc_log(file)
+load_voc_log <- function(file = "../data/logs/VOCdropoff.csv"){
+ 
+ df <- as_data_frame(read_csv(file = file, col_names = FALSE))
+ 
+ df <- as_data_frame(t(df[, -1]))  # transpose
+ 
+ names(df) <- c("id_can_green", 
+                "id_can_white",
+                "date_pickup",
+                "pickup_person",
+                "date_test",
+                "type",
+                "id_test",
+                "p_start",
+                "p_end",
+                "time_start",
+                "time_end",
+                "id_reg",
+                "flow_reg",
+                "date_cal",
+                "date_dropoff")
+ 
+ df <- dplyr::mutate_each(df, funs(as.Date(.,"%m/%d/%Y")),
+                                starts_with("date")) %>%
+        dplyr::mutate(time_start = as.numeric(seconds(hms(time_start))),
+                      time_end = as.numeric(seconds(hms(time_end))))
+
+ # return 
+ return(df)
 }
 #________________________________________________________
 
