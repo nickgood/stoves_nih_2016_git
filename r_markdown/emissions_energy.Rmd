@@ -42,6 +42,18 @@ output:
   load("../r_files/wood_pot.Rda")
 ```
 
+# Daylight saving
+
+* Correct for summer time
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  summer_time <- as.POSIXct("2016/03/13 02:00:00", tz = "MST") 
+  temp_merged <- dplyr::mutate(temp_merged,
+                                datetime = if_else(datetime > summer_time, (datetime + 60 * 60), datetime),
+                                datetime = as.POSIXct(datetime, origin = "1970-01-01"),
+                                time = if_else(datetime > summer_time, (time + 60 * 60), time))
+```
+
 # Test timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
