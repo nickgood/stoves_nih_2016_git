@@ -71,7 +71,7 @@ load_metadata <- function(file, sheet = "metadata"){
                                   sheet = sheet,
                                   col_names = TRUE))
 
-  out <- out[-1,1:(ncol(out)-1)]  # remove empty rows and columns
+  out <- out[-1,1:(ncol(out))]  # remove empty rows and columns
 
  # read test info
   test_info <- dplyr::select(readRDS("../r_files/test_info.RDS"),

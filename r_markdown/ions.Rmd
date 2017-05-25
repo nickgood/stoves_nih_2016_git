@@ -1,5 +1,5 @@
 ---
-title: "Ions"
+title: "Carbonyls"
 output:
   html_document:
     toc: true
@@ -20,7 +20,7 @@ output:
 
 # Load data
 
-* load ions
+* load carbonyls data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- readRDS("../r_files/ions.RDS")
