@@ -255,7 +255,7 @@ Data should be betwen 10 and 100 degrees C.
     tmp <- dplyr::filter(e_temp, id == ids[i])
     reps <- unique(tmp$rep)
      for(j in 1:length(reps)){
-      print(reps[j])
+      #print(reps[j])
      }
   }
 ```
