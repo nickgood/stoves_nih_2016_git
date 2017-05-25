@@ -161,7 +161,7 @@ output:
   #temp_tweak <- filter_temp(e_times, temp_tweak)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=5, fig.height=5}
+```{r, eval=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=5, fig.height=5}
   p_data <- dplyr::filter(temp_tweak, id == "8D")
 
   ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
