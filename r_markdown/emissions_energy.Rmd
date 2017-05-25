@@ -126,6 +126,45 @@ output:
                                                      mass_off = off))
 ```
 
+* Tweak
+  tweak times
+  mind min
+  remove leading tail
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+ # time tweak
+  time_tweak <- data_frame(id = unique(temp_merged$id), dt = 0)
+  time_tweak$dt[which(time_tweak$id == "13C")] <- 70
+  time_tweak$dt[which(time_tweak$id == "13B")] <- 15
+  time_tweak$dt[which(time_tweak$id == "16A")] <- 150
+  
+  
+  temp_tweak <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
+                  dplyr::mutate(time = time - 130,
+                                datetime = datetime - 130,
+                                time = time + dt,
+                                datetime = datetime + dt)
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_tweak <- dplyr::filter(temp_tweak, loc != "flue", id == "16A")
+
+  temp_tweak <- filter_temp(e_times, temp_tweak)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=5, fig.height=5}
+  p_data <- dplyr::filter(temp_tweak, id == "16A")
+
+  ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
+    geom_point() +
+    facet_wrap(~id, scales = "free", ncol = 3) +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab("temperature oC")
+```
+
+
+
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -134,12 +173,21 @@ output:
   e_temp <- filter_temp(e_times, e_temp)
 ```
 
+* filter out unrealistic values
+
+Data should be betwen 10 and 100 degrees C.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  e_temp <- dplyr::filter(e_temp, t_oc < 100, t_oc > 10)
+```
+
+
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   t_range <- dplyr::group_by(e_temp, id, rep) %>%
-            dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
-                             t_max = quantile(t_oc, 0.95, na.rm = TRUE))
+             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
+                              t_max = quantile(t_oc, 0.95, na.rm = TRUE))
 ```
 
 * merge data
@@ -205,6 +253,20 @@ output:
     theme_minimal() +
     theme(legend.position = "top") +
     ylab("temperature oC")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+ # list of experiment ids
+  ids <- unique(e_temp$id)
+ # loop ids
+  for(i in 1:length(ids)){
+   # extract data for id
+    tmp <- dplyr::filter(e_temp, id == ids[i])
+    reps <- unique(tmp$rep)
+     for(j in 1:length(reps)){
+      print(reps[j])
+     }
+  }
 ```
 
 ## energy delivered
