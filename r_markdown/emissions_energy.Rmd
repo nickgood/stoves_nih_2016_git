@@ -148,12 +148,25 @@ output:
   time_tweak$dt[which(time_tweak$id == "6E")] <- -90
   time_tweak$dt[which(time_tweak$id == "8D")] <- -90
   time_tweak$dt[which(time_tweak$id == "5A")] <- 60
+  time_tweak$dt[which(time_tweak$id == "3D")] <- -60
   
   temp_merged <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
-                  dplyr::mutate(time = time - 130,
+                 dplyr::mutate(time = time - 130,
                                 datetime = datetime - 130,
                                 time = time + dt,
                                 datetime = datetime + dt)
+```
+
+```{r, eval=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  tmp <- dplyr::filter(temp_merged, id == "3D")
+  tmp <- dplyr::filter(tmp, loc != "flue")
+  tmp <- filter_temp(e_times, tmp)
+
+ ggplot(tmp, aes(datetime, t_oc, group = loc, colour = rep)) +
+    geom_point() +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    ylab("temperature oC")
 ```
 
 * extract temperature for periods of interest
@@ -177,21 +190,24 @@ Data should be betwen 10 and 100 degrees C.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   t_range <- dplyr::group_by(e_temp, id, rep) %>%
-             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
-                              t_max = quantile(t_oc, 0.95, na.rm = TRUE))
+             dplyr::summarise(t_min = quantile(t_oc, 0.025, na.rm = TRUE) - 2,
+                              t_max = quantile(t_oc, 0.975, na.rm = TRUE) + 2)
 ```
 
 * merge data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # issue with left join on e_pot_mass creating duplicate rows...
+ # inconsistant class(id) perhaps an issue?
   e_data <- dplyr::left_join(e_times, e_pot_water_mass, by = c("id", "rep")) %>%
             dplyr::left_join(t_range, by = c("id", "rep")) %>%
-            dplyr::left_join(e_pot_mass, by = "id") %>%
             dplyr::left_join(e_pot, by = c("id", "rep")) %>%
+            dplyr::left_join(e_pot_mass, by = "id") %>%
             dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
                           mass_pot = ifelse(pot == "b", b, mass_pot),
                           id = as.factor(id)) %>%
-            dplyr::select(-a, -b)
+            dplyr::select(-a, -b) %>%
+            dplyr::distinct()
 ```
 
 * energy applied
@@ -238,8 +254,12 @@ Data should be betwen 10 and 100 degrees C.
 ## temperature (id & rep)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
+  p_data <- dplyr::left_join(e_temp, t_range, by = c("id", "rep"))
+
+  ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
     geom_point() +
+    geom_line(aes(datetime, t_min, colour = rep)) +
+    geom_line(aes(datetime, t_max, colour = rep)) +
     facet_wrap(~id, scales = "free", ncol = 3) +
     theme_minimal() +
     theme(legend.position = "top") +
@@ -265,7 +285,8 @@ Data should be betwen 10 and 100 degrees C.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
   p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
                              energy,
-                             by = "id")
+                             by = "id") %>%
+	         dplyr::filter(joules > 0)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
