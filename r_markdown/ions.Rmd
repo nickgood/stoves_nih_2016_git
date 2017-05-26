@@ -65,7 +65,7 @@ output:
 
 # QC
 
-* extract notes for ion data (should be carbonlys?)
+* extract notes for carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("carbonyl|all", instrument))
@@ -188,4 +188,4 @@ Not background adjusted -  mean background shown in black.
   facet_wrap(~fuel_type, ncol = 2, scales = "free")
 ```
 
-
+## Conclusions
