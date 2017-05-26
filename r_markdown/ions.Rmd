@@ -93,6 +93,12 @@ output:
                               bg_sd = sd(val, na.rm = TRUE))
 ```
 
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::left_join(ions, ions_bg, by = "var")
+```
+
 * calculate background-adjusted concentration
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions$conc_bgadj <- ions$conc - ions$bg_mean
@@ -101,13 +107,7 @@ output:
 * calculate mass per startup replicate
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions$mass_rep <- ions$val / ions$fuel_quant
-  ions$mass_rep <- gsub("Inf", "0", ions$mass_rep)
-```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::left_join(ions, ions_bg, by = "var")
+  ions$mass_rep <- as.numeric(gsub("Inf", "0", ions$mass_rep))
 ```
 
 # Summary
@@ -128,11 +128,12 @@ All carbonyl data is present as expected as of 5/24/17.
 # Plots
 
 ## Concentrations (ug/m3) by pollutant type
+
 Not background adjusted -  mean background shown in black. 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
   ggplot(ions, aes(id, conc, colour = fuel_type)) +
-  geom_point(aes(size = 4)) +
-  geom_point(aes(id, bg_mean, size = 4), colour = "black") +
+  geom_point(size = 4) +
+  geom_point(aes(id, bg_mean), size = 4, colour = "black") +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -140,4 +141,51 @@ Not background adjusted -  mean background shown in black.
   scale_y_log10() +
   facet_wrap(~var, ncol = 2, scales = "free")
 ```
+
+## Background-corrected concentration (ug/m3) by pollutant type 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(id, conc_bgadj, colour = fuel_type)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  #scale_y_log10() + #not sure why this line causes error when it doesn't on previous and following graph...
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(id, conc, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per pollutant, fuel type colored) 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, mass_rep, colour = fuel_type)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per fuel type), QC status noted
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(var, mass_rep, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~fuel_type, ncol = 2, scales = "free")
+```
+
 
