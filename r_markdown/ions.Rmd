@@ -123,7 +123,7 @@ All carbonyl data is present as expected as of 5/24/17.
 The study test notes indicated that the QC status of the available data is:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   single <- filter(ions,var=="acetaldehyde")
-  kable(table(single$qc)) 
+  table(single$qc) 
   print(single$id_test[which(single$qc == "bad")])
   print(single$notes.x[which(single$qc == "bad")])
   print(single$id_test[which(single$qc == "maybe")])
@@ -199,7 +199,7 @@ Not background adjusted -  mean background shown in black.
   facet_wrap(~fuel_type, ncol = 2, scales = "free")
 ```
 
-## Data Quality Conclusions (KF on 5/26/17)
+# Data Quality Conclusions (KF on 5/26/17)
 
 Test N1 should be dropped from analysis due to bad QC and note that flow at end of test was zero due to clog; though, it looks like the clog likely occurred very close to the end of the test as the data point is in line with other data points from the other N tests. Using the pre-test flow rate as the average test flow rate may be an OK approximation to salvage this data point.
 
