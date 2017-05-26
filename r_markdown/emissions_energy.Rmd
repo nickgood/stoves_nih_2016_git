@@ -44,14 +44,14 @@ output:
 
 # Daylight saving
 
-* Correct for summer time
+* Correct for summertime
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   summer_time <- as.POSIXct("2016/03/13 02:00:00", tz = "MST") 
   temp_merged <- dplyr::mutate(temp_merged,
-                                datetime = if_else(datetime > summer_time, (datetime + 60 * 60), datetime),
-                                datetime = as.POSIXct(datetime, origin = "1970-01-01"),
-                                time = if_else(datetime > summer_time, (time + 60 * 60), time))
+                               datetime = if_else(datetime > summer_time, (datetime + 60 * 60), datetime),
+                               datetime = as.POSIXct(datetime, origin = "1970-01-01"),
+                               time = if_else(datetime > summer_time, (time + 60 * 60), time))
 ```
 
 # Test timestamps
@@ -73,9 +73,10 @@ output:
   e_times <- dplyr::filter(test_times, grepl("^start_[0-9]|^end_[0-9]", var)) %>%
              dplyr::select(-date) %>%
              tidyr::separate(var, c("var", "rep")) %>%
-             tidyr::spread(var, value) %>%
-             dplyr::mutate(start_hms = round(seconds_to_period(start)),
-                           end_hms = round(seconds_to_period(end)))
+             tidyr::spread(var, value)
+
+ # remove reps added for 2 pot stoves
+  e_times <- group_by(e_times, id, start) %>% filter(row_number(rep) == 1) 
 ```
 
 * which pot
@@ -103,7 +104,6 @@ output:
                                  tidyr::separate(var, c("var", "pot")) %>%
                                  dplyr::select(-var, -date) %>%
                                  tidyr::spread(pot, value)))
-
 ```
 
 * pot + water mass
@@ -174,7 +174,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_temp <- dplyr::filter(temp_merged, loc != "flue")
 
-  e_temp <- filter_temp(e_times, e_temp)
+  e_temp <- filter_temp(e_times, e_temp) # adds rep
 ```
 
 * filter out unrealistic values
@@ -189,7 +189,7 @@ Data should be betwen 10 and 100 degrees C.
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  t_range <- dplyr::group_by(e_temp, id, rep) %>%
+  t_range <- dplyr::group_by(e_temp, id, rep, loc) %>%
              dplyr::summarise(t_min = quantile(t_oc, 0.025, na.rm = TRUE) - 2,
                               t_max = quantile(t_oc, 0.975, na.rm = TRUE) + 2)
 ```
