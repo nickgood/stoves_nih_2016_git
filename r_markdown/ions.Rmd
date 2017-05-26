@@ -108,6 +108,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions$mass_rep <- ions$val / ions$fuel_quant
   ions$mass_rep <- as.numeric(gsub("Inf", "0", ions$mass_rep))
+  
 ```
 
 # Summary
@@ -115,9 +116,19 @@ output:
 Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
 
 Tests 36 through 43 are blanks; no fivegas data expected.
-Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test. 
+Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test.
 
 All carbonyl data is present as expected as of 5/24/17.
+
+The study test notes indicated that the QC status of the available data is:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  single <- filter(ions,var=="acetaldehyde")
+  kable(table(single$qc)) 
+  print(single$id_test[which(single$qc == "bad")])
+  print(single$notes.x[which(single$qc == "bad")])
+  print(single$id_test[which(single$qc == "maybe")])
+```
+
 
 # Save merged file
 
@@ -188,4 +199,8 @@ Not background adjusted -  mean background shown in black.
   facet_wrap(~fuel_type, ncol = 2, scales = "free")
 ```
 
-## Conclusions
+## Data Quality Conclusions (KF on 5/26/17)
+
+Test N1 should be dropped from analysis due to bad QC and note that flow at end of test was zero due to clog; though, it looks like the clog likely occurred very close to the end of the test as the data point is in line with other data points from the other N tests. Using the pre-test flow rate as the average test flow rate may be an OK approximation to salvage this data point.
+
+All "maybe" QC tests should be kept within the dataset. 
