@@ -197,6 +197,13 @@ Data should be betwen 10 and 100 degrees C.
                               t_max = quantile(t_oc, 0.975, na.rm = TRUE) + 2)
 ```
 
+* tweak temp values
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # missing data from start of 2nd rep
+  t_range$t_min[which(t_range$id == "1B" & t_range$rep == 2)] <- 20.18
+```
+
 * merge data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
