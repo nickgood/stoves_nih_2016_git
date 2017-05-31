@@ -151,6 +151,8 @@ output:
            dplyr::summarise(qc = first(qc))
 ```
 
+* couple of tests with 2 file e.g. 1B (merged files)
+
 * merge flags with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
