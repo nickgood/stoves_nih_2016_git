@@ -151,7 +151,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ## Conc calculation
 
-* accounting for calibration weight delta and blank delta
+* adjusting concentration to account for calibration weight delta and blank delta
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (ug - ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
@@ -164,7 +164,8 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(mean = mean(conc, na.rm = TRUE))
+        dplyr::summarise(mean = mean(conc, na.rm = TRUE),
+                         bg_sd = sd(conc, na.rm = TRUE))
 
   grav <- dplyr::mutate(grav, bg_conc = bg$mean[1])
 ```
