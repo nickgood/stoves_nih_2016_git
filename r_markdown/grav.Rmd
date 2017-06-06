@@ -261,3 +261,6 @@ Black points = mean background
     theme(text = element_text(size = 20)) +
     ylab("flow rate (L/min)")
 ```
+
+Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]`). Potentially indicative of a clog in the line. Consider changing QC of this test to "maybe"?
+
