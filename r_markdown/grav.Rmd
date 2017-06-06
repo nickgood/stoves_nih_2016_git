@@ -133,7 +133,7 @@ Is B[0-9] are blank filters.BG[0-9] are background tests.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("grav|all", instrument))
 
-  ions <- dplyr::left_join(grav, notes, by = "id")
+  grav <- dplyr::left_join(grav, notes, by = "id")
 ```
 
 # Blanks (LOD/LOQ)
@@ -248,10 +248,12 @@ Not background adjusted -  mean background shown in black.
     ylab("conc. ug/m^3")
 ```
 
-## Background-corrected concentration (ug/m3) 
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
+
+(note: assume "NA" for QC means the grav is good)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=15}
-  ggplot(filter(grav, fuel_type!="background"), aes(id, conc_bgadj, colour = fuel_type)) +
+  ggplot(filter(grav, fuel_type!="background"), aes(id, conc_bgadj, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -274,5 +276,10 @@ Not background adjusted -  mean background shown in black.
     ylab("flow rate (L/min)")
 ```
 
-Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]`). Potentially indicative of a clog in the line. Consider changing QC of this test to "maybe"?
+
+# Data Quality Conclusions (KF on 5/26/17)
+
+Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]`). Potentially indicative of a clog in the line. The background-corrected concentration is much higher than the other "L" tests. Consider changing QC of this test to "bad" and dropping from dataset? 
+
+
 
