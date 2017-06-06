@@ -225,14 +225,15 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   ylab("filter mass (ug)")
 ```
 
-## plot delta mass
+## plot delta mass by fuel type, qc status noted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
-    geom_point(aes(id, delta, colour = type)) +
+    geom_point(aes(id, delta, colour = qc)) +
     theme_minimal() +
     theme(text = element_text(size = 20)) +
-    ylab("delta mass (ug)")
+    ylab("delta mass (ug)") +
+    facet_wrap(~fuel_type, scales = "free")
 ```
 
 ## plot concentration (ug/m3)
@@ -280,6 +281,8 @@ Not background adjusted -  mean background shown in black.
 # Data Quality Conclusions (KF on 5/26/17)
 
 Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]`). Potentially indicative of a clog in the line. The background-corrected concentration is much higher than the other "L" tests. Consider changing QC of this test to "bad" and dropping from dataset? 
+
+Test 8 (W1) is QC of maybe, with note that a different type of wood shims were used compared to the other tests, and the shims kept going out and having to be relit (at least 6 relits each). THe delta_mass looks aligned with other wood shim tests, but the background-adjusted concentration is much higher. Consider changing QC of this test to "bad" and dropping from dataset?
 
 
 
