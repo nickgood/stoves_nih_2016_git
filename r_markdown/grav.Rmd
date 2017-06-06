@@ -170,6 +170,17 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
   grav <- dplyr::mutate(grav, bg_conc = bg$mean[1])
 ```
 
+* calculate background-adjusted concentration
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav$conc_bgadj <- grav$conc - grav$bg_conc
+```
+
+* calculate mass per startup replicate 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  dplyr::mutate(grav, 
+                mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant)
+
+```
 # Summary
 
 Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
