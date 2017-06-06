@@ -289,11 +289,13 @@ Not background adjusted -  mean background shown in black.
 ```
 
 
-# Data Quality Conclusions (KF on 5/26/17)
+# Data Quality Conclusions (KF on 6/6/17)
 
-Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]`). Potentially indicative of a clog in the line. The background-corrected concentration is much higher than the other "L" tests. Consider changing QC of this test to "bad" and dropping from dataset? 
+Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]` from pre-flow). Potentially indicative of a clog in the line. The background-corrected concentration is much higher than the other "L" tests. Consider changing QC of this test to "bad" and dropping from dataset? 
 
-Test 8 (W1) is QC of maybe, with note that a different type of wood shims were used compared to the other tests, and the shims kept going out and having to be relit (at least 6 relits each). THe delta_mass looks aligned with other wood shim tests, but the background-adjusted concentration is much higher. Consider changing QC of this test to "bad" and dropping from dataset?
+Test 8 (W1) is QC of maybe, with note that a different type of wood shims were used compared to the other tests, and the shims kept going out and having to be relit (at least 6 relits each). The delta_mass looks aligned with other wood shim tests (only ~100 ug higher, normal variability as expected based on other materials), but the background-adjusted concentration is much higher (~2400 vs. 800-1200 ug/m3). However, some other materials also have wide ranges in background-adjusted concentrations (e.g., leaves/twigs ranges from 12500 - ~22000; flipflops from <3000 to >11000). Think this test (8/W1) is OK to leave.
+
+The background-corrected concetrations seem high for several tests - are concentrations of 10,000-30,000 ug/m3 reasonable?  
 
 
 
