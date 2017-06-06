@@ -224,6 +224,17 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   theme(text = element_text(size = 20)) +
   ylab("filter mass (ug)")
 ```
+228
+ 
+## plot delta mass
+ 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, delta, colour = type)) +
+  theme_minimal() +
+  theme(text = element_text(size = 20)) +
+  ylab("delta mass (ug)")
+```
 
 ## plot delta mass by fuel type, qc status noted
 
