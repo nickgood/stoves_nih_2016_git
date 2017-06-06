@@ -177,8 +177,9 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 * calculate mass per startup replicate 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  dplyr::mutate(grav, 
-                mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant))
+  grav <- dplyr::mutate(grav, 
+                 mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant))
+grav$mass_rep <- as.numeric(gsub("Inf", "0", grav$mass_rep))
 ```
 
 # Summary
@@ -257,6 +258,17 @@ Generally, no concerning QC directly related to the gravimetric measure; some QC
     facet_wrap(~fuel_type, scales = "free")
 ```
 
+## plot delta mass per startup replicate by fuel type, qc status noted
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+    geom_point(aes(id, mass_rep, colour = qc)) +
+    theme_minimal() +
+    theme(text = element_text(size = 20)) +
+    ylab("average delta mass (ug) per replicate") +
+    facet_wrap(~fuel_type, scales = "free")
+```
+
 ## plot concentration (ug/m3)
 
 Not background adjusted -  mean background shown in black. 
@@ -284,6 +296,7 @@ Not background adjusted -  mean background shown in black.
   #scale_y_log10() +
   facet_wrap(~fuel_type, ncol = 5, scales = "free")
 ```
+
 ## plot flows
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
@@ -305,7 +318,7 @@ Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow
 
 Test 8 (W1) is QC of maybe, with note that a different type of wood shims were used compared to the other tests, and the shims kept going out and having to be relit (at least 6 relits each). The delta_mass looks aligned with other wood shim tests (only ~100 ug higher, normal variability as expected based on other materials), but the background-adjusted concentration is much higher (~2400 vs. 800-1200 ug/m3). However, some other materials also have wide ranges in background-adjusted concentrations (e.g., leaves/twigs ranges from 12500 - ~22000; flipflops from <3000 to >11000). Think this test (8/W1) is OK to leave.
 
-The background-corrected concetrations seem high for several tests - are concentrations of 10,000-30,000 ug/m3 reasonable?  
+The background-corrected concetrations seem high for several tests - are concentrations of 10,000-30,000 ug/m3 reasonable? The "per replicate" adjusted total mass seems to have reasonable variability and be in normal ranges. 
 
 
 
