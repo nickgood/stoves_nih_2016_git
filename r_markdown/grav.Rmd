@@ -235,9 +235,9 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
     ylab("delta mass (ug)")
 ```
 
-## plot concentration
+## plot concentration (ug/m3)
 
-Black points = mean background
+Not background adjusted -  mean background shown in black. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
@@ -248,6 +248,18 @@ Black points = mean background
     ylab("conc. ug/m^3")
 ```
 
+## Background-corrected concentration (ug/m3) 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=15}
+  ggplot(filter(grav, fuel_type!="background"), aes(id, conc_bgadj, colour = fuel_type)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  #scale_y_log10() +
+  facet_wrap(~fuel_type, ncol = 5, scales = "free")
+```
 ## plot flows
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
