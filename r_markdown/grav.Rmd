@@ -178,7 +178,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 * calculate mass per startup replicate 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   dplyr::mutate(grav, 
-                mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant)
+                mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant))
 
 ```
 # Summary
