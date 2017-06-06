@@ -179,11 +179,22 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   dplyr::mutate(grav, 
                 mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant))
-
 ```
+
 # Summary
 
 Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
+
+The study test notes indicated that the QC status of the available data is:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  
+  table(grav$qc) 
+  print(grav$id_test.x[which(grav$qc == "bad")])
+  print(grav$notes.x[which(grav$qc == "bad")])
+  print(grav$id_test.x[which(grav$qc == "maybe")])
+```
+Note that there currently seems to be a merging error resulting in replication of B9 and odd appendage of notes. 
+Generally, no concerning QC directly related to the gravimetric measure; some QC maybe status applying to whole test. 
 
 # Save merged file
 
@@ -193,7 +204,7 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
 
 # Plots
 
-## plot environ
+## plot environmental conditions
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
@@ -224,7 +235,6 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   theme(text = element_text(size = 20)) +
   ylab("filter mass (ug)")
 ```
-228
  
 ## plot delta mass
  
