@@ -26,20 +26,10 @@ output:
 Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  co2_lab <- load_multifile(fldr = "../data/co2",
-                            pattern = "DILUTION1.csv$", inst = "co2")
+  co2 <- load_multifile(fldr = "../data/co2",
+                            pattern = ".*_CO2.csv$", inst = "co2")
 
-  save(co2_lab, file = "../r_files/co2_lab.Rda")
-
-  co2_sample <- load_multifile(fldr = "../data/co2",
-                               pattern = "DILUTION2.csv$", inst = "co2")
-
-  save(co2_sample, file = "../r_files/co2_sample.Rda")
-
-  co2_lab_sample <- load_multifile(fldr = "../data/co2",
-                                   pattern = "DILUTION.csv$", inst = "co2")
-
-  save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
+  saveRDS(co2, file = "../r_files/co2.RDS")
 ```
 
 ## ecoc
