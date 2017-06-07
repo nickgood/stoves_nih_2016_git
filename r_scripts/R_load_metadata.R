@@ -139,89 +139,20 @@ load_test_one <- function(file, sheet = "Tester 1 Data Sheet"){
 #_______________________________________________________________________________
 
 #________________________________________________________
-# Load five gas and filter metadata
-# file <- "../data/logs/Transcribed Emissions Tester 2 Calibration Log.xlsx"
-# df <- load_co2_cal_flows_meta(file)
-load_co2_cal_flows_meta <- function(file, sheet = "Sheet1"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
-      
-  df <- df[1:32,]
-
-  df <- as.data.frame(t(df[c(-1,-2)]))
-
-  names(df) <- c("date",
-                 "sensor_1_zero_std",
-                 "sensor_1_zero_pre",
-                 "sensor_1_zero_post",
-                 "sensor_1_co2_std",
-                 "sensor_1_co2_pre",
-                 "sensor_1_co2_post",
-                 "sensor_2_zero_std",
-                 "sensor_2_zero_pre",
-                 "sensor_2_zero_post",
-                 "sensor_2_co2_std",
-                 "sensor_2_co2_pre",
-                 "sensor_2_co2_post",
-                 "preflow_smps_1",
-                 "preflow_smps_2",
-                 "preflow_smps_3",
-                 "preflow_paxinlet_1",
-                 "preflow_paxinlet_2",
-                 "preflow_paxinlet_3",
-                 "preflow_paxexit_1",
-                 "preflow_paxexit_2",
-                 "preflow_paxexit_3",
-                 "postflow_smps_1",
-                 "postflow_smps_2",
-                 "postflow_smps_3",
-                 "postflow_paxinlet_1",
-                 "postflow_paxinlet_2",
-                 "postflow_paxinlet_3",
-                 "postflow_paxexit_1",
-                 "postflow_paxexit_2",
-                 "postflow_paxexit_3",
-                 "notes")
-
-  df_dat <- subset(df, select = date)
-
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  df_num <- subset(df, select = c(-date, -notes))
-
-  df_num$sensor_1_zero_std <- as.numeric(0)  # convert standard acronym to zero
-
-  df_num$sensor_2_zero_std <- as.numeric(0)  # convert standard acronym to zero
-
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  df_char <- subset(df, select = notes)
-
-  df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
-
-  out <- dplyr::bind_cols(df_dat, df_num, df_char)
-        
- # return
-  return(out)
-}
-#________________________________________________________
- 
-#________________________________________________________
-# Load flows and five gas metadata
-# file <- "../data/logs/Transcribed Emissions Tester 2 Data Sheets.xlsx"
-# df <- load_flow_fivegas_meta(file)
-load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
-
-  df <- df[1:26,]
-
-  df <- as.data.frame(t(df[c(-1,-2)])) 
-
-  names(df) <- c("date",
+#_______________________________________________________________________________
+# Load metadata 2
+# file <- "../data/logs/Tester 2 Data Log Final.xlsx"
+# sheet <- "Tester 2 Data Sheet"
+# df <- load_test_two(file)
+load_test_two <- function(file, sheet = "Tester 2 Data Sheet"){
+ # read file
+  out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+ # select columns
+  out <- out[1:26,]
+ # transpose
+  out <- as_tibble(t(out[c(-1,-2)]))
+ # rename columns
+  names(out) <- c("date",
                  "id",
                  "person",
                  "preflow_carb_1",
@@ -247,35 +178,19 @@ load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
                  "postflow_iso_2",
                  "postflow_iso_3",
                  "notes")
+  # filter blank rows
+  out <- dplyr::filter(out, !is.na(id))
+  
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .cols = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches("^preflow.*|^postflow.*")),
+                          .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                          .funs = excel_time) %>%
+         dplyr::select(-matches(".*_red_.*|.*_green_.*"))
 
-  df_dat <- subset(df, select = date)
-
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  cols <- subset(colnames(df), grepl("^preflow|^postflow",colnames(df))==TRUE)
-
-  df_num <- subset(df, select = cols)
-
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-
-  df_time <- subset(df, select = cols)
-
-  df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60))  
-
-  df_char <- subset(df, select = notes)
-
-  df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
-
-  df_fac <- subset(df, select = c(id, person))
-
-  out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
-    
  # return
   return(out)
 } 
