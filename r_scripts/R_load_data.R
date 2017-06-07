@@ -121,94 +121,30 @@ load_ecoc_file <- function(file){
  # return
   return(ecoc)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load fivegas file
-# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
-# file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
+# file <- "../data/fivegas/20170316_BG1_5GAS.csv"
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ")  # check file type from first line
-
  # load 
-  if(grepl("^Device", df[1][1])){
-
-  classes = c(rep("character",2), rep("numeric",4))
-
-  col_names = c("date", "time", "co2", "o2", "co", "ch4")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes,
-                       skip = 7, fill = TRUE, col.names = col_names)
-    
- # check year format
-  if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
-  }else{
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
-  }
-
- # convert time string to seconds of day
-  df$time <- as.character(df$datetime)
-  df$time <- as.numeric(substr(df$time,12,13))*60*60 +
-             as.numeric(substr(df$time,15,16))*60 +
-             as.numeric(substr(df$time,18,19)) 
-
- # convert date
-  df$date <- as.Date(df$datetime)
-
-  }else{
- # check time format
-  df <- read.csv(file, header = FALSE,
-                   nrows = 1,
-                   colClasses = "character",
-                   skip = 1)
-
-  time_format <- ifelse(grepl("AM$|PM$", df$V7[1]), "us", "mil")
-    
-  classes = c(rep("numeric",6), "character")
-
-  col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
-                       skip = 1, fill = TRUE, col.names = col_names)
-
-  if(time_format == "mil"){
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %H:%M:%S"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                                 as.numeric(substr(datetime, 15, 16)) * 60 +
-                                 as.numeric(substr(datetime, 18, 19)))
-  }else{
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %I:%M:%S %p"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                            as.numeric(substr(datetime, 15, 16)) * 60 +
-                            as.numeric(substr(datetime, 18, 19)))
-  }
-}
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
- # convert percents to ppm
-  df$co2 <- df$co2*10^4
-  df$o2 <- df$o2*10^4  
-
+  out <- read_tsv(file, col_names = TRUE)
+ # rename
+  names(out) <- c("ch4","o2","nox","co2", "co", "time_s", "datetime")
+ # datetime format
+  out <- dplyr::mutate(out, 
+                       time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
+                              as.numeric(substr(datetime, 15, 16)) * 60 +
+                              as.numeric(substr(datetime,18, 19)),
+                       datetime = as.POSIXct(datetime,
+                                             format = "%m/%d/%Y %H:%M:%OS"),
+                                             date = as.Date(datetime),
+                       id = (strsplit(basename(file), "_")[[1]])[2])
  # return
-  return(df)
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
 #________________________________________________________
 # Load gravimetric file
