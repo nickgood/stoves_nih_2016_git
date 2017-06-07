@@ -46,20 +46,22 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
                           .funs = excel_time)
 
  # split fuel id string
-  
+
  # return
   return(out)
 }
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
+# convert excel date to Date class
   excel_date <- function(x){as.Date(as.numeric(x), origin = "1899-12-30")}
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
+# convert excel time to seconds of day
   excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
 #_______________________________________________________________________________
-  
+
 #________________________________________________________
 # Load sample tracking log
 # file <- "data/logs/Sample Tracking Log.xlsx"
