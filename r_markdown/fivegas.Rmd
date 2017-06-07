@@ -138,6 +138,19 @@ Fivegas data was collected during `r length(unique(out_full$id))` experiments be
 
 Tests 36 through 43 are blanks; no fivegas data expected.
 
+All fivegas data is present as expected as of 6/7/17. 
+
+The study test notes indicated that the QC status of the available data is: 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  single <- filter(out_full,pol=="ch4")
+  table(notes$qc)
+  table(notes$instrument)
+  print(notes$id_test[which(notes$qc == "bad")])
+  print(notes$notes[which(notes$qc ==  "bad")])
+  print(notes$id_test[which(notes$qc == "maybe")])
+  print(notes$notes[which(notes$qc == "maybe")])
+```
+(there are no "bad" fivegas data according to study protocol notes - only some "bad" and "maybe" QC that are due to protocol notes that apply across all instruments. According to those notes, tes L1 should definitely be excluded, and test W1 should maybe be excluded. 
 
 # Plots
 
