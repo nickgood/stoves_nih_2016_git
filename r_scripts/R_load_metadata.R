@@ -1,11 +1,42 @@
-#________________________________________________________
-# Libraries
+#_______________________________________________________________________________
+# libraries
   library(tidyverse)
   library(readxl)
   library(forcats)
   library(lubridate)
-#________________________________________________________
+#_______________________________________________________________________________
 
+#_______________________________________________________________________________
+# load fuel prep file
+# file <- "data/logs/Fuel Prep Final.xlsx"
+# out <- load_fuel_prep(file)
+load_fuel_prep <- function(file, sheet = "Fuel Prep"){
+ # load raw file
+  out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)
+ # clean up
+  out <- out[-1, ]
+  out <- out[,1:19]
+  out <- dplyr::filter(out, !is.na(fuel_id))
+ # rename
+  out <- dplyr::rename(out, date_test = test_date,
+                            order = test_order,
+                            mc_meas = mc_actual_test,
+                            mass_end = mass_final,
+                            mass_target = target_mass,
+                            mass_start = mass_original,
+                            mass_wood_start = kiln_wood_original,
+                            mass_wood_post = kiln_wood_post,
+                            mc_start = kiln_based_original_mc,
+                            mass_dry = calculated_kiln_dry_mass,
+                            mass_wet = weight_after_soak,
+                           date_wet_start = date_into_water_a,
+                           time_wet_start = time_into_water_a,
+                           date_wet_end = date_out_water_a,
+                           time_wet_end = time_out_water_a,
+                           dur_wt = soak_hours_a,
+                           notes = notes)
+
+  
 #________________________________________________________
 # Load sample tracking log
 # file <- "data/logs/Sample Tracking Log.xlsx"
