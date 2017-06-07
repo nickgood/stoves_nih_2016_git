@@ -1,73 +1,31 @@
-#________________________________________________________
+#_______________________________________________________________________________
 # Libraries
   library(tidyverse)
   library(readxl)
   library(reshape)
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
-# Load CO2 file
-# file <- "data/co2/20160105_2A_DILUTION1.csv" # ppm
-# file <- "data/co2/20160615_8D_DILUTION.csv"  # voltage
+#_______________________________________________________________________________
+# load co2 file
+# file <- "../data/co2/20170316_BG1_DT_CO2.csv"
 load_co2_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, sep = " ",
-                 fill = TRUE, na.strings = c("NAN"), colClasses = "character")
-
-  type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-
-
-  # load based on type
-    
-  if(type == "ppm"){
-    
-    classes = c("character", "numeric", "numeric", "numeric")
-
-    col_names = c("time", "co2", "toc", "pkpa")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 2, 
-                         fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-
-    df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time),
-                              format = "%Y%m%d %T") # error if fil crosses midnight
-
-    df$date <- as.Date(df$datetime)
-    
-    df$time <- as.character(df$datetime)
-    
-    df$time <- as.numeric(substr(df$time,12,13))*60*60 + 
-               as.numeric(substr(df$time,15,16))*60 +
-               as.numeric(substr(df$time,18,19))
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  if(type == "volts"){
-
-    classes = c("character", "character", "numeric", 
-                  "numeric", "numeric", "numeric")
-
-    col_names = c("date", "time", "lab", "sample", "ch3", "ch4")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 7, 
-                   fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-    
-    df$datetime <- as.POSIXct(paste(df$date, df$time),
-                              format = "%m/%d/%Y %I:%M:%S %p") 
-
-    df$time <- posixct_secsofday(df$datetime)
-      
-    df$date <- as.Date(df$datetime)
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  # return
-    return(df)
+ # read file
+  out <- read_csv(file = file, col_names = FALSE, skip = 7)
+ # name columns
+  names(out) <- c("date", "time", "ch1", "ch2", "ch3", "ch4")
+ # classes
+  out <- dplyr::mutate(out,
+                       datetime = as.POSIXct(date, format = "%m/%d/%Y"),
+                       datetime = datetime + time,
+                       date = as.Date(date, format = "%m/%d/%Y"),
+                       time = as.numeric(time),
+                       id = (strsplit(basename(file), "_")[[1]])[2])
+ # return
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load ECOC file
 # file <- "../data/ecoc/20170110_ECOC.csv"
 load_ecoc_file <- function(file){
