@@ -12,7 +12,7 @@
 # out <- load_fuel_prep(file)
 load_fuel_prep <- function(file, sheet = "Fuel Prep"){
  # load raw file
-  out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)
+  out <- as_tibble(read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0))
  # clean up
   out <- out[-1, ]
   out <- out[,1:19]
@@ -29,13 +29,34 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
                             mc_start = kiln_based_original_mc,
                             mass_dry = calculated_kiln_dry_mass,
                             mass_wet = weight_after_soak,
-                           date_wet_start = date_into_water_a,
-                           time_wet_start = time_into_water_a,
-                           date_wet_end = date_out_water_a,
-                           time_wet_end = time_out_water_a,
-                           dur_wt = soak_hours_a,
-                           notes = notes)
+                            date_wet_start = date_into_water_a,
+                            time_wet_start = time_into_water_a,
+                            date_wet_end = date_out_water_a,
+                            time_wet_end = time_out_water_a,
+                            dur_wt = soak_hours_a,
+                            notes = notes)
+ # classes
+  out <- dplyr::mutate_at(out,
+                         .cols = vars(starts_with("date")),
+                         .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches("^order.*|^mc.*|mass.*|dur.*")),
+                          .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                          .funs = excel_time)
+  
+  
+  # return
+  return(out)
+}
+#_______________________________________________________________________________
 
+#_______________________________________________________________________________
+  excel_date <- function(x){as.Date(as.numeric(x), origin = "1899-12-30")}
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
+  excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
+#_______________________________________________________________________________
   
 #________________________________________________________
 # Load sample tracking log
