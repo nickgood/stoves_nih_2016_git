@@ -10,7 +10,7 @@
 # load fuel prep file
 # file <- "../data/logs/Fuel Prep Final.xlsx"
 # out <- load_fuel_prep(file)
-load_fuel_prep <- function(file, sheet = "Fuel Prep"){
+load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "Fuel Prep"){
  # load raw file
   out <- as_tibble(read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0))
  # clean up
@@ -66,7 +66,7 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
 # file <- "../data/logs/Tester 1 Data Log Final.xlsx"
 # sheet  <- "Tester 1 Data Sheet"
 # df <- load_test_one(file)
-load_test_one <- function(file, sheet = "Tester 1 Data Sheet"){
+load_test_one <- function(file = "../data/logs/Tester 1 Data Log Final.xlsx", sheet = "Tester 1 Data Sheet"){
  # read file
   out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
  # transpose
@@ -143,7 +143,8 @@ load_test_one <- function(file, sheet = "Tester 1 Data Sheet"){
 # file <- "../data/logs/Tester 2 Data Log Final.xlsx"
 # sheet <- "Tester 2 Data Sheet"
 # df <- load_test_two(file)
-load_test_two <- function(file, sheet = "Tester 2 Data Sheet"){
+load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
+                          sheet = "Tester 2 Data Sheet"){
  # read file
   out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
  # select columns
