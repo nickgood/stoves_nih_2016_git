@@ -8,7 +8,7 @@
 
 #_______________________________________________________________________________
 # load fuel prep file
-# file <- "data/logs/Fuel Prep Final.xlsx"
+# file <- "../data/logs/Fuel Prep Final.xlsx"
 # out <- load_fuel_prep(file)
 load_fuel_prep <- function(file, sheet = "Fuel Prep"){
  # load raw file
@@ -35,7 +35,6 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
                             time_wet_end = time_out_water_a,
                             dur_wt = soak_hours_a,
                             notes = notes)
-
  # classes
   out <- dplyr::mutate_at(out,
                          .cols = vars(starts_with("date")),
@@ -62,19 +61,20 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
   excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
 #_______________________________________________________________________________
 
-#________________________________________________________
-# Load fivegas and filter metadata
-# file <- "../data/logs/Transcribed Emissions Tester 1 Data Sheets.xlsx"
-# df <- load_fivegas_filter_meta(file)
-load_fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
-  
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
-
-  df <- df[1:50,]
-  
-  df <- as.data.frame(t(df[c(-1,-2)])) 
-
-  names(df) <- c("date",
+#_______________________________________________________________________________
+# Load metadata 1
+# file <- "../data/logs/Tester 1 Data Log Final.xlsx"
+# sheet  <- "Tester 1 Data Sheet"
+# df <- load_test_one(file)
+load_test_one <- function(file, sheet = "Tester 1 Data Sheet"){
+ # read file
+  out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+ # transpose
+  out <- out[1:50,]
+ # transpose and trim
+  out <- as_tibble(t(out[c(-1,-2)])) 
+ # rename columns
+  names(out) <- c("date",
                  "id",
                  "person",
                  "preflow_cart_white_1",
@@ -124,40 +124,20 @@ load_fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
                  "voc_start_p",
                  "voc_end_p",
                  "notes")
-
-  df_dat <- subset(df, select = date)
-
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  cols <- subset(colnames(df), grepl("^pre|^post|^cart|^voc",colnames(df))==TRUE)
-
-  df_num <- subset(df, select = cols)
-  
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-
-  df_time <- subset(df, select = cols)
-
-  df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60)) 
-
-  df_char <- subset(df, select = notes)
-
-  df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
-
-  df_fac <- subset(df, select = c(id, person))
-    
-  out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
-    
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .cols = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches("^pre.*|^post.*|^cart.*|^voc.*")),
+                          .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                          .funs = excel_time) %>%
+         dplyr::select(-matches(".*_red_.*|.*_green_.*"))
  # return
   return(out)
-} 
-#________________________________________________________
-  
+}
+#_______________________________________________________________________________
+
 #________________________________________________________
 # Load five gas and filter metadata
 # file <- "../data/logs/Transcribed Emissions Tester 2 Calibration Log.xlsx"
