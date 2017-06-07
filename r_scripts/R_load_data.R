@@ -134,7 +134,7 @@ load_fivegas_file <- function(file){
   names(out) <- c("ch4","o2","nox","co2", "co", "time_s", "datetime")
  # datetime format
   out <- dplyr::mutate(out, 
-                       time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 + 
+                       time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
                               as.numeric(substr(datetime, 15, 16)) * 60 +
                               as.numeric(substr(datetime,18, 19)),
                        datetime = as.POSIXct(datetime,
@@ -148,74 +148,57 @@ load_fivegas_file <- function(file){
 
 #________________________________________________________
 # Load gravimetric file
-# file <- "data/grav/Teflon Filter Weight Log.xlsx"
-#
-load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
-  
-  df <- as_tibble(t(df[1:29,-1]))  # transpose
-    
-  names(df) <- c("id_filter", 
-                 "date_pre",
-                 "person_pre",
-                 "toc_pre",
-                 "rh_pre",
-                 "phpa_pre",
-                 "wgt_cal_pre",
-                 "id_blank",
-                 "wgt_blank_avg_pre",
-                 "wgt_pre_1",
-                 "wgt_pre_2",
-                 "wgt_pre_3",
-                 "wgt_pre_avg",
-                 "date_post",
-                 "id_grav",
-                 "time_post",
-                 "person_post",
-                 "toc_post",
-                 "rh_post",
-                 "phpa_post",
-                 "wgt_cal_post",
-                 "wgt_blank_avg_post",
-                 "wgt_post_1",
-                 "wgt_post_2",
-                 "wgt_post_3",
-                 "wgt_post_avg",
-                 "wgt_dif",
+# file <- "../data/grav/Teflon Weight Log Final.xlsx"
+# out <- load_grav_file(file) 
+load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
+                           sheet = "Teflon Filter Weights"){
+ # read file
+  out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
+ # transpose
+  out <- as_tibble(t(out[1:29,-1]))
+ # rename columns
+  names(out) <- c("id_filter", 
+                  "date_pre",
+                  "person_pre",
+                  "toc_pre",
+                  "rh_pre",
+                  "phpa_pre",
+                  "wgt_cal_pre",
+                  "id_blank",
+                  "wgt_blank_avg_pre",
+                  "wgt_pre_1",
+                  "wgt_pre_2",
+                  "wgt_pre_3",
+                  "wgt_pre_avg",
+                  "date_post",
+                  "id_grav",
+                  "time_post",
+                  "person_post",
+                  "toc_post",
+                  "rh_post",
+                  "phpa_post",
+                  "wgt_cal_post",
+                  "wgt_blank_avg_post",
+                  "wgt_post_1",
+                  "wgt_post_2",
+                  "wgt_post_3",
+                  "wgt_post_avg",
+                  "wgt_dif",
                  "notes",
-                 "lod")
-
-  cols <- subset(colnames(df), grepl("^date",colnames(df))==TRUE)
-  df_dat <- subset(df, select = cols)
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  cols <- subset(colnames(df), grepl("^toc_|^rh_|^phpa_|^wgt_|lod",colnames(df))==TRUE)
-  df_num <- subset(df, select = cols)
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-  df_time <- subset(df, select = cols)
-  df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60))  
-
-  df_char <- subset(df, select = notes)
-    
-  cols <- subset(colnames(df), grepl("^person_|^id",colnames(df))==TRUE)
-  df_fac <- subset(df, select = cols)
-  df_fac <- as.data.frame(lapply(df_fac, 
-                                 function(x) as.factor(x)))
-
-  out <- cbind(df_dat, df_num, df_time, df_char, df_fac)               
-
-  out$id <- as.factor(sub("-.*", "", out$id_grav))
-  
-  # return 
-    return(out)
+                  "lod")
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .cols = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches("^toc_.*|^rh_.*|phpa_.*|wgt_.*|lod_")),
+                    .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                    .funs = excel_time) %>%
+         dplyr::mutate(id = sub("-.*", "", id_grav))
+ # return 
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
 #________________________________________________________
 # Load ions and carbonyls file
