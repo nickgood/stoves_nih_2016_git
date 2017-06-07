@@ -43,7 +43,7 @@ Loads ecoc data file and saves (`waiting on data`)
 
 ## fivegas
 
-The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
+Loads fivegas mixing ratio files and resaves.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   data_fivegas <- load_fivegas()
@@ -55,9 +55,8 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 Loads filter weight data and resaves as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav <- load_singlefiles("grav")
-
-  save(grav, file = "../r_files/grav.Rda")
+  data_grav <- load_grav_file(file) 
+  saveRDS(data_grav, file = "../r_files/grav.RDS")
 ```
 
 ## ions and carbonyls
