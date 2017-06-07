@@ -62,7 +62,7 @@ load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
-# Load metadata 1
+# Load tester 1
 # file <- "../data/logs/Tester 1 Data Log Final.xlsx"
 # sheet  <- "Tester 1 Data Sheet"
 # df <- load_test_one(file)
@@ -139,7 +139,7 @@ load_test_one <- function(file = "../data/logs/Tester 1 Data Log Final.xlsx", sh
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
-# Load metadata 2
+# Load tester 2 data
 # file <- "../data/logs/Tester 2 Data Log Final.xlsx"
 # sheet <- "Tester 2 Data Sheet"
 # df <- load_test_two(file)
