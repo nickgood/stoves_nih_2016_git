@@ -35,6 +35,7 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
                             time_wet_end = time_out_water_a,
                             dur_wt = soak_hours_a,
                             notes = notes)
+
  # classes
   out <- dplyr::mutate_at(out,
                          .cols = vars(starts_with("date")),
@@ -43,9 +44,10 @@ load_fuel_prep <- function(file, sheet = "Fuel Prep"){
                           .funs = as.numeric) %>%
          dplyr::mutate_at(.cols = vars(starts_with("time")),
                           .funs = excel_time)
+
+ # split fuel id string
   
-  
-  # return
+ # return
   return(out)
 }
 #_______________________________________________________________________________
