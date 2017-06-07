@@ -116,20 +116,13 @@ Test are either a sample: `sample`, a background experiment: `bg`, or a filter b
 
 ## Test type
 
-Is B[0-9] background as well?
+Is B[0-9] are blank filters.BG[0-9] are background tests.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                          type = ifelse(grepl("^BG.*", id_test),
                          "bg", type),
                          type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
-
-  grav <- dplyr::mutate(grav,
-                        type = ifelse(grepl("^BG.*", id_test),
-                        "bg", type),
-                        type = ifelse(grepl("^B[0-9].*", id_test),
-                                      "bk",
-                                      type))
 
 ```
 
@@ -140,7 +133,7 @@ Is B[0-9] background as well?
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("grav|all", instrument))
 
-  ions <- dplyr::left_join(grav, notes, by = "id")
+  grav <- dplyr::left_join(grav, notes, by = "id")
 ```
 
 # Blanks (LOD/LOQ)
@@ -158,7 +151,7 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ## Conc calculation
 
-* accounting for calibration weight delta and blank delta
+* adjusting concentration to account for calibration weight delta and blank delta
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (ug - ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
@@ -171,14 +164,38 @@ The LOD is `r bk$lod[1]`$\mu g$ and the LOQ is `r bk$loq[1]`$\mu g$.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav, type == "bg") %>%
-        dplyr::summarise(mean = mean(conc, na.rm = TRUE))
+        dplyr::summarise(mean = mean(conc, na.rm = TRUE),
+                         bg_sd = sd(conc, na.rm = TRUE))
 
   grav <- dplyr::mutate(grav, bg_conc = bg$mean[1])
+```
+
+* calculate background-adjusted concentration
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav$conc_bgadj <- grav$conc - grav$bg_conc
+```
+
+* calculate mass per startup replicate 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::mutate(grav, 
+                 mass_rep = ((delta - cal_delta - bk$mean_bk[1]) / fuel_quant))
+grav$mass_rep <- as.numeric(gsub("Inf", "0", grav$mass_rep))
 ```
 
 # Summary
 
 Gravimetric data was collected during `r length(unique(grav$id))` experiments between `r min(grav$date, na.rm = TRUE)` and `r max(grav$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r setdiff(as.character(test_info$id), as.character(grav$id))`.(ALL DATA ACCOUNTED FOR!)
+
+The study test notes indicated that the QC status of the available data is:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  
+  table(grav$qc) 
+  print(grav$id_test.x[which(grav$qc == "bad")])
+  print(grav$notes.x[which(grav$qc == "bad")])
+  print(grav$id_test.x[which(grav$qc == "maybe")])
+```
+Note that there currently seems to be a merging error resulting in replication of B9 and odd appendage of notes. 
+Generally, no concerning QC directly related to the gravimetric measure; some QC maybe status applying to whole test. 
 
 # Save merged file
 
@@ -188,7 +205,7 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
 
 # Plots
 
-## plot environ
+## plot environmental conditions
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
@@ -219,20 +236,42 @@ Gravimetric data was collected during `r length(unique(grav$id))` experiments be
   theme(text = element_text(size = 20)) +
   ylab("filter mass (ug)")
 ```
-
+ 
 ## plot delta mass
+ 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+  geom_point(aes(id, delta, colour = type)) +
+  theme_minimal() +
+  theme(text = element_text(size = 20)) +
+  ylab("delta mass (ug)")
+```
+
+## plot delta mass by fuel type, qc status noted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
-    geom_point(aes(id, delta, colour = type)) +
+    geom_point(aes(id, delta, colour = qc)) +
     theme_minimal() +
     theme(text = element_text(size = 20)) +
-    ylab("delta mass (ug)")
+    ylab("delta mass (ug)") +
+    facet_wrap(~fuel_type, scales = "free")
 ```
 
-## plot concentration
+## plot delta mass per startup replicate by fuel type, qc status noted
 
-Black points = mean background
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(grav) +
+    geom_point(aes(id, mass_rep, colour = qc)) +
+    theme_minimal() +
+    theme(text = element_text(size = 20)) +
+    ylab("average delta mass (ug) per replicate") +
+    facet_wrap(~fuel_type, scales = "free")
+```
+
+## plot concentration (ug/m3)
+
+Not background adjusted -  mean background shown in black. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   ggplot(grav) +
@@ -241,6 +280,21 @@ Black points = mean background
     theme_minimal() +
     theme(text = element_text(size = 20)) +
     ylab("conc. ug/m^3")
+```
+
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
+
+(note: assume "NA" for QC means the grav is good)
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=15}
+  ggplot(filter(grav, fuel_type!="background"), aes(id, conc_bgadj, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  #scale_y_log10() +
+  facet_wrap(~fuel_type, ncol = 5, scales = "free")
 ```
 
 ## plot flows
@@ -256,3 +310,15 @@ Black points = mean background
     theme(text = element_text(size = 20)) +
     ylab("flow rate (L/min)")
 ```
+
+
+# Data Quality Conclusions (KF on 6/6/17)
+
+Test 26 (L2) has lower average flow. Pre-test flow was normal but post-test flow was low (`r flow$flow_delta[26]` from pre-flow). Potentially indicative of a clog in the line. The background-corrected concentration is much higher than the other "L" tests. Consider changing QC of this test to "bad" and dropping from dataset? 
+
+Test 8 (W1) is QC of maybe, with note that a different type of wood shims were used compared to the other tests, and the shims kept going out and having to be relit (at least 6 relits each). The delta_mass looks aligned with other wood shim tests (only ~100 ug higher, normal variability as expected based on other materials), but the background-adjusted concentration is much higher (~2400 vs. 800-1200 ug/m3). However, some other materials also have wide ranges in background-adjusted concentrations (e.g., leaves/twigs ranges from 12500 - ~22000; flipflops from <3000 to >11000). Think this test (8/W1) is OK to leave.
+
+The background-corrected concetrations seem high for several tests - are concentrations of 10,000-30,000 ug/m3 reasonable? The "per replicate" adjusted total mass seems to have reasonable variability and be in normal ranges. 
+
+
+

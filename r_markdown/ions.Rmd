@@ -65,7 +65,7 @@ output:
 
 # QC
 
-* extract notes for ion data (should be carbonlys?)
+* extract notes for carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("carbonyl|all", instrument))
@@ -99,14 +99,36 @@ output:
   ions <- dplyr::left_join(ions, ions_bg, by = "var")
 ```
 
+* calculate background-adjusted concentration
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions$conc_bgadj <- ions$conc - ions$bg_mean
+```
+
+* calculate mass per startup replicate
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions$mass_rep <- ions$val / ions$fuel_quant
+  ions$mass_rep <- as.numeric(gsub("Inf", "0", ions$mass_rep))
+  
+```
+
 # Summary
 
 Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
 
 Tests 36 through 43 are blanks; no fivegas data expected.
-Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test. 
+Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test.
 
 All carbonyl data is present as expected as of 5/24/17.
+
+The study test notes indicated that the QC status of the available data is:
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  single <- filter(ions,var=="acetaldehyde")
+  table(single$qc) 
+  print(single$id_test[which(single$qc == "bad")])
+  print(single$notes.x[which(single$qc == "bad")])
+  print(single$id_test[which(single$qc == "maybe")])
+```
+
 
 # Save merged file
 
@@ -116,10 +138,13 @@ All carbonyl data is present as expected as of 5/24/17.
 
 # Plots
 
+## Concentrations (ug/m3) by pollutant type
+
+Not background adjusted -  mean background shown in black. 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
   ggplot(ions, aes(id, conc, colour = fuel_type)) +
-  geom_point(aes(size = 4)) +
-  geom_point(aes(id, bg_mean, size = 4), colour = "black") +
+  geom_point(size = 4) +
+  geom_point(aes(id, bg_mean), size = 4, colour = "black") +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -128,3 +153,54 @@ All carbonyl data is present as expected as of 5/24/17.
   facet_wrap(~var, ncol = 2, scales = "free")
 ```
 
+## Background-corrected concentration (ug/m3) by pollutant type 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(id, conc_bgadj, colour = fuel_type)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  #scale_y_log10() + #not sure why this line causes error when it doesn't on previous and following graph...
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(id, conc, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per pollutant, fuel type colored) 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, mass_rep, colour = fuel_type)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per fuel type), QC status noted
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel_type!="background"), aes(var, mass_rep, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~fuel_type, ncol = 2, scales = "free")
+```
+
+# Data Quality Conclusions (KF on 5/26/17)
+
+Test N1 should be dropped from analysis due to bad QC and note that flow at end of test was zero due to clog; though, it looks like the clog likely occurred very close to the end of the test as the data point is in line with other data points from the other N tests. Using the pre-test flow rate as the average test flow rate may be an OK approximation to salvage this data point.
+
+All "maybe" QC tests should be kept within the dataset. 

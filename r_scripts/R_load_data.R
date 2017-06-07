@@ -111,14 +111,13 @@ load_grav_file <- function(file, sheet = "filters"){
 
   out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
   
-  out <- as_tibble(t(out[1:27,-1]))  # transpose
+  out <- as_tibble(t(out[1:25, -1]))  # transpose
     
   names(out) <- c("id_filter", 
                  "date_pre",
                  "person_pre",
                  "toc_pre",
                  "rh_pre",
-                 "phpa_pre",
                  "wgt_cal_pre",
                  "id_blank",
                  "wgt_blank_avg_pre",
@@ -131,7 +130,6 @@ load_grav_file <- function(file, sheet = "filters"){
                  "person_post",
                  "toc_post",
                  "rh_post",
-                 "phpa_post",
                  "wgt_cal_post",
                  "wgt_blank_avg_post",
                  "wgt_post_1",
@@ -146,7 +144,7 @@ load_grav_file <- function(file, sheet = "filters"){
   out_dat <- as.data.frame(lapply(out_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
-  cols <- subset(colnames(out), grepl("^toc_|^rh_|^phpa_|^wgt_", colnames(out))==TRUE)
+  cols <- subset(colnames(out), grepl("^toc_|^rh_|^wgt_", colnames(out))==TRUE)
   out_num <- subset(out, select = cols)
   out_num <- as.data.frame(lapply(out_num, 
                                  function(x) as.numeric(as.character(x))))
