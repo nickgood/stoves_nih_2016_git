@@ -728,42 +728,26 @@ load_multifile <- function(fldr, pattern, inst){
  # return
   return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
-# Load fivegas
-# file <- "data/fivegas/20160105_6A_FIVEGAS_OLD.csv"
-# file <- "data/fivegas/20160615_2D_FIVEGAS_FIXED.csv"
-
-load_fivegas <- function(fldr = "../data/fivegas", 
-                         pattern = "[0-9][A-Z]_FIVEGAS_FIXED.csv$|[0-9][A-Z]_FIVEGAS_OLD.csv$",
-                         type = "conc"){
-
-  filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
-
+#_______________________________________________________________________________
+# Load fivegas files
+# df <- load_fivegas()
+load_fivegas <- function(fldr = "../data/fivegas"){
+ 
+ filelist <- list.files(fldr, pattern = ".csv$", full.names = TRUE)
+ 
  # loop files
-  for(i in 1:length(filelist)){
-
- # determine file type
-  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
-
- # check type
-  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
-
- # load 
-  if(filetype == type){
-
+ for(i in 1:length(filelist)){
+  print(filelist[i])
   if(exists("out", inherits = FALSE)==FALSE){
-    out <- load_fivegas_file(filelist[i])
+   out <- load_fivegas_file(filelist[i])
   }else{
-    out <- rbind(out, load_fivegas_file(filelist[i]))
+   out <- rbind(out, load_fivegas_file(filelist[i]))
   }
- # end if
-  }
- # end for
-  }
-
+ }
+ 
  # return
-  return(out)
+ return(out)
 }
 #________________________________________________________
