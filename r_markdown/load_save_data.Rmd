@@ -27,7 +27,7 @@ Loads and saves the CO2 voltage data (`calibration?`)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   co2 <- load_multifile(fldr = "../data/co2",
-                            pattern = ".*_CO2.csv$", inst = "co2")
+                        pattern = ".*_CO2.*.csv$", inst = "co2")
 
   saveRDS(co2, file = "../r_files/co2.RDS")
 ```
