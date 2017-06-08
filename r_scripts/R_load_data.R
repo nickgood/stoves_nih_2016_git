@@ -152,6 +152,7 @@ load_fivegas_file <- function(file){
 #________________________________________________________
 # Load gravimetric file
 # file <- "../data/grav/Teflon Weight Log Final.xlsx"
+# sheet <- "Teflon Filter Weights"
 # out <- load_grav_file(file) 
 load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
                            sheet = "Teflon Filter Weights"){
@@ -189,6 +190,7 @@ load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
                   "wgt_dif",
                  "notes",
                   "lod")
+
  # classes
   out <- dplyr::mutate_at(out,
                           .cols = vars(starts_with("date")),
@@ -197,7 +199,9 @@ load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
                     .funs = as.numeric) %>%
          dplyr::mutate_at(.cols = vars(starts_with("time")),
                     .funs = excel_time) %>%
-         dplyr::mutate(id = sub("-.*", "", id_grav))
+         dplyr::mutate(id = sub("-.*", "", id_grav)) %>%
+         dplyr::filter(!is.na(id))
+
  # return 
   return(out)
 }
@@ -276,10 +280,11 @@ load_pah_file <- function(file, sheet = "Summary"){
 
 #________________________________________________________
 # Load transmissiometer
-# file <- "data/trans/Transmissometer Log.xlsx" 
-load_trans_file <- function(file, sheet = "Transmissometer Log"){
+# file <- "../data/trans/MC Transmissometer Final.xlsx"
+# out <- load_trans_file(file)
+load_trans_file <- function(file){
 
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
+  df <- read_excel(path = file, col_names = FALSE, skip = 1)
 
   df <- as.data.frame(t(df[-1]))
   
