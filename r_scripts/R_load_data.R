@@ -7,8 +7,10 @@
 
 #_______________________________________________________________________________
 # load co2 file
-# file <- "../data/co2/20170316_BG1_DT_CO2.csv"
+# file <- "../data/co2/20170316_LL1_DT_CO2.csv"
 load_co2_file <- function(file){
+ # print
+  print(file)
  # read file
   out <- read_csv(file = file, col_names = FALSE, skip = 7)
  # name columns
@@ -128,6 +130,7 @@ load_ecoc_file <- function(file){
 # file <- "../data/fivegas/20170316_BG1_5GAS.csv"
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
+  print(file)
  # load 
   out <- read_tsv(file, col_names = TRUE)
  # rename
