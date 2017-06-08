@@ -94,10 +94,16 @@ output:
   out_full <- dplyr::left_join(out_full,
                                dplyr::select(bg, id, pol, bg_ppm),
                                by = c("id", "pol"))
-
+  out_full <- dplyr::left_join(out_full, 
+                              dplyr::select(test_info, id, fuel_type),
+                              by = "id")
+  
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg, id, pol, bg_ppm),
                               by = c("id", "pol"))
+  out_rep <- dplyr::left_join(out_rep, 
+                              dplyr::select(test_info, id, fuel_type),
+                              by = "id")
 ```
 
 # QC
@@ -109,9 +115,7 @@ output:
                               dplyr::select(notes, id, qc, id_test),
                               by = "id")
   
-  out_full <- dplyr::left_join(out_full, 
-                              dplyr::select(test_info, id, fuel_type),
-                              by = "id")
+
   
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg, id, pol, bg_ppm),
@@ -171,8 +175,20 @@ Tests 31-35 are "flat", which is as expected as these are background tests where
 The CH4 looks odd for all tests. 
 
 ###CH4 only: 
+by time total: 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val), group_by()) + 
+  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 4, scales = "free_x") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+by rep:
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(filter(out_rep, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
     geom_point() +
     scale_y_log10() +
     facet_wrap(~id, ncol = 4, scales = "free_x") +
