@@ -39,15 +39,9 @@ output:
   times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
-* notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- 
-```
-
 # Units
 
-* Convert co2 from percent to ppm.
+* Convert co2 from percent to ppm (note CO and CH4 are collected as ppm)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   out <- dplyr::mutate(data, co2 = co2 * 10^4)
@@ -150,12 +144,13 @@ The study test notes indicated that the QC status of the available data is:
   print(notes$id_test[which(notes$qc == "maybe")])
   print(notes$notes[which(notes$qc == "maybe")])
 ```
-There are no "bad" fivegas data according to study protocol notes - only some "bad" and "maybe" QC that are due to protocol notes that apply across all instruments. According to those notes, tes L1 should definitely be excluded, and test W1 should maybe be excluded. 
+There are no "bad" fivegas data according to study protocol notes - only some "bad" and "maybe" QC that are due to protocol notes that apply across all instruments. According to those notes, test L1 should definitely be excluded, and test W1 should maybe be excluded. 
 
 # Plots
 
 ##tests
 
+###All pollutants: 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_full, aes(datetime, val, color = pol )) + 
     geom_point() +
@@ -165,9 +160,22 @@ There are no "bad" fivegas data according to study protocol notes - only some "b
     xlab("") +
     theme(legend.position = "top")
 ```
-All tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges. 
+For CO and CO2, all tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges. 
 
 Tests 31-35 are "flat", which is as expected as these are background tests where no burning occured.
+
+The CH4 looks odd for all tests. 
+
+###CH4 only: 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val)) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 4, scales = "free_x") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
 
 ##background tests
 
