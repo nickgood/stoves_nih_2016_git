@@ -55,61 +55,39 @@ Loads fivegas mixing ratio files and resaves.
 Loads filter weight data and resaves as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_grav <- load_grav_file(file) 
+  data_grav <- load_grav_file() 
   saveRDS(data_grav, file = "../r_files/grav.RDS")
 ```
 
-## ions and carbonyls
+## carbonyls
 
-Loads and resaves data as .Rda.
+Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ions <- load_singlefiles("ions")
-
-  save(ions, file = "../r_files/ions.Rda")
-```
-
-## pahs
-
-Loads and resaves data as .Rda.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
-  pah <- load_singlefiles("pah")
-
-  save(pah, file = "../r_files/pah.Rda")
+  # ions <- load_singlefiles("ions")
+  # save(ions, file = "../r_files/ions.RDS")
 ```
 
 ## pax
 
-Loads and resaves data as .Rda.
+Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
-  save(pax, file = "../r_files/pax.Rda")
-```
-
-## scale
-
-Loads and resaves data as .Rda.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  scale <- load_multifile(fldr = "../data/scale",
-                          pattern = "_SCALE.xlsx$", inst = "scale")
-
-  save(scale, file = "../r_files/scale.Rda")
+  save(pax, file = "../r_files/pax.RDS")
 ```
 
 ## smps
 
-Loads and resaves data as an .Rda.
+Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   smps <- load_multifile(fldr = "../data/smps",
                          pattern = "_SMPS.csv$", inst = "smps")
-
-  save(smps, file = "../r_files/smps.Rda")
+  saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
 ## temperature
@@ -118,19 +96,18 @@ Loads and resaves data as an .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
-                         pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
+                         pattern = "_TEMP.csv", inst = "temp")
 
-  save(temp, file = "../r_files/temp.Rda")
+  saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
 ## transmissometer
 
-Loads and resaves data as an .Rda.
+Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   trans <- load_singlefiles("trans")
-
-  save(trans, file = "../r_files/trans.Rda")
+  saveRDS(trans, file = "../r_files/trans.RDS")
 ```
  
 ## vocs
@@ -138,9 +115,8 @@ Loads and resaves data as an .Rda.
 Loads the microgram sheet  and resaves data as an .Rda.
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- load_singlefiles("voc")
-
-  save(voc, file = "../r_files/voc.Rda")
+  #voc <- load_singlefiles("voc")
+  #save(voc, file = "../r_files/voc.RDS")
 ```
 
 # Metadata
