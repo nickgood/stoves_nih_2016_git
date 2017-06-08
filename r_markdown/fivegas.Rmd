@@ -154,11 +154,49 @@ The study test notes indicated that the QC status of the available data is:
 ```
 There are no "bad" fivegas data according to study protocol notes - only some "bad" and "maybe" QC that are due to protocol notes that apply across all instruments. According to those notes, test L1 should definitely be excluded, and test W1 should maybe be excluded. 
 
-# Plots
+# Plots and Tables
 
-##tests
 
-###All pollutants: 
+## Summary Tables 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_tests <- plyr::ddply(filter(out_full, fuel_type != "background"), c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_tests, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Fuel Tests")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_bg <- plyr::ddply(filter(out_full, fuel_type == "background"), c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Background Tests")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_bg2 <- plyr::ddply(out_bg, c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Background Measured Before and After Each Test")
+```
+
+##Test Plots 
+
+### All pollutants 
+
+#### by total time
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_full, aes(datetime, val, color = pol )) + 
     geom_point() +
@@ -174,8 +212,22 @@ Tests 31-35 are "flat", which is as expected as these are background tests where
 
 The CH4 looks odd for all tests. 
 
-###CH4 only: 
-by time total: 
+#### by replicates
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(out_rep, aes(datetime, val, color = rep)) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+### CH4 only 
+
+#### by time total
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(filter(out_full, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
     geom_point() +
@@ -186,7 +238,8 @@ by time total:
     theme(legend.position = "top")
 ```
 
-by rep:
+#### by replicates 
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(filter(out_rep, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
     geom_point() +
@@ -197,19 +250,7 @@ by rep:
     theme(legend.position = "top")
 ```
 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-gas_sum <- plyr::ddply(out_full, c("pol"), summarise, 
-                   meanval = round(mean(val, na.rm = TRUE), 2),
-                   medianval = median(val, na.rm = TRUE),
-                   maxval = max(val, na.rm = TRUE),
-                   minval = min(val, na.rm = TRUE),
-                   sd = round(sd(val[!is.na(val)]), 2))
-
-knitr::kable(gas_sum, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"))
-```
-
-##background tests
+## background times pre/post test
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_bg, aes(datetime, val, color = pol )) + 
@@ -221,14 +262,4 @@ knitr::kable(gas_sum, format = "markdown", col.names=c("pollutant","mean value (
     theme(legend.position = "top")
 ```
 
-##replicates
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(out_rep, aes(datetime, val, color = rep)) + 
-    geom_point() +
-    scale_y_log10() +
-    facet_wrap(~id, ncol = 3, scale = "free") +
-    theme_minimal() +
-    xlab("") +
-    theme(legend.position = "top")
-```
