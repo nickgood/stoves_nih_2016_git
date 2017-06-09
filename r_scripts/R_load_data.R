@@ -283,78 +283,15 @@ load_pah_file <- function(file, sheet = "Summary"){
 # file <- "../data/trans/MC Transmissometer Final.xlsx"
 # out <- load_trans_file(file)
 load_trans_file <- function(file){
-
-  df <- read_excel(path = file, col_names = FALSE, skip = 1)
-
-  df <- as.data.frame(t(df[-1]))
-  
-  df <- df[,1:41]
-
-  col_names = c("id_filter",
-                "id_blank",
-                "date_pre",
-                "person_pre",
-                "toc_pre",
-                "rh_pre",
-                "phpa_pre",
-                "id_diff_blank_pre",
-                "uv_front_blank_pre",
-                "ir_front_blank_pre",
-                "uv_back_blank_pre",
-                "ir_back_blank_pre",
-                "id_diff_sample_pre",
-                "uv_front_sample_pre",
-                "ir_front_sample_pre",
-                "uv_back_sample_pre",
-                "ir_back_sample_pre",
-                "uv_blank_diff_pre",
-                "ir_blank_diff_pre",
-                "uv_sample_diff_pre",
-                "ir_sample_diff_pre",
-                "date_post",
-                "person_post",
-                "toc_post",
-                "rh_post",
-                "phpa_post",
-                "id_diff_blank_post",
-                "uv_front_blank_post",
-                "ir_front_blank_post",
-                "uv_back_blank_post",
-                "ir_back_blank_post",
-                "id_diff_sample_post",
-                "uv_front_sample_post",
-                "ir_front_sample_post",
-                "uv_back_sample_post",
-                "ir_back_sample_post",
-                "uv_blank_diff_post",
-                "ir_blank_diff_post",
-                "uv_sample_diff_post",
-                "ir_sample_diff_post",
-                "notes")    
-
-  names(df) <- col_names
-
-  cols <- subset(colnames(df), grepl("^date",colnames(df))==TRUE)
-  df_dat <- subset(df, select = cols)
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  cols <- subset(colnames(df), grepl("^toc|^rh|^phpa|^uv|ir",colnames(df))==TRUE)
-  df_num <- subset(df, select = cols)
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  df_char <- subset(df, select = notes)
-  df_char <- as.data.frame(lapply(df_char,
-                                 function(x) as.character(x)), stringsAsFactors=FALSE)
-
-  cols <- subset(colnames(df), grepl("^id|^person",colnames(df))==TRUE)
-  df_fac <- subset(df, select = cols)
-
-  out <- cbind(df_dat, df_num, df_char, df_fac)
-    
-  # return
-    return(out)
+ # read file
+  out <- read_excel(path = file, col_names = TRUE, skip = 0)[,1:18]
+ # column names
+  out <- clean_names(out)
+ # classes
+  out <- dplyr::select(out, -contains("date")) %>%
+         dplyr::filter(!is.na(filter_id))
+ # return
+  return(out)
 } 
 #_______________________________________________________________________________
 
