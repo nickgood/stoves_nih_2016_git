@@ -105,7 +105,7 @@ Loads and resaves data as an .RDS.
 Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans <- load_singlefiles("trans")
+  trans <- load_trans_file("../data/trans/MC Transmissometer Final.xlsx")
   saveRDS(trans, file = "../r_files/trans.RDS")
 ```
  
