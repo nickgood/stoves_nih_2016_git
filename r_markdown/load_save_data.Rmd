@@ -140,3 +140,17 @@ Loads the microgram sheet  and resaves data as an .Rda.
   data_tester_two <- load_test_two()
   saveRDS(data_tester_two, file = "../r_files/data_tester_two.RDS")
 ```
+
+* Calibration 1 log
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_cal_one <- load_cal_one()
+  saveRDS(data_tester_one, file = "../r_files/data_cal_one.RDS")
+```
+
+* Calibration 2 log
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_cal_two <- load_cal_two()
+  saveRDS(data_tester_two, file = "../r_files/data_cal_two.RDS")
+```
