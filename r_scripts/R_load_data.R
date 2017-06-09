@@ -475,7 +475,7 @@ load_scale_file <- function(file, sheet = "Sheet1"){
 }
 #________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load pax file
 # file <- "../data/pax/20160629_ALLDAY_PAX.csv"
 load_pax_file <- function(file){
@@ -505,9 +505,9 @@ load_pax_file <- function(file){
  # return
   return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load smps file
 # file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
 # out <- load_smps_file(file)
@@ -516,95 +516,28 @@ load_smps_file <- function(file){
   out <- read_csv(file, skip = 25)
  # read meta data
   out_head <- read_csv(file, col_names = FALSE, n_max = 25)
- # rename columns
-  names(out) <- tolower(gsub("\\.", "_", colnames(out)))
-  names(out) <- gsub("\\(", "", colnames(out))
-  names(out) <- gsub(")", "", colnames(out))
-  names(out) <- gsub("#", "", colnames(out))
-  names(out) <- gsub("%", "", colnames(out))
-  names(out) <- gsub("\\*", "_", colnames(out))
-  
- # filter size distributions
-  out_dist <- dplyr::select(out, matches("^[0-9]"))
- # extract bin centers (nm)
-  size_bins <- as.numeric(gsub("_", ".", colnames(out_dist)))
- # transpose
-  out_dist_ <- as_tibble(t(out_dist)) %>%
-               dplyr::mutate(size = size_bins)
-  
-  names(out) <- tolower(gsub("\\.\\.\\.\\.", "_", colnames(out)))
-  names(out) <- gsub("\\.\\.\\.", "_", colnames(out))
-  names(out) <- gsub("\\.\\.", "_", colnames(out))
-  names(out) <- gsub("\\.", "_", colnames(out))
-  names(out) <- gsub("_$", "", colnames(out))
-  
- # 
-  
-
-  df_dw <- subset(out, select = grep("^[0-9]", colnames(out), value = TRUE))
-  
-
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  
-  names(df_meta_1) <- c("var", "val")
-  names(df_meta_2) <- c("var", "val")
-  names(df_meta_3) <- c("var", "val")
-
-  df_meta <- na.omit(rbind(df_meta_1, df_meta_2, df_meta_3))
-
-  col_names <- df_meta[,1]
-
-  df_meta <- as.data.frame(t(df_meta[-1]))
-
-  names(df_meta) <- tolower(gsub(" ", "_", col_names))
-
-  df_meta$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
-  df_allvals <- merge(df_vals, df_meta, by.x = "id")
-    
-  df_dw$sample <- df$sample
-
-  df_dw <- melt(df_dw, id.vars = "sample")
-
-  df_dw$size <- gsub("_", ".", df_dw$variable)
-
-  df_dw$size <- as.numeric(gsub("x", "", df_dw$size))
-
-  df_dw$variable <- NULL
-
-  out <- merge(df_allvals,df_dw, by.x = "sample")
-
-  out <- out[!is.na(out$value), ]
-
-  out <- arrange(out, sample, size)
-
- # match d/../yy or dd/../yy
-  if(grepl("(^[0-9]/)|(^[0-9][0-9]/)[0-9].*/[0-9][0-9]$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%m/%d/%y")
-  }
-  # match yyyy/...
-  if(grepl("^[0-9][0-9][0-9][0-9]/.*$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%Y/%m/%d")
-  }
-  # match .../yyyy
-  if(grepl(".*/[0-9][0-9][0-9][0-9]$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%m/%d/%Y")
-  }
-
-  out$time <- as.numeric(substr(out$start_time,1,2))*60*60 + 
-              as.numeric(substr(out$start_time,4,5))*60 +
-              as.numeric(substr(out$start_time,7,8))
-
-  out$datetime <- as.POSIXct(paste(as.character(out$date), out$start_time), 
-                             format = "%Y-%m-%d %H:%M:%S")
-
+  names(out_head) <- c("var", "val")
+ # clean up column names
+  out <- clean_names(out)
+ # organize size distributions
+  out <- tidyr::gather(out, "size_nm", "dw", 10:ncol(out)) %>%
+         dplyr::filter(!is.na(dw)) %>%
+         dplyr::arrange(sample, size_nm) %>%
+         dplyr::mutate(size_nm = as.numeric(sub("_", ".", size_nm)),
+                       datetime = as.POSIXct(paste(as.character(date),
+                                  as.character(seconds_to_period(as.numeric(start_time)))),
+                                  format = "%F %HH %MM %SS")) %>%
+         dplyr::select(-diameter_midpoint_nm)
+ # organize header
+  out_head <- tidyr::spread(out_head, var, val) %>% clean_names()
+ # combine
+  # out <- list(out, out_head)
  # return
   return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________ 
+#________________________________________________________
 # Load single files
 load_singlefiles <- function(log){
  # ecoc
