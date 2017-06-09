@@ -485,7 +485,7 @@ load_pax_file <- function(file){
 # out <- load_smps_file(file)
 load_smps_file <- function(file){
  # print filename
-  print(filename)
+  print(file)
  # read file body
   out <- read_csv(file, skip = 25)
  # read meta data
