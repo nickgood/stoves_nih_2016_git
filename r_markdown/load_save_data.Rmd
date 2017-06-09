@@ -97,7 +97,6 @@ Loads and resaves data as an .RDS.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
                          pattern = "_TEMP.csv", inst = "temp")
-
   saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
