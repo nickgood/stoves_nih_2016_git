@@ -149,7 +149,7 @@ load_fivegas_file <- function(file){
 }
 #_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load gravimetric file
 # file <- "../data/grav/Teflon Weight Log Final.xlsx"
 # sheet <- "Teflon Filter Weights"
@@ -207,7 +207,7 @@ load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
 }
 #_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load ions and carbonyls file
 # file <- "../data/ions/20161230_IONS.xls"
 # set sheet to "ug" or "ug_m3"
@@ -235,9 +235,9 @@ load_ions_file <- function(file, sheet = "ug"){
   # return 
     return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load pah file
 # file <- "data/pah/20160804_PAH.xlsx"
 # set sheet to "ug" or "ug_m3"
@@ -276,9 +276,9 @@ load_pah_file <- function(file, sheet = "Summary"){
   # return 
     return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load transmissiometer
 # file <- "../data/trans/MC Transmissometer Final.xlsx"
 # out <- load_trans_file(file)
@@ -356,9 +356,9 @@ load_trans_file <- function(file){
   # return
     return(out)
 } 
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load vocs
 # file <- "../data/voc/20161215_VOC.xlsx"
 load_voc_file <- function(file, sheet = "Sheet1"){
@@ -407,9 +407,9 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   # return 
     return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load temperature file
 # file <- "../data/temp/20160107_16A_TEMP.csv"
 load_temp_file <- function(file){
@@ -445,35 +445,7 @@ load_temp_file <- function(file){
   # return
     return(df)
 }
-#________________________________________________________
-
-#________________________________________________________
-# Load stove weight
-# file <- "../data/scale/20160107_16A_SCALE.xlsx"
-load_scale_file <- function(file, sheet = "Sheet1"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE)
-
-  df <- df[,1:4]
-
-  names(df) <- c("date",
-                 "time",
-                 "wgt_stove",
-                 "units")
-
-  df$datetime <- as.POSIXct(paste(as.character(df$date),
-                            substr(as.character(df$time),12,19)), format = "%Y-%m-%d %T")
-
-  df$time <- as.numeric(substr(as.character(df$time),12,13))*60*60 +
-             as.numeric(substr(as.character(df$time),15,16))*60 +
-             as.numeric(substr(as.character(df$time),18,19))
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  
-  # return
-    return(df)
-}
-#________________________________________________________
+#_______________________________________________________________________________
 
 #_______________________________________________________________________________
 # Load pax file
