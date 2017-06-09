@@ -509,30 +509,43 @@ load_pax_file <- function(file){
 
 #________________________________________________________
 # Load smps file
-# file <- "../data/smps/20160105_6A_SMPS.csv"
-# df <- load_smps_file(file)
+# file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
+# out <- load_smps_file(file)
 load_smps_file <- function(file){
+ # read file body
+  out <- read_csv(file, skip = 25)
+ # read meta data
+  out_head <- read_csv(file, col_names = FALSE, n_max = 25)
+ # rename columns
+  names(out) <- tolower(gsub("\\.", "_", colnames(out)))
+  names(out) <- gsub("\\(", "", colnames(out))
+  names(out) <- gsub(")", "", colnames(out))
+  names(out) <- gsub("#", "", colnames(out))
+  names(out) <- gsub("%", "", colnames(out))
+  names(out) <- gsub("\\*", "_", colnames(out))
+  
+ # filter size distributions
+  out_dist <- dplyr::select(out, matches("^[0-9]"))
+ # extract bin centers (nm)
+  size_bins <- as.numeric(gsub("_", ".", colnames(out_dist)))
+ # transpose
+  out_dist_ <- as_tibble(t(out_dist)) %>%
+               dplyr::mutate(size = size_bins)
+  
+  names(out) <- tolower(gsub("\\.\\.\\.\\.", "_", colnames(out)))
+  names(out) <- gsub("\\.\\.\\.", "_", colnames(out))
+  names(out) <- gsub("\\.\\.", "_", colnames(out))
+  names(out) <- gsub("\\.", "_", colnames(out))
+  names(out) <- gsub("_$", "", colnames(out))
+  
+ # 
+  
 
-  df <- read.csv(file, header = TRUE, fill = TRUE,
-                       stringsAsFactors = FALSE, skip = 25)
+  df_dw <- subset(out, select = grep("^[0-9]", colnames(out), value = TRUE))
+  
 
-  df_meta <- read.csv(file, header = FALSE, fill = TRUE,
-                       stringsAsFactors = FALSE, nrows = 25)
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
-  names(df) <- tolower(gsub("\\.\\.\\.\\.", "_", colnames(df)))
-  names(df) <- gsub("\\.\\.\\.", "_", colnames(df))
-  names(df) <- gsub("\\.\\.", "_", colnames(df))
-  names(df) <- gsub("\\.", "_", colnames(df))
-  names(df) <- gsub("_$", "", colnames(df))
-
-  df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
-  df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
-
-  df_meta_1 <- df_meta[,1:2]
-  df_meta_2 <- df_meta[,3:4]
-  df_meta_3 <- df_meta[,5:6]
   
   names(df_meta_1) <- c("var", "val")
   names(df_meta_2) <- c("var", "val")
