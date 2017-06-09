@@ -411,16 +411,19 @@ load_voc_file <- function(file, sheet = "Sheet1"){
 
 #_______________________________________________________________________________
 # Load temperature file
-# file <- "../data/temp/20160107_16A_TEMP.csv"
+# file <- "../data/temp/20170316_FL1_TEMP.csv"
+# out <- load_temp_file(file)
 load_temp_file <- function(file){
-
+ # print file name
+  print(file)
+ # classes
   classes = c("character",
               "character",
               "numeric",
               "numeric",
               "numeric",
               "numeric")
-
+# column names
   col_names = c("date",
                 "time",
                 "t_1",
@@ -430,20 +433,16 @@ load_temp_file <- function(file){
 
   df <- read.csv(file, header = FALSE, colClasses = classes, 
                  fill = TRUE, na.strings = c("OL"), col.names = col_names)
-  
-  df$datetime <- as.POSIXct(paste(df$date, df$time),
-                            format = "%m/%d/%Y %I:%M:%S %p") 
 
-  df$time <- as.numeric(substr(df$datetime, 12, 13)) * 60 * 60 + 
-             as.numeric(substr(df$datetime, 15, 16)) * 60 +
-             as.numeric(substr(df$datetime,18, 19))
-
-  df$date <- as.Date(df$date, format = "%m/%d/%Y")
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
- 
-  # return
-    return(df)
+  df <- dplyr::mutate(df, datetime = as.POSIXct(paste(date, time),
+                                      format = "%m/%d/%Y %I:%M:%S %p"),
+                          time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                  as.numeric(substr(datetime, 15, 16)) * 60 +
+                                  as.numeric(substr(datetime, 18, 19)),
+                          date = as.Date(date, format = "%m/%d/%Y"),
+                          id = (strsplit(basename(file), "_")[[1]])[2])
+ # return
+  return(df)
 }
 #_______________________________________________________________________________
 
