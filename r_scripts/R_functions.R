@@ -398,3 +398,22 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
+
+#________________________________________________________
+clean_names <- function(df){
+  names(df) <- tolower(gsub("\\.", "_", colnames(df)))
+  names(df) <- gsub("\\(", "", colnames(df))
+  names(df) <- gsub(")", "", colnames(df))
+  names(df) <- gsub("#", "", colnames(df))
+  names(df) <- gsub("%", "", colnames(df))
+  names(df) <- gsub("\\*", "_", colnames(df))
+  names(df) <- gsub(" ", "_", colnames(df))
+  names(df) <- gsub("_$", "", colnames(df))
+  names(df) <- gsub("/", "_", colnames(df))
+ # return
+  return(df)
+}
+#________________________________________________________
+
+
+
