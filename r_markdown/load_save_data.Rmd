@@ -92,7 +92,7 @@ Loads and resaves data as an .RDS.
 
 ## temperature
 
-Loads and resaves data as an .Rda.
+Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
