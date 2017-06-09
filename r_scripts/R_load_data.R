@@ -484,6 +484,8 @@ load_pax_file <- function(file){
 # file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
 # out <- load_smps_file(file)
 load_smps_file <- function(file){
+ # print filename
+  print(filename)
  # read file body
   out <- read_csv(file, skip = 25)
  # read meta data
@@ -498,12 +500,13 @@ load_smps_file <- function(file){
          dplyr::mutate(size_nm = as.numeric(sub("_", ".", size_nm)),
                        datetime = as.POSIXct(paste(as.character(date),
                                   as.character(seconds_to_period(as.numeric(start_time)))),
-                                  format = "%F %HH %MM %SS")) %>%
+                                  format = "%F %HH %MM %SS"),
+                       sample_file = basename(file)) %>%
          dplyr::select(-diameter_midpoint_nm)
  # organize header
   out_head <- tidyr::spread(out_head, var, val) %>% clean_names()
  # combine
-  # out <- list(out, out_head)
+  out <- left_join(out, out_head, by = "sample_file")
  # return
   return(out)
 }
