@@ -52,7 +52,7 @@ Loads fivegas mixing ratio files and resaves.
 
 ## gravimetric
 
-Loads filter weight data and resaves as .Rda.
+Loads filter weight data and resaves as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   data_grav <- load_grav_file() 
@@ -86,7 +86,7 @@ Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   smps <- load_multifile(fldr = "../data/smps",
-                         pattern = "_SMPS.csv$", inst = "smps")
+                         pattern = "_SMPS.txt$", inst = "smps")
   saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
