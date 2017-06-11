@@ -358,8 +358,8 @@ load_ions_file <- function(file, sheet = "ug"){
 # file <- "data/pah/20170608_PAH.xlsx"
 # incomplete need project data
 load_pah_file <- function(file){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 1)
+ # read file
+  df <- read_excel(path = file, col_names = TRUE, skip = 3)
 
   names(df) <- tolower(colnames(df))
   names(df) <- gsub("\\[", "_", colnames(df))
