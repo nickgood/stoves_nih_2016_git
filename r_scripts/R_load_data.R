@@ -359,37 +359,26 @@ load_ions_file <- function(file, sheet = "ug"){
 # incomplete need project data
 load_pah_file <- function(file){
  # read file
-  df <- read_excel(path = file, col_names = TRUE, skip = 3)
-
-  names(df) <- tolower(colnames(df))
-  names(df) <- gsub("\\[", "_", colnames(df))
-  names(df) <- gsub(" ", "_", colnames(df))
-  names(df) <- gsub("\\]", "_", colnames(df))
-  names(df) <- gsub("\\+", "_", colnames(df))
-  names(df) <- gsub("\\(", "_", colnames(df))
-  names(df) <- gsub("\\)", "_", colnames(df))
-  names(df) <- gsub("(_)\\1+", "\\1", colnames(df))
-  names(df)[1] <- "asu_id"
-
-  out <- tidyr::gather(df, pol, value,  -asu_id, -csu_label)
-
-  out <- dplyr::filter(out, !is.na(out$csu_label))  # filter empty rows
-
-  out$lod <- ifelse(grepl("^<", out$value), as.numeric(sub("^<", "", out$value)), NA)  # add lod
-
-  out$detect <- ifelse(grepl("^<", out$value), as.character("lod"), NA)
-  out$detect <- ifelse(grepl("^ND$", out$value), as.character("nd"), out$detect)
-  out$detect <- ifelse(!is.na(as.numeric(out$value)), as.character("ok"), out$detect)
-  out$detect <- as.factor(out$detect)
-  
-  out$value <- as.numeric(out$value)
-
-  out$pol <- as.factor(out$pol)
-
-  out$id <- "tbd"
-
-  # return 
-    return(out)
+  out <- read_excel(path = file, col_names = TRUE, skip = 3)
+ # rename columns
+  names(out) <- tolower(colnames(out))
+  names(out) <- gsub("\\[", "_", colnames(out))
+  names(out) <- gsub(" ", "_", colnames(out))
+  names(out) <- gsub("\\]", "_", colnames(out))
+  names(out) <- gsub("\\+", "_", colnames(out))
+  names(out) <- gsub("\\(", "_", colnames(out))
+  names(out) <- gsub("\\)", "_", colnames(out))
+  names(out) <- gsub("(_)\\1+", "\\1", colnames(out))
+  names(out)[1] <- "asu_id"
+# organize
+  out <- tidyr::gather(out, pol, val, -asu_id) %>%
+         dplyr::filter(!is.na(asu_id)) %>%
+         dplyr::mutate(lod = ifelse(grepl("^<", val), "below", "above"),
+                       val = as.numeric(gsub("<", "", val)),
+                       id = sub("-.*", "", asu_id),
+                       suffix = sub(".*-", "", asu_id))
+ # return 
+  return(out)
 }
 #________________________________________________________
 
