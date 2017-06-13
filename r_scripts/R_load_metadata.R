@@ -195,3 +195,75 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
   return(out)
 } 
 #_______________________________________________________________________________
+
+#_______________________________________________________________________________
+# Load flows and five gas metadata
+# file <- "../data/logs/Transcribed Emissions Tester 2 Data Sheets.xlsx"
+# df <- load_flow_fivegas_meta(file)
+load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
+ 
+ df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+ 
+ df <- df[1:26,]
+ 
+ df <- as.data.frame(t(df[c(-1,-2)])) 
+ 
+ names(df) <- c("date",
+                "id",
+                "person",
+                "preflow_carb_1",
+                "preflow_carb_2",
+                "preflow_carb_3",
+                "preflow_carb_avg",
+                "preflow_iso_1",
+                "preflow_iso_2",
+                "preflow_iso_3",
+                "time_start_smps_pax_bg_pre",
+                "time_end_smps_pax_bg_pre",
+                "time_start_smps_pax",
+                "time_end_smps_pax",
+                "time_start_carb",
+                "time_end_carb",
+                "time_start_smps_pax_bg_post",
+                "time_end_smps_pax_bg_post",
+                "postflow_carb_1",
+                "postflow_carb_2",
+                "postflow_carb_3",
+                "postflow_carb_avg",
+                "postflow_iso_1",
+                "postflow_iso_2",
+                "postflow_iso_3",
+                "notes")
+ 
+ df_dat <- subset(df, select = date)
+ 
+ df_dat <- as.data.frame(lapply(df_dat, 
+                                function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
+ 
+ cols <- subset(colnames(df), grepl("^preflow|^postflow",colnames(df))==TRUE)
+ 
+ df_num <- subset(df, select = cols)
+ 
+ df_num <- as.data.frame(lapply(df_num, 
+                                function(x) as.numeric(as.character(x))))
+ 
+ cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+ 
+ df_time <- subset(df, select = cols)
+ 
+ df_time <- as.data.frame(lapply(df_time, 
+                                 function(x) as.numeric(as.character(x))*24*60*60))  
+ 
+ df_char <- subset(df, select = notes)
+ 
+ df_char <- as.data.frame(lapply(df_char,
+                                 function(x) as.character(x)), stringsAsFactors=FALSE)
+ 
+ df_fac <- subset(df, select = c(id, person))
+ 
+ out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
+ 
+ # return
+ return(out)
+} 
+#_______________________________________________________________________________
