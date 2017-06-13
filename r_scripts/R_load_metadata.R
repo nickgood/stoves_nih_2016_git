@@ -198,11 +198,11 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
 
 #_______________________________________________________________________________
 # Load flows and five gas metadata
-# file <- "../data/logs/Transcribed Emissions Tester 2 Data Sheets.xlsx"
+# file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
 # df <- load_flow_fivegas_meta(file)
-load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
+load_flow_fivegas_meta <- function(file){
  
- df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
+ df <- read_excel(path = file, col_names = FALSE, skip = 0)
  
  df <- df[1:26,]
  
