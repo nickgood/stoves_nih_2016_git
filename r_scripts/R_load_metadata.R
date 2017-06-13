@@ -194,8 +194,8 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
 #_______________________________________________________________________________
 # Load flows and five gas metadata
 # file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
-# out <- load_flow_fivegas_meta(file)
-load_flow_fivegas_meta <- function(file){
+# out <- load_cal_two(file)
+load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
  # read file
   out <- read_excel(path = file, col_names = FALSE, skip = 0)
  # select rows
