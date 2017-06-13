@@ -7,6 +7,11 @@
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
+# source files
+  source("../r_scripts/R_functions.R")
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
 # load fuel prep file
 # file <- "../data/logs/Fuel Prep Final.xlsx"
 # out <- load_fuel_prep(file)
@@ -49,16 +54,6 @@ load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "
  # return
   return(out)
 }
-#_______________________________________________________________________________
-
-#_______________________________________________________________________________
-# convert excel date to Date class
-  excel_date <- function(x){as.Date(as.numeric(x), origin = "1899-12-30")}
-#_______________________________________________________________________________
-
-#_______________________________________________________________________________
-# convert excel time to seconds of day
-  excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
@@ -246,35 +241,14 @@ load_flow_fivegas_meta <- function(file){
                   "dusttrak_postflow_2",
                   "dusttrak_postflow_3",
                   "notes")
- 
- df_dat <- subset(df, select = date)
- 
- df_dat <- as.data.frame(lapply(df_dat, 
-                                function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
- 
- cols <- subset(colnames(df), grepl("^preflow|^postflow",colnames(df))==TRUE)
- 
- df_num <- subset(df, select = cols)
- 
- df_num <- as.data.frame(lapply(df_num, 
-                                function(x) as.numeric(as.character(x))))
- 
- cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
- 
- df_time <- subset(df, select = cols)
- 
- df_time <- as.data.frame(lapply(df_time, 
-                                 function(x) as.numeric(as.character(x))*24*60*60))  
- 
- df_char <- subset(df, select = notes)
- 
- df_char <- as.data.frame(lapply(df_char,
-                                 function(x) as.character(x)), stringsAsFactors=FALSE)
- 
- df_fac <- subset(df, select = c(id, person))
- 
- out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
- 
+
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .vars = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.vars = vars(matches(".*pre.*|.*post.*")),
+                          .funs = as.numeric)
+
  # return
  return(out)
 } 
