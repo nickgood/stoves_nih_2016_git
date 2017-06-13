@@ -14,13 +14,13 @@
 #_______________________________________________________________________________
 # load fuel prep file
 # file <- "../data/logs/Fuel Prep Final.xlsx"
+# sheet <- "Fuel Prep"
 # out <- load_fuel_prep(file)
 load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "Fuel Prep"){
  # load raw file
-  out <- as_tibble(read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0))
+  out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)
  # clean up
-  out <- out[-1, ]
-  out <- out[,1:19]
+  out <- out[-(1:13),1:19]
   out <- dplyr::filter(out, !is.na(fuel_id))
  # rename
   out <- dplyr::rename(out, date_test = test_date,
