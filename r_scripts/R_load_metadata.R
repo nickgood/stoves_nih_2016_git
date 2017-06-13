@@ -199,14 +199,14 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
 #_______________________________________________________________________________
 # Load flows and five gas metadata
 # file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
-# df <- load_flow_fivegas_meta(file)
+# out <- load_flow_fivegas_meta(file)
 load_flow_fivegas_meta <- function(file){
- 
- df <- read_excel(path = file, col_names = FALSE, skip = 0)
- 
- df <- df[1:26,]
- 
- df <- as.data.frame(t(df[c(-1,-2)])) 
+ # read file
+  out <- read_excel(path = file, col_names = FALSE, skip = 0)
+ # select rows
+  out <- out[1:38,]
+ # tranpose and drop unused columns
+  out <- as_data_frame(t(out[c(-1,-2)]))
  
  names(df) <- c("date",
                 "id",
