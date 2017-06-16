@@ -101,7 +101,6 @@ output:
   saveRDS(pax_rep, file="../r_files/pax_merged_byrep.RDS")
 ```
 
-# Plots
 
 # Data summary
 
@@ -109,3 +108,61 @@ The PAX measured during `r length(unique(pax_full$id))` experiments between `r m
 
 Tests 36 through 43 are blanks; no fivegas data expected.
 All PAX files are present as expected as of 5/24/17. 
+
+# Plots
+
+## Absorption (black) and scattering (blue) by test
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
+  p_data <- filter(pax_full, !is.na(id) & mode == 0)
+
+  ggplot(p_data) +
+         geom_line(mapping = aes(datetime, babs_1_mm), colour = "black") +
+         geom_line(mapping = aes(datetime, bscat_1_mm), colour = "royalblue2") +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         labs(x = "", y = expression(Mm^{-1}))
+```
+
+## Absorption (black) and scattering (blue) backgrounds for each test
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
+  p_data <- filter(pax_bg, !is.na(id) & mode == 0)
+
+  ggplot(p_data) +
+         geom_line(mapping = aes(datetime, babs_1_mm), colour = "black") +
+         geom_line(mapping = aes(datetime, bscat_1_mm), colour = "royalblue2") +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         labs(x = "", y = expression(Mm^{-1}))
+```
+
+## Absorption (black) and scattering (blue) backgrounds for each replicate
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
+  p_data <- filter(pax_rep, !is.na(id) & mode == 0)
+
+  ggplot(p_data) +
+         geom_point(mapping = aes(datetime, babs_1_mm), color = "black") +
+         geom_point(mapping = aes(datetime, bscat_1_mm, color = rep)) +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         labs(x = "", y = expression(Mm^{-1}))
+```
+
+## QC
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=100}
+ p_data <- filter(pax_full, !is.na(id) & mode == 0)
+
+  ggplot(p_data) +
+         geom_line(mapping = aes(datetime, babs_1_mm, colour = qc)) +
+         geom_line(mapping = aes(datetime, bscat_1_mm, colour = qc)) +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+        theme_minimal() +
+        labs(x = "", y = expression(Mm^{-1}))
+```
+
+# Data Quality SUmmary
+
+Test 12 (R1) appears to not have multiple replicates (all one color), but should be 4. (Note that fivegas has same problem with test #12 - is timestamp off?)  
