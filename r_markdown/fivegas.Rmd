@@ -213,6 +213,10 @@ knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean valu
     xlab("") +
     theme(legend.position = "top")
 ```
+
+
+* background
+
 For CO and CO2, all tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges. 
 
 Tests 31-35 are "flat", which is as expected as these are background tests where no burning occured.
@@ -220,6 +224,7 @@ Tests 31-35 are "flat", which is as expected as these are background tests where
 The CH4 looks odd for all tests. 
 
 #### by replicates
+
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_rep, aes(datetime, val, color = rep)) + 
