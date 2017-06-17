@@ -39,15 +39,9 @@ output:
   times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
-* notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- 
-```
-
 # Units
 
-* Convert co2 from percent to ppm.
+* Convert co2 from percent to ppm (note CO and CH4 are collected as ppm)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   out <- dplyr::mutate(data, co2 = co2 * 10^4)
@@ -100,10 +94,16 @@ output:
   out_full <- dplyr::left_join(out_full,
                                dplyr::select(bg, id, pol, bg_ppm),
                                by = c("id", "pol"))
-
+  out_full <- dplyr::left_join(out_full, 
+                              dplyr::select(test_info, id, fuel_type),
+                              by = "id")
+  
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg, id, pol, bg_ppm),
                               by = c("id", "pol"))
+  out_rep <- dplyr::left_join(out_rep, 
+                              dplyr::select(test_info, id, fuel_type),
+                              by = "id")
 ```
 
 # QC
@@ -112,8 +112,10 @@ output:
   notes <- dplyr::filter(notes, grepl("fivegas|all", instrument))
 
   out_full <- dplyr::left_join(out_full, 
-                              dplyr::select(notes, id, qc),
+                              dplyr::select(notes, id, qc, id_test),
                               by = "id")
+  
+
   
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg, id, pol, bg_ppm),
@@ -138,10 +140,69 @@ Fivegas data was collected during `r length(unique(out_full$id))` experiments be
 
 Tests 36 through 43 are blanks; no fivegas data expected.
 
+All fivegas data is present as expected as of 6/7/17. 
 
-# Plots
+The study test notes indicated that the QC status of the available data is: 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  single <- filter(out_full,pol=="ch4")
+  table(notes$qc)
+  table(notes$instrument)
+  print(notes$id_test[which(notes$qc == "bad")])
+  print(notes$notes[which(notes$qc ==  "bad")])
+  print(notes$id_test[which(notes$qc == "maybe")])
+  print(notes$notes[which(notes$qc == "maybe")])
+```
+There are no "bad" fivegas data according to study protocol notes - only some "bad" and "maybe" QC that are due to protocol notes that apply across all instruments. According to those notes, test L1 should definitely be excluded, and test W1 should maybe be excluded. 
 
-* tests
+# Plots and Tables
+
+
+## Summary Tables 
+
+***Summary Values Across All Fuel Tests*** 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_tests <- plyr::ddply(filter(out_full, fuel_type != "background"), c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_tests, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Fuel Tests")
+```
+
+***Summary Values Across All Background Tests*** 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_bg <- plyr::ddply(filter(out_full, fuel_type == "background"), c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Background Tests")
+```
+
+***Summary Values Across Background Measured Before/After Each Test*** 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+gas_sum_bg2 <- plyr::ddply(out_bg, c("pol"), summarise, 
+                   meanval = round(mean(val, na.rm = TRUE), 2),
+                   medianval = median(val, na.rm = TRUE),
+                   maxval = max(val, na.rm = TRUE),
+                   minval = min(val, na.rm = TRUE),
+                   sd = round(sd(val[!is.na(val)]), 2))
+
+knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Background Measured Before and After Each Test")
+```
+
+##Test Plots 
+
+### All pollutants 
+
+#### by total time
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_full, aes(datetime, val, color = pol )) + 
@@ -153,19 +214,17 @@ Tests 36 through 43 are blanks; no fivegas data expected.
     theme(legend.position = "top")
 ```
 
+
 * background
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(out_bg, aes(datetime, val, color = pol )) + 
-    geom_point() +
-    scale_y_log10() +
-    facet_wrap(~id, ncol = 3, scale = "free") +
-    theme_minimal() +
-    xlab("") +
-    theme(legend.position = "top")
-```
+For CO and CO2, all tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges. 
 
-* replicates
+Tests 31-35 are "flat", which is as expected as these are background tests where no burning occured.
+
+The CH4 looks odd for all tests. 
+
+#### by replicates
+
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
   ggplot(out_rep, aes(datetime, val, color = rep)) + 
@@ -176,3 +235,62 @@ Tests 36 through 43 are blanks; no fivegas data expected.
     xlab("") +
     theme(legend.position = "top")
 ```
+
+### CH4 only 
+
+#### by time total
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 4, scales = "free_x") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+#### by replicates 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+  ggplot(filter(out_rep, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
+    geom_point() +
+    scale_y_log10() +
+    facet_wrap(~id, ncol = 4, scales = "free_x") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+## background times pre/post test
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+ df <- filter(out_bg, pol == "ch4")
+  ggplot(df, aes(datetime, val, color = id )) + 
+    geom_point() +
+   # scale_y_log10() +
+    facet_wrap(~date, ncol = 3, scale = "free_x") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+#### by replicates, average background shown.  
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=20, eval=TRUE}
+ df <- filter(out_rep, pol == "ch4") %>% group_by(fuel_type, id) %>% mutate(x = seq_along(val)) %>% ungroup()
+  ggplot(df, aes(x , y = val, color = id)) +
+    geom_line() +
+    geom_hline(yintercept = gas_sum_bg2$meanval[which(gas_sum_bg2$pol == "ch4")], color = "blue") +
+    #scale_y_log10() +
+    facet_wrap(~ date, scales = "free_x") +
+    theme_bw() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+
+# Data Quality Conclusions (KF on 6/16/17)
+For CO and CO2, all tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges.The CH4 looks a little odd and doesn't necessarily follow this pattern, however, when grouped by material type we see the same patterns across the same materials so it's likely that the pattern and emission levels are at a scale that is just hard to follow on these plots. Tests 31-35 are "flat", which is as expected as these are background tests where no burning occured.
+
+Test 12 (R1) appears to not have multiple replicates (all one color), but should be 4. (Note that PAX has same problem with test #12 - is timestamp off? The plot captures roughly 13:30-16:00 and plots it all as rep a, but the metadata shows the test times are 15:32-15:54.)  
