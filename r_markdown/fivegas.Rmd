@@ -292,5 +292,4 @@ The CH4 looks odd for all tests.
 
 # Data Quality Conclusions (KF on 6/16/17)
 For CO and CO2, all tests follow expected "replicate" pattern of increasing and then falling levels as bunches of material are burned. Levels appear within expected ranges.The CH4 looks a little odd and doesn't necessarily follow this pattern, however, when grouped by material type we see the same patterns across the same materials so it's likely that the pattern and emission levels are at a scale that is just hard to follow on these plots. Tests 31-35 are "flat", which is as expected as these are background tests where no burning occured.
-
-Test 12 (R1) appears to not have multiple replicates (all one color), but should be 4. (Note that PAX has same problem with test #12 - is timestamp off? The plot captures roughly 13:30-16:00 and plots it all as rep a, but the metadata shows the test times are 15:32-15:54.)  
+ 
