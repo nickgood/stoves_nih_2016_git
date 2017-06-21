@@ -30,6 +30,7 @@ output:
   mass_fuel <- readRDS("../r_files/mass_fuel.RDS")
   test_info <- readRDS("../r_files/test_info.RDS")
   times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
 # Merge fuel weights with times
@@ -49,8 +50,8 @@ fuel_burnt_reps <- times_fuel %>%
   fuel_burnt_test <- dplyr::group_by(fuel_burnt_reps, id) %>% summarise(
                             fuelmass_total = sum(dm, na.rm = TRUE)) %>%
                      dplyr::mutate(units = "g") %>%
-                     dplyr::left_join(test_info, fuel_burnt_test, by="id") %>%
-                     dplyr::left_join(times_test, fuel_burnt_test, by=c("id", "id_test", "date"))
+                     dplyr::right_join(test_info, by="id") %>%
+                     dplyr::right_join(times_test, by=c("id", "id_test", "date"))
 ```
 
 # Plot
