@@ -18,26 +18,32 @@ output:
 
 # Load
 
-* pollutant data
+* pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc_merged.Rda")
-  load("../r_files/fivegas_merged.Rda")
-  load("../r_files/background_co.Rda")
-    bg_co <- background$bg
-    bg_co_mean <- background$mean
-  load("../r_files/background_co2.Rda")
-    bg_co2 <- background$bg
-    bg_co2_mean <- background$mean
-  load("../r_files/background_ch4.Rda")
-    bg_ch4 <- background$bg
-    bg_ch4_mean <- background$mean
-  load("../r_files/grav_merged.Rda")
-  load("../r_files/smps_ultrafine.Rda")
-  load("../r_files/smps_ultrafine_bg.Rda")
-  load("../r_files/ions_merged.Rda")
-  load("../r_files/carbonyls_merged.Rda")
-  load("../r_files/voc_merged.Rda")
+voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data (emailed Arsineh on 6/21)
+carbonyl <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
+grav <- readRDS("../r_files/grav_merged.RDS")
+grav_test <- readRDS("../r_files/grav.RDS")
+```
+
+* pollutant data - realtime
+
+```{r}
+fivegas_full <- readRDS("../r_files/fivegas_full.RDS")
+fivegas_bg <- readRDS("../r_files/fivegas_background.RDS")
+fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
+
+pax_full <- readRDS("../r_files/pax_merged_full.RDS")
+pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
+pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
+```
+
+
+
+
+
+
 ```
 
 * constants
