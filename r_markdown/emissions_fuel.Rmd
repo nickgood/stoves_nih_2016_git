@@ -18,14 +18,6 @@ output:
 
 # Load
 
-* constants
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/calc_constants.Rda")
-```
-
-* metadata
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mass_fuel <- readRDS("../r_files/mass_fuel.RDS")
   test_info <- readRDS("../r_files/test_info.RDS")
