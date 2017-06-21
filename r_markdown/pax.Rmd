@@ -98,7 +98,8 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(pax_full, file="../r_files/pax_merged_full.RDS")
-  saveRDS(pax_rep, file="../r_files/pax_merged_byrep.RDS")
+  saveRDS(pax_rep, file="../r_files/pax_merged_rep.RDS")
+  saveRDS(pax_bg, file="../r_files/pax_merged_bg.RDS")
 ```
 
 
