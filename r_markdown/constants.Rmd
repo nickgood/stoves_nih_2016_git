@@ -41,7 +41,7 @@ output:
   kero <- 82.0
   
   startvec <- c(tshirt, news, wood, rub, flip, bags, pack, leaves, kero)
-  startvec <- vec / 100 
+  startvec <- startvec / 100 
 
   #main fuel carbon contents
   oak <- (mean(c(46.97, 47.62, 46.76) / 100))
