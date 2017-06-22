@@ -24,7 +24,7 @@ output:
 voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data (emailed Arsineh on 6/21)
 carbonyl <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
 grav <- readRDS("../r_files/grav_merged.RDS")
-#ec/oc, PAHs - no data yet. 
+#ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
 
 * pollutant data - realtime
