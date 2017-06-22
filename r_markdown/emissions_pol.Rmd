@@ -16,7 +16,7 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-# Load
+# Load all data
 
 * pollutant data - integrated
 
@@ -24,7 +24,7 @@ output:
 voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data (emailed Arsineh on 6/21)
 carbonyl <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
 grav <- readRDS("../r_files/grav_merged.RDS")
-grav_test <- readRDS("../r_files/grav.RDS")
+#ec/oc, PAHs - no data yet. 
 ```
 
 * pollutant data - realtime
@@ -39,11 +39,10 @@ pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
 pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
 ```
 
-
-
-
-
-
+* fuel data
+```{r}
+fuel_burnt_reps <- readRDS("../r_files/fuel_burnt_reps.RDS")
+fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 ```
 
 * constants
@@ -58,22 +57,12 @@ pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
+  test_info <- readRDS("../r_files/test_info.RDS")
 ```
 
-# timestamps
+# calculate emissions factors
 
-* integrated sample start & end times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
-```
-
-# carbonyls
+## carbonyls
 
 * select data
 
