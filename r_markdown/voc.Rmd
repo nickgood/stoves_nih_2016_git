@@ -41,8 +41,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::rename(data, notes = voc_note) %>%
-         tidyr::gather("pol", "ppb", starts_with("voc_")) %>%
-         dplyr::filter(!is.na(id) & id != "NA")
+         tidyr::gather("pol", "ppb", starts_with("voc_"))
 ```
 
 * merge with test data
@@ -90,16 +89,16 @@ output:
 
 # Background
 
-* extract good background data
+* extract qc=good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(voc, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(voc, type == "BG", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
-        na.omit() %>%
-        dplyr::select(-id_can, -id_voc)
+     #   na.omit() %>%
+        dplyr::select(-id_can)
 ```
 
-* plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
+* plot vocs with a background test higher than 10 ppb (note box plots contain all data points; outliers >10 ppb are labeled)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   p_data <-  dplyr::group_by(bg, pol) %>%
@@ -170,7 +169,7 @@ VOCs data is expected to be missing for: ?
 
 ## plot by fuel type
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=25}
   ggplot(voc, aes(id, ppb, colour = fuel_type)) +
     geom_point(size = 5) +
     facet_wrap(~pol, ncol = 1, scales = "free") +
