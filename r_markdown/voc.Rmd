@@ -40,16 +40,16 @@ output:
 * make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(data, "pol", "ppb", starts_with("voc_")) %>%
-                dplyr::filter(!is.na(id) & id != "NA")
+  voc <- dplyr::rename(data, notes = voc_note) %>%
+         tidyr::gather("pol", "ppb", starts_with("voc_")) %>%
+         dplyr::filter(!is.na(id) & id != "NA")
 ```
 
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::rename(voc, id_test = id) %>%
-          dplyr::mutate(id_test = sub("\\.", "", id_test)) %>%
-          dplyr::left_join(test_info, voc, by = "id_test")
+  voc <- dplyr::mutate(voc, id_test = sub("\\.", "", id_test)) %>%
+         dplyr::left_join(test_info, by = c("id_test"))
                                  
 ```
 
