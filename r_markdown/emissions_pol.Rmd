@@ -22,7 +22,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data (emailed Arsineh on 6/21)
-carbonyl <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
+carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
 grav <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
@@ -67,12 +67,14 @@ fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  names(carbonyls_merged)[names(carbonyls_merged) =='var'] <- 'pol'
+  
   carbonyls <- dplyr::select(carbonyls_merged,
                              id, qc,
-                             flow,
+                             flow_mean,
                              start, end,
-                             pol, mass_ug,
-                             conc_bg) %>%
+                             pol, val,
+                             bg_mean) %>%
                dplyr::left_join(dplyr::select(pol_properties, 
                                               pol, 
                                               mw, 
