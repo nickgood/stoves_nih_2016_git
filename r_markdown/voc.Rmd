@@ -130,7 +130,7 @@ output:
                          sd = sd(ppb),
                          min = min(ppb),
                          max = max(ppb),
-                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),,
+                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
                          n = n())
 ```
 
