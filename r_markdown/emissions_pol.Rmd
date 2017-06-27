@@ -21,8 +21,8 @@ output:
 * pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data (emailed Arsineh on 6/21)
-carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") #currently in wide format
+#voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data/not merging IDs correctly
+carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") 
 grav <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
@@ -62,7 +62,7 @@ fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 
 # calculate emissions factors
 
-## carbonyls
+## carbonyls -DONE as of 6/27/17
 
 * select data
 
@@ -86,14 +86,15 @@ fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-                             conc = (mass_ug * 1000 / (flow * dur)))
+                             conc = (val * 1000 / (flow_mean * dur))) #"val" originally in ug; now conc in ug/m3
+# confirmed this is same as "conc" variable that was in original carbonyls_merged file (cut out in last chunk)
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
-                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_emitted = (conc - bg_mean) * hood_flow * dur,
                              mass_carbon = mass_emitted * (num_c * mw_c / mw),
                              inst = "carbs")
 ```
