@@ -47,9 +47,7 @@ output:
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::mutate(voc, id_test = sub("\\.", "", id_test)) %>%
-         dplyr::left_join(test_info, by = c("id_test"))
-                                 
+  voc <- dplyr::left_join(voc, test_info, by = c("id_test"))
 ```
 
 # LOD
@@ -132,6 +130,8 @@ output:
                          sd = sd(ppb),
                          min = min(ppb),
                          max = max(ppb),
+                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
+                         mean_bg4rm = mean(ppb[id_test != "BG4"]),
                          n = n())
 ```
 
@@ -141,10 +141,12 @@ output:
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
+BG4 test has very high benzene and toluene values. Should probably remove this background test from the VOC data. 
+
 ## merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, mean) %>%
+  bg <- dplyr::select(bg, pol, mean, mean_bg4rm) %>%
         dplyr::rename(ppb_bg = mean)
 
   voc <- dplyr::left_join(voc, bg, by = "pol") %>%
@@ -163,7 +165,9 @@ output:
 
 VOCs were measured for `r length(unique(voc$id))` experiments between `r min(voc$date, na.rm = TRUE)` and `r max(voc$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(test_info$id), as.character(voc$id))`.
 
-VOCs data is expected to be missing for: ?
+VOCs data is expected to be missing for:36-43 (blanks); 44 (no canister included for this test).
+
+All data for VOCs is therefore as expected as of 6/26/2017. 
 
 # Plots
 
