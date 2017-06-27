@@ -23,7 +23,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 #voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data/not merging IDs correctly
 carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") 
-grav <- readRDS("../r_files/grav_merged.RDS")
+grav_merged <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
 
@@ -62,7 +62,7 @@ fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 
 # calculate emissions factors
 
-## carbonyls -DONE as of 6/27/17
+## carbonyls -FIRST ATTEMPT DONE as of 6/27/17
 
 * select data
 
@@ -252,7 +252,7 @@ ___
 
 ___
 
-# grav
+# grav -FIRST ATTEMPT DONE as of 6/27/17
 
 * select data
 
@@ -260,9 +260,9 @@ ___
   grav <- dplyr::select(grav_merged,
                         id, pol,
                         start, end,
-                        flow,
-                        wgt_delta,
-                        conc_bg, qc) %>%
+                        flow_mean,
+                        delta,
+                        bg_conc, qc, conc) %>%
           dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
@@ -270,15 +270,18 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, dur = (end - start) / 60,
-                              conc = wgt_delta * 1000 / (flow * dur), 
-                              qc = as.factor(qc))
+                              conc_noadj = delta * 1000 / (flow_mean * dur), 
+                              qc = as.factor(qc),
+                              conc = conc)
 ```
+NOTE: conc_noadj is different than the conc calculated within the grav.Rmd (conc), because in grav.Rmd we adjusted for the calibration weight and the blanks.
 
-* calculate mass emitted
+
+* calculate mass emitted (using 'conc', the calibration and blank corrected concentration)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_emitted = (conc - bg_conc) * hood_flow * dur,
                         mass_carbon = mass_emitted * 0,
                         inst = "grav")
 ```
@@ -288,6 +291,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(grav, 2)
 ```
+NOTE: why are there negative numbers? 
 
 # ions
 
