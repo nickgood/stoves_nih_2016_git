@@ -30,9 +30,9 @@ grav_merged <- readRDS("../r_files/grav_merged.RDS")
 * pollutant data - realtime
 
 ```{r}
-fivegas_full <- readRDS("../r_files/fivegas_full.RDS")
-fivegas_bg <- readRDS("../r_files/fivegas_background.RDS")
-fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
+fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
+fivegas_bg <- readRDS("../r_files/fivegas_background.RDS") #may not need since bg data is in full 
+#fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
 
 pax_full <- readRDS("../r_files/pax_merged_full.RDS")
 pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
@@ -163,12 +163,6 @@ Concentration is corrected for background by removing background test average co
 ___
 
 # fivegas
-
-* select co, co2 and ch4.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4")
-```
 
 * filter out data from outside emissions window
 
