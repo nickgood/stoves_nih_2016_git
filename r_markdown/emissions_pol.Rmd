@@ -293,86 +293,6 @@ NOTE: conc_noadj is different than the conc calculated within the grav.Rmd (conc
 ```
 NOTE: why are there negative numbers? 
 
-# ions
-
-* select data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::select(ions_merged,
-                        id, qc,
-                        flow,
-                        start, end,
-                        pol, mass_ug,
-                        conc_bg) %>%
-	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
-```
-
-* calculate concentrations
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
-                              conc = (mass_ug * 1000 / (flow * dur)))
-```
-
-* calculate mass emitted
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::mutate(ions, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                        mass_carbon = mass_emitted * 0,
-                        inst = "ions")
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(ions, 2)
-```
-
-___
-
-# smps
-
-* calculate test average number concentration
-* calculate test duration
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
-               dplyr::group_by(id) %>%
-               dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
-                                n = n(),
-               	                qc = first(qc)) %>%
-               dplyr::ungroup(id) %>%
-               dplyr::left_join(times, by = "id") %>%
-               dplyr::mutate(dur = end - start)
-```
-
-* calculate average background (use other method?)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(smps_ultrafine_bg, qc == "ok", n_bad == 0) %>%
-        dplyr::group_by(id) %>%
-        dplyr::summarise(conc_bg = mean(number_conc)) %>%
-        dplyr::ungroup()
-
-  conc_bg <- mean(bg$conc_bg)
-```
-
-* calculate number of particles emitted during tests (check this is all???)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
-  ultrafine <- dplyr::mutate(ultrafine,
-                             num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
-                             inst = "smps")
-```
-
-* output
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(ultrafine, 2)
-```
-
 ___
 
 # pah
@@ -438,17 +358,12 @@ ___
                                                          mass_emitted,
                                                          mass_carbon,
                                                          inst, qc)) %>%
-               dplyr::bind_rows(dplyr::select(ecoc, id, pol,
-                                                    conc, conc_bg,
-                                                    mass_emitted,
-                                                    mass_carbon,
-                                                    inst, qc)) %>%
+               #dplyr::bind_rows(dplyr::select(ecoc, id, pol,
+               #                                     conc, conc_bg,
+               #                                     mass_emitted,
+               #                                     mass_carbon,
+               #                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol,
-                                                    conc, conc_bg,
-                                                    mass_emitted,
-                                                    mass_carbon,
-                                                    inst, qc)) %>%
-               dplyr::bind_rows(dplyr::select(ions, id, pol,
                                                     conc, conc_bg,
                                                     mass_emitted,
                                                     mass_carbon,
