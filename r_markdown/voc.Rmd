@@ -141,7 +141,7 @@ output:
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-BG4 test has very high benzene and toluene values. Should probably remove this background test from the VOC data. 
+Backgrounds all look as expected (also indicative that match of IDs is correct). 
 
 ## merge background
 
@@ -165,7 +165,7 @@ BG4 test has very high benzene and toluene values. Should probably remove this b
 
 VOCs were measured for `r length(unique(voc$id))` experiments between `r min(voc$date, na.rm = TRUE)` and `r max(voc$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(test_info$id), as.character(voc$id))`.
 
-VOCs data is expected to be missing for:36-43 (blanks); 44 (no canister included for this test).
+VOCs data is expected to be missing for: 36-43 (blanks); 44 (no canister included for this test).
 
 All data for VOCs is therefore as expected as of 6/26/2017. 
 
