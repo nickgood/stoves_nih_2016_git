@@ -130,8 +130,7 @@ output:
                          sd = sd(ppb),
                          min = min(ppb),
                          max = max(ppb),
-                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
-                         mean_bg4rm = mean(ppb[id_test != "BG4"]),
+                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),,
                          n = n())
 ```
 
@@ -146,7 +145,7 @@ Backgrounds all look as expected (also indicative that match of IDs is correct).
 ## merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, mean, mean_bg4rm) %>%
+  bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
   voc <- dplyr::left_join(voc, bg, by = "pol") %>%
