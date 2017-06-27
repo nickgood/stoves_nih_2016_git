@@ -252,7 +252,7 @@ ___
 
 ___
 
-# grav -FIRST ATTEMPT DONE as of 6/27/17
+# grav - FIRST ATTEMPT DONE as of 6/27/17; note question on calibration adjustments and negative emissions
 
 * select data
 
