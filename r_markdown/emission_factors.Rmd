@@ -17,8 +17,9 @@ output:
 * pollutant data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/fuel_burnt.Rda")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  fuel_burnt_reps <- readRDS("../r_files/fuel_burnt_reps.RDS")
+  fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
   # load("../r_files/energy.Rda") # not yet created
 ```

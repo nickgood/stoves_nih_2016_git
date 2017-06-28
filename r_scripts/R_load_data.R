@@ -331,13 +331,37 @@ load_voc_file <- function(file, sheet = "Sheet1"){
         dplyr::mutate(id_can = substr(id_can, 1, 4),
                        units = "ppbv",
                        date = as.Date(date, "%Y%m%d")) %>%
-        dplyr::select(-a, -b, -c, -d, -e)
+        dplyr::select(-a, -b, -c, -d, -e) %>%
+        dplyr::arrange(date)
+
 
  # load voc log
   log <- load_voc_log()
   
+ # fix one missing value
+  log <- mutate(log, id_can_green = ifelse(is.na(id_can_green), id_can_white,
+                                                                id_can_green))
+
+ # merge id
+  for(i in 1:nrow(log)){
+    id <- log$id_can_green[i] # get id
+    tmp <- log[i,]
+    tmp2 <- filter(df, id_can == id)[1,]
+    tmp <- bind_cols(tmp, tmp2)
+    
+    if(i == 1){
+      out <- tmp
+    }else{
+      out <- bind_rows(out, tmp)
+    }
+    df <- anti_join(df, tmp2, by = c("date", "id_can")) %>%
+          dplyr::arrange(date)
+  }
+  
+  out <- dplyr::rename(out, date_analysis = date)
+  
   # return 
-    return(df)
+    return(out)
 }
 #________________________________________________________
 

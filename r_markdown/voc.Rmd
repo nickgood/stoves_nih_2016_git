@@ -40,17 +40,14 @@ output:
 * make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- tidyr::gather(data, "pol", "ppb", starts_with("voc_")) %>%
-                dplyr::filter(!is.na(id) & id != "NA")
+  voc <- dplyr::rename(data, notes = voc_note) %>%
+         tidyr::gather("pol", "ppb", starts_with("voc_"))
 ```
 
 * merge with test data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::rename(voc, id_test = id) %>%
-          dplyr::mutate(id_test = sub("\\.", "", id_test)) %>%
-          dplyr::left_join(test_info, voc, by = "id_test")
-                                 
+  voc <- dplyr::left_join(voc, test_info, by = c("id_test"))
 ```
 
 # LOD
@@ -90,16 +87,16 @@ output:
 
 # Background
 
-* extract good background data
+* extract qc=good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(voc, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(voc, type == "BG", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
-        na.omit() %>%
-        dplyr::select(-id_can, -id_voc)
+     #   na.omit() %>%
+        dplyr::select(-id_can)
 ```
 
-* plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
+* plot vocs with a background test higher than 10 ppb (note box plots contain all data points; outliers >10 ppb are labeled)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   p_data <-  dplyr::group_by(bg, pol) %>%
@@ -133,6 +130,7 @@ output:
                          sd = sd(ppb),
                          min = min(ppb),
                          max = max(ppb),
+                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
                          n = n())
 ```
 
@@ -141,6 +139,8 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
+
+Backgrounds all look as expected (also indicative that match of IDs is correct). 
 
 ## merge background
 
@@ -164,13 +164,15 @@ output:
 
 VOCs were measured for `r length(unique(voc$id))` experiments between `r min(voc$date, na.rm = TRUE)` and `r max(voc$date, na.rm = TRUE)`. There is no VOC data for tests: `r setdiff(as.character(test_info$id), as.character(voc$id))`.
 
-VOCs data is expected to be missing for: ?
+VOCs data is expected to be missing for: 36-43 (blanks); 44 (no canister included for this test).
+
+All data for VOCs is therefore as expected as of 6/26/2017. 
 
 # Plots
 
 ## plot by fuel type
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=25}
   ggplot(voc, aes(id, ppb, colour = fuel_type)) +
     geom_point(size = 5) +
     facet_wrap(~pol, ncol = 1, scales = "free") +

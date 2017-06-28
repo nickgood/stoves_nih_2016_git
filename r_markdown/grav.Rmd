@@ -133,7 +133,7 @@ Is B[0-9] are blank filters.BG[0-9] are background tests.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("grav|all", instrument))
 
-  grav <- dplyr::left_join(grav, notes, by = "id")
+  grav <- dplyr::left_join(grav, notes, by = c("id", "id_test", "date"))
 ```
 
 # Blanks (LOD/LOQ)
