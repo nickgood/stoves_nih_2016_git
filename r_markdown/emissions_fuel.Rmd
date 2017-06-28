@@ -18,95 +18,73 @@ output:
 
 # Load
 
-* constants
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/calc_constants.Rda")
+  mass_fuel <- readRDS("../r_files/mass_fuel.RDS")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
 ```
 
-* metadata
+# Merge fuel weights with times
+
+* fuel consumed per rep with rep times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/wood_wgts.Rda")
+
+fuel_burnt_reps <- times_fuel %>% 
+                   left_join(test_info, by = c("id", "id_test", "date")) %>%
+                   left_join(mass_fuel, by = c("id", "id_test", "date", "rep", "type"))
 ```
 
-# Timestamps
+* fuel consumed total in a test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
-```
-
-# Fuel
-
-## batch stoves
-
-* fuel consumed
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  batch_mass <- dplyr::filter(batch_wgts, var == "fuel" |
-                                          var == "refueled" |
-                                          var == "preshutdown") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::rename(wgt_fuel = fuel,
-                              wgt_refuel = refueled,
-                              wgt_shutdown = preshutdown) %>%
-                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
-```
-
-## wood stoves
-
-* fuel consumed
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  wood_mass <- dplyr::filter(wood_wgts, var == "fuel" |
-                                        var == "ashpot_unusedfuel" |
-                                        var == "ashpot_char_ash" |
-                                        var == "ashpot_lid") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::rename(wgt_fuel = fuel,
-                              wgt_pot_unusedfuel = ashpot_unusedfuel,
-                              wgt_pot_char_ash = ashpot_char_ash,
-                              wgt_pot = ashpot_lid) %>%
-                dplyr::mutate(mass_fuel = wgt_fuel -
-                                          wgt_pot_unusedfuel -
-                                          wgt_pot_char_ash +
-                                          2 * wgt_pot)
-```
-
-## merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_mass, id, mass_fuel),
-                                 dplyr::select(wood_mass, id, mass_fuel)) %>%
-                dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::filter(grepl("^[0-9]", id) == TRUE)
+  fuel_burnt_test <- dplyr::group_by(fuel_burnt_reps, id) %>% summarise(
+                            fuelmass_total = sum(dm, na.rm = TRUE)) %>%
+                     dplyr::mutate(units = "g") %>%
+                     dplyr::right_join(test_info, by="id") %>%
+                     dplyr::right_join(times_test, by=c("id", "id_test", "date"))
 ```
 
 # Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  p_data <- dplyr::left_join(samples, fuel_burnt) %>%
-            dplyr::mutate(id = as.factor(id)) %>%
-            dplyr::filter(grepl("^[0-9]", id) == TRUE)
-
-  ggplot(p_data, aes(x = id, y = mass_fuel, colour = stove)) +
+  ggplot(filter(fuel_burnt_reps, fuel_type != "blank"), aes(x = rep, y = dm, colour = fuel_type)) +
         geom_point() +
         theme_minimal() + 
-        theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        facet_wrap(~ id_test) +
+        #theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
         theme(legend.position = "top") +
-        ylab("fuel burnt (g)")
+        ylab("fuel burnt per replicate (g)") +
+        xlab("replicate")
 ```
+
+Notes: 
+- consistency in the amount of fuel burnt per replicate and number of replicates across tests of same fuel type. 
+- L1 test is a bad test; needs to be censored from data set completely. 
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(filter(fuel_burnt_test, fuel_type != "blank"), 
+         aes(x = id_test, y = fuelmass_total, colour = as.character(fuel_quant))) +
+        geom_point() +
+        theme_minimal() + 
+        facet_wrap(~ fuel_type, scales = "free") +
+        #theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        theme(legend.position = "top") +
+        ylab("fuel burnt total (g)") +
+        xlab("id")
+```
+Notes:
+- Major differences in total mass of fuel burnt within the same material type generally correspond with a different number of replicates.
+- test N1 was considered potentially problematic due to a line clog issue. Also looks like the mass fuel burnt is very different? 
+- test W1 used a different type of wood than other W tests and should be censored. 
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
+  saveRDS(fuel_burnt_reps, file = "../r_files/fuel_burnt_reps.RDS")
+  saveRDS(fuel_burnt_test, file = "../r_files/fuel_burnt_test.RDS")
 ```
 
 ___

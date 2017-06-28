@@ -164,6 +164,6 @@ All PAX files are present as expected as of 5/24/17.
         labs(x = "", y = expression(Mm^{-1}))
 ```
 
-# Data Quality SUmmary
+# Data Quality Summary
 
-Test 12 (R1) appears to not have multiple replicates (all one color), but should be 4. (Note that fivegas has same problem with test #12 - is timestamp off? The plot captures roughly 13:30-16:00 and plots it all as rep a, but the metadata shows the test times are 15:32-15:54.)  
+No concerns!   

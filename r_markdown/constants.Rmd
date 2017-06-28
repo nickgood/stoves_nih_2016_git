@@ -29,6 +29,24 @@ output:
 # Fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+#startup fuel carbon contents  
+  tshirt <- mean(c(39.47, 40.82, 40.71))
+  news <- mean(c(42.66, 40.48, 44.18))
+  wood <- mean(c(50.02, 49.8, 49.59))
+  rub <- NA
+  flip <- NA
+  bags <- NA
+  pack <- NA
+  leaves <- mean(c(39.9, 39.48, 39.43))
+  kero <- 82.0
+  
+  startvec <- c(tshirt, news, wood, rub, flip, bags, pack, leaves, kero)
+  startvec <- startvec / 100 
+
+  #main fuel carbon contents
+  oak <- (mean(c(46.97, 47.62, 46.76) / 100))
+  westslope <- (mean(c(49.86, 49.34, 49.28) / 100))
+  
   fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
                                                  "Eucalyptus",
                                                  "Oak",
@@ -38,14 +56,19 @@ output:
                                                  "Eucalyptus Pellets",
                                                  "West Slope Pellets",
                                                  "Kerosene",
-                                                 "Liquefied Petroleum Gas"),
+                                                 "Liquefied Petroleum Gas",
+                                                 "t_shirts", "newspaper",
+                                                 "wood_shims", "rubber", "flipflops", 
+                                                 "plastic_bags", "food_packaging", 
+                                                 "leaves_twigs", "kerosene"),
                                          lhv = c(18658, 19427, 18658, 16628,
                                                  28611, 28611, 17501, 17501,
-                                                 43100, 46100),  # kJ/kg
+                                                 43100, 46100, NA, NA, NA, NA, 
+                                                 NA, NA, NA, NA, 43100),  # kJ/kg; NA for startups
                                          carbon_fraction = c(0.497733333, 0.521166667,
-                                                             0.5, 0.488, 0.840833333,
+                                                             oak, 0.488, 0.840833333,
                                                              0.840833333, 0.4852,
-                                                             0.4852, 0.82, 0.82))  # kg_C/kg_fuel
+                                                             westslope, 0.82, 0.82, startvec))  # kg_C/kg_fuel
 
   save(fuel_properties, file = "../r_files/fuel_properties.Rda")
 ```
