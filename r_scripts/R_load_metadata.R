@@ -140,8 +140,8 @@ load_metadata <- function(file, sheet = "metadata"){
                 tidyr::separate(var, c("type", "when", "rep")) %>%
                 dplyr::group_by(id, id_test, date, type, rep) %>%
                 tidyr::spread(when, time) %>%
-                dplyr::rename(on = added, off = remove)
-                dplyr::mutate(dur = (off - on) / (60 * 60)
+                dplyr::rename(on = added, off = remove) %>%
+                dplyr::mutate(dur = (off - on) / (60 * 60))
 
  # fuel mass
   mass_fuel <- dplyr::select(out, id, id_test, date,
