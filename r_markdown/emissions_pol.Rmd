@@ -21,7 +21,7 @@ output:
 * pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-#voc <- readRDS("../r_files/voc_merged.RDS") #currently not complete data/not merging IDs correctly
+voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one! (emailed Arsineh on 6/27/17)
 carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") 
 grav_merged <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
@@ -113,7 +113,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
   head(carbonyls, 2)
 ```
 
-# ecoc
+# ecoc - NO DATA YET (6/28/17)
 
 * select data
 
@@ -170,7 +170,7 @@ Concentration is corrected for background by removing background test average co
 
 ___
 
-# fivegas
+# fivegas - DATA GOOD BUT HAVE NOT ATTEMPTED TO RUN CODE YET
 
 * select co, co2 and ch4.
 
@@ -260,7 +260,7 @@ ___
 
 ___
 
-# grav - FIRST ATTEMPT DONE as of 6/27/17; note question on calibration adjustments and negative emissions
+# grav - FIRST ATTEMPT DONE as of 6/27/17; note question on negative emissions
 
 * select data
 
@@ -299,7 +299,7 @@ NOTE: why are there negative numbers?
 
 ___
 
-# pah
+# pah - NO DATA YET
 
 * waiting on data
 
