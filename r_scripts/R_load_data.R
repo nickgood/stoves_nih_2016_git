@@ -354,7 +354,8 @@ load_voc_file <- function(file, sheet = "Sheet1"){
     }else{
       out <- bind_rows(out, tmp)
     }
-    df <- anti_join(df, tmp2, by = c("date", "id_can"))
+    df <- anti_join(df, tmp2, by = c("date", "id_can")) %>%
+          dplyr::arrange(date)
   }
   
   out <- dplyr::rename(out, date_analysis = date)
