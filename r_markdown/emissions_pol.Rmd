@@ -318,7 +318,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   voc <- dplyr::select(voc_merged,
                        id,
-                       start, end,
+                       time_start, time_end,
                        pol, ppb,
                        ppb_bg, qc) %>%
          dplyr::left_join(dplyr::select(pol_properties,
@@ -331,7 +331,7 @@ ___
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+  voc <- dplyr::mutate(voc, dur = (time_end - time_start) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
                             conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
