@@ -309,6 +309,8 @@ ___
 
 * waiting on data
 
+___
+
 # voc
 
 * select data
@@ -382,7 +384,17 @@ ___
                                                    conc, conc_bg,
                                                    mass_emitted,
                                                    mass_carbon,
-                                                   inst, qc))
+                                                   inst, qc)) #%>%
+               #dplyr::bind_rows(dplyr::select(pax, id, pol,
+               #                                     conc, conc_bg,
+               #                                     mass_emitted,
+               #                                     mass_carbon,
+               #                                     inst, qc)) %>%
+               #dplyr::bind_rows(dplyr::select(pah, id, pol,
+               #                                     conc, conc_bg,
+               #                                     mass_emitted,
+               #                                     mass_carbon,
+               #                                     inst, qc)) %>%
 ```
 
 * convert to longer format
