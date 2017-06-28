@@ -32,7 +32,7 @@ grav_merged <- readRDS("../r_files/grav_merged.RDS")
 ```{r}
 fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
 fivegas_bg <- readRDS("../r_files/fivegas_background.RDS") #may not need since bg data is in full
-#fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
+fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
 
 pax_full <- readRDS("../r_files/pax_merged_full.RDS")
 pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
@@ -44,6 +44,14 @@ pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
 fuel_burnt_reps <- readRDS("../r_files/fuel_burnt_reps.RDS")
 fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 ```
+
+* test times
+```{r}
+times_test <- readRDS("../r_files/times_test.RDS")
+times_fuel <- readRDS("../r_files/times_fuel.RDS")
+times_bg <- readRDS("../r_files/times_bg.RDS")
+```
+
 
 * constants
 
