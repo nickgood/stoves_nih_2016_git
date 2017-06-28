@@ -360,28 +360,29 @@ ___
 * mass based
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::select(co_co2_ch4, id, pol, 
-                                         conc, conc_bg,
-                                         mass_emitted,
-                                         mass_carbon,
-                                         inst, qc) %>%
-               dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
-                                                         conc, conc_bg,
+  emissions <- dplyr::select(#co_co2_ch4, id, pol, 
+                                         #conc, conc_bg,
+                                         #mass_emitted,
+                                         #mass_carbon,
+                                         #inst, qc) %>%
+               #dplyr::bind_rows(dplyr::select(
+                 carbonyls, id, pol,
+                                                         conc, #conc_bg,
                                                          mass_emitted,
                                                          mass_carbon,
-                                                         inst, qc)) %>%
+                                                         inst, qc) %>%
                #dplyr::bind_rows(dplyr::select(ecoc, id, pol,
                #                                     conc, conc_bg,
                #                                     mass_emitted,
                #                                     mass_carbon,
                #                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol,
-                                                    conc, conc_bg,
+                                                    conc, #conc_bg,
                                                     mass_emitted,
                                                     mass_carbon,
                                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol,
-                                                   conc, conc_bg,
+                                                   conc, #conc_bg,
                                                    mass_emitted,
                                                    mass_carbon,
                                                    inst, qc)) #%>%
@@ -403,18 +404,7 @@ ___
   emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
 ```
 
-* number based
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
-            dplyr::mutate(pol = "number") %>%
-            tidyr::gather("metric", "value", 2:3)
-```
-
-* combine mass and number instruments
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions_long  <- dplyr::bind_rows(emissions_long, number)
 ```
 
 ## save
