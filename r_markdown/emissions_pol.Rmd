@@ -21,7 +21,7 @@ output:
 * pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one! (emailed Arsineh on 6/27/17)
+voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one (shows as 0)! (emailed Arsineh on 6/27/17)
 carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") 
 grav_merged <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
@@ -103,7 +103,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - bg_mean) * hood_flow * dur,
-                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw), #this is mass of carbon emitted for a carbon balance QC; not for calculating emissions factors. 
                              inst = "carbs")
 ```
 
@@ -181,7 +181,7 @@ ___
 * filter out data from outside emissions window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- filter_times(times, co_co2_ch4)
+  co_co2_ch4 <- filter_times(times_test, co_co2_ch4)
 ```
 
 * calculate average for each test
@@ -292,7 +292,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
                         mass_emitted = (conc - bg_conc) * hood_flow * dur,
-                        mass_carbon = mass_emitted * 0, #0 seems wrong... 
+                        mass_carbon = mass_emitted * 0, #0 because EC/OC accounts for the carbon in the PM.  
                         inst = "grav")
 ```
 
