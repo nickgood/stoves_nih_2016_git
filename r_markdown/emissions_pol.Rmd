@@ -288,7 +288,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   head(grav, 2)
 ```
-NOTE: why are there negative numbers? 
+NOTE: why are there negative numbers? (on bg tests only?)
 
 ___
 
@@ -347,14 +347,14 @@ ___
 * mass based
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::select(#co_co2_ch4, id, pol, 
-                                         #conc, conc_bg,
-                                         #mass_emitted,
-                                         #mass_carbon,
-                                         #inst, qc) %>%
-               #dplyr::bind_rows(dplyr::select(
+  emissions <- dplyr::select(co_co2_ch4, id, pol, 
+                                         conc, #conc_bg, change name from bg_ppm to conc_bg (no conversions necessary)
+                                         mass_emitted,
+                                         mass_carbon,
+                                         inst, qc) %>%
+               dplyr::bind_rows(dplyr::select(
                  carbonyls, id, pol,
-                                                         conc, #conc_bg,
+                                                         conc, #conc_bg, change from bg_mean to conc_bg - need to convert? 
                                                          mass_emitted,
                                                          mass_carbon,
                                                          inst, qc) %>%
@@ -364,15 +364,15 @@ ___
                #                                     mass_carbon,
                #                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(grav, id, pol,
-                                                    conc, #conc_bg,
+                                                    conc, #conc_bg, need to change name from bg_conc to conc_bg
                                                     mass_emitted,
                                                     mass_carbon,
                                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol,
-                                                   conc, #conc_bg,
+                                                   conc, #conc_bg, conc_bg vs ppb_bg: what's difference? ppm vs conc for main value too? 
                                                    mass_emitted,
                                                    mass_carbon,
-                                                   inst, qc)) #%>%
+                                                   inst, qc))) #%>%
                #dplyr::bind_rows(dplyr::select(pax, id, pol,
                #                                     conc, conc_bg,
                #                                     mass_emitted,
@@ -392,13 +392,12 @@ ___
 ```
 
 
-```
-
 ## save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
 ```
+
 
 ## negative emissions
 
