@@ -32,7 +32,11 @@ grav_merged <- readRDS("../r_files/grav_merged.RDS")
 ```{r}
 fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
 fivegas_bg <- readRDS("../r_files/fivegas_background.RDS") #may not need since bg data is in full
-fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS")
+    bg_co <- dplyr::filter(fivegas_bg, pol == "co")
+    bg_co2 <- dplyr::filter(fivegas_bg, pol == "co2")
+    bg_ch4 <- dplyr::filter(fivegas_bg, pol == "ch4")
+
+fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") #may not need...
 
 pax_full <- readRDS("../r_files/pax_merged_full.RDS")
 pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
@@ -207,31 +211,14 @@ ___
 * merge with sample time data and calculate test duration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, times, by = "id") %>%
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, times_test, by = "id") %>%
                 dplyr::mutate(dur = end - start) %>%
                 dplyr::mutate(id = as.factor(id))
 ```
 
-* background analysis
-* replace NaN with between test mean value
-* combine pollutants
+* combine background for all pollutants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg_co <- dplyr::left_join(dplyr::select(samples, id), bg_co) %>%
-           dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
-                         conc_bg = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
-                         pol = "co")
-
-  bg_co2 <- dplyr::left_join(dplyr::select(samples, id), bg_co2) %>%
-            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
-                          conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
-                          pol = "co2")
-
-  bg_ch4 <- dplyr::left_join(dplyr::select(samples, id), bg_ch4) %>%
-            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
-                          conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
-                          pol = "ch4")
-
   bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
 ```
 
@@ -239,14 +226,14 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(bg, id, pol, conc_bg), by = c("id", "pol"))
+                dplyr::select(bg, id, pol, bg_ppm), by = c("id", "pol"))
 ```
 
-* calculate micrograms emitted during tests
+* calculate micrograms emitted during tests (background-corrected mass emitted)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                              mass_emitted = (conc - conc_bg) * hood_flow * (dur / 60),
+                              mass_emitted = (conc - bg_ppm) * hood_flow * (dur / 60),
                               num_c = 1,
                               mass_carbon = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
