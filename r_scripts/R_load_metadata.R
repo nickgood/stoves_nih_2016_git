@@ -129,7 +129,8 @@ load_metadata <- function(file, sheet = "metadata"){
                 dplyr::rename(start = test_start,
                               end = test_end) %>%
                 dplyr::mutate(start = as.numeric(seconds(hms(start))),
-                              end = as.numeric(seconds(hms(end))))
+                              end = as.numeric(seconds(hms(end))),
+                              dur = (end -start) / (60 * 60))
  # fuel times
   times_fuel <- dplyr::select(out, id, id_test, date,
                               matches("^fuel_added.*|^fuel_remove.*")) %>%
@@ -139,7 +140,8 @@ load_metadata <- function(file, sheet = "metadata"){
                 tidyr::separate(var, c("type", "when", "rep")) %>%
                 dplyr::group_by(id, id_test, date, type, rep) %>%
                 tidyr::spread(when, time) %>%
-                dplyr::rename(on = added, off = remove)
+                dplyr::rename(on = added, off = remove) %>%
+                dplyr::mutate(dur = (off - on) / (60 * 60))
 
  # fuel mass
   mass_fuel <- dplyr::select(out, id, id_test, date,
