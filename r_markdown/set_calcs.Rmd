@@ -82,7 +82,8 @@ output:
 
 ```{r}
   pol_conc <- pol_conc %>%
-              dplyr::inner_join(dilution, by = "stove") 
+              dplyr::inner_join(dilution, by = "stove") %>%
+              dplyr::mutate(diluted_conc = value / dilution)
 ```
 
 * plot pollutant concentrations after dilution
