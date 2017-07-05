@@ -15,8 +15,66 @@ output:
   library(tidyverse)
 ```
 
-```{r}
+# Load files
 
+* data
+
+```{r load_data, echo=FALSE}
+  emissions <- readRDS("../r_files/emissions_long.RDS")
 ```
 
+* import sample info
+
+```{r load_metadata, echo=FALSE}
+  load("../r_files/samples.Rda")
+```
+
+# Tidy data
+
+* select concentration measurements 
+* join with stove/fuel data 
+* calculate average by stove/fuel combo
+
+```{r}
+  pol_conc <- emissions %>%
+              dplyr::filter(metric == "conc") %>%
+              dplyr::filter(qc != "bad") %>%
+              dplyr::left_join(dplyr::select(samples, id, stove, fuel)) %>%
+              dplyr::group_by(stove, fuel, pol, inst, qc, metric) %>%
+              dplyr::summarise_at("value", mean)
+```
+
+# Define dilution ratios
+
+* dilution ratios provided by Christian 
+
+```{r}
+  dilution <- tibble::data_frame(stove = c("Three Stone Fire (Artisan)",
+                                           "Rocket Elbow (Envirofit, G3300)",
+                                           "Fan Rocket Elbow (Biolite, HomeStove)",
+                                           "Gasifier (Philips, HD4012)",
+                                           "Pressurized LPG (WokSmith, WS-C1-25K)"),
+                                ratio = c(28.5, 18.1, 20.0, 18.7, 15)) 
+                                           
+```
+
+* join dilution ratios with data
+
+```{r}
+  pol_conc <- pol_conc %>%
+              dplyr::inner_join(dilution, by = "stove")
+```
+
+```{r, fig.width=12, fig.height=12}
+ ggplot(pol_conc, aes_string(x = "pol", y = "value", color = "fuel")) +
+  geom_point() + 
+  facet_wrap(~stove, scales = "free_y", ncol = 1) +
+  ylab("concentration (ug/m^3)") +
+  xlab("pollutant") +
+  scale_y_log10() +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        text = element_text(size = 16),
+        legend.position = "top")
+```
 
