@@ -11,7 +11,7 @@ output:
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
-```{r load_libraries}
+```{r load_libraries, echo=FALSE}
   library(tidyverse)
 ```
 
@@ -31,6 +31,14 @@ output:
 
 # Tidy data
 
+* select pollutants of interest
+* select fuels of interest 
+
+```{r}
+  pols <- "^co$|^ec$|^oc$|grav|acetaldehyde|formaldehyde|^voc_benzene$|^voc_toluene$"
+  fuels <- "Douglas Fir|Liquefied Petroleum Gas|West Slope Pellets"
+```
+
 * select concentration measurements 
 * join with stove/fuel data 
 * calculate average by stove/fuel combo
@@ -39,12 +47,15 @@ output:
   pol_conc <- emissions %>%
               dplyr::filter(metric == "conc") %>%
               dplyr::filter(qc != "bad") %>%
+              dplyr::filter(grepl(pols, pol)) %>%
               dplyr::left_join(dplyr::select(samples, id, stove, fuel)) %>%
-              dplyr::group_by(stove, fuel, pol, inst, qc, metric) %>%
-              dplyr::summarise_at("value", mean)
+              dplyr::filter(grepl(fuels, fuel)) %>%
+              dplyr::group_by(stove, pol, inst, metric) %>%
+              dplyr::summarise_at("value", median) %>%
+              dplyr::mutate(pol = )
 ```
 
-# Calculate pollutant concentrations 
+# Dilution
 
 * define dilution ratios provided by Christian 
 
@@ -54,49 +65,34 @@ output:
                                            "Fan Rocket Elbow (Biolite, HomeStove)",
                                            "Gasifier (Philips, HD4012)",
                                            "Pressurized LPG (WokSmith, WS-C1-25K)"),
-                                ratio = c(28.5, 18.1, 20.0, 18.7, 15)) 
+                                 ratio = c(28.5, 18.1, 20.0, 18.7, 15)) 
                                            
 ```
 
-## Pollutant concentrations before dilution
-
-* plot pollutant concentrations before dilution
-
-```{r, fig.width=12, fig.height=12}
- ggplot(pol_conc, aes_string(x = "pol", y = "value", color = "fuel")) +
-  geom_point() + 
-  facet_wrap(~stove, scales = "free_y", ncol = 1) +
-  ylab("concentration (ug/m^3)") +
-  xlab("pollutant") +
-  scale_y_log10() +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-        text = element_text(size = 16),
-        legend.position = "top")
-```
-
-## Pollutant concentrations after dilution
-
-* join dilution ratios with data
 * divide by dilution ratio
 
 ```{r}
   pol_conc <- pol_conc %>%
               dplyr::inner_join(dilution, by = "stove") %>%
-              dplyr::mutate(diluted_conc = value / dilution)
+              dplyr::mutate(diluted_conc = value / ratio)
 ```
 
-* plot pollutant concentrations after dilution
+## Pollutant concentrations after dilution
 
-```{r, fig.width=12, fig.height=12}
- ggplot(pol_conc, aes_string(x = "pol", y = "value", color = "fuel")) +
-  geom_point() + 
-  facet_wrap(~stove, scales = "free_y", ncol = 1) +
-  ylab("concentration (ug/m^3)") +
-  xlab("pollutant") +
-  scale_y_log10() +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-        text = element_text(size = 16),
-        legend.position = "top")
+```{r, echo=FALSE}
+ table_conc <- pol_conc %>%
+               dplyr::ungroup() %>%
+               dplyr::select(stove, pol, diluted_conc) %>%
+               tidyr::spread(pol, diluted_conc)
 ```
+
+
+```{r}
+  knitr::kable(table_conc,
+               col.names = c("Stove type", "Pollutant", "Diluted concentration (ug/m3)"),
+               alight = 'c',
+               digits = 2)
+```
+
+
+
