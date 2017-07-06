@@ -20,7 +20,7 @@ output:
 * data
 
 ```{r load_data, echo=FALSE}
-  emissions <- readRDS("../r_files/emissions_long.RDS")
+  emissions <- readRDS("../r_files/emissions_long_nobgkd.RDS")
 ```
 
 * import sample info
