@@ -5,6 +5,7 @@ output:
     toc: true
     toc_float: true
     theme: united
+    fig_caption: true
 ---
 
 ```{r global_options, include=FALSE}
@@ -17,7 +18,8 @@ output:
 
 # Load files
 
-* data
+* read in emissions concentrations that haven't been background corrected
+* read in background concentrations
 
 ```{r load_data, echo=FALSE}
   emissions <- readRDS("../r_files/emissions_long_nobgkd.RDS")
@@ -41,18 +43,17 @@ output:
 
 * select concentration measurements 
 * join with stove/fuel data 
-* calculate average by stove/fuel combo
+* calculate meidan hood and background concentration by stove/fuel combo
 
-```{r}
+```{r, echo=FALSE}
   pol_conc <- emissions %>%
-              dplyr::filter(metric == "conc") %>%
+              dplyr::filter(grepl("conc|conc_bg", metric)) %>%
               dplyr::filter(qc != "bad") %>%
               dplyr::filter(grepl(pols, pol)) %>%
               dplyr::left_join(dplyr::select(samples, id, stove, fuel)) %>%
               dplyr::filter(grepl(fuels, fuel)) %>%
               dplyr::group_by(stove, pol, inst, metric) %>%
-              dplyr::summarise_at("value", median) %>%
-              dplyr::mutate(pol = )
+              dplyr::summarise_at("value", median)
 ```
 
 # Dilution
@@ -69,30 +70,91 @@ output:
                                            
 ```
 
-* divide by dilution ratio
+* join dilution ratios by stove type
+* divide concentrations by dilution ratio
 
 ```{r}
   pol_conc <- pol_conc %>%
+              dplyr::ungroup() %>%
+              tidyr::spread(metric, value) %>%
               dplyr::inner_join(dilution, by = "stove") %>%
-              dplyr::mutate(diluted_conc = value / ratio)
+              dplyr::mutate(diluted_conc = conc / ratio)
 ```
 
-## Pollutant concentrations after dilution
+```{r, echo=FALSE}
+  plot_pol_conc <- pol_conc %>%
+                   dplyr::rename(hood_conc = conc, background_conc = conc_bg) %>%
+                   dplyr::select(-ratio) %>%
+                   tidyr::gather("metric", "value", 4:6) %>%
+                   dplyr::mutate(stove = gsub(" [:(:].*", "", stove)) %>%
+                   dplyr::mutate(pol = ifelse(pol == "grav", "pm2.5", pol)) %>%
+                   dplyr::mutate(pol = ifelse(pol == "voc_benzene", "benzene", pol)) %>%
+                   dplyr::mutate(pol = ifelse(pol == "voc_toluene", "toluene", pol)) %>%
+                   dplyr::mutate(stove = factor(stove,
+                                                levels = c("Three Stone Fire", "Rocket Elbow",
+                                                           "Fan Rocket Elbow", "Gasifier", "Pressurized LPG")))
+```
+
+## Pollutant concentrations
+
+All concentrations are given in microgram per cubic meter. 
+
+* Hood conc. : the median concentration of emissions we measured for a similar stove/fuel combination during the Aim 1 testing
+* Diluted conc. : the concentration we would expect to measure in the SET facility (assuming the dilution air is free of emissions)
+* Background conc. : the median background concentrations we measured during Aim 1 testing for that pollutant 
+
+```{r, echo=FALSE, fig.height=10, fig.width=8}
+plot_pol_conc2 <- dplyr::filter(plot_pol_conc, metric != "hood_conc")
+
+  ggplot(data = plot_pol_conc2, aes(x = stove, y = value, color = metric)) +
+    geom_point(size = 3, shape = 1, stroke = 1.5) +
+    theme_bw() +
+    facet_wrap(~pol, scales = "free_y", ncol = 2) +
+    scale_y_continuous(breaks = waiver()) + 
+    xlab("stove type") + 
+    ylab("concentration (ug/m3)") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 16),
+          legend.position = "top") 
+
+```
+
+```{r, echo=FALSE, fig.height=10, fig.width=8}
+plot_pol_conc <- dplyr::filter(plot_pol_conc, metric == "hood_conc")
+
+  ggplot(data = plot_pol_conc, aes(x = stove, y = value, color = metric)) +
+    geom_point(size = 3, shape = 1, stroke = 1.5) +
+    theme_bw() + 
+    facet_wrap(~pol, scales = "free_y", ncol = 2) +
+    scale_y_continuous(breaks = waiver()) +
+    scale_color_brewer(palette = "Dark2") + 
+    xlab("stove type") + 
+    ylab("concentration (ug/m3)") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 16),
+          legend.position = "top") 
+
+```
+
+Conclusions: 
+
+* Generally the pollutant concentrations we expect to see in the SET (assuming 100% clean dilution air) are at or just above background concentrations. Given that we were able to detect the background concentrations for these pollutants we shouldn't have a problem with LOD. 
+* In many instances the background concentrations of these pollutants in the lab are close to dilution concentrations we would expect to see in the facility. Are all pollutants (included gases) being filtered out of the dilution air? If that is not the case assuming the dilution air is 100% clean is a bad assumption since the backgrounds are on the same order of magnitude as the diluted concentrations. Also, we may not see differences in pollutant concentrations across stove technologies (other than pm2.5) if the dilution air contains background gases (i.e. the dilution air is coming from the lab).
+* Based on the dilution ratios given (and assuming 100% clean dilution air), we don’t necessarily see decreases in all emisisons as the pm2.5 set point decreases (i.e. pm2.5 might not necessarily be a good tracer for all pollutants). However, the concentrations of some of the pollutants (especially gases) may just be at lab background levels. Also, the stoves were operated differently during Aim 1 than during the set exposures, so these trends may not hold anyway.
+
+## Table of pollutant concentrations
 
 ```{r, echo=FALSE}
  table_conc <- pol_conc %>%
-               dplyr::ungroup() %>%
-               dplyr::select(stove, pol, diluted_conc) %>%
-               tidyr::spread(pol, diluted_conc)
+               dplyr::select(stove, pol, conc, diluted_conc, conc_bg)
 ```
 
 
-```{r}
+```{r, echo=FALSE}
   knitr::kable(table_conc,
-               col.names = c("Stove type", "Pollutant", "Diluted concentration (ug/m3)"),
+               col.names = c("Stove type", "Pollutant", "Hood conc.", "Diluted conc.", "Background conc."),
+               caption = "SET concentration estimates given in microgram per cubic meter (data shown in plots)",
                alight = 'c',
                digits = 2)
 ```
-
-
 
