@@ -151,7 +151,7 @@ Concentration is corrected for background by removing background test average co
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
-                        mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
+                        mass_emitted = (conc_cor) * hood_flow * dur,
                         mass_carbon = mass_emitted,
                         inst = "ecoc")
 ```
@@ -240,7 +240,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                              mass_emitted = (conc - conc_bg) * hood_flow * (dur / 60),
+                              mass_emitted = (conc) * hood_flow * (dur / 60),
                               num_c = 1,
                               mass_carbon = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
@@ -280,7 +280,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_emitted = (conc) * hood_flow * dur,
                         mass_carbon = mass_emitted * 0,
                         inst = "grav")
 ```
@@ -316,7 +316,7 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ions <- dplyr::mutate(ions, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_emitted = (conc) * hood_flow * dur,
                         mass_carbon = mass_emitted * 0,
                         inst = "ions")
 ```
@@ -361,7 +361,7 @@ ___
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- dplyr::mutate(ultrafine,
-                             num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
+                             num_emitted = (conc) * 1e6 * hood_flow * (dur / 60),
                              inst = "smps")
 ```
 
@@ -406,7 +406,7 @@ ___
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
+  voc <- dplyr::mutate(voc, mass_emitted = (conc) * hood_flow * dur,
                             mass_carbon = mass_emitted * (mw_c * num_c / mw),
                             inst = "voc")
 ```
@@ -481,7 +481,7 @@ ___
 ## save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
+  saveRDS(emissions_long_nobkgd, file = "../r_files/emissions_long.RDS")
 ```
 
 ## negative emissions
