@@ -120,9 +120,9 @@ plot_pol_conc2 <- dplyr::filter(plot_pol_conc, metric != "hood_conc")
 ```
 
 ```{r, echo=FALSE, fig.height=10, fig.width=8}
-plot_pol_conc <- dplyr::filter(plot_pol_conc, metric == "hood_conc")
+plot_pol_conc3 <- dplyr::filter(plot_pol_conc, metric == "hood_conc")
 
-  ggplot(data = plot_pol_conc, aes(x = stove, y = value, color = metric)) +
+  ggplot(data = plot_pol_conc3, aes(x = stove, y = value, color = metric)) +
     geom_point(size = 3, shape = 1, stroke = 1.5) +
     theme_bw() + 
     facet_wrap(~pol, scales = "free_y", ncol = 2) +
@@ -135,6 +135,32 @@ plot_pol_conc <- dplyr::filter(plot_pol_conc, metric == "hood_conc")
           legend.position = "top") 
 
 ```
+
+```{r, echo=FALSE}
+  grav <- dplyr::filter(plot_pol_conc, pol == "pm2.5") %>%
+          tidyr::spread(pol, value) %>%
+          dplyr::select(-inst)
+
+  plot_pol_conc4 <- dplyr::filter(plot_pol_conc, pol != "pm2.5") %>%
+                    dplyr::left_join(grav, by = c("stove", "metric")) %>%
+                    dplyr::filter(metric == "diluted_conc")
+
+```
+
+```{r, echo=FALSE, fig.height=10, fig.width=8}
+  ggplot(data = plot_pol_conc4, aes(x = pm2.5, y = value, color = metric)) +
+    geom_point(size = 3, shape = 1, stroke = 1.5) +
+    theme_bw() + 
+    facet_wrap(~pol, scales = "free_y", ncol = 2) +
+    scale_y_continuous(breaks = waiver()) +
+    scale_color_brewer(palette = "PRGn") + 
+    xlab("stove type") + 
+    ylab("concentration (ug/m3)") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 16),
+          legend.position = "top") 
+```
+
 
 Conclusions: 
 
