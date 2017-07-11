@@ -37,8 +37,8 @@ Loads and saves the CO2 voltage data (`calibration?`)
 Loads ecoc data file and saves (`waiting on data`)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  #ecoc <- load_singlefiles("ecoc")
-  #saveRDS(ecoc, file = "../r_files/ecoc.RDS")
+  ecoc <- load_ecoc_file()
+  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
 ## fivegas
