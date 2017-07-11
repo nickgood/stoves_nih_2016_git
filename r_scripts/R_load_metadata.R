@@ -193,8 +193,8 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
 
 #_______________________________________________________________________________
 # Load flows and five gas metadata
-# file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
-# out <- load_cal_two(file)
+#file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
+#out <- load_cal_two(file)
 load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
  # read file
   out <- read_excel(path = file, col_names = FALSE, skip = 0)
@@ -244,9 +244,9 @@ load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
 
  # classes
   out <- dplyr::mutate_at(out,
-                          .vars = vars(starts_with("date")),
+                          .cols = vars(starts_with("date")),
                           .funs = excel_date) %>%
-         dplyr::mutate_at(.vars = vars(matches(".*pre.*|.*post.*")),
+         dplyr::mutate_at(.cols = vars(matches(".*pre.*|.*post.*")),
                           .funs = as.numeric)
 
  # return
