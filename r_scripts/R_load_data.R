@@ -34,99 +34,45 @@ load_co2_file <- function(file){
 
 #_______________________________________________________________________________
 # Load ECOC file
-# file <- "../data/ecoc/20170110_ECOC.csv"
-load_ecoc_file <- function(file){
- # classes
-  classes <- c("character",
-                "factor",
-                rep("numeric",20),
-                "character",
-                "character",
-                rep("numeric",2),
-                rep("factor",2),
-                rep("numeric",3),
-                "character",
-                rep("numeric",2),
-                "factor",
-                rep("numeric",2),
-                "factor",
-                rep("numeric",4),
-                rep("character",3))
+#file <- "../data/ecoc/nih_mc.csv"
+load_ecoc_file <- function(file = "../data/ecoc/nih_mc.csv"){
 
-  ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
-                   fill = TRUE, na.strings = c("-", "na"))
+  readr::read_csv(file,
+                         skip = 4,
+                         
+                         col_names = c("filter_id",	"optics_mode","oc_ugsqcm",
+                                       "oc_unc",	"ec_ugsqcm","ec_unc",
+                                       "cc_ugsqcm","cc_unc","tc_ugsqcm","tc_unc","ectc_ratio",
+                                       "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
+                                       "pyrolc_ugsqcm","ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
+                                       "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
+                                       "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
+                                       "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
+                                       "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
+                                       "empty1", "empty2"),
+                         col_types = 
+                          cols(
+                           .default = col_double(),
+                           filter_id = col_character(),
+                           optics_mode = col_character(),
+                           date = col_date(format = "%m/%d/%y"),
+                           time = col_time(format = ""),
+                           fid1 = col_character(),
+                           fid2 = col_character(),
+                           manual_split_sec = col_character(),
+                           inst_name = col_character(),
+                           analyst = col_character(),
+                           parameter_file = col_character(),
+                           empty1 = col_character(),
+                           empty2 = col_character()
+                          ),
+                         na = c("", "na", "-")
+         ) %>%
+  dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                      format = "%Y-%m-%d %H:%M:%S"),
+                time = as.numeric(hms(time)) # convert time to secs in day
+  )
 
-  ecoc <- dplyr::rename(ecoc, time = Time) %>%
-          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p"))),
-                        time = as.numeric(substr(time,12,13))*60*60 +
-                               as.numeric(substr(time,15,16))*60 +
-                               as.numeric(substr(time,18,19)))
-
-  ecoc <- dplyr::rename(ecoc, date = Date,
-                        ecoc_id = Sample.ID) %>%
-          dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
-                               datetime = as.POSIXct(as.character(date)))
-
- # determine type (test, pilot or NA)
-  ecoc <- dplyr::mutate(ecoc,
-                        type = as.character(ecoc_id),
-                        type = sub(".*india.*", NA, type, ignore.case = TRUE),
-                        type = sub("^C11-.*", "test", type),
-                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
-                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
-                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
-                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
-                        type = sub("^B63A$|^B63E$", "pilot", type),
-                        type = sub("^P.*", "pilot", type),
-                        type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
-                        type = sub("^G.*", "bg", type))
-
- # determine cassette (a, e or NA)
-  ecoc <- dplyr::mutate(ecoc,
-                        cassette = as.character(ecoc_id),
-                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
-                                   NA, cassette),
-                        cassette = sub("^30A-3$", "e", cassette),
-                        cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
-                        cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
-                        cassette = sub(".*bq.*|.*blank.*", NA, cassette, ignore.case = TRUE))
-
- # extract ids
-  ecoc <- dplyr::mutate(ecoc,
-                         id = as.character(ecoc_id),
-                         id = sub("^B63A$|^B63E$", "lab_blank", id),
-                         id = sub("5L-[A-Z]$", "5C", id),
-                         id = sub("^G7E$", "G7", id),
-                         id = sub("-[A-Z] repeat$", "", id),
-                         id = sub(".*P5-A$", "5", id),
-                         id = sub(".*india.*", NA, id, ignore.case = TRUE),
-                         id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
-                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
-                         id = gsub("^P.*", NA, id),
-                         id = sub("-[0-9]$", "", id),
-                         id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
-
- # rename columns
-  names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
-  names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
-  names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
-  
- # set classes
-  ecoc <- dplyr::mutate(ecoc,
-                        ecod_id = as.factor(ecoc_id),
-                        id = as.factor(id),
-                        type = as.factor(type),
-                        cassette = as.factor(cassette))
-
- # return
-  return(ecoc)
 }
 #_______________________________________________________________________________
 
