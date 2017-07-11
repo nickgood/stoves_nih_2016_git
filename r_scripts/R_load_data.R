@@ -422,8 +422,8 @@ load_pax_file <- function(file){
 
 #_______________________________________________________________________________
 # Load smps file
-# file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
-# out <- load_smps_file(file)
+#file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
+#out <- load_smps_file(file)
 load_smps_file <- function(file){
  # print filename
   print(file)
