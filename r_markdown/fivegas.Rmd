@@ -21,37 +21,37 @@ output:
 * data logged in ppm units.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_conc.Rda")    
+  fivegas<- readRDS("../r_files/fivegas.RDS")    
 ```
 
 * data logged in voltage units
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_volts.Rda")
+ # load("../r_files/fivegas_volts.Rda")
 ```
 
 * voltage calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_calibration.Rda")
+ # load("../r_files/fivegas_calibration.Rda")
 ```
 
 * calibration metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_1.Rda")
+  #load("../r_files/cal_1.Rda")
 ```
 
 * sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  #load("../r_files/samples.Rda")
 ```
 
 * notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
+  #load("../r_files/notes.Rda")
 ```
 
 # Reformat data
@@ -61,14 +61,15 @@ output:
 Convert concentration data to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas_conc,
-                                                  -datetime_secs,
-                                                  -time_str) %>%
+#Edited 7/12/17   
+  fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas,
+                                                  -date,-time_s,
+                                                  -time) %>%
                   tidyr::gather("pol", "ppm", ch4:co))
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide', cache=FALSE}
-  head(fivegas_conc, 2)
+ head(fivegas_conc, 2)
 ```
 
 ## voltage
@@ -76,11 +77,11 @@ Convert concentration data to longer format
 Convert voltage data to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
+ # fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_volts, 2)
+  #head(fivegas_volts, 2)
 ```
 
 ## voltage calibration
@@ -88,14 +89,14 @@ Convert voltage data to longer format
 Convert voltage calibration data to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration,
-                                                 pol,
-                                                 volts,
-                                                 co2:ch4))
+  # fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration,
+  #                                                pol,
+  #                                                volts,
+  #                                                co2:ch4))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_calibration, 2)
+  #head(fivegas_calibration, 2)
 ```
 
 # Wrangle data
@@ -103,23 +104,23 @@ Convert voltage calibration data to longer format
 * calibration standard mixing ratios
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
+  #fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal_conc, 2)
+  #head(fivegas_cal_conc, 2)
 ```
 
 * calibration timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
+  #fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
 
-  fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
+  #fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_cal_times, 2)
+  #head(fivegas_cal_times, 2)
 ```
 
 # Calibration
@@ -131,23 +132,23 @@ Convert voltage calibration data to longer format
 Calculate mean voltage over last 30 seconds of each calibration window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                 dplyr::filter(!is.na(start) & pol != "zero")  %>%
-                 dplyr::rowwise() %>%
-                 dplyr::mutate(v_mean = 
-                               time_window_stats(fivegas_calibration,
-                                                 date,
-                                                 start, end,
-                                                 pol_var = pol,
-                                                 val_var = "volts",
-                                                 stat_var = "mean")) %>%
-                 dplyr::mutate(v_sd =
-                               time_window_stats(fivegas_calibration,
-                                                 date,
-                                                 start, end,
-                                                 pol_var = pol,
-                                                 val_var = "volts",
-                                                 stat_var = "sd"))
+  # fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
+  #                dplyr::filter(!is.na(start) & pol != "zero")  %>%
+  #                dplyr::rowwise() %>%
+  #                dplyr::mutate(v_mean = 
+  #                              time_window_stats(fivegas_calibration,
+  #                                                date,
+  #                                                start, end,
+  #                                                pol_var = pol,
+  #                                                val_var = "volts",
+  #                                                stat_var = "mean")) %>%
+  #                dplyr::mutate(v_sd =
+  #                              time_window_stats(fivegas_calibration,
+  #                                                date,
+  #                                                start, end,
+  #                                                pol_var = pol,
+  #                                                val_var = "volts",
+  #                                                stat_var = "sd"))
 ```
 
 * zero time windows
@@ -155,10 +156,10 @@ Calculate mean voltage over last 30 seconds of each calibration window
 Extract zero time periods
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_zero <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                      dplyr::filter(!is.na(start) & pol == "zero") %>%
-                      dplyr::select(-pol) %>%
-                      dplyr::rename(start_zero = start, end_zero = end)
+  # fivegas_cal_zero <- tidyr::spread(fivegas_cal_times, type, value) %>%
+  #                     dplyr::filter(!is.na(start) & pol == "zero") %>%
+  #                     dplyr::select(-pol) %>%
+  #                     dplyr::rename(start_zero = start, end_zero = end)
 ```
 
 * merge standard and zero 
@@ -166,7 +167,7 @@ Extract zero time periods
 Join zero time periods with the calibration data 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_zero, by = "date")
+ # fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_zero, by = "date")
 ```
 
 * response to zero
@@ -174,27 +175,27 @@ Join zero time periods with the calibration data
 Calculate mean voltage during last 30 seconds of each zero calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- dplyr::mutate(fivegas_cal,
-                        v_zero_mean =
-                        time_window_stats(fivegas_calibration,
-                                          date,
-                                          start_zero, end_zero,
-                                          pol_var = pol,
-                                          val_var = "volts",
-                                          stat_var = "mean")) %>%
-                  dplyr::mutate(v_zero_sd =
-                         time_window_stats(fivegas_calibration,
-                                           date,
-                                           start_zero, end_zero,
-                                           pol_var = pol,
-                                           val_var = "volts",
-                                           stat_var = "sd"))
+  # fivegas_cal <- dplyr::mutate(fivegas_cal,
+  #                       v_zero_mean =
+  #                       time_window_stats(fivegas_calibration,
+  #                                         date,
+  #                                         start_zero, end_zero,
+  #                                         pol_var = pol,
+  #                                         val_var = "volts",
+  #                                         stat_var = "mean")) %>%
+  #                 dplyr::mutate(v_zero_sd =
+  #                        time_window_stats(fivegas_calibration,
+  #                                          date,
+  #                                          start_zero, end_zero,
+  #                                          pol_var = pol,
+  #                                          val_var = "volts",
+  #                                          stat_var = "sd"))
 ```
 
 * remove NaNs
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- na.omit(fivegas_cal)
+ # fivegas_cal <- na.omit(fivegas_cal)
 ```
 
 * combine voltage and standard info
@@ -202,20 +203,20 @@ Calculate mean voltage during last 30 seconds of each zero calibration
 Merge measured voltage with standard mixing ratio
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal_conc <- dplyr::rename(fivegas_cal_conc,
-                                    pol = var,
-                                    standard = value)
-
-  fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_conc,
-                                  by = c("date", "pol"))
+  # fivegas_cal_conc <- dplyr::rename(fivegas_cal_conc,
+  #                                   pol = var,
+  #                                   standard = value)
+  # 
+  # fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_conc,
+  #                                 by = c("date", "pol"))
 ```
 
 * calibration coefficients
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_cal <- dplyr::mutate(fivegas_cal,
-                        cal_beta = (standard / (v_mean - v_zero_mean))) %>%
-                 dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
+  # fivegas_cal <- dplyr::mutate(fivegas_cal,
+  #                       cal_beta = (standard / (v_mean - v_zero_mean))) %>%
+  #                dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
 ```
 
 * add calibration date
@@ -223,32 +224,32 @@ Merge measured voltage with standard mixing ratio
 Add calibration date to voltage data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- add_caldate(fivegas_volts, fivegas_cal)
-
-  fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
+  # fivegas_volts <- add_caldate(fivegas_volts, fivegas_cal)
+  # 
+  # fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
 ```
 
 ## plot span
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=6}
- p_df <- tidyr::gather(fivegas_cal,
-                       "type", "volts",
-                       v_mean, v_zero_mean) %>%
-         dplyr::mutate(sd = ifelse(type == "v_mean", v_sd, v_zero_sd)) %>%
-         dplyr::select(-v_sd, -v_zero_sd)
-
- # standard response voltage error bars
-  v_limits <- aes(ymax = volts + sd, ymin = volts - sd)  # error bars
-
- # plot
-  ggplot(p_df, aes(x = date, y = volts, group = type, colour = type)) +
-    geom_point() +
-    geom_errorbar(v_limits, width = 0.2) +
-    facet_wrap(~pol, 1, scales = "free") +
-    theme_minimal() +
-    xlab("") +
-    ylab("span") +
-    theme(legend.position="top")
+ # p_df <- tidyr::gather(fivegas_cal,
+ #                       "type", "volts",
+ #                       v_mean, v_zero_mean) %>%
+ #         dplyr::mutate(sd = ifelse(type == "v_mean", v_sd, v_zero_sd)) %>%
+ #         dplyr::select(-v_sd, -v_zero_sd)
+ # 
+ # # standard response voltage error bars
+ #  v_limits <- aes(ymax = volts + sd, ymin = volts - sd)  # error bars
+ # 
+ # # plot
+ #  ggplot(p_df, aes(x = date, y = volts, group = type, colour = type)) +
+ #    geom_point() +
+ #    geom_errorbar(v_limits, width = 0.2) +
+ #    facet_wrap(~pol, 1, scales = "free") +
+ #    theme_minimal() +
+ #    xlab("") +
+ #    ylab("span") +
+ #    theme(legend.position="top")
 
 ```
 
@@ -257,15 +258,15 @@ Add calibration date to voltage data
 Merge voltage data and calibration data, then apply calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- dplyr::left_join(fivegas_volts, 
-                   dplyr::select(fivegas_cal, date, pol, cal_beta, cal_int),
-                                 by = c("cal_date" = "date", "pol" = "pol")) %>%
-                   dplyr::mutate(ppm = volts * cal_beta + cal_int) %>%
-                   dplyr::mutate(pol = as.factor(pol))
+  # fivegas_volts <- dplyr::left_join(fivegas_volts, 
+  #                  dplyr::select(fivegas_cal, date, pol, cal_beta, cal_int),
+  #                                by = c("cal_date" = "date", "pol" = "pol")) %>%
+  #                  dplyr::mutate(ppm = volts * cal_beta + cal_int) %>%
+  #                  dplyr::mutate(pol = as.factor(pol))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_volts, 2)
+  #head(fivegas_volts, 2)
 ```
 
 # Combine file types
@@ -273,26 +274,27 @@ Merge voltage data and calibration data, then apply calibration
 Drop variables prior to merge with mixing ration data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_volts <- dplyr::select(fivegas_volts,
-                                 datetime, date, time, id, pol, ppm)
+ # fivegas_volts <- dplyr::select(fivegas_volts,
+  #                               datetime, date, time, id, pol, ppm)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  head(fivegas_volts, 2)
+  #head(fivegas_volts, 2)
 ```
 
 Merge voltage and mixing ratio data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::arrange(dplyr::bind_rows(fivegas_volts,
-                                                    fivegas_conc),
-                                   datetime)
+  # fivegas_merged <- dplyr::arrange(dplyr::bind_rows(fivegas_volts,
+  #                                                   fivegas_conc),
+  #                                  datetime)
 ```
 
 Remove ozone and nox rows (channels not used during study)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::filter(fivegas_merged, pol != "o2" & pol != "nox")
+ 
+ fivegas_merged <- dplyr::filter(fivegas_conc, pol != "o2" & pol != "nox")
 ```
 
 
@@ -301,41 +303,41 @@ Remove ozone and nox rows (channels not used during study)
 Extract notes relevant to  fivegas analyzer
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
+  #notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33:35] <- "ok"
+  #notes$qc[33:35] <- "ok"
 ```
 
 Make one flag per test precidented from bad to ok.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+  # flags <- dplyr::select(notes, id, qc) %>%
+  #          dplyr::group_by(id) %>%
+  #          dplyr::arrange(qc) %>%
+  #          dplyr::summarise(qc = first(qc))
 ```
 
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
-                    dplyr::mutate(id = as.factor(id),
-                                  qc = as.factor(ifelse(is.na(qc),
-                                                 "ok", as.character(qc))))
+  # fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
+  #                   dplyr::mutate(id = as.factor(id),
+  #                                 qc = as.factor(ifelse(is.na(qc),
+  #                                                "ok", as.character(qc))))
 
 ```
 
 Additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
-  fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
-  fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
-  fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
+  # fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
+  # fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
+  # fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
+  # fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
 ```
 
 # Save merged file
@@ -365,7 +367,7 @@ $Fivegas$ data is expected to be missing for:
         dplyr::arrange(id) %>%
         dplyr::mutate(id = as.factor(id))
 
-  ggplot(df, aes(datetime, ppm, colour = qc, group = pol)) + 
+  ggplot(df, aes(datetime, ppm, group = pol)) + 
     geom_line() +
     scale_y_log10(limits = c(1, 10^5)) +
     scale_colour_manual(values = 
