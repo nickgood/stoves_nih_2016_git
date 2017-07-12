@@ -369,7 +369,7 @@ $Fivegas$ data is expected to be missing for:
 
   ggplot(df, aes(datetime, ppm, group = pol)) + 
     geom_line() +
-    scale_y_log10(limits = c(1, 10^5)) +
+    scale_y_log10(limits = c(1, 10^3)) +
     scale_colour_manual(values = 
                         c("ok" = "mediumaquamarine",
                           "maybe" = "mediumorchid1",
