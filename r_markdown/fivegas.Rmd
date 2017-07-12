@@ -24,24 +24,6 @@ output:
   fivegas<- readRDS("../r_files/fivegas.RDS")    
 ```
 
-* data logged in voltage units
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # load("../r_files/fivegas_volts.Rda")
-```
-
-* voltage calibration
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # load("../r_files/fivegas_calibration.Rda")
-```
-
-* calibration metadata
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #load("../r_files/cal_1.Rda")
-```
-
 * sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
