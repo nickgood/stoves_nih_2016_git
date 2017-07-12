@@ -75,8 +75,7 @@ Convert concentration data to longer format
 Remove oxygen rows (channels not used during study)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- 
- fivegas_merged <- dplyr::filter(fivegas_conc, pol != "nox")
+ fivegas_merged <- dplyr::filter(fivegas_conc, pol != "o2")
 ```
 
 
