@@ -41,7 +41,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <-# dplyr::filter(grav, !grepl("^G[0-9]", id)) %>%
-                 dplyr::select(grav,-lod) %>%
+                 dplyr::select(grav,-lod,-phpa_pre,-phpa_post) %>%
                  dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id) == TRUE, "bg", ifelse(grepl("^G[0-9]",id)==TRUE,"test_blank","test")))
 ```
 
@@ -106,28 +106,28 @@ output:
                dplyr::summarise(wgt_post = mean(val))
 ```
 
-* merge averages # CHANES HERE
+* merge averages 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
                  dplyr::left_join(grav_post, by = "id")
 ```
 
-* mass added # changes here
+* mass added to test, bg, and test_blank filters
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged, 
                             wgt_delta = wgt_post - wgt_pre)
 ```
 
-* change in calibration weight #changes here
+* change in calibration weight
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
                             wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
 ```
 
-* change in blank weight #changes here
+* change in lab blank weight 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
@@ -186,9 +186,9 @@ Additional bad tests
 * remove backgrounds and bad data then calculate the limit of detection and quantification
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  signal <- dplyr::filter(grav_merged, type == "test") %>%#, qc != "bad") %>%
-            dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
-                             loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
+  signal <- dplyr::filter(grav_merged, type == "test_blank") %>% #, qc != "bad") %>%
+            dplyr::summarise(lod = sd(wgt_delta) * 3 + mean(wgt_delta),
+                             loq = sd(wgt_delta) * 10 + mean(wgt_delta))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
