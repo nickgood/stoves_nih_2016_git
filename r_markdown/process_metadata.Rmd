@@ -157,9 +157,19 @@ KB: Currently no data is recorded in the test log
   # grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-## pot number
+## pot mass
 
-* only one pot was used for each test so the pot number was not saved
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+  pot_mass <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
+                             !is.na(as.numeric(value))) %>%
+               dplyr::mutate(value = as.factor(value)) %>%
+               dplyr::rename(pot = value, rep = var)
+
+  wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
+                                   a = "1", b = "2", c = "3", d = "4")
+  
+  save(wood_pot, file="../r_files/wood_pot.Rda")
+```
 
 ## carbonyl flows
 
@@ -231,137 +241,6 @@ KB: Currently no data is recorded in the test log
     theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
     theme(axis.text.y = element_text(size = 30),
           axis.title=element_text(size=40))
-```
-
-## wood stove weights
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_wgts <- dplyr::filter(tidy_id_date(wood, "^wgt_", "wgt_"), !is.na(value))
-  
-  save(wood_wgts, file="../r_files/wood_wgts.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(wood_wgts, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
-
-  ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
-```
-
-## wood stove times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_times <- dplyr::filter(tidy_id_date(wood, "^time_", "time_"), !is.na(value))
-
-  save(wood_times, file="../r_files/wood_times.Rda")
-```
-
- * unexpected values:
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(wood_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
-
-  knitr::kable(outliers, "markdown", digits = 2)
-```
-
-## wood lab conditions
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_lab <- dplyr::filter(tidy_id_date(wood, "^lab_", "lab_"), !is.na(value))
-  
-  save(wood_lab, file="../r_files/wood_lab.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
-  p_data <- dplyr::group_by(wood_lab, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
-
-  p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  p_hist <- ggplot(p_data, aes(x = value)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            facet_wrap(~var, scales = "free") +
-            xlab("")
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-## wood pot number
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_pot <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
-                             !is.na(as.numeric(value))) %>%
-               dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value, rep = var)
-
-  wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
-                                   a = "1", b = "2", c = "3", d = "4")
-  
-  save(wood_pot, file="../r_files/wood_pot.Rda")
-```
-
-
-## fivegas calibration standards
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_conc <- dplyr::filter(tidy_date(cal_1, "^conc_", "conc_"), !is.na(value))
-  
-  save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(fivegas_cal_conc, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
-
-  ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
-```
-
-## fivegas calibration times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"),
-                                     !is.na(value))
-
-  fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
-
-  save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
-```
-
- * unexpected values:
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(fivegas_cal_times,
-                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
-
-  knitr::kable(outliers, "markdown", digits = 2)
 ```
 
 ## filter cartridge flows
