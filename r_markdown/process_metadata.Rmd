@@ -162,15 +162,15 @@ KB: Currently no data is recorded in the test log
 ## pot mass
 
 ```{r}
-  pot_mass <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
-                             !is.na(as.numeric(value))) %>%
-               dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value, rep = var)
-
-  wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
-                                   a = "1", b = "2", c = "3", d = "4")
-  
-  saveRDS(wood_pot, file="../r_files/wood_pot.RDS")
+  # pot_mass <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
+  #                            !is.na(as.numeric(value))) %>%
+  #              dplyr::mutate(value = as.factor(value)) %>%
+  #              dplyr::rename(pot = value, rep = var)
+  # 
+  # wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
+  #                                  a = "1", b = "2", c = "3", d = "4")
+  # 
+  # saveRDS(wood_pot, file="../r_files/wood_pot.RDS")
 ```
 
 ## carbonyl flows
@@ -305,20 +305,20 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(co2_lab_cal, type) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
-
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40)) +
-    ggtitle("lab")
+  # p_data <- dplyr::group_by(co2_lab_cal, type) %>%
+  #           dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
+  #                         outlier = ifelse(is_outlier(value), as.character(date), NA))
+  # 
+  # ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  #   geom_boxplot() +
+  #   geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+  #   theme_bw() +
+  #   ylab("z score normalized value") +
+  #   xlab("") +
+  #   theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+  #   theme(axis.text.y = element_text(size = 30),
+  #         axis.title=element_text(size=40)) +
+  #   ggtitle("lab")
 ```
 
 ```{r}
@@ -330,20 +330,20 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(co2_sample_cal, type) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
-
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40)) +
-    ggtitle("sample line")
+  # p_data <- dplyr::group_by(co2_sample_cal, type) %>%
+  #           dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
+  #                         outlier = ifelse(is_outlier(value), as.character(date), NA))
+  # 
+  # ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  #   geom_boxplot() +
+  #   geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+  #   theme_bw() +
+  #   ylab("z score normalized value") +
+  #   xlab("") +
+  #   theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+  #   theme(axis.text.y = element_text(size = 30),
+  #         axis.title=element_text(size=40)) +
+  #   ggtitle("sample line")
 ```
 
 ## pax flows
@@ -431,7 +431,7 @@ KB: Currently no data is recorded in the test log
 ## smps / pax times
 
 ```{r}
-  smps_pax_bg_times <- dplyr::filter(tidy_id_date(data_2,
+  smps_pax_bg_times <- dplyr::filter(tidy_id_date(tester_two,
                                                   "^time_.*smps.*", "^time_"),
                                                   !is.na(value))
 
