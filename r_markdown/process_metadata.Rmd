@@ -16,7 +16,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height=6, cache = TRUE)
+                        fig.width=10, fig.height=4, cache = TRUE)
 ```
 
 ```{r}
@@ -98,7 +98,7 @@ output:
   saveRDS(test_mass, file="../r_files/fuel_wgts.RDS")
 ```
 
-```{r, echo=FALSE, fig.height=12}
+```{r, echo=FALSE, fig.height=8}
   p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%
             dplyr::group_by(var, mc_target) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
@@ -106,7 +106,7 @@ output:
 
 p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
            geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = 0.2, size = 4) +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
            theme_bw(base_size = 14) +
            facet_grid(~mc_target) + 
            ylab("z score normalized value") +
