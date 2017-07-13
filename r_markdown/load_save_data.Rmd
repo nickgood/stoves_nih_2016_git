@@ -37,8 +37,8 @@ Loads and saves the CO2 voltage data (`calibration?`)
 Loads ecoc data file and saves (`waiting on data`)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  #ecoc <- load_singlefiles("ecoc")
-  #saveRDS(ecoc, file = "../r_files/ecoc.RDS")
+  ecoc <- load_ecoc_file()
+  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
 ## fivegas
@@ -52,7 +52,7 @@ Loads fivegas mixing ratio files and resaves.
 
 ## gravimetric
 
-Loads filter weight data and resaves as .Rda.
+Loads filter weight data and resaves as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   data_grav <- load_grav_file() 
@@ -84,20 +84,19 @@ Loads and resaves data as .RDS.
 
 Loads and resaves data as an .RDS.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE} 
   smps <- load_multifile(fldr = "../data/smps",
-                         pattern = "_SMPS.csv$", inst = "smps")
+                         pattern = "_SMPS.txt$", inst = "smps")
   saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
 ## temperature
 
-Loads and resaves data as an .Rda.
+Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
                          pattern = "_TEMP.csv", inst = "temp")
-
   saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
@@ -106,7 +105,7 @@ Loads and resaves data as an .Rda.
 Loads and resaves data as an .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans <- load_singlefiles("trans")
+  trans <- load_trans_file("../data/trans/MC Transmissometer Final.xlsx")
   saveRDS(trans, file = "../r_files/trans.RDS")
 ```
  
@@ -140,4 +139,11 @@ Loads the microgram sheet  and resaves data as an .Rda.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   data_tester_two <- load_test_two()
   saveRDS(data_tester_two, file = "../r_files/data_tester_two.RDS")
+```
+
+* Calibration 2 log
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_cal_two <- load_cal_two()
+  saveRDS(data_cal_two, file = "../r_files/data_cal_two.RDS")
 ```

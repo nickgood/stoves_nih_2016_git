@@ -398,3 +398,30 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
+
+#________________________________________________________
+clean_names <- function(df){
+  names(df) <- tolower(gsub("\\.", "_", colnames(df)))
+  names(df) <- gsub("\\(", "", colnames(df))
+  names(df) <- gsub(")", "", colnames(df))
+  names(df) <- gsub("#", "", colnames(df))
+  names(df) <- gsub("%", "", colnames(df))
+  names(df) <- gsub("\\*", "_", colnames(df))
+  names(df) <- gsub(" ", "_", colnames(df))
+  names(df) <- gsub("_$", "", colnames(df))
+  names(df) <- gsub("/", "_", colnames(df))
+ # return
+  return(df)
+}
+#________________________________________________________
+
+#_______________________________________________________________________________
+# convert excel date to Date class
+excel_date <- function(x){as.Date(as.numeric(x), origin = "1899-12-30")}
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
+# convert excel time to seconds of day
+excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
+#_______________________________________________________________________________
+

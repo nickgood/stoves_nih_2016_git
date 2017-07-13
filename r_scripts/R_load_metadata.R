@@ -7,15 +7,20 @@
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
+# source files
+  source("../r_scripts/R_functions.R")
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
 # load fuel prep file
 # file <- "../data/logs/Fuel Prep Final.xlsx"
+# sheet <- "Fuel Prep"
 # out <- load_fuel_prep(file)
 load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "Fuel Prep"){
  # load raw file
-  out <- as_tibble(read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0))
+  out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)
  # clean up
-  out <- out[-1, ]
-  out <- out[,1:19]
+  out <- out[-(1:13),1:19]
   out <- dplyr::filter(out, !is.na(fuel_id))
  # rename
   out <- dplyr::rename(out, date_test = test_date,
@@ -49,16 +54,6 @@ load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "
  # return
   return(out)
 }
-#_______________________________________________________________________________
-
-#_______________________________________________________________________________
-# convert excel date to Date class
-  excel_date <- function(x){as.Date(as.numeric(x), origin = "1899-12-30")}
-#_______________________________________________________________________________
-
-#_______________________________________________________________________________
-# convert excel time to seconds of day
-  excel_time <- function(x){as.numeric(x) * 24 * 60 *60}
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
@@ -193,5 +188,68 @@ load_test_two <- function(file = "../data/logs/Tester 2 Data Log Final.xlsx",
 
  # return
   return(out)
+} 
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
+# Load flows and five gas metadata
+#file <- "../data/logs/Tester 2 Cal Log Final.xlsx"
+#out <- load_cal_two(file)
+load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
+ # read file
+  out <- read_excel(path = file, col_names = FALSE, skip = 0)
+ # select rows
+  out <- out[1:38,]
+ # tranpose and drop unused columns
+  out <- as_data_frame(t(out[c(-1,-2)]))
+ # name columns
+   names(out) <- c("date",
+                  "zero_1",
+                  "zero_1_pre",
+                  "zero_1_post",
+                  "co2_1_conc",
+                  "co2_1_pre",
+                  "co2_1_post",
+                  "zero_2",
+                  "zero_2_pre",
+                  "zero_2_post",
+                  "co2_2_conc",
+                  "co2_2_pre",
+                  "co2_2_post",
+                  "smps_preflow_1",
+                  "smps_preflow_2",
+                  "smps_preflow_3",
+                  "pax_preflow_1",
+                  "pax_preflow_2",
+                  "pax_preflow_3",
+                  "pax_preflow_exit_1",
+                  "pax_preflow_exit_2",
+                  "pax_preflow_exit_3",
+                  "smps_postflow_1",
+                  "smps_postflow_2",
+                  "smps_postflow_3",
+                  "pax_postflow_1",
+                  "pax_postflow_2",
+                  "pax_postflow_3",
+                  "pax_postflow_exit_1",
+                  "pax_postflow_exit_2",
+                  "pax_postflow_exit_3",
+                  "dusttrak_preflow_1",
+                  "dusttrak_preflow_2",
+                  "dusttrak_preflow_3",
+                  "dusttrak_postflow_1",
+                  "dusttrak_postflow_2",
+                  "dusttrak_postflow_3",
+                  "notes")
+
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .cols = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches(".*pre.*|.*post.*")),
+                          .funs = as.numeric)
+
+ # return
+ return(out)
 } 
 #_______________________________________________________________________________
