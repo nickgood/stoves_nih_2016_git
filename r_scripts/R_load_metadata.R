@@ -2,6 +2,7 @@
 # libraries
   library(tidyverse)
   library(readxl)
+  library(readr)
   library(forcats)
   library(lubridate)
 #_______________________________________________________________________________
@@ -253,3 +254,120 @@ load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
  return(out)
 } 
 #_______________________________________________________________________________
+
+#________________________________________________________
+# Load wood stove log
+# file <- "../data/logs/MC Test Log.csv"
+# df <- load_test_log(file)
+load_test_log <- function(file = "../data/logs/MC Test Log.csv"){
+ 
+ df <- read_csv(file, skip = 0, col_names = FALSE)
+
+ df <- as.data.frame(t(df[c(-1,-2,-3)]))
+ 
+ names(df) <- c("id",
+                "stove",
+                "fuel",
+                "date",
+                "tester",
+                "lab_t",
+                "lab_p",
+                "lab_rh",
+                "wgt_pot_a",
+                "wgt_pot_b",
+                "wgt_fuel",
+                "wgt_starter",
+                "time_ignite",
+                "time_set_1",
+                "time_shims_out",
+                "time_set_2",
+                "time_set_1_out",
+                "time_set_3",
+                "time_set_2_out",
+                "holder_1",
+                "holder_2",
+                "time_end",
+                "wgt_on_1",
+                "time_start_1",
+                "time_end_1",
+                "wgt_off_1",
+                "pot_1",
+                "wgt_on_2",
+                "time_start_2",
+                "time_end_2",
+                "wgt_off_2",
+                "pot_2",
+                "wgt_on_3",
+                "time_start_3",
+                "time_end_3",
+                "wgt_off_3",
+                "pot_3",
+                "wgt_on_4",
+                "time_start_4",
+                "time_end_4",
+                "wgt_off_4",
+                "pot_4",
+                "wgt_on_5",
+                "time_start_5",
+                "time_end_5",
+                "wgt_off_5",
+                "pot_5",
+                "wgt_on_6",
+                "time_start_6",
+                "time_end_6",
+                "wgt_off_6",
+                "pot_6",
+                "wgt_on_7",
+                "time_start_7",
+                "time_end_7",
+                "wgt_off_7",
+                "pot_7",
+                "wgt_on_8",
+                "time_start_8",
+                "time_end_8",
+                "wgt_off_8",
+                "pot_8",
+                "wgt_on_9",
+                "time_start_9",
+                "time_end_9",
+                "wgt_off_9",
+                "pot_9",
+                "wgt_ashpot_lid",
+                "wgt_ashpot_unusedfuel",
+                "wgt_ashpot_char_ash",
+                "other_stoves",
+                "notes")
+ 
+ df_dat <- subset(df, select = date)
+ 
+ df_dat$date <- as.Date(as.character(df_dat$date), format = "%m/%d/%Y")
+ 
+ cols <- subset(colnames(df), grepl("^wgt|^lab",colnames(df))==TRUE)
+ 
+ df_num <- subset(df, select = cols)
+ 
+ df_num <- as.data.frame(lapply(df_num, 
+                                function(x) as.numeric(as.character(x))))
+ 
+ cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+ 
+ df_time <- subset(df, select = cols)
+ 
+ df_time <- as.data.frame(lapply(df_time, 
+                                 function(x) as.numeric(hms(x)))) 
+ 
+ df_char <- subset(df, select = notes)
+ 
+ df_char <- as.data.frame(lapply(df_char,
+                                 function(x) as.character(x)), stringsAsFactors=FALSE)
+ 
+ cols <- subset(colnames(df), grepl("^id$|^stove$|^fuel$|^person$|^pot|^other_stoves$", colnames(df))==TRUE)
+ 
+ df_fac <- subset(df, select = cols)
+ 
+ out <- as_data_frame(dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac))
+ 
+ # return
+ return(out)
+}
+#________________________________________________________
