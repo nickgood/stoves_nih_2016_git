@@ -53,11 +53,7 @@ output:
 
 ```{r}
   samples <-   test_log %>%
-               dplyr::select(id, stove, fuel, type, fp_target) %>%
-               dplyr::left_join(
-                                dplyr::select(fuel, id, mc_target) %>%
-                                dplyr::distinct(),
-                                by = "id") %>%
+               dplyr::select(id, stove, fuel, type, mc_target) %>%
                dplyr::mutate(mc_target = as.factor(mc_target))
 
   saveRDS(samples, "../r_files/samples.RDS")
@@ -68,33 +64,31 @@ output:
 
 ## Plot test ids
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE, fig.width=20, fig.height=12}
   test_list <- samples %>%
-               dplyr::group_by(mc_target, fp_target, type) %>%
+               dplyr::group_by(mc_target, type) %>%
                dplyr::summarise(id = paste(id, collapse = ","))
 
-  ggplot(test_list, aes(y = mc_target, x=fp_target)) + 
+  ggplot(test_list, aes(y = mc_target, type)) + 
     geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id)) +
     scale_fill_discrete(na.value = 'grey95') +
-    theme_minimal() +
-    facet_grid(~type, scales = "free") +
-    theme(legend.position="none") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
+    theme_bw() +
+    theme(legend.position = "none") +
     theme(axis.text = element_text(size = 14)) +
     geom_text(aes(label = id, size = 14))
 ```
 
 # Clean and save metadata
 
-## batch stove weights
+## fuel weights
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
+```{r}
   fuel_wgts <- dplyr::filter(tidy_id_date(fuel, "^mass_", "mass_"), !is.na(value))
 
-  saveRDS(fuel_wgts, file="../r_files/fuel_wgts.Rda")
+  saveRDS(fuel_wgts, file="../r_files/fuel_wgts.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE, fig.width=20, fig.height=12}
   p_data <- dplyr::group_by(fuel_wgts, var) %>%
             dplyr::left_join(samples, by = "id") %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
@@ -103,7 +97,7 @@ output:
   ggplot(p_data, aes(x = factor(var), y = value_norm)) +
     geom_boxplot() +
     geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-    theme_minimal() +
+    theme_bw() +
     facet_grid(~mc_target) + 
     ylab("z score normalized value") +
     xlab("") +
@@ -114,78 +108,67 @@ output:
 
 ## batch stove timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_times <- dplyr::filter(tidy_id_date(batch, "^time_", "time_"), !is.na(value))
+```{r}
+  batch_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
 
-  save(batch_times, file="../r_files/batch_times.Rda")
-
+  saveRDS(batch_times, file="../r_files/batch_times.RDS")
 ```
   
  * unexpected values:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+```{r, echo=FALSE}
+  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
-Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
-
 ## batch lab conditions
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_lab <- dplyr::filter(tidy_id_date(batch, "^lab_", "lab_"), !is.na(value))
-
-  save(batch_lab, file="../r_files/batch_lab.Rda")
+```{r, echo=TRUE}
+  # lab_cond <- dplyr::filter(tidy_id_date(test_log, "^lab_", "lab_"), !is.na(value))
+  # 
+  # saveRDS(lab_cond, file="../r_files/batch_lab.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
-  p_data <- dplyr::group_by(batch_lab, var) %>%
-            dplyr::mutate(value_norm =
-                         (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+KB: Currently no data is recorded in the test log
 
-  p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  p_hist <- ggplot(p_data, aes(x = value)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            facet_wrap(~var, scales = "free") +
-            xlab("")
-
-  grid.arrange(p_hist, p_box, ncol = 2)
+```{r, echo=FALSE, fig.width=12, fig.height=6}
+  # p_data <- dplyr::group_by(lab_cond, var) %>%
+  #           dplyr::mutate(value_norm =
+  #                        (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE),
+  #                         outlier = ifelse(is_outlier(value), as.character(id), NA))
+  # 
+  # p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
+  #          geom_boxplot() +
+  #          geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+  #          theme_minimal() +
+  #          ylab("z score normalized value") +
+  #          xlab("") +
+  #          theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+  #          theme(axis.text.y = element_text(size = 30),
+  #          axis.title=element_text(size=40))
+  # 
+  # p_hist <- ggplot(p_data, aes(x = value)) +
+  #           geom_histogram(binwidth = 15) +
+  #           theme_minimal() +
+  #           facet_wrap(~var, scales = "free") +
+  #           xlab("")
+  # 
+  # grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-## batch pot number
+## pot number
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_pot <- dplyr::filter(tidy_id_date(batch, "^pot_", "pot_"),
-                             !is.na(as.numeric(value))) %>%
-               dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value, rep = var)
-
-  batch_pot$pot <- forcats::fct_recode(batch_pot$pot,
-                                   a = "1", b = "2", c = "3", d = "4")
-
-  save(batch_pot, file="../r_files/batch_pot.Rda")
-```
+* only one pot was used for each test so the pot number was not saved
 
 ## carbonyl flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  carb_flows <- dplyr::filter(tidy_id_date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
+  carb_flows <- dplyr::filter(tidy_id_date(tester_two, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
   
   carb_flows <- split_flows(carb_flows)
   
-  save(carb_flows, file="../r_files/carb_flows.Rda")
+  saveRDS(carb_flows, file="../r_files/carb_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -209,7 +192,7 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
 ## carbonyl timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  carb_times <- dplyr::filter(tidy_id_date(data_2, "^time_.*carb$", "^time_"), !is.na(value))
+  carb_times <- dplyr::filter(tidy_id_date(tester_two, "^time_.*carb$", "^time_"), !is.na(value))
   
   carb_times <- split_times(carb_times)
   
@@ -219,7 +202,7 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
 * unexpected values:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -227,7 +210,7 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
 ## isokinetic sampler flows
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  iso_flows <- dplyr::filter(tidy_id_date(data_2, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
+  iso_flows <- dplyr::filter(tidy_id_date(tester_two, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
   
   iso_flows <- split_flows(iso_flows)
   
