@@ -34,7 +34,7 @@ output:
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
 
-# Tidy sample data
+# Sample data
 
 ```{r}
   test_log <- test_log %>%
@@ -57,7 +57,7 @@ output:
 ```
 
 
-# Stove-fuel combinations
+## Plot test ids
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
   test_list <- samples %>%
