@@ -149,7 +149,7 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 * Test log
 
-```{r}
+```{r, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   mc_test_log <- load_test_log()
   saveRDS(mc_test_log, file = "../r_files/mc_test_log.RDS")
 ```
