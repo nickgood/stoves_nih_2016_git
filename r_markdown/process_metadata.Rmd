@@ -34,7 +34,7 @@ output:
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
 
-# Add test type to test log
+# Tidy sample data
 
 ```{r}
   test_log <- test_log %>%
@@ -45,13 +45,20 @@ output:
               dplyr::mutate(fp_target = ifelse(grepl("^B", id), NA, fp_target))
 ```
 
+```{r}
+  samples <-   test_log %>%
+               dplyr::select(id, stove, fuel, type, fp_target) %>%
+               dplyr::left_join(
+                                dplyr::select(fuel, fuel_id, mc_target) %>%
+                                dplyr::distinct(),
+                                by = c("id" = "fuel_id"))
+```
+
+
 # Stove-fuel combinations
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  test_list <- test_log %>%
-               dplyr::select(id, stove, fuel, type, fp_target) %>%
-               dplyr::left_join(dplyr::select(fuel, fuel_id, mc_target), by = c("id" = "fuel_id")) %>%
-               dplyr::distinct() %>%
+  test_list <- samples %>%
                dplyr::group_by(mc_target, fp_target, type) %>%
                dplyr::summarise(id = paste(id, collapse = ","))
 
@@ -144,8 +151,6 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperature]) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
-
 ## batch pot number
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
@@ -187,8 +192,6 @@ Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperatu
     theme(axis.text.y = element_text(size = 30),
           axis.title=element_text(size=40))
 ```
-
-Outlier 16B checked by KF in February 2017. There is no transcription error, but this measure is QC-flagged as bad due to an issue with the carbonyl line being clogged/having known sampling issues that impacted flow rates. 
 
 ## carbonyl timestamps
 
@@ -234,8 +237,6 @@ Outlier 16B checked by KF in February 2017. There is no transcription error, but
           axis.title=element_text(size=40))
 ```
 
-Outlier 1C checked by KF in February 2017. There is no transcription error and the value is within an expected normal range. 
-
 ## wood stove weights
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
@@ -260,10 +261,6 @@ Outlier 1C checked by KF in February 2017. There is no transcription error and t
           axis.title=element_text(size=40))
 ```
 
-Outliers 10A, 6D, 5A, 2A, 1A checked by KF in February 2017. There are no transcription errors. 
-
-Outliers 6A and 13A were transcription errors that were fixed in wood sampling log on 2/18/17 so should not appear in subsequent re-run versions of this file.
-
 ## wood stove times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
@@ -279,7 +276,6 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
-
 
 ## wood lab conditions
 
@@ -312,8 +308,6 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
 
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
-
-All outliers checked by KF in February 2017. There are no transcription errors. 
 
 ## wood pot number
 
@@ -353,8 +347,6 @@ All outliers checked by KF in February 2017. There are no transcription errors.
     theme(axis.text.y = element_text(size = 30),
           axis.title=element_text(size=40))
 ```
-
-Outlier date of 3-11-16: No transcription error, but KF thinks there was a mistake in the original data recording. It should have been written as 49.9 but instead was written as 49.5.
 
 ## fivegas calibration times
 
@@ -423,8 +415,6 @@ Outlier date of 3-11-16: No transcription error, but KF thinks there was a mista
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
-
-Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 is correct (~5-7pm test).
 
 ## co2 (dilution) calibration
 
