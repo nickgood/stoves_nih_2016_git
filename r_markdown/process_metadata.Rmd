@@ -16,7 +16,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=12, fig.height=8)
+                        fig.width=10, fig.height=6)
 ```
 
 ```{r}
@@ -70,14 +70,14 @@ output:
 ```{r, echo=FALSE}
   test_list <- samples %>%
                dplyr::group_by(mc_target, type) %>%
-               dplyr::summarise(id = paste(id, collapse = ","))
+               dplyr::summarise(id = paste(id, collapse = ", "))
 
   ggplot(test_list, aes(y = mc_target, type)) + 
     geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id)) +
     scale_fill_discrete(na.value = 'grey95') +
-    theme_bw(base_size = 16) +
+    theme_bw(base_size = 14) +
     theme(legend.position = "none") +
-    geom_text(aes(label = id, size = 14))
+    geom_text(aes(label = id, size = 6))
 ```
 
 # Clean and save metadata
@@ -103,7 +103,7 @@ output:
   ggplot(p_data, aes(x = factor(var), y = value_norm)) +
     geom_boxplot() +
     geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-    theme_bw(base_size = 16) +
+    theme_bw(base_size = 14) +
     facet_grid(~mc_target) + 
     ylab("z score normalized value") +
     xlab("")
@@ -179,8 +179,8 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("")
 ```
@@ -213,15 +213,15 @@ KB: Currently no data is recorded in the test log
   saveRDS(iso_flows, file="../r_files/iso_flows.RDS")
 ```
 
-```{r, echo=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE}
   p_data <- dplyr::group_by(iso_flows, type) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("")
 ```
@@ -241,12 +241,12 @@ KB: Currently no data is recorded in the test log
 ```{r, echo=FALSE}
   p_data <- dplyr::group_by(filter_flows, type, colour) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
+                          outlier = ifelse(is_outlier(value), as.character(id), NA))
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     facet_wrap(~colour) +
     xlab("") + 
@@ -302,8 +302,8 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("") +
     ggtitle("lab")
@@ -326,7 +326,7 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
     theme_bw(base_size = 16) +
     ylab("z score normalized value") +
     xlab("") +
@@ -352,8 +352,8 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("")
 ```
@@ -376,8 +376,8 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("")
 ```
@@ -400,8 +400,8 @@ KB: Currently no data is recorded in the test log
 
   ggplot(p_data, aes(x = factor(type), y = value_norm)) +
     geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_bw(base_size = 16) +
+    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+    theme_bw(base_size = 14) +
     ylab("z score normalized value") +
     xlab("")
 ```
@@ -433,4 +433,4 @@ KB: Currently no data is recorded in the test log
   count_samples <- dplyr::tally(group_by(samples, type))
 ```
 
-`r as.numeric(count_samples[2,2])` field wood tests, `r (as.numeric(count_samples[2,3])` lab wood tests, and `r (as.numeric(count_samples[2,2])` background tests were conducted for a total of `r sum(count_samples$n)` tests. The tests were performed between `r min(samples$date)` and `r max(samples$date)`. The `r samples$stove[1]` stove was tested with `r samples$fuel[1]` fuel.
+`r as.numeric(count_samples[2,2])` field wood tests, `r as.numeric(count_samples[3,2])` lab wood tests, and `r as.numeric(count_samples[1,2])` background tests were conducted for a total of `r sum(count_samples$n)` tests. The tests were performed between `r min(samples$date)` and `r max(samples$date)`. The `r samples$stove[1]` stove was tested with `r samples$fuel[1]` fuel.
