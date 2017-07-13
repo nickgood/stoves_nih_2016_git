@@ -1,329 +1,164 @@
-#________________________________________________________
+#_______________________________________________________________________________
 # Libraries
   library(tidyverse)
   library(readxl)
   library(reshape)
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
-# Load CO2 file
-# file <- "data/co2/20160105_2A_DILUTION1.csv" # ppm
-# file <- "data/co2/20160615_8D_DILUTION.csv"  # voltage
+#_______________________________________________________________________________
+# source files
+  source("../r_scripts/R_functions.R")
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
+# load co2 file
+# file <- "../data/co2/20170316_LL1_DT_CO2.csv"
 load_co2_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, sep = " ",
-                 fill = TRUE, na.strings = c("NAN"), colClasses = "character")
-
-  type <- ifelse(grepl("^Device", df[1,1]), "volts", "ppm") # determkne file type: if first cell contains...
-
-
-  # load based on type
-    
-  if(type == "ppm"){
-    
-    classes = c("character", "numeric", "numeric", "numeric")
-
-    col_names = c("time", "co2", "toc", "pkpa")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 2, 
-                         fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-
-    df$datetime <- as.POSIXct(paste((strsplit(basename(file), "_")[[1]])[1], df$time),
-                              format = "%Y%m%d %T") # error if fil crosses midnight
-
-    df$date <- as.Date(df$datetime)
-    
-    df$time <- as.character(df$datetime)
-    
-    df$time <- as.numeric(substr(df$time,12,13))*60*60 + 
-               as.numeric(substr(df$time,15,16))*60 +
-               as.numeric(substr(df$time,18,19))
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  if(type == "volts"){
-
-    classes = c("character", "character", "numeric", 
-                  "numeric", "numeric", "numeric")
-
-    col_names = c("date", "time", "lab", "sample", "ch3", "ch4")
-
-    df <- read.csv(file, header = FALSE, colClasses = classes, skip = 7, 
-                   fill = TRUE, na.strings = c("NAN"), col.names = col_names)
-    
-    df$datetime <- as.POSIXct(paste(df$date, df$time),
-                              format = "%m/%d/%Y %I:%M:%S %p") 
-
-    df$time <- posixct_secsofday(df$datetime)
-      
-    df$date <- as.Date(df$datetime)
-
-    df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  }
-  
-  # return
-    return(df)
-}
-#________________________________________________________
-
-#________________________________________________________
-# Load ECOC file
-# file <- "../data/ecoc/20170110_ECOC.csv"
-load_ecoc_file <- function(file){
+ # print
+  print(file)
+ # read file
+  out <- read_csv(file = file, col_names = FALSE, skip = 7)
+ # name columns
+  names(out) <- c("date", "time", "ch1", "ch2", "ch3", "ch4")
  # classes
-  classes <- c("character",
-                "factor",
-                rep("numeric",20),
-                "character",
-                "character",
-                rep("numeric",2),
-                rep("factor",2),
-                rep("numeric",3),
-                "character",
-                rep("numeric",2),
-                "factor",
-                rep("numeric",2),
-                "factor",
-                rep("numeric",4),
-                rep("character",3))
-
-  ecoc <- read.csv(file, header = TRUE, colClasses = classes, 
-                   fill = TRUE, na.strings = c("-", "na"))
-
-  ecoc <- dplyr::rename(ecoc, time = Time) %>%
-          dplyr::mutate(time = as.character(as.POSIXct(strptime(time, "%I:%M:%S %p"))),
-                        time = as.numeric(substr(time,12,13))*60*60 +
-                               as.numeric(substr(time,15,16))*60 +
-                               as.numeric(substr(time,18,19)))
-
-  ecoc <- dplyr::rename(ecoc, date = Date,
-                        ecoc_id = Sample.ID) %>%
-          dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
-                               datetime = as.POSIXct(as.character(date)))
-
- # determine type (test, pilot or NA)
-  ecoc <- dplyr::mutate(ecoc,
-                        type = as.character(ecoc_id),
-                        type = sub(".*india.*", NA, type, ignore.case = TRUE),
-                        type = sub("^C11-.*", "test", type),
-                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
-                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
-                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
-                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
-                        type = sub("^B63A$|^B63E$", "pilot", type),
-                        type = sub("^P.*", "pilot", type),
-                        type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
-                        type = sub("^G.*", "bg", type))
-
- # determine cassette (a, e or NA)
-  ecoc <- dplyr::mutate(ecoc,
-                        cassette = as.character(ecoc_id),
-                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
-                                   NA, cassette),
-                        cassette = sub("^30A-3$", "e", cassette),
-                        cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
-                        cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
-                        cassette = sub(".*bq.*|.*blank.*", NA, cassette, ignore.case = TRUE))
-
- # extract ids
-  ecoc <- dplyr::mutate(ecoc,
-                         id = as.character(ecoc_id),
-                         id = sub("^B63A$|^B63E$", "lab_blank", id),
-                         id = sub("5L-[A-Z]$", "5C", id),
-                         id = sub("^G7E$", "G7", id),
-                         id = sub("-[A-Z] repeat$", "", id),
-                         id = sub(".*P5-A$", "5", id),
-                         id = sub(".*india.*", NA, id, ignore.case = TRUE),
-                         id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
-                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
-                         id = gsub("^P.*", NA, id),
-                         id = sub("-[0-9]$", "", id),
-                         id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
-
- # rename columns
-  names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
-  names(ecoc) <- tolower(gsub("\\.\\.", "_", colnames(ecoc)))
-  names(ecoc) <- tolower(gsub("\\.", "_", colnames(ecoc)))
-  
- # set classes
-  ecoc <- dplyr::mutate(ecoc,
-                        ecod_id = as.factor(ecoc_id),
-                        id = as.factor(id),
-                        type = as.factor(type),
-                        cassette = as.factor(cassette))
-
+  out <- dplyr::mutate(out,
+                       datetime = as.POSIXct(date, format = "%m/%d/%Y"),
+                       datetime = datetime + time,
+                       date = as.Date(date, format = "%m/%d/%Y"),
+                       time = as.numeric(time),
+                       id = (strsplit(basename(file), "_")[[1]])[2])
  # return
-  return(ecoc)
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
+# Load ECOC file
+#file <- "../data/ecoc/nih_mc.csv"
+load_ecoc_file <- function(file = "../data/ecoc/nih_mc.csv"){
+
+  readr::read_csv(file,
+                         skip = 4,
+                         
+                         col_names = c("filter_id",	"optics_mode","oc_ugsqcm",
+                                       "oc_unc",	"ec_ugsqcm","ec_unc",
+                                       "cc_ugsqcm","cc_unc","tc_ugsqcm","tc_unc","ectc_ratio",
+                                       "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
+                                       "pyrolc_ugsqcm","ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
+                                       "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
+                                       "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
+                                       "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
+                                       "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
+                                       "empty1", "empty2"),
+                         col_types = 
+                          cols(
+                           .default = col_double(),
+                           filter_id = col_character(),
+                           optics_mode = col_character(),
+                           date = col_date(format = "%m/%d/%y"),
+                           time = col_time(format = ""),
+                           fid1 = col_character(),
+                           fid2 = col_character(),
+                           manual_split_sec = col_character(),
+                           inst_name = col_character(),
+                           analyst = col_character(),
+                           parameter_file = col_character(),
+                           empty1 = col_character(),
+                           empty2 = col_character()
+                          ),
+                         na = c("", "na", "-")
+         ) %>%
+  dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
+                                      format = "%Y-%m-%d %H:%M:%S"),
+                time = as.numeric(hms(time)) # convert time to secs in day
+  )
+
+}
+#_______________________________________________________________________________
+
+#_______________________________________________________________________________
 # Load fivegas file
-# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
-# file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
+# file <- "../data/fivegas/20170316_BG1_5GAS.csv"
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
-
-  df <- read.csv(file, header = FALSE, nrows = 1, colClasses = "character", sep = " ")  # check file type from first line
-
+  print(file)
  # load 
-  if(grepl("^Device", df[1][1])){
-
-  classes = c(rep("character",2), rep("numeric",4))
-
-  col_names = c("date", "time", "co2", "o2", "co", "ch4")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes,
-                       skip = 7, fill = TRUE, col.names = col_names)
-    
- # check year format
-  if(grepl("[0-9][0-9][0-9][0-9]$", df$date[1])){
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%Y %I:%M:%S %p")
-  }else{
-    df$datetime <- as.POSIXct(paste(df$date, df$time), format = "%m/%d/%y %I:%M:%S %p")
-  }
-
- # convert time string to seconds of day
-  df$time <- as.character(df$datetime)
-  df$time <- as.numeric(substr(df$time,12,13))*60*60 +
-             as.numeric(substr(df$time,15,16))*60 +
-             as.numeric(substr(df$time,18,19)) 
-
- # convert date
-  df$date <- as.Date(df$datetime)
-
-  }else{
- # check time format
-  df <- read.csv(file, header = FALSE,
-                   nrows = 1,
-                   colClasses = "character",
-                   skip = 1)
-
-  time_format <- ifelse(grepl("AM$|PM$", df$V7[1]), "us", "mil")
-    
-  classes = c(rep("numeric",6), "character")
-
-  col_names = c("ch4", "o2", "nox", "co2", "co", "datetime_secs", "time_str")
-
-  df <- read.csv(file, header = FALSE, colClasses = classes, sep = ",",
-                       skip = 1, fill = TRUE, col.names = col_names)
-
-  if(time_format == "mil"){
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %H:%M:%S"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                                 as.numeric(substr(datetime, 15, 16)) * 60 +
-                                 as.numeric(substr(datetime, 18, 19)))
-  }else{
-    df <- dplyr::mutate(df, datetime =
-                            as.POSIXct(paste((strsplit(basename(file),
-                            "_")[[1]])[1],
-                            df$time),
-                            format = "%Y%m%d %I:%M:%S %p"),
-                            date = as.Date(datetime),
-                            time = as.character(datetime),
-                            time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
-                            as.numeric(substr(datetime, 15, 16)) * 60 +
-                            as.numeric(substr(datetime, 18, 19)))
-  }
-}
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
- # convert percents to ppm
-  df$co2 <- df$co2*10^4
-  df$o2 <- df$o2*10^4  
-
+  out <- read_tsv(file, col_names = TRUE)
+ # rename
+  names(out) <- c("ch4","o2","nox","co2", "co", "time_s", "datetime")
+ # datetime format
+  out <- dplyr::mutate(out, 
+                       time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                              as.numeric(substr(datetime, 15, 16)) * 60 +
+                              as.numeric(substr(datetime,18, 19)),
+                       datetime = as.POSIXct(datetime,
+                                             format = "%m/%d/%Y %H:%M:%OS"),
+                                             date = as.Date(datetime),
+                       id = (strsplit(basename(file), "_")[[1]])[2])
  # return
-  return(df)
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load gravimetric file
-# file <- "data/grav/Teflon Filter Weight Log.xlsx"
-#
-load_grav_file <- function(file, sheet = "Teflon Filter Weights"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
-  
-  df <- as_tibble(t(df[1:29,-1]))  # transpose
-    
-  names(df) <- c("id_filter", 
-                 "date_pre",
-                 "person_pre",
-                 "toc_pre",
-                 "rh_pre",
-                 "phpa_pre",
-                 "wgt_cal_pre",
-                 "id_blank",
-                 "wgt_blank_avg_pre",
-                 "wgt_pre_1",
-                 "wgt_pre_2",
-                 "wgt_pre_3",
-                 "wgt_pre_avg",
-                 "date_post",
-                 "id_grav",
-                 "time_post",
-                 "person_post",
-                 "toc_post",
-                 "rh_post",
-                 "phpa_post",
-                 "wgt_cal_post",
-                 "wgt_blank_avg_post",
-                 "wgt_post_1",
-                 "wgt_post_2",
-                 "wgt_post_3",
-                 "wgt_post_avg",
-                 "wgt_dif",
+# file <- "../data/grav/Teflon Weight Log Final.xlsx"
+# sheet <- "Teflon Filter Weights"
+# out <- load_grav_file(file) 
+load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
+                           sheet = "Teflon Filter Weights"){
+ # read file
+  out <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
+ # transpose
+  out <- as_tibble(t(out[1:29,-1]))
+ # rename columns
+  names(out) <- c("id_filter", 
+                  "date_pre",
+                  "person_pre",
+                  "toc_pre",
+                  "rh_pre",
+                  "phpa_pre",
+                  "wgt_cal_pre",
+                  "id_blank",
+                  "wgt_blank_avg_pre",
+                  "wgt_pre_1",
+                  "wgt_pre_2",
+                  "wgt_pre_3",
+                  "wgt_pre_avg",
+                  "date_post",
+                  "id_grav",
+                  "time_post",
+                  "person_post",
+                  "toc_post",
+                  "rh_post",
+                  "phpa_post",
+                  "wgt_cal_post",
+                  "wgt_blank_avg_post",
+                  "wgt_post_1",
+                  "wgt_post_2",
+                  "wgt_post_3",
+                  "wgt_post_avg",
+                  "wgt_dif",
                  "notes",
-                 "lod")
+                  "lod")
 
-  cols <- subset(colnames(df), grepl("^date",colnames(df))==TRUE)
-  df_dat <- subset(df, select = cols)
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
+ # classes
+  out <- dplyr::mutate_at(out,
+                          .cols = vars(starts_with("date")),
+                          .funs = excel_date) %>%
+         dplyr::mutate_at(.cols = vars(matches("^toc_.*|^rh_.*|phpa_.*|wgt_.*|lod_")),
+                    .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                    .funs = excel_time) %>%
+         dplyr::mutate(id = sub("-.*", "", id_grav)) %>%
+         dplyr::filter(!is.na(id))
 
-  cols <- subset(colnames(df), grepl("^toc_|^rh_|^phpa_|^wgt_|lod",colnames(df))==TRUE)
-  df_num <- subset(df, select = cols)
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
-  df_time <- subset(df, select = cols)
-  df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60))  
-
-  df_char <- subset(df, select = notes)
-    
-  cols <- subset(colnames(df), grepl("^person_|^id",colnames(df))==TRUE)
-  df_fac <- subset(df, select = cols)
-  df_fac <- as.data.frame(lapply(df_fac, 
-                                 function(x) as.factor(x)))
-
-  out <- cbind(df_dat, df_num, df_time, df_char, df_fac)               
-
-  out$id <- as.factor(sub("-.*", "", out$id_grav))
-  
-  # return 
-    return(out)
+ # return 
+  return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load ions and carbonyls file
 # file <- "../data/ions/20161230_IONS.xls"
 # set sheet to "ug" or "ug_m3"
@@ -351,9 +186,9 @@ load_ions_file <- function(file, sheet = "ug"){
   # return 
     return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load pah file
 # file <- "data/pah/20160804_PAH.xlsx"
 # set sheet to "ug" or "ug_m3"
@@ -392,88 +227,26 @@ load_pah_file <- function(file, sheet = "Summary"){
   # return 
     return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load transmissiometer
-# file <- "data/trans/Transmissometer Log.xlsx" 
-load_trans_file <- function(file, sheet = "Transmissometer Log"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 1)
-
-  df <- as.data.frame(t(df[-1]))
-  
-  df <- df[,1:41]
-
-  col_names = c("id_filter",
-                "id_blank",
-                "date_pre",
-                "person_pre",
-                "toc_pre",
-                "rh_pre",
-                "phpa_pre",
-                "id_diff_blank_pre",
-                "uv_front_blank_pre",
-                "ir_front_blank_pre",
-                "uv_back_blank_pre",
-                "ir_back_blank_pre",
-                "id_diff_sample_pre",
-                "uv_front_sample_pre",
-                "ir_front_sample_pre",
-                "uv_back_sample_pre",
-                "ir_back_sample_pre",
-                "uv_blank_diff_pre",
-                "ir_blank_diff_pre",
-                "uv_sample_diff_pre",
-                "ir_sample_diff_pre",
-                "date_post",
-                "person_post",
-                "toc_post",
-                "rh_post",
-                "phpa_post",
-                "id_diff_blank_post",
-                "uv_front_blank_post",
-                "ir_front_blank_post",
-                "uv_back_blank_post",
-                "ir_back_blank_post",
-                "id_diff_sample_post",
-                "uv_front_sample_post",
-                "ir_front_sample_post",
-                "uv_back_sample_post",
-                "ir_back_sample_post",
-                "uv_blank_diff_post",
-                "ir_blank_diff_post",
-                "uv_sample_diff_post",
-                "ir_sample_diff_post",
-                "notes")    
-
-  names(df) <- col_names
-
-  cols <- subset(colnames(df), grepl("^date",colnames(df))==TRUE)
-  df_dat <- subset(df, select = cols)
-  df_dat <- as.data.frame(lapply(df_dat, 
-                                 function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
-
-  cols <- subset(colnames(df), grepl("^toc|^rh|^phpa|^uv|ir",colnames(df))==TRUE)
-  df_num <- subset(df, select = cols)
-  df_num <- as.data.frame(lapply(df_num, 
-                                 function(x) as.numeric(as.character(x))))
-
-  df_char <- subset(df, select = notes)
-  df_char <- as.data.frame(lapply(df_char,
-                                 function(x) as.character(x)), stringsAsFactors=FALSE)
-
-  cols <- subset(colnames(df), grepl("^id|^person",colnames(df))==TRUE)
-  df_fac <- subset(df, select = cols)
-
-  out <- cbind(df_dat, df_num, df_char, df_fac)
-    
-  # return
-    return(out)
+# file <- "../data/trans/MC Transmissometer Final.xlsx"
+# out <- load_trans_file(file)
+load_trans_file <- function(file){
+ # read file
+  out <- read_excel(path = file, col_names = TRUE, skip = 0)[,1:18]
+ # column names
+  out <- clean_names(out)
+ # classes
+  out <- dplyr::select(out, -contains("date")) %>%
+         dplyr::filter(!is.na(filter_id))
+ # return
+  return(out)
 } 
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load vocs
 # file <- "../data/voc/20161215_VOC.xlsx"
 load_voc_file <- function(file, sheet = "Sheet1"){
@@ -522,20 +295,23 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   # return 
     return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load temperature file
-# file <- "../data/temp/20160107_16A_TEMP.csv"
+# file <- "../data/temp/20170316_FL1_TEMP.csv"
+# out <- load_temp_file(file)
 load_temp_file <- function(file){
-
+ # print file name
+  print(file)
+ # classes
   classes = c("character",
               "character",
               "numeric",
               "numeric",
               "numeric",
               "numeric")
-
+# column names
   col_names = c("date",
                 "time",
                 "t_1",
@@ -545,52 +321,20 @@ load_temp_file <- function(file){
 
   df <- read.csv(file, header = FALSE, colClasses = classes, 
                  fill = TRUE, na.strings = c("OL"), col.names = col_names)
-  
-  df$datetime <- as.POSIXct(paste(df$date, df$time),
-                            format = "%m/%d/%Y %I:%M:%S %p") 
 
-  df$time <- as.numeric(substr(df$datetime, 12, 13)) * 60 * 60 + 
-             as.numeric(substr(df$datetime, 15, 16)) * 60 +
-             as.numeric(substr(df$datetime,18, 19))
-
-  df$date <- as.Date(df$date, format = "%m/%d/%Y")
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
- 
-  # return
-    return(df)
+  df <- dplyr::mutate(df, datetime = as.POSIXct(paste(date, time),
+                                      format = "%m/%d/%Y %I:%M:%S %p"),
+                          time = as.numeric(substr(datetime, 12, 13)) * 60 * 60 +
+                                  as.numeric(substr(datetime, 15, 16)) * 60 +
+                                  as.numeric(substr(datetime, 18, 19)),
+                          date = as.Date(date, format = "%m/%d/%Y"),
+                          id = (strsplit(basename(file), "_")[[1]])[2])
+ # return
+  return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
-# Load stove weight
-# file <- "../data/scale/20160107_16A_SCALE.xlsx"
-load_scale_file <- function(file, sheet = "Sheet1"){
-
-  df <- read_excel(path = file, sheet = sheet, col_names = FALSE)
-
-  df <- df[,1:4]
-
-  names(df) <- c("date",
-                 "time",
-                 "wgt_stove",
-                 "units")
-
-  df$datetime <- as.POSIXct(paste(as.character(df$date),
-                            substr(as.character(df$time),12,19)), format = "%Y-%m-%d %T")
-
-  df$time <- as.numeric(substr(as.character(df$time),12,13))*60*60 +
-             as.numeric(substr(as.character(df$time),15,16))*60 +
-             as.numeric(substr(as.character(df$time),18,19))
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-  
-  # return
-    return(df)
-}
-#________________________________________________________
-
-#________________________________________________________
+#_______________________________________________________________________________
 # Load pax file
 # file <- "../data/pax/20160629_ALLDAY_PAX.csv"
 load_pax_file <- function(file){
@@ -620,93 +364,42 @@ load_pax_file <- function(file){
  # return
   return(df)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
+#_______________________________________________________________________________
 # Load smps file
-# file <- "../data/smps/20160105_6A_SMPS.csv"
-# df <- load_smps_file(file)
+#file <- "../data/smps/2017_03_16_16_18_59_SMPS.txt"
+#out <- load_smps_file(file)
 load_smps_file <- function(file){
-
-  df <- read.csv(file, header = TRUE, fill = TRUE,
-                       stringsAsFactors = FALSE, skip = 25)
-
-  df_meta <- read.csv(file, header = FALSE, fill = TRUE,
-                       stringsAsFactors = FALSE, nrows = 25)
-
-  df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
-  names(df) <- tolower(gsub("\\.\\.\\.\\.", "_", colnames(df)))
-  names(df) <- gsub("\\.\\.\\.", "_", colnames(df))
-  names(df) <- gsub("\\.\\.", "_", colnames(df))
-  names(df) <- gsub("\\.", "_", colnames(df))
-  names(df) <- gsub("_$", "", colnames(df))
-
-  df_dw <- subset(df, select = grep("^x[0-9]", colnames(df), value = TRUE))
-  df_vals <- subset(df, select = grep("^[^x][^0-9]", colnames(df), value = TRUE))
-
-  df_meta_1 <- df_meta[,1:2]
-  df_meta_2 <- df_meta[,3:4]
-  df_meta_3 <- df_meta[,5:6]
-  
-  names(df_meta_1) <- c("var", "val")
-  names(df_meta_2) <- c("var", "val")
-  names(df_meta_3) <- c("var", "val")
-
-  df_meta <- na.omit(rbind(df_meta_1, df_meta_2, df_meta_3))
-
-  col_names <- df_meta[,1]
-
-  df_meta <- as.data.frame(t(df_meta[-1]))
-
-  names(df_meta) <- tolower(gsub(" ", "_", col_names))
-
-  df_meta$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
-
-  df_allvals <- merge(df_vals, df_meta, by.x = "id")
-    
-  df_dw$sample <- df$sample
-
-  df_dw <- melt(df_dw, id.vars = "sample")
-
-  df_dw$size <- gsub("_", ".", df_dw$variable)
-
-  df_dw$size <- as.numeric(gsub("x", "", df_dw$size))
-
-  df_dw$variable <- NULL
-
-  out <- merge(df_allvals,df_dw, by.x = "sample")
-
-  out <- out[!is.na(out$value), ]
-
-  out <- arrange(out, sample, size)
-
- # match d/../yy or dd/../yy
-  if(grepl("(^[0-9]/)|(^[0-9][0-9]/)[0-9].*/[0-9][0-9]$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%m/%d/%y")
-  }
-  # match yyyy/...
-  if(grepl("^[0-9][0-9][0-9][0-9]/.*$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%Y/%m/%d")
-  }
-  # match .../yyyy
-  if(grepl(".*/[0-9][0-9][0-9][0-9]$", out$date[1])){
-    out$date <- as.Date(out$date, format = "%m/%d/%Y")
-  }
-
-  out$time <- as.numeric(substr(out$start_time,1,2))*60*60 + 
-              as.numeric(substr(out$start_time,4,5))*60 +
-              as.numeric(substr(out$start_time,7,8))
-
-  out$datetime <- as.POSIXct(paste(as.character(out$date), out$start_time), 
-                             format = "%Y-%m-%d %H:%M:%S")
-
+ # print filename
+  print(file)
+ # read file body
+  out <- read_csv(file, skip = 25)
+ # read meta data
+  out_head <- read_csv(file, col_names = FALSE, n_max = 25)
+  names(out_head) <- c("var", "val")
+ # clean up column names
+  out <- clean_names(out)
+ # organize size distributions
+  out <- tidyr::gather(out, "size_nm", "dw", 10:ncol(out)) %>%
+         dplyr::filter(!is.na(dw)) %>%
+         dplyr::arrange(sample, size_nm) %>%
+         dplyr::mutate(size_nm = as.numeric(sub("_", ".", size_nm)),
+                       datetime = as.POSIXct(paste(as.character(date),
+                                  as.character(seconds_to_period(as.numeric(start_time)))),
+                                  format = "%F %HH %MM %SS"),
+                       sample_file = basename(file)) %>%
+         dplyr::select(-diameter_midpoint_nm)
+ # organize header
+  out_head <- tidyr::spread(out_head, var, val) %>% clean_names()
+ # combine
+  out <- left_join(out, out_head, by = "sample_file")
  # return
   return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________ 
+#________________________________________________________
 # Load single files
 load_singlefiles <- function(log){
  # ecoc
@@ -834,42 +527,26 @@ load_multifile <- function(fldr, pattern, inst){
  # return
   return(out)
 }
-#________________________________________________________
+#_______________________________________________________________________________
 
-#________________________________________________________
-# Load fivegas
-# file <- "data/fivegas/20160105_6A_FIVEGAS_OLD.csv"
-# file <- "data/fivegas/20160615_2D_FIVEGAS_FIXED.csv"
-
-load_fivegas <- function(fldr = "../data/fivegas", 
-                         pattern = "[0-9][A-Z]_FIVEGAS_FIXED.csv$|[0-9][A-Z]_FIVEGAS_OLD.csv$",
-                         type = "conc"){
-
-  filelist <- list.files(fldr, pattern = pattern, full.names = TRUE)
-
+#_______________________________________________________________________________
+# Load fivegas files
+# df <- load_fivegas()
+load_fivegas <- function(fldr = "../data/fivegas"){
+ 
+ filelist <- list.files(fldr, pattern = ".csv$", full.names = TRUE)
+ 
  # loop files
-  for(i in 1:length(filelist)){
-
- # determine file type
-  df <- read.csv(filelist[i], header = FALSE, nrows = 1, colClasses = "character", sep = " ")
-
- # check type
-  filetype <- ifelse(grepl("^Device", df[1][1]), "volts", "conc")
-
- # load 
-  if(filetype == type){
-
+ for(i in 1:length(filelist)){
+  print(filelist[i])
   if(exists("out", inherits = FALSE)==FALSE){
-    out <- load_fivegas_file(filelist[i])
+   out <- load_fivegas_file(filelist[i])
   }else{
-    out <- rbind(out, load_fivegas_file(filelist[i]))
+   out <- rbind(out, load_fivegas_file(filelist[i]))
   }
- # end if
-  }
- # end for
-  }
-
+ }
+ 
  # return
-  return(out)
+ return(out)
 }
 #________________________________________________________
