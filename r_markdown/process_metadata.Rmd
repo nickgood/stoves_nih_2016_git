@@ -40,21 +40,30 @@ output:
   test_log <- test_log %>%
               dplyr::mutate(type = ifelse(grepl("^L", id), "lab", "field")) %>%
               dplyr::mutate(type = ifelse(grepl("^B", id), "bg", type)) %>%
-              dplyr::mutate(fp_target = ifelse(grepl("^LL|^FL", id), "low", "med")) %>%
-              dplyr::mutate(fp_target = ifelse(grepl("^LH|^FH", id), "high", fp_target)) %>%
-              dplyr::mutate(fp_target = ifelse(grepl("^B", id), NA, fp_target))
+              dplyr::mutate(mc_target = ifelse(grepl("^LL|^FL", id), "low", "med")) %>%
+              dplyr::mutate(mc_target = ifelse(grepl("^LH|^FH", id), "high", mc_target)) %>%
+              dplyr::mutate(mc_target = ifelse(grepl("^B", id), NA, mc_target))
 ```
+
+```{r}
+  # rename variable
+  fuel <- dplyr::rename(fuel, id = fuel_id, date = date_test)
+```
+
 
 ```{r}
   samples <-   test_log %>%
                dplyr::select(id, stove, fuel, type, fp_target) %>%
                dplyr::left_join(
-                                dplyr::select(fuel, fuel_id, mc_target) %>%
+                                dplyr::select(fuel, id, mc_target) %>%
                                 dplyr::distinct(),
-                                by = c("id" = "fuel_id"))
+                                by = "id") %>%
+               dplyr::mutate(mc_target = as.factor(mc_target))
 
   saveRDS(samples, "../r_files/samples.RDS")
 ```
+
+
 
 
 ## Plot test ids
@@ -80,13 +89,14 @@ output:
 ## batch stove weights
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_wgts <- dplyr::filter(tidy_id_date(batch, "^wgt_", "wgt_"), !is.na(value))
+  fuel_wgts <- dplyr::filter(tidy_id_date(fuel, "^mass_", "mass_"), !is.na(value))
 
-  save(batch_wgts, file="../r_files/batch_wgts.Rda")
+  saveRDS(fuel_wgts, file="../r_files/fuel_wgts.Rda")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(batch_wgts, var) %>%
+  p_data <- dplyr::group_by(fuel_wgts, var) %>%
+            dplyr::left_join(samples, by = "id") %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
@@ -94,6 +104,7 @@ output:
     geom_boxplot() +
     geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
     theme_minimal() +
+    facet_grid(~mc_target) + 
     ylab("z score normalized value") +
     xlab("") +
     theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
