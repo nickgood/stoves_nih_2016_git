@@ -23,90 +23,136 @@ output:
 
 ## co2
 
-Loads and saves the CO2 voltage data (`calibration?`)
+Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  co2 <- load_multifile(fldr = "../data/co2",
-                        pattern = ".*_CO2.*.csv$", inst = "co2")
+  co2_lab <- load_multifile(fldr = "../data/co2",
+                            pattern = "DILUTION1.csv$", inst = "co2")
 
-  saveRDS(co2, file = "../r_files/co2.RDS")
+  save(co2_lab, file = "../r_files/co2_lab.Rda")
+
+  co2_sample <- load_multifile(fldr = "../data/co2",
+                               pattern = "DILUTION2.csv$", inst = "co2")
+
+  save(co2_sample, file = "../r_files/co2_sample.Rda")
+
+  co2_lab_sample <- load_multifile(fldr = "../data/co2",
+                                   pattern = "DILUTION.csv$", inst = "co2")
+
+  save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
 ```
 
 ## ecoc
 
-Loads ecoc data file and saves (`waiting on data`)
+Loads ecoc data file and resave as .Rda
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ecoc <- load_ecoc_file()
-  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
+  ecoc <- load_singlefiles("ecoc")
+
+  save(ecoc, file = "../r_files/ecoc.Rda")
 ```  
 
 ## fivegas
 
-Loads fivegas mixing ratio files and resaves.
+The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_fivegas <- load_fivegas()
-  saveRDS(data_fivegas, file = "../r_files/fivegas.RDS")
+  fivegas_conc <- load_fivegas(type = "conc")
+
+  save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
+
+  fivegas_volts <- load_fivegas(type = "volts")
+
+  save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
+
+  fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",
+                                      type = "volts")
+
+  save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
 ```
 
 ## gravimetric
 
-Loads filter weight data and resaves as .RDS.
+Loads filter weight data and resaves as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_grav <- load_grav_file() 
-  saveRDS(data_grav, file = "../r_files/grav.RDS")
+  grav <- load_singlefiles("grav")
+
+  save(grav, file = "../r_files/grav.Rda")
 ```
 
-## carbonyls
+## ions and carbonyls
 
-Loads and resaves data as .RDS.
+Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  # ions <- load_singlefiles("ions")
-  # save(ions, file = "../r_files/ions.RDS")
+  ions <- load_singlefiles("ions")
+
+  save(ions, file = "../r_files/ions.Rda")
+```
+
+## pahs
+
+Loads and resaves data as .Rda.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
+  pah <- load_singlefiles("pah")
+
+  save(pah, file = "../r_files/pah.Rda")
 ```
 
 ## pax
 
-Loads and resaves data as .RDS.
+Loads and resaves data as .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
-  save(pax, file = "../r_files/pax.RDS")
+  save(pax, file = "../r_files/pax.Rda")
+```
+
+## scale
+
+Loads and resaves data as .Rda.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  scale <- load_multifile(fldr = "../data/scale",
+                          pattern = "_SCALE.xlsx$", inst = "scale")
+
+  save(scale, file = "../r_files/scale.Rda")
 ```
 
 ## smps
 
-Loads and resaves data as an .RDS.
+Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   smps <- load_multifile(fldr = "../data/smps",
-                         pattern = "_SMPS.txt$", inst = "smps")
-  saveRDS(smps, file = "../r_files/smps.RDS")
+                         pattern = "_SMPS.csv$", inst = "smps")
+
+  save(smps, file = "../r_files/smps.Rda")
 ```
 
 ## temperature
 
-Loads and resaves data as an .RDS.
+Loads and resaves data as an .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- load_multifile(fldr = "../data/temp",
-                         pattern = "_TEMP.csv", inst = "temp")
-  saveRDS(temp, file = "../r_files/temp.RDS")
+                         pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
+
+  save(temp, file = "../r_files/temp.Rda")
 ```
 
 ## transmissometer
 
-Loads and resaves data as an .RDS.
+Loads and resaves data as an .Rda.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans <- load_trans_file("../data/trans/MC Transmissometer Final.xlsx")
-  saveRDS(trans, file = "../r_files/trans.RDS")
+  trans <- load_singlefiles("trans")
+
+  save(trans, file = "../r_files/trans.Rda")
 ```
  
 ## vocs
@@ -114,36 +160,175 @@ Loads and resaves data as an .RDS.
 Loads the microgram sheet  and resaves data as an .Rda.
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #voc <- load_singlefiles("voc")
-  #save(voc, file = "../r_files/voc.RDS")
+  voc <- load_singlefiles("voc")
+
+  save(voc, file = "../r_files/voc.Rda")
 ```
 
 # Metadata
 
-* Fuel preparation data
+## sample logs
+
+Reference for test id, stove and fuel types.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_fuel_prep <- load_fuel_prep()
-  saveRDS(data_fuel_prep, file = "../r_files/data_fuel_prep.RDS")
+  samples <- load_singlefiles("sample")
 ```
 
-* Tester 1 log
+* Define stove type levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_tester_one <- load_test_one()
-  saveRDS(data_tester_one, file = "../r_files/data_tester_one.RDS")
+  samples <- dplyr::mutate(samples,
+                           stove = factor(stove,
+                           levels = c("Three Stone Fire (Artisan)",
+                             "Clay Ring (Artisan)",
+                             "Built-in Justa (Envirofit, HM5000)",
+                             "Rocket Elbow (Envirofit, G3300)",
+                             "Fan Rocket Elbow (Biolite, HomeStove)",
+                             "Ceramic Charcoal (Artisan)",
+                             "Metal Charcoal (Burn, Jikokoa)",
+                             "Gasifier (Philips, HD4012)",
+                             "Gasifer (Mimi Moto, Mimi Moto)",
+                             "Gasifier (Envirofit, Prototype)",
+                             "Wick Kerosene (Cook 'n Lite, 82)", 
+                             "Pressurized Kerosene (Butterfly, 2412)",
+                             "Pressurized LPG (WokSmith, WS-C1-25K)")))
 ```
 
-* Tester 2 log
+* Define fuel category levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_tester_two <- load_test_two()
-  saveRDS(data_tester_two, file = "../r_files/data_tester_two.RDS")
+  samples <- dplyr::mutate(samples,
+                           fuel = factor(fuel,
+                           levels = c("Douglas Fir",
+                             "Oak",
+                             "Eucalyptus",
+                             "Lump Hardwood (Sm.)",
+                             "Lump Hardwood (Med.)",
+                             "Coconut Charcoal",
+                             "West Slope Pellets",
+                             "Eucalyptus Pellets",
+                             "Kerosene",
+                             "Liquefied Petroleum Gas")))
 ```
 
-* Calibration 2 log
+* Create aggregated fuel category
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_cal_two <- load_cal_two()
-  saveRDS(data_cal_two, file = "../r_files/data_cal_two.RDS")
+  samples <- dplyr::mutate(samples,
+                           fuelcat =
+                             forcats::fct_collapse(fuel,
+                               wood = c("Oak",
+                                        "Eucalyptus",
+                                        "Douglas Fir"),
+                               charcoal = c("Coconut Charcoal",
+                                            "Lump Hardwood (Med.)", 
+                                            "Lump Hardwood (Sm.)"),
+                               pellets = c("Eucalyptus Pellets",
+                                           "West Slope Pellets"),
+                               advanced = c("Kerosene",
+                                            "Liquefied Petroleum Gas")))
+```
+
+* Create aggregated stove catergory
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- dplyr::mutate(samples,
+                           stovecat =
+                            forcats::fct_collapse(stove,
+                               traditional = c("Clay Ring (Artisan)",
+                                             "Three Stone Fire (Artisan)",
+                                             "Ceramic Charcoal (Artisan)"),
+                               improved = c("Fan Rocket Elbow (Biolite, HomeStove)",
+                                          "Metal Charcoal (Burn, Jikokoa)", 
+                                          "Rocket Elbow (Envirofit, G3300)",
+                                          "Built-in Justa (Envirofit, HM5000)"),
+                               gasifiers = c("Gasifier (Envirofit, Prototype)", 
+                                           "Gasifier (Philips, HD4012)",
+                                           "Gasifer (Mimi Moto, Mimi Moto)"),
+                               advanced = c("Pressurized LPG (WokSmith, WS-C1-25K)",
+                                          "Wick Kerosene (Cook 'n Lite, 82)", 
+                                          "Pressurized Kerosene (Butterfly, 2412)")))
+```
+
+* Save samples file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(samples, file = "../r_files/samples.Rda")
+```
+
+## batch sample meta data
+
+* weights (fuel, pot, ...)
+* times (start, refuel, ...)
+* lab conditions (T, RH, P)
+* notes
+ 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  batch <- load_singlefiles("batch")
+
+  batch <- dplyr::filter(batch, grepl("^[0-9]", id))
+
+  save(batch, file = "../r_files/batch.Rda")
+```
+
+## wood sample meta data
+
+* weights (fuel, pot, ...)
+* times (start, refuel, ...)
+* lab conditions (T, RH, P)
+* notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  wood <- load_singlefiles("wood")
+
+  wood <- dplyr::filter(wood, grepl("^[0-9]", id))
+
+  save(wood, file = "../r_files/wood.Rda")
+```
+
+## calibration log 1
+
+* fivegas calibration standards
+* fivegas calibration timestamps
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  cal_1 <- load_singlefiles("cal_1")
+
+  save(cal_1, file = "../r_files/cal_1.Rda")
+```
+
+## calibration log 2
+
+* co2 calibration information
+* pax and smps flow measurements
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+  cal_2 <- load_singlefiles("cal_2")
+
+  save(cal_2, file = "../r_files/cal_2.Rda")
+```
+
+## data log 1
+
+* vilter cartridge flows and times
+* voc times
+* fivegas background times
+* notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  data_1 <- load_singlefiles("data_1")
+
+  save(data_1, file = "../r_files/data_1.Rda")
+```
+ 
+## data log 2
+
+* carbonyls and isokinetic sampler times and flows
+* smps and pax times (including background)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  data_2 <- load_singlefiles("data_2")
+
+  save(data_2, file = "../r_files/data_2.Rda")
 ```
