@@ -52,6 +52,8 @@ output:
                                 dplyr::select(fuel, fuel_id, mc_target) %>%
                                 dplyr::distinct(),
                                 by = c("id" = "fuel_id"))
+
+  saveRDS(samples, "../r_files/samples.RDS")
 ```
 
 
