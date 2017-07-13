@@ -77,7 +77,7 @@ Loads and resaves data as .RDS.
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
-  save(pax, file = "../r_files/pax.RDS")
+  saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
 ## smps
