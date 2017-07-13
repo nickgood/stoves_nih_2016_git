@@ -7,13 +7,18 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+```{r load_libraries}
   library(tidyverse)
   library(GGally)
   library(gridExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE)
+```
+
+```{r}
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_plots.R")
   source("../r_scripts/R_tidy.R")
@@ -22,7 +27,7 @@ output:
 # Load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  load("../r_files/pax.Rda")         # pax data
+  pax <- readRDS("../r_files/pax.RDS")         # pax data
   load("../r_files/co2_lab.Rda")     # lab co2 levels
   load("../r_files/co2_sample.Rda")  # diluted sample line co2 levels
   load("../r_files/scale.Rda")       # scale data
