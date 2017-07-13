@@ -40,15 +40,15 @@ output:
 * select stove and background tests only. Remove pre-calculated LOD.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::filter(grav, !grepl("^G[0-9]", id)) %>%
-                 dplyr::select(-lod) %>%
-                 dplyr::mutate(type = ifelse(grepl("^BG[0-9]", id) == FALSE, "test", "bg"))
+  grav_merged <-# dplyr::filter(grav, !grepl("^G[0-9]", id)) %>%
+                 dplyr::select(grav,-lod) %>%
+                 dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id) == TRUE, "bg", ifelse(grepl("^G[0-9]",id)==TRUE,"test_blank","test")))
 ```
 
 ## set levels
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  levels_type <- c("test", "bg")
+  levels_type <- c("test", "bg","test_blank")
 ```
 
 # Metadata
