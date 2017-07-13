@@ -7,7 +7,7 @@ output:
     theme: united
 ---
 
-```{r load_libraries}
+```{r load_libraries, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(GGally)
   library(gridExtra)
@@ -55,7 +55,7 @@ output:
 
 ```{r}
   samples <-   test_log %>%
-               dplyr::select(id, stove, fuel, type, mc_target) %>%
+               dplyr::select(id, date, stove, fuel, type, mc_target) %>%
                dplyr::mutate(mc_target = as.factor(mc_target))
 
   saveRDS(samples, "../r_files/samples.RDS")
@@ -453,10 +453,6 @@ KB: Currently no data is recorded in the test log
 
 ```{r, echo=FALSE}
   count_samples <- dplyr::tally(group_by(samples, type))
-
-  count_stoves <- dplyr::tally(group_by(samples, stove)) 
-  
-  count_fuels <- dplyr::tally(group_by(samples, fuel))
 ```
 
-A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of  `r nrow(count_fuels)` fuels were tested (on the appropriate stove).
+`r (as.numeric(count_samples[2,2])` field wood tests, `r (as.numeric(count_samples[2,3])` lab wood tests, and `r (as.numeric(count_samples[2,2])` background tests were conducted for a total of `r sum(count_samples$n)` tests. The tests were performed between `r min(samples$date)` and `r max(samples$date)`. The `r samples$stove[1]` stove was tested with `r samples$fuel[1]` fuel.
