@@ -66,9 +66,6 @@ output:
   saveRDS(samples, "../r_files/samples.RDS")
 ```
 
-
-
-
 ## Plot test ids
 
 ```{r, echo=FALSE}
@@ -83,6 +80,8 @@ output:
     theme(legend.position = "none") +
     geom_text(aes(label = id, size = 6))
 ```
+
+KB: Are LL1 and FL1 supposed to be 5?
 
 # Clean and save metadata
 
