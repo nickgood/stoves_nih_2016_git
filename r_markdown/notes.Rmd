@@ -39,9 +39,9 @@ output:
   #            dplyr::mutate(inst = "fivegas")
 
   notes_2 <- dplyr::select(cal_2, date, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "date") %>%
-             dplyr::mutate(inst = "co2")
+              dplyr::filter(!is.na(notes)) %>%
+              dplyr::left_join(test_id_date, by = "date") %>%
+              dplyr::mutate(inst = "co2")
 
   notes_3 <- dplyr::select(data_1, id, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
