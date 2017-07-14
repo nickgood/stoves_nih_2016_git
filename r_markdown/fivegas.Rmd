@@ -26,19 +26,19 @@ output:
 
 * data logged in ppm units.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   fivegas<- readRDS("../r_files/fivegas.RDS")    
 ```
 
 * sample information
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- readRDS("../r_files/samples.RDS")
 ```
 
 * notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   #load("../r_files/notes.Rda")
 ```
 
@@ -48,7 +48,7 @@ output:
 
 Convert concentration data to longer format
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
 #Edited 7/12/17   
   fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas,
                                                   -date,-time_s,
@@ -56,14 +56,14 @@ Convert concentration data to longer format
                   tidyr::gather("pol", "ppm", ch4:co))
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide', cache=FALSE}
+```{r}
  head(fivegas_conc, 2)
 ```
 
 Remove oxygen rows (channels not used during study)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- fivegas_merged <- dplyr::filter(fivegas_conc, pol != "o2")
+```{r}
+ fivegas_merged <- dplyr::filter(fivegas_conc, pol != "nox", pol != "o2")
 ```
 
 
@@ -71,19 +71,19 @@ Remove oxygen rows (channels not used during study)
 
 Extract notes relevant to  fivegas analyzer
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   #notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   #notes$qc[33:35] <- "ok"
 ```
 
 Make one flag per test precidented from bad to ok.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   # flags <- dplyr::select(notes, id, qc) %>%
   #          dplyr::group_by(id) %>%
   #          dplyr::arrange(qc) %>%
@@ -92,7 +92,7 @@ Make one flag per test precidented from bad to ok.
 
 Merge with data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   # fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
   #                   dplyr::mutate(id = as.factor(id),
   #                                 qc = as.factor(ifelse(is.na(qc),
@@ -102,7 +102,7 @@ Merge with data
 
 Additional bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   # fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
   # fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
   # fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
@@ -111,7 +111,7 @@ Additional bad tests
 
 # Save merged file
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   saveRDS(fivegas_merged, file = "../r_files/fivegas_merged.RDS")
 ```
 
