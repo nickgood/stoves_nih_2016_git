@@ -7,9 +7,14 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width=10, fig.height = 4, cache = TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -20,17 +25,17 @@ output:
 
 * gravimetric
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav<- readRDS("../r_files/grav.RDS")
+```{r}
+  grav <- readRDS("../r_files/grav.RDS")
 ```
 
 * metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # load("../r_files/samples.Rda")
-  # load("../r_files/filter_times.Rda")
-  # load("../r_files/filter_flows.Rda")
-  # load("../r_files/notes.Rda")
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+  filter_times <- readRDS("../r_files/filter_times.RDS")
+  filter_flows <- readRDS("../r_files/filter_flows.RDS")
+  #notes <- readRDS("../r_files/notes.RDS")
 ```
 
 # Organize
@@ -39,15 +44,16 @@ output:
 
 * select stove and background tests only. Remove pre-calculated LOD.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <-# dplyr::filter(grav, !grepl("^G[0-9]", id)) %>%
                  dplyr::select(grav,-lod,-phpa_pre,-phpa_post) %>%
-                 dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id) == TRUE, "bg", ifelse(grepl("^G[0-9]",id)==TRUE,"test_blank","test")))
+                 dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id) == TRUE, "bg",
+                                           ifelse(grepl("^G[0-9]",id)==TRUE,"test_blank","test")))
 ```
 
 ## set levels
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   levels_type <- c("test", "bg","test_blank")
 ```
 
@@ -55,40 +61,40 @@ output:
 
 * match cassette flows to id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # flows <- dplyr::select(filter_flows, -date) %>%
- #           dplyr::filter(colour == "white") %>%
- #           dplyr::group_by(id, type, colour) %>%
- #           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
- #           dplyr::group_by(id, colour) %>%
- #           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
- #           dplyr::select(-colour)
+```{r}
+  flows <- dplyr::select(filter_flows, -date) %>%
+           dplyr::filter(colour == "white") %>%
+           dplyr::group_by(id, type, colour) %>%
+           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+           dplyr::group_by(id, colour) %>%
+           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+           dplyr::select(-colour)
 ```
 
 * match cassette timestamps to id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # times <- dplyr::select(filter_times, -date) %>%
- #           dplyr::filter(color == "white") %>%
- #           tidyr::spread(type, value) %>%
- #           dplyr::select(-color)
+```{r}
+  times <- dplyr::select(filter_times, -date) %>%
+           dplyr::filter(color == "white") %>%
+           tidyr::spread(type, value) %>%
+           dplyr::select(-color)
 ```
 
 * merge gravimetric with metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # grav_merged <- dplyr::left_join(grav_merged,
-  #                                 flows,
-  #                                 by = "id") %>%
-  #                dplyr::left_join(times,
-  #                                 by = "id")
+```{r}
+  grav_merged <- dplyr::left_join(grav_merged,
+                                  flows,
+                                  by = "id") %>%
+                 dplyr::left_join(times,
+                                  by = "id")
 ```
 
 # Reformat
 
 * pre-average #code calculates preweight DO THIS
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
               tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
               dplyr::filter(!is.na(val)) %>%
@@ -98,7 +104,7 @@ output:
 
 * post-average #code calculates preweights - makes it longer vs more columns DO THIS
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
                tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
                dplyr::filter(!is.na(val)) %>%
@@ -108,35 +114,35 @@ output:
 
 * merge averages 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
                  dplyr::left_join(grav_post, by = "id")
 ```
 
 * mass added to test, bg, and test_blank filters
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <- dplyr::mutate(grav_merged, 
                             wgt_delta = wgt_post - wgt_pre)
 ```
 
 * change in calibration weight
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <- dplyr::mutate(grav_merged,
                             wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
 ```
 
 * change in lab blank weight 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <- dplyr::mutate(grav_merged,
                                wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
 ```
 
 * add pollutant variable `pol`
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav_merged <- dplyr::mutate(grav_merged,
                                pol = "grav")
 ```
@@ -213,31 +219,31 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 * calculate average concentration emitted ( and other stats)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # bg <- dplyr::filter(grav_merged, type == "bg") %>% #, qc == "ok") %>%
-  #       dplyr::select(id, flow,
-  #                       start, end,
-  #                        wgt_delta) %>%
-  #       na.omit() %>%
-  #       dplyr::mutate(dur = (end - start) / 60,
-  #                     conc = wgt_delta * 1000 / (flow * dur)) %>%
-  #       dplyr::summarise(conc_bg = mean(conc),
-  #                        sd = sd(conc),
-  #                        min = min(conc),
-  #                        max = max(conc),
-  #                        n = n()) %>%
-  #       dplyr::mutate(type = factor("test", levels_type))
+  bg <- dplyr::filter(grav_merged, type == "bg") %>% #, qc == "ok") %>%
+        dplyr::select(id, flow,
+                      start, end,
+                      wgt_delta) %>%
+        na.omit() %>%
+        dplyr::mutate(dur = (end - start) / 60,
+                      conc = wgt_delta * 1000 / (flow * dur)) %>%
+        dplyr::summarise(conc_bg = mean(conc),
+                         sd = sd(conc),
+                         min = min(conc),
+                         max = max(conc),
+                         n = n()) %>%
+        dplyr::mutate(type = factor("test", levels_type))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # knitr::kable(bg, "markdown", digits = 2)
+  knitr::kable(bg, "markdown", digits = 2)
 ```
 
 * add background to main dataframe
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # grav_merged <- dplyr::left_join(grav_merged,
-  #                                 dplyr::select(bg, type, conc_bg),
-  #                                               by = "type")
+  grav_merged <- dplyr::left_join(grav_merged,
+                                  dplyr::select(bg, type, conc_bg),
+                                                by = "type")
 ```
 
 # Summary 
