@@ -157,24 +157,24 @@ With default value `maybe`.
 # Adjust some flags based on notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-  #                                           12.12$|^Size range|
-  #                                           Charcoal test in Thing 2|
-  #                                           Charcoal test running",
-  #                                           notes),
-  #                                           "ok",
-  #                                           as.character(qc))) %>%
-  #          dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
-  #                                          ^Bleed|^CO2
-  #                                           |^5-Gas|^Out of CO2|^KF|^3|^New",
-  #                                           notes),
-  #                                           "ok",
-  #                                           as.character(qc))) %>%
-  #          dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-  #                                          |^Dilution|^SMPS Malfunction|
-  #                                          ^No SMPS data.|^No 5-gas",
-  #                                          notes),
-  #                                          "bad", as.character(qc)))
+   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
+                                             12.12$|^Size range|
+                                             Charcoal test in Thing 2|
+                                             Charcoal test running",
+                                             notes),
+                                             "ok",
+                                             as.character(qc))) %>%
+            dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
+                                            ^Bleed|^CO2
+                                             |^5-Gas|^Out of CO2|^KF|^3|^New",
+                                             notes),
+                                             "ok",
+                                             as.character(qc))) %>%
+            dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
+                                            |^Dilution|^SMPS Malfunction|
+                                            ^No SMPS data.|^No 5-gas",
+                                            notes),
+                                            "bad", as.character(qc)))
 ```
 
 # Save notes
