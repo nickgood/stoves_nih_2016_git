@@ -7,11 +7,17 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width=10, fig.height = 4, cache = TRUE)
+```
+
+```{r}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
 ```
@@ -27,7 +33,7 @@ output:
 * sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 * notes
