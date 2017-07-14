@@ -55,7 +55,7 @@ output:
 * fivegas background times
 
 ```{r}
-  times_bg_fivegas <- dplyr::select(data_1, id, 
+  times_bg_fivegas <- dplyr::select(tester_one, id, 
                                     time_start_fivegas_prebg,
                                     time_end_fivegas_prebg,
                                     time_start_fivegas_post_bg,
@@ -74,7 +74,7 @@ output:
 * pax/smps background times
 
 ```{r}
-  times_bg_pax_smps <- dplyr::select(data_2, id, 
+  times_bg_pax_smps <- dplyr::select(tester_two, id, 
                                      time_start_smps_pax_bg_pre,
                                      time_end_smps_pax_bg_pre,
                                      time_start_smps_pax_bg_post,
@@ -93,7 +93,7 @@ output:
 * combine times
 
 ```{r}
-  test_times <- dplyr::bind_rows(wood_batch_times,
+  test_times <- dplyr::bind_rows(test_batch_times,
                                  times_bg_fivegas,
                                  times_bg_pax_smps) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
@@ -116,15 +116,15 @@ output:
 
 ```{r}
  # sample durations (minutes)
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+  times <- dplyr::filter(test_times, var == "ignite" | var == "end") %>%
            tidyr::spread(var, value) %>%
-           dplyr::mutate(dur = (shutdown - start_1) / 60)
+           dplyr::mutate(dur = (end - ignite) / 60)
 ```
 
 ```{r, echo=FALSE}
  # merge with full test list
   times <- dplyr::left_join(dplyr::select(samples, id) %>%
-                            dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+                            dplyr::filter(!grepl("^BG[0-9]", id) == TRUE), 
                             times,
                             by = "id")
 ```
