@@ -65,7 +65,7 @@ output:
   notes <- dplyr::bind_rows(notes_2,
                             notes_3, notes_4,
                             notes_5, notes_6) %>%
-           dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
+           #dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
@@ -148,37 +148,37 @@ With default value `maybe`.
 ## Combine with kb notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
+  #notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
 
-  notes <- dplyr::bind_rows(notes, notes_kb) %>%
-           dplyr::mutate(id = as.factor(id))
+  #notes <- dplyr::bind_rows(notes, notes_kb) %>%
+   #        dplyr::mutate(id = as.factor(id))
 ```
 
 # Adjust some flags based on notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                            12.12$|^Size range|
-                                            Charcoal test in Thing 2|
-                                            Charcoal test running",
-                                            notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
-                                           ^Bleed|^CO2
-                                            |^5-Gas|^Out of CO2|^KF|^3|^New",
-                                            notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-                                           |^Dilution|^SMPS Malfunction|
-                                           ^No SMPS data.|^No 5-gas",
-                                           notes),
-                                           "bad", as.character(qc)))
+  # notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
+  #                                           12.12$|^Size range|
+  #                                           Charcoal test in Thing 2|
+  #                                           Charcoal test running",
+  #                                           notes),
+  #                                           "ok",
+  #                                           as.character(qc))) %>%
+  #          dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
+  #                                          ^Bleed|^CO2
+  #                                           |^5-Gas|^Out of CO2|^KF|^3|^New",
+  #                                           notes),
+  #                                           "ok",
+  #                                           as.character(qc))) %>%
+  #          dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
+  #                                          |^Dilution|^SMPS Malfunction|
+  #                                          ^No SMPS data.|^No 5-gas",
+  #                                          notes),
+  #                                          "bad", as.character(qc)))
 ```
 
 # Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(notes, file = "../r_files/notes.Rda")
+  notes<- saveRDS(notes, file = "../r_files/notes.RDS")
 ```
