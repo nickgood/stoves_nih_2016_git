@@ -106,7 +106,7 @@ Additional bad tests
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
+  saveRDS(fivegas_merged, file = "../r_files/fivegas_merged.RDS")
 ```
 
 # Summary
