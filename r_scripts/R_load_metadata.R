@@ -25,7 +25,6 @@ load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "
   out <- dplyr::filter(out, !is.na(fuel_id))
  # rename
   out <- dplyr::rename(out, date = date_test,
-                            id = fuel_id,
                             order = test_order,
                             mc_meas = mc_actual_test,
                             mass_end = mass_final,
