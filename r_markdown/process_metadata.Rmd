@@ -30,9 +30,9 @@ output:
 ```{r load_files}
   tester_one <- readRDS("../r_files/data_tester_one.RDS")
   tester_two <- readRDS("../r_files/data_tester_two.RDS")
- 
+
   cal_two <- readRDS("../r_files/data_cal_two.RDS")
- 
+
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
@@ -103,21 +103,21 @@ KB: Are LL1 and FL1 supposed to be 5?
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_bw(base_size = 14) +
-           facet_grid(~mc_target) + 
-           ylab("z score normalized value") +
-           theme(axis.text.x = element_text(angle = 45, hjust=1)) +
-           xlab("")
+  p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+             theme_bw(base_size = 14) +
+             facet_grid(~mc_target) + 
+             ylab("z score normalized value") +
+             theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+             xlab("")
 
   p_hist <- ggplot(p_data, aes(x = value, fill = mc_target)) +
-            geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
-            theme_bw() +
-            facet_grid(~var, scales = "free") + 
-            theme_bw(base_size = 14) +
-            xlab("mass (g)")
+              geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~var, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("mass (g)")
   
   grid.arrange(p_hist, p_box, ncol = 1)
 ```
