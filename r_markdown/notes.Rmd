@@ -30,7 +30,7 @@ output:
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <- dplyr::select(samples, id, date)  # get id and date
+  test_id_date <-  dplyr::select(mc_test_log, id, date)  # get id and date
 
   # notes_1 <- dplyr::select(cal_1, date, notes) %>%
   #            dplyr::filter(!is.na(notes)) %>%
@@ -57,7 +57,7 @@ output:
              dplyr::left_join(test_id_date, by = "id") %>%
              dplyr::mutate(inst = "grav:trans")
 
-  notes_6 <- dplyr::select(samples, id, notes) %>%
+  notes_6 <- dplyr::select(fuel, id, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
