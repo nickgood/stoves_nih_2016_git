@@ -515,27 +515,6 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
-## five gas
-
-```{r}
-  fivegas_bg_times <- dplyr::filter(tidy_id_date(tester_one,
-                                                 "^time_.*fivegas.*", "^time_"),
-                                    !is.na(value))
-
-  fivegas_bg_times <- split_times(fivegas_bg_times)
-
-  saveRDS(fivegas_bg_times, file="../r_files/fivegas_bg_times.RDS")
-```
-
-* unexpected values:
-
-```{r}
-  outliers <- dplyr::filter(smps_pax_bg_times,
-                            value < 60 * 60 * 4 | value > 60 * 60 * 20)
-
-  knitr::kable(outliers, "markdown", digits = 2)
-```
-
 # Summary
 
 ```{r, echo=FALSE}
