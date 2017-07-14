@@ -31,6 +31,9 @@ output:
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
   batch_times <- readRDS("../r_files/batch_times.RDS")
+  
+  tester_one <- readRDS("../r_files/data_tester_one.RDS")
+  tester_two <- readRDS("../r_files/data_tester_two.RDS")
 ```
 
 * pre and post experiment background times for online instruments
@@ -129,7 +132,7 @@ output:
                             by = "id")
 ```
 
-```{r, echo=FALSE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, fig.width=8, fig.height=4}
   p_hist <- ggplot(times, aes(x = dur)) +
             geom_histogram(binwidth = 15) +
             theme_minimal() +
@@ -147,12 +150,8 @@ output:
            theme_minimal() +
            ylab("z score normalized value") +
            xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95))
 
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 ```
-
-There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are: `r times$id[is.na(times$dur)]`.
