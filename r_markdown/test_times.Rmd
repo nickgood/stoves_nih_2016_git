@@ -24,7 +24,7 @@ output:
 * sample, wood and batch test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
   load("../r_files/batch_times.Rda")
   load("../r_files/wood_times.Rda")
 ```
