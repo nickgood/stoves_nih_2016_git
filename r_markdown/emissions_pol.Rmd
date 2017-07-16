@@ -27,17 +27,17 @@ output:
 
 ```{r}
   #load("../r_files/ecoc_merged.Rda")
-  fivegas <- readRDS("../r_files/fivegas_merged.RDS")
+  fivegas_merged <- readRDS("../r_files/fivegas_merged.RDS")
   background <- readRDS("../r_files/background_co.RDS")
     bg_co <- background$bg
     bg_co_mean <- background$mean
-  background <- readRDS("../r_files/background_co2.Rda")
+  background <- readRDS("../r_files/background_co2.RDS")
     bg_co2 <- background$bg
     bg_co2_mean <- background$mean
-  backgrounds <- readRDS("../r_files/background_ch4.Rda")
+  backgrounds <- readRDS("../r_files/background_ch4.RDS")
     bg_ch4 <- background$bg
     bg_ch4_mean <- background$mean
-  grav <- readRDS("../r_files/grav_merged.RDS")
+  grav_merged <- readRDS("../r_files/grav_merged.RDS")
   # load("../r_files/smps_ultrafine.Rda")
   # load("../r_files/smps_ultrafine_bg.Rda")
   # load("../r_files/ions_merged.Rda")
@@ -50,6 +50,7 @@ output:
 ```{r}
   hood_flow <- readRDS("../r_files/hood_flow.RDS")
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
+  mw_c <- readRDS("../r_files/mw_carbon.RDS")
 ```
 
 * metadata
@@ -185,8 +186,8 @@ ___
 
 ```{r}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE),
-                                 qc = first(qc)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>% #,
+                                 #qc = first(qc)) %>%
                 dplyr::ungroup()
 ```
 
@@ -267,7 +268,7 @@ ___
                         start, end,
                         flow,
                         wgt_delta,
-                        conc_bg, qc) %>%
+                        conc_bg) %>% #, qc) %>%
           dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
@@ -275,8 +276,8 @@ ___
 
 ```{r}
   grav <- dplyr::mutate(grav, dur = (end - start) / 60,
-                              conc = wgt_delta * 1000 / (flow * dur), 
-                              qc = as.factor(qc))
+                              conc = wgt_delta * 1000 / (flow * dur)) #, 
+                              #qc = as.factor(qc))
 ```
 
 * calculate mass emitted
@@ -433,7 +434,7 @@ ___
                                          conc, conc_bg,
                                          mass_emitted,
                                          mass_carbon,
-                                         inst, qc) %>%
+                                         inst) %>% #, qc) %>%
                # dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
                #                                           conc, conc_bg,
                #                                           mass_emitted,
@@ -448,7 +449,7 @@ ___
                                                     conc, conc_bg,
                                                     mass_emitted,
                                                     mass_carbon,
-                                                    inst, qc)) %>%
+                                                    inst)) #, qc)) %>%
                # dplyr::bind_rows(dplyr::select(ions, id, pol,
                #                                      conc, conc_bg,
                #                                      mass_emitted,
@@ -478,7 +479,7 @@ ___
 * combine mass and number instruments
 
 ```{r}
-  emissions_long  <- dplyr::bind_rows(emissions_long, number)
+  #emissions_long  <- dplyr::bind_rows(emissions_long, number)
 ```
 
 ## save
