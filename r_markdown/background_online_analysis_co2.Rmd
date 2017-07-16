@@ -213,7 +213,7 @@ Calculate mean background over all good tests
 ```{r, fig.width = 12, fig.height=8}
   p_data <- dplyr::filter(background_pre_post, type != "sample")
 
-  ggplot(p_data, aes(id, mean, colour = qc)) +
+  ggplot(p_data, aes(id, mean)) + #, colour = qc)) +
     geom_point() +
     ggtitle("CO2") +
     theme_minimal() +
@@ -226,7 +226,7 @@ Calculate mean background over all good tests
 
 ## timeseries
 
-```{r, fig.width=12, fig.height=40, eval=TRUE}
+```{r, fig.width=12, fig.height=40}
   p_data <- dplyr::mutate(background_data, type = as.factor(type)) %>%
             dplyr::filter(type != "sample")
 
