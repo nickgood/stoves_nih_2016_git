@@ -23,12 +23,6 @@ output:
 
 # Load data
 
-* sample information
-
-```{r}
-  samples <- readRDS("../r_files/samples.RDS")
-```
-
 * test times
 
 ```{r}
