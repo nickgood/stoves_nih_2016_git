@@ -7,32 +7,32 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
+  library(forcats)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width=10, fig.height = 4, cache = TRUE)
+```
+
+```{r}
   source("../r_scripts/R_functions.R")
 ```
 
 # Load data
 
-* sample information
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-```
-
 * test times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/test_times.Rda")
+```{r}
+  test_times <- readRDS("../r_files/test_times.RDS")
 ```
 
 * fivegas co2
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_merged.Rda")
+```{r}
+  fivegas_merged <- readRDS("../r_files/fivegas_merged.RDS")
 
   pol_data <- dplyr::filter(fivegas_merged, pol == "co2")
 ```
@@ -44,7 +44,7 @@ output:
 * background times from logged timestamps
 * trim first and last minute
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   times_pre <- dplyr::filter(test_times,
                              var == "bg_pre_start_fivegas" | var == "bg_pre_end_fivegas") %>%
                tidyr::spread(var, value) %>%
@@ -67,7 +67,7 @@ output:
 
 * 5 minutes before and after each test
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   times_pre_5 <- dplyr::filter(test_times, var == "ignite") %>%
                 tidyr::spread(var, value) %>%
                 dplyr::select(-date) %>%
@@ -83,7 +83,7 @@ output:
 
 * join time data with precedence for the logged times over estimated times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   times_pre <- dplyr::anti_join(times_pre_5, times_pre, by = "id") %>%
                dplyr::bind_rows(times_pre)
 
@@ -93,7 +93,7 @@ output:
 
 * sample times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   times_sample <- dplyr::filter(test_times,
                                 var == "start_1" | var == "shutdown") %>%
                   tidyr::spread(var, value) %>%
@@ -106,7 +106,7 @@ output:
 * filter data inside times windows
 * add `type` column with value: `pre`, `post` or `sample`
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   df_pre <- filter_times(times_pre, pol_data)
   df_pre <- dplyr::mutate(df_pre, type = "pre")
 
@@ -119,7 +119,7 @@ output:
 
 * merge
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   background_data <- dplyr::bind_rows(df_pre, df_post, df_sample)
 ```
 
@@ -127,7 +127,7 @@ output:
 
 * mean value for each window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   background_pre_post <- dplyr::group_by(background_data, id, type) %>%
                          dplyr::summarise(mean = mean(ppm, na.rm = TRUE), 
                                           qc_val = mean(as.numeric(qc))) %>%
@@ -142,7 +142,7 @@ output:
 
 * average pre and post (good tests only)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post", qc == "ok") %>%
                       dplyr::group_by(id) %>%
                       dplyr::summarise(ppm = mean(mean, na.rm = TRUE)) %>%
@@ -153,7 +153,7 @@ output:
 
 Calculate mean background over all good tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   mean_bg <- dplyr::summarise(background_means,
                               ppm = mean(ppm, na.rm = TRUE),
                               conc = mean(conc, na.rm = TRUE),
@@ -162,21 +162,21 @@ Calculate mean background over all good tests
 
 * create list object with output data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   background <- list(bg = background_means, mean = mean_bg)
 ```
 
 # Save to file
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(background, file = "../r_files/background_co2.Rda")
+```{r}
+  saveRDS(background, file = "../r_files/background_co2.RDS")
 ```
 
 # Plots
 
 ## outliers
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, fig.width=20, fig.height=12}
   p_data <- dplyr::mutate(background_means, 
                           value_norm = (conc - mean(conc)) / sd(conc),
                           outlier = ifelse(is_outlier(conc), as.character(id), NA))
@@ -194,7 +194,7 @@ Calculate mean background over all good tests
 
 ## background by type
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
+```{r, fig.width = 12, fig.height=8}
   p_data <- background_pre_post
 
   ggplot(p_data, aes(id, mean, colour = type)) +
@@ -210,7 +210,7 @@ Calculate mean background over all good tests
 
 ## background by qc flag
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 12, fig.height=8}
+```{r, fig.width = 12, fig.height=8}
   p_data <- dplyr::filter(background_pre_post, type != "sample")
 
   ggplot(p_data, aes(id, mean, colour = qc)) +
@@ -226,7 +226,7 @@ Calculate mean background over all good tests
 
 ## timeseries
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+```{r, fig.width=12, fig.height=40, eval=TRUE}
   p_data <- dplyr::mutate(background_data, type = as.factor(type)) %>%
             dplyr::filter(type != "sample")
 
