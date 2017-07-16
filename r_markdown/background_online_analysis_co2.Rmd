@@ -95,10 +95,10 @@ output:
 
 ```{r}
   times_sample <- dplyr::filter(test_times,
-                                var == "start_1" | var == "shutdown") %>%
+                                var == "set_1" | var == "end") %>%
                   tidyr::spread(var, value) %>%
                   dplyr::select(-date) %>%
-                  dplyr::rename(start = start_1, end = shutdown)
+                  dplyr::rename(start = set_1, end = end)
 ```
 
 ## filter data
@@ -129,21 +129,21 @@ output:
 
 ```{r}
   background_pre_post <- dplyr::group_by(background_data, id, type) %>%
-                         dplyr::summarise(mean = mean(ppm, na.rm = TRUE), 
-                                          qc_val = mean(as.numeric(qc))) %>%
-                         dplyr::ungroup() %>%
-	                       dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
-	                       dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
-	                       dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
-	                       dplyr::mutate(qc = as.factor(qc)) %>%
-	                       dplyr::ungroup() %>%
-	                       dplyr::select(-qc_val)
+                         dplyr::summarise(mean = mean(ppm, na.rm = TRUE)) %>%#, 
+                                          #qc_val = mean(as.numeric(qc))) %>%
+                         dplyr::ungroup() #%>%
+	                       # dplyr::mutate(qc = ifelse(qc_val == 3, "ok", NA)) %>%
+	                       # dplyr::mutate(qc = ifelse(qc_val == 2, "maybe", qc)) %>%
+	                       # dplyr::mutate(qc = ifelse(qc_val == 1, "bad", qc)) %>%
+	                       # dplyr::mutate(qc = as.factor(qc)) %>%
+	                       # dplyr::ungroup() %>%
+	                       # dplyr::select(-qc_val)
 ```
 
 * average pre and post (good tests only)
 
 ```{r}
-  background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post", qc == "ok") %>%
+  background_means <- dplyr::filter(background_pre_post, type == "pre"| type == "post") %>%#, qc == "ok") %>%
                       dplyr::group_by(id) %>%
                       dplyr::summarise(ppm = mean(mean, na.rm = TRUE)) %>%
                       dplyr::ungroup() %>%
