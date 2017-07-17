@@ -174,7 +174,7 @@ Concentration is corrected for background by removing background test average co
 
 ___
 
-# fivegas - DATA GOOD BUT HAVE NOT ATTEMPTED TO RUN CODE YET
+# fivegas
 
 * select co, co2 and ch4.
 
