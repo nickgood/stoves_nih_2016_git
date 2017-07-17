@@ -177,7 +177,9 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(carb_flows, type) %>%
+  p_data <- dplyr::group_by(carb_flows, id, type) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
             dplyr::mutate(value_norm =
                            (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value),
