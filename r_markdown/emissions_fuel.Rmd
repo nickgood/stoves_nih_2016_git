@@ -30,10 +30,9 @@ output:
 * fuel consumed per rep with rep times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-fuel_burnt_reps <- times_fuel %>% 
-                   left_join(test_info, by = c("id", "id_test", "date")) %>%
-                   left_join(mass_fuel, by = c("id", "id_test", "date", "rep", "type"))
+  fuel_burnt_reps <- times_fuel %>% 
+                     left_join(test_info, by = c("id", "id_test", "date")) %>%
+                     left_join(mass_fuel, by = c("id", "id_test", "date", "rep", "type"))
 ```
 
 * fuel consumed total in a test
