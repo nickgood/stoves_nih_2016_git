@@ -34,7 +34,7 @@ Loads and saves the CO2 voltage data (`calibration?`)
 
 ## ecoc
 
-Loads ecoc data file and saves (`waiting on data`)
+Loads ecoc data file and saves
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   ecoc <- load_ecoc_file()
