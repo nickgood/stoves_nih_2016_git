@@ -121,7 +121,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
           dplyr::select(id, cassette,
                         start, end,
@@ -132,7 +132,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
                               conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
 ```
@@ -141,7 +141,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 Use replicate average artifact (probably clean up spreadsheet at some point)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
             dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
@@ -159,7 +159,7 @@ Use replicate average artifact (probably clean up spreadsheet at some point)
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
                         mass_carbon = mass_emitted,
@@ -168,7 +168,7 @@ Concentration is corrected for background by removing background test average co
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   head(ecoc, 2)
 ```
 
@@ -226,14 +226,15 @@ ___
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(bg, id, pol, bg_ppm), by = c("id", "pol"))
+                dplyr::select(bg, id, pol, bg_ppm), by = c("id", "pol")) %>%
+                dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
 ```
 
 * calculate micrograms emitted during tests (background-corrected mass emitted)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                              mass_emitted = (conc - bg_ppm) * hood_flow * (dur / 60),
+                              mass_emitted = (conc - bg_conc) * hood_flow * (dur / 60),
                               num_c = 1,
                               mass_carbon = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
