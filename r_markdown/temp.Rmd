@@ -20,14 +20,14 @@ output:
 * pot and hood temperature
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/temp.Rda")
+  temp<- readRDS("../r_files/temp.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/samples.Rda")
-  load("../r_files/notes.Rda")
+  #load(file = "../r_files/samples.Rda")
+  #load("../r_files/notes.Rda")
 ```
 
 # Tidy

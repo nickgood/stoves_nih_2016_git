@@ -20,28 +20,28 @@ output:
 # Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_1.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
-  load("../r_files/grav.Rda")
+  fuel<-readRDS("../r_files/data_fuel_prep.RDS")
+  #load("../r_files/cal_1.Rda")
+  cal_2<- readRDS("../r_files/data_cal_two.RDS")
+  data_1<- readRDS("../r_files/data_tester_one.RDS")
+  data_2<-readRDS("../r_files/data_tester_two.RDS")
+  grav<-readRDS("../r_files/grav.RDS")
 ```
 
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <- dplyr::select(samples, id, date)  # get id and date
+  test_id_date <- dplyr::select(fuel, fuel_id, date_test)  # get id and date
 
-  notes_1 <- dplyr::select(cal_1, date, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "date") %>%
-             dplyr::mutate(inst = "fivegas")
+  # notes_1 <- dplyr::select(cal_1, date, notes) %>%
+  #            dplyr::filter(!is.na(notes)) %>%
+  #            dplyr::left_join(test_id_date, by = "date") %>%
+  #            dplyr::mutate(inst = "fivegas")
 
   notes_2 <- dplyr::select(cal_2, date, notes) %>%
-             dplyr::filter(!is.na(notes)) %>%
-             dplyr::left_join(test_id_date, by = "date") %>%
-             dplyr::mutate(inst = "co2")
+              dplyr::filter(!is.na(notes)) %>%
+              dplyr::left_join(test_id_date, by = "date") %>%
+              dplyr::mutate(inst = "co2")
 
   notes_3 <- dplyr::select(data_1, id, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
@@ -63,7 +63,7 @@ output:
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
 
-  notes <- dplyr::bind_rows(notes_1, notes_2,
+  notes <- dplyr::bind_rows(notes_2, #notes_1,
                             notes_3, notes_4,
                             notes_5, notes_6) %>%
            dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
