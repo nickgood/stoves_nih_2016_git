@@ -16,7 +16,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height=4, cache = TRUE)
+                        fig.width = 10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
@@ -55,11 +55,12 @@ output:
 
 
 ```{r}
+  # note fix fuel for bg
   samples <-   test_log %>%
                dplyr::select(id, date, stove, fuel, type, mc_level) %>%
                dplyr::mutate(mc_level = as.factor(mc_level)) %>%
                dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
-                                 dplyr::distinct(),
+                                dplyr::distinct(),
                                 by = "id") %>%
                dplyr::mutate(mc_target = as.factor(mc_target))
 
@@ -80,8 +81,6 @@ output:
     theme(legend.position = "none") +
     geom_text(aes(label = id, size = 6))
 ```
-
-KB: Are LL1 and FL1 supposed to be 5?
 
 # Clean and save metadata
 
