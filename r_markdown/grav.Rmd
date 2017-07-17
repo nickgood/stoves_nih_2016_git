@@ -141,6 +141,25 @@ output:
                                pol = "grav")
 ```
 
+* break out by field/lab/blank/background
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged<- dplyr::mutate(grav_merged,test_type=ifelse(grepl("^G[1-9]",id)== TRUE,"test_blank",
+                                                          ifelse(grepl("^BG[1-9]",id)==TRUE, "background",
+                                                          ifelse(grepl("^F[A-Z][1-9]",id)==TRUE, "field","lab"))))
+
+```
+
+*break out by low,medium,high MC
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged<- dplyr::mutate(grav_merged,mc_level=ifelse(grepl("^G[1-9]",id)== TRUE,"none",
+                                                          ifelse(grepl("^BG[1-9]",id)==TRUE, "none",
+                                                          ifelse(grepl("^[A-Z]L[1-9]",id)==TRUE, "low",
+                                                          ifelse(grepl("^[A-Z]M[1-9]",id)==TRUE, "medium","high")))))
+
+```
+
 # QC
 
 * extract notes for gravimetric data
