@@ -7,14 +7,14 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, include=FALSE}
-  library(tidyverse)
-  library(forcats)
-```
-
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
                         fig.width=10, fig.height = 4, cache = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+  library(tidyverse)
+  library(forcats)
 ```
 
 ```{r}
@@ -45,8 +45,7 @@ output:
 * select stove and background tests only. Remove pre-calculated LOD.
 
 ```{r}
-  grav_merged <-# dplyr::filter(grav, !grepl("^G[0-9]", id)) %>%
-                 dplyr::select(grav,-lod,-phpa_pre,-phpa_post) %>%
+  grav_merged <- dplyr::select(grav,-lod,-phpa_pre,-phpa_post) %>%
                  dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id), "bg",
                                            ifelse(grepl("^G[0-9]",id), "test_blank","test")))
 ```
@@ -257,7 +256,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 # Summary 
 
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r #setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r #setdiff(as.character(samples$id), as.character(grav_merged$id))`.
 
 Gravimetric data is expected to be missing for: nO TESTS
 
