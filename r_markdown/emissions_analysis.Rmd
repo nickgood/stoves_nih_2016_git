@@ -55,4 +55,9 @@ ef_mean_table <- select(ef_sum, c("fuel_type", "pol", "mean_ef")) %>%
 knitr::kable(ef_mean_table)
 ```
 
-# 
+# Figure 1. Mean emission factors (mass basis) for various startup materials and pollutants
+
+```{r}
+
+```
+
