@@ -23,19 +23,36 @@ output: html_document
   ef_bymass <- filter(emission_factors, metric == "mass_emitted") %>%
                dplyr::mutate(fuel_type = factor(fuel_type)) %>%
                dplyr::mutate(qc = factor(qc)) %>%
-               dplyr::mutate(pol = factor(pol)) %>%
+               dplyr::mutate(pol = factor(pol))
 ```
-* final dataset = 880 rows, 8 less than expected. using `table(ef_bymass$id)`, discovered that N1 (id #1) and K3 (id #30) tests each had 4 less rows than expected. Using `table(ef_bymass$pol[ef_bymass$id =='#'])`, discovered that both were missing the 3 five-gas measures (CO, CO2, CH4) and gravimetric measures. 
+* final dataset = 880 rows, 8 less than expected. using `table(ef_bymass$id)`, discovered that N1 (id #1) and K3 (id #30) tests each had 4 less rows than expected. 
+* Using `table(ef_bymass$pol[ef_bymass$id =='#'])`, discovered that both were missing the 3 five-gas measures (CO, CO2, CH4) and gravimetric measures. 
+* At the point of individual pollutant QCs (grav.rmd, fivegas.rmd), these values were not missing and there are no QC notes to indicated censoring of these values from the emissions data. 
+
+* NEED TO GO BACK AND FIGURE OUT WHERE THESE VALUES DISAPPEARED AND RECOVER THE DATA. 
 
 
-# Summarize Emissions Factors
+# Summarize emissions factors by pollutant and fuel type
 ```{r}
-ef_grav_sum <-  filter(ef_bymass, pol == "grav") %>%
-  dplyr::group_by(fuel_type) %>%
-  dplyr::summarize(pol = "grav",
-                   nreps = n(),
-                   mean_ef = mean(mass_ef, na.rm = TRUE)) 
-#mass_ef in units g pol / kg fuel
-ef_grav_sum
+ef_sum <- ef_bymass %>%
+                    dplyr::group_by(.dots = c("fuel_type", "pol")) %>%
+                    dplyr::summarize(#pol = pol,
+                                     #fuel_type = fuel_type,
+                                     nreps = n(),
+                                     mean_ef = round(mean(mass_ef, na.rm = TRUE), 4),
+                                     min_ef = min(mass_ef, na.rm = TRUE),
+                                     max_ef = max(mass_ef, na.rm = TRUE)) 
+#mass_ef in units g pol / kg fuel; one average value per fuel_type
 
+ef_mean_table <- select(ef_sum, c("fuel_type", "pol", "mean_ef")) %>%
+                 spread(fuel_type, mean_ef) %>%
+                 select(-background)
 ```
+
+### Table 1. Mean emission factors (mass basis) for various startup materials and pollutants
+* units = g pollutant emitted per kg of fuel burned
+```{r echo = FALSE}
+knitr::kable(ef_mean_table)
+```
+
+# 
