@@ -213,7 +213,7 @@ KB: Currently no data is recorded in the test log
 * unexpected values:
 
 ```{r, echo=FALSE}
-  outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 8 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
