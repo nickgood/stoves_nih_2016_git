@@ -50,8 +50,8 @@ output:
 # Convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- out <- tidyr::gather(out, "pol", "val", 1:5) %>%
-        dplyr::filter(grepl("^co$|^co2$|^ch4$", pol))
+  out <- tidyr::gather(out, "pol", "val", 1:5) %>%
+         dplyr::filter(grepl("^co$|^co2$|^ch4$", pol))
 ```
 
 # Filter times
@@ -109,7 +109,7 @@ output:
 # QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("fivegas|all", instrument))
+  notes <- dplyr::filter(notes, grepl("fivegas|all", inst))
 
   out_full <- dplyr::left_join(out_full, 
                               dplyr::select(notes, id, qc, id_test),
