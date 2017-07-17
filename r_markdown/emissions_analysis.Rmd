@@ -1,0 +1,41 @@
+---
+title: "Emissions Analysis"
+author: "Kristen Fedak"
+date: "July 17, 2017"
+output: html_document
+---
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
+# Load and format data
+```{r}
+  emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
+```
+
+```{r}
+  #1. limit data to only the rows with mass emitted metric (1/4 the number of rows of original - exlude concentrations,mass of carbon emitted, and instrument) 
+  #2. set variable types from character -> factor
+  #3. removes duplicate rows that were remnants of when real-time monitors had timestamps, so multiple rows per test even though the mass_ef was a single value for the test. 
+  ef_bymass <- filter(emission_factors, metric == "mass_emitted") %>%
+               dplyr::mutate(fuel_type = factor(fuel_type)) %>%
+               dplyr::mutate(qc = factor(qc)) %>%
+               dplyr::mutate(pol = factor(pol)) %>%
+```
+
+
+
+# Summarize Emissions Factors
+```{r}
+ef_grav_sum <-  filter(ef_bymass, pol == "grav") %>%
+  dplyr::group_by(fuel_type) %>%
+  dplyr::summarize(pol = "grav",
+                   nreps = n(),
+                   mean_ef = mean(mass_ef, na.rm = TRUE)) 
+#mass_ef in units g pol / kg fuel
+ef_grav_sum
+
+```
