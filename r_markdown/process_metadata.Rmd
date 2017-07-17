@@ -118,15 +118,15 @@ output:
 ## batch stove timestamps
 
 ```{r}
-  batch_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
+  test_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
 
-  saveRDS(batch_times, file="../r_files/batch_times.RDS")
+  saveRDS(test_times, file="../r_files/test_times.RDS")
 ```
   
  * unexpected values:
 
 ```{r, echo=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -213,7 +213,7 @@ KB: Currently no data is recorded in the test log
 * unexpected values:
 
 ```{r, echo=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
