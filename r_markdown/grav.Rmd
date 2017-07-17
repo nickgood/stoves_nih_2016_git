@@ -45,9 +45,10 @@ output:
 * select stove and background tests only. Remove pre-calculated LOD.
 
 ```{r}
-  grav_merged <- dplyr::select(grav,-lod,-phpa_pre,-phpa_post) %>%
-                 dplyr::mutate(type=ifelse(grepl("^BG[0-9]", id), "bg",
-                                           ifelse(grepl("^G[0-9]",id), "test_blank","test")))
+  grav_merged <- dplyr::select(grav, -lod, -phpa_pre, -phpa_post) %>%
+                 dplyr::mutate(type = ifelse(grepl("^BG[0-9]", id), "bg", NA),
+                               type = ifelse(grepl("^G[0-9]", id), "test_blank", type),
+                               type = ifelse(grepl("^F|^L", id), "test", type))
 ```
 
 # Metadata
