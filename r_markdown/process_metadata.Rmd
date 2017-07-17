@@ -49,12 +49,6 @@ output:
 ```
 
 ```{r}
-  # rename variable
-  fuel <- dplyr::rename(fuel, id = fuel_id, date = date_test)
-```
-
-
-```{r}
   # note fix fuel for bg
   samples <-   test_log %>%
                dplyr::select(id, date, stove, fuel, type, mc_level) %>%
