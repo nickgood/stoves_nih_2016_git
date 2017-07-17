@@ -141,18 +141,22 @@ output:
                                pol = "grav")
 ```
 
-* create blank variable
+* break out by field/lab/blank/background
 
-```{r}
-  blanks <- grav_merged %>%
-            dplyr::filter(type == "test_blank")
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged<- dplyr::mutate(grav_merged,test_type=ifelse(grepl("^G[1-9]",id)== TRUE,"test_blank",
+                                                          ifelse(grepl("^BG[1-9]",id)==TRUE, "background",
+                                                          ifelse(grepl("^F[A-Z][1-9]",id)==TRUE, "field","lab"))))
+
 ```
 
-* remove blanks from grav variable
+*break out by low,medium,high MC
 
-```{r}
-  grav_merged <- grav_merged %>%
-                 dplyr::filter(type != "test_blank")
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav_merged<- dplyr::mutate(grav_merged,mc_level=ifelse(grepl("^G[1-9]",id)== TRUE,"none",
+                                                          ifelse(grepl("^BG[1-9]",id)==TRUE, "none",
+                                                          ifelse(grepl("^[A-Z]L[1-9]",id)==TRUE, "low",
+                                                          ifelse(grepl("^[A-Z]M[1-9]",id)==TRUE, "medium","high")))))
 ```
 
 # QC
