@@ -26,11 +26,13 @@ output:
 
 # Load data
 
-* sample, wood and batch test metadata
+* samples
+* times
+* tester logs
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  batch_times <- readRDS("../r_files/batch_times.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
   
   tester_one <- readRDS("../r_files/data_tester_one.RDS")
   tester_two <- readRDS("../r_files/data_tester_two.RDS")
@@ -43,16 +45,14 @@ output:
   dust <- readRDS("../r_files/dust_flows.RDS")
 ```
 
-# Combine time data
-
-* wood and batch times
+# Combine time and sample data
 
 ```{r}
-  test_batch_times <- dplyr::inner_join(dplyr::select(batch_times, -date),
-                                        dplyr::select(samples, id, date),
-                                                      test_times, by = "id") %>%
-                      dplyr::filter(is.na(value)==FALSE) %>%
-                      dplyr::mutate(id = as.factor(id))
+  test_times <- dplyr::inner_join(dplyr::select(test_times, -date),
+                                  dplyr::select(samples, id, date),
+                                  test_times, by = "id") %>%
+                dplyr::filter(is.na(value)==FALSE) %>%
+                dplyr::mutate(id = as.factor(id))
 ```
 
 * fivegas background times
@@ -96,7 +96,7 @@ output:
 * combine times
 
 ```{r}
-  test_times <- dplyr::bind_rows(test_batch_times,
+  test_times <- dplyr::bind_rows(test_times,
                                  times_bg_fivegas,
                                  times_bg_pax_smps) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
