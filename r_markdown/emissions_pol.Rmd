@@ -388,7 +388,7 @@ ___
 * convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:5)
 ```
 
 
