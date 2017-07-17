@@ -225,7 +225,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 * extract background data
 * remove missing data
-* calculate average concentration emitted ( and other stats)
+* calculate average concentration emitted (and other stats)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav_merged, type == "bg") %>% #, qc == "ok") %>%
