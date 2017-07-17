@@ -344,8 +344,8 @@ KB: Currently no data is recorded in the test log
              xlab("") +
              ggtitle("lab")
 
-  p_hist <- ggplot(p_data, aes(x = value)) +
-              geom_histogram(alpha = 0.5, color = "black") +
+  p_hist <- ggplot(p_data, aes(x = value, color = type)) +
+              geom_histogram(alpha = 0.5) +
               theme_bw() +
               facet_grid(~pol, scales = "free") + 
               theme_bw(base_size = 14) +
