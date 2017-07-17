@@ -25,7 +25,7 @@ output: html_document
                dplyr::mutate(qc = factor(qc)) %>%
                dplyr::mutate(pol = factor(pol)) %>%
 ```
-
+* final dataset = 880 rows, 8 less than expected. using `table(ef_bymass$id)`, discovered that N1 (id #1) and K3 (id #30) tests each had 4 less rows than expected. Using `table(ef_bymass$pol[ef_bymass$id =='#'])`, discovered that both were missing the 3 five-gas measures (CO, CO2, CH4) and gravimetric measures. 
 
 
 # Summarize Emissions Factors
