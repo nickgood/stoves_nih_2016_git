@@ -36,8 +36,9 @@ Loads and saves the CO2 voltage data (`calibration?`)
 
 Loads ecoc data file and saves
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- load_ecoc_file()
+  ecoc
   saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
