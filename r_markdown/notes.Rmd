@@ -20,23 +20,20 @@ output:
 # Load files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fuel<-readRDS("../r_files/data_fuel_prep.RDS")
-  #load("../r_files/cal_1.Rda")
-  cal_2<- readRDS("../r_files/data_cal_two.RDS")
-  data_1<- readRDS("../r_files/data_tester_one.RDS")
-  data_2<-readRDS("../r_files/data_tester_two.RDS")
-  grav<-readRDS("../r_files/grav.RDS")
+  samples <- readRDS("../r_files/data_fuel_prep.RDS")
+  cal_2 <- readRDS("../r_files/data_cal_two.RDS")
+  data_1 <- readRDS("../r_files/data_tester_one.RDS")
+  data_2 <- readRDS("../r_files/data_tester_two.RDS")
+  grav <- readRDS("../r_files/grav.RDS")
+  mc_test_log <- readRDS("../r_files/mc_test_log.RDS")
 ```
 
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <- dplyr::select(fuel, fuel_id, date_test)  # get id and date
-
-  # notes_1 <- dplyr::select(cal_1, date, notes) %>%
-  #            dplyr::filter(!is.na(notes)) %>%
-  #            dplyr::left_join(test_id_date, by = "date") %>%
-  #            dplyr::mutate(inst = "fivegas")
+  test_id_date <-  dplyr::select(mc_test_log, id, date)  # get id and date
+  
+  # no notes_1 for this study
 
   notes_2 <- dplyr::select(cal_2, date, notes) %>%
               dplyr::filter(!is.na(notes)) %>%
@@ -62,11 +59,12 @@ output:
              dplyr::filter(!is.na(notes)) %>%
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
-
-  notes <- dplyr::bind_rows(notes_2, #notes_1,
-                            notes_3, notes_4,
-                            notes_5, notes_6) %>%
-           dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
+ 
+  notes <- dplyr::bind_rows(notes_2,
+                            notes_3,
+                            notes_4,
+                            notes_5,
+                            notes_6) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
@@ -146,40 +144,31 @@ With default value `maybe`.
   notes <- dplyr::mutate(notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
-## Combine with kb notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
-
-  notes <- dplyr::bind_rows(notes, notes_kb) %>%
-           dplyr::mutate(id = as.factor(id))
-```
-
 # Adjust some flags based on notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                            12.12$|^Size range|
-                                            Charcoal test in Thing 2|
-                                            Charcoal test running",
+   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
+                                             12.12$|^Size range|
+                                             Charcoal test in Thing 2|
+                                             Charcoal test running",
+                                             notes),
+                                             "ok",
+                                             as.character(qc))) %>%
+            dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
+                                            ^Bleed|^CO2
+                                             |^5-Gas|^Out of CO2|^KF|^3|^New",
+                                             notes),
+                                             "ok",
+                                             as.character(qc))) %>%
+            dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
+                                            |^Dilution|^SMPS Malfunction|
+                                            ^No SMPS data.|^No 5-gas",
                                             notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
-                                           ^Bleed|^CO2
-                                            |^5-Gas|^Out of CO2|^KF|^3|^New",
-                                            notes),
-                                            "ok",
-                                            as.character(qc))) %>%
-           dplyr::mutate(qc = ifelse(grepl("^Test shut down|^dropped filter
-                                           |^Dilution|^SMPS Malfunction|
-                                           ^No SMPS data.|^No 5-gas",
-                                           notes),
-                                           "bad", as.character(qc)))
+                                            "bad", as.character(qc)))
 ```
 
 # Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(notes, file = "../r_files/notes.Rda")
+  notes<- saveRDS(notes, file = "../r_files/notes.RDS")
 ```

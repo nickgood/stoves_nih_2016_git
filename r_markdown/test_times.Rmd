@@ -7,12 +7,17 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_libraries, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(gridExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width=10, fig.height = 4, cache = TRUE)
+```
+
+```{r load_functions}
   source("../R_scripts/R_load_data.R")
   source("../R_scripts/R_load_metadata.R")
   source("../R_scripts/R_tidy.R")
@@ -21,38 +26,39 @@ output:
 
 # Load data
 
-* sample, wood and batch test metadata
+* samples
+* times
+* tester logs
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/batch_times.Rda")
-  load("../r_files/wood_times.Rda")
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
+  
+  tester_one <- readRDS("../r_files/data_tester_one.RDS")
+  tester_two <- readRDS("../r_files/data_tester_two.RDS")
 ```
 
 * pre and post experiment background times for online instruments
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
+```{r}
+  smps_pax <- readRDS("../r_files/smps_pax_bg_times.RDS")
+  dust <- readRDS("../r_files/dust_flows.RDS")
 ```
 
-# Combine time data
+# Combine time and sample data
 
-* wood and batch times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  wood_batch_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
-                                       dplyr::select(batch_times, -date)) %>%
-                      dplyr::inner_join(dplyr::select(samples, id, date),
-                                                      test_times, by = "id") %>%
-                      dplyr::filter(is.na(value)==FALSE) %>%
-                      dplyr::mutate(id = as.factor(id))
+```{r}
+  test_times <- dplyr::inner_join(dplyr::select(test_times, -date),
+                                  dplyr::select(samples, id, date),
+                                  test_times, by = "id") %>%
+                dplyr::filter(is.na(value)==FALSE) %>%
+                dplyr::mutate(id = as.factor(id))
 ```
 
 * fivegas background times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times_bg_fivegas <- dplyr::select(data_1, id, 
+```{r}
+  times_bg_fivegas <- dplyr::select(tester_one, id, 
                                     time_start_fivegas_prebg,
                                     time_end_fivegas_prebg,
                                     time_start_fivegas_post_bg,
@@ -70,8 +76,8 @@ output:
 
 * pax/smps background times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times_bg_pax_smps <- dplyr::select(data_2, id, 
+```{r}
+  times_bg_pax_smps <- dplyr::select(tester_two, id, 
                                      time_start_smps_pax_bg_pre,
                                      time_end_smps_pax_bg_pre,
                                      time_start_smps_pax_bg_post,
@@ -89,8 +95,8 @@ output:
 
 * combine times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::bind_rows(wood_batch_times,
+```{r}
+  test_times <- dplyr::bind_rows(test_times,
                                  times_bg_fivegas,
                                  times_bg_pax_smps) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
@@ -100,33 +106,33 @@ output:
 
 # Save data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(test_times, file = "../r_files/test_times.Rda")
+```{r}
+  saveRDS(test_times, file = "../r_files/test_times.RDS")
 ```
 
 # Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
  # sample info
   samples <- dplyr::select(samples, id, stove, fuel)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
  # sample durations (minutes)
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+  times <- dplyr::filter(test_times, var == "ignite" | var == "end") %>%
            tidyr::spread(var, value) %>%
-           dplyr::mutate(dur = (shutdown - start_1) / 60)
+           dplyr::mutate(dur = (end - ignite) / 60)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE}
  # merge with full test list
   times <- dplyr::left_join(dplyr::select(samples, id) %>%
-                            dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+                            dplyr::filter(!grepl("^BG[0-9]", id) == TRUE), 
                             times,
                             by = "id")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, fig.width=8, fig.height=4}
   p_hist <- ggplot(times, aes(x = dur)) +
             geom_histogram(binwidth = 15) +
             theme_minimal() +
@@ -144,12 +150,8 @@ output:
            theme_minimal() +
            ylab("z score normalized value") +
            xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95))
 
   grid.arrange(p_hist, p_box, ncol = 2)
 ```
 ```
-
-There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are: `r times$id[is.na(times$dur)]`.

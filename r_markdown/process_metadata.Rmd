@@ -7,13 +7,19 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+```{r load_libraries, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(GGally)
   library(gridExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width = 10, fig.height = 4, cache = FALSE)
+```
+
+```{r}
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_plots.R")
   source("../r_scripts/R_tidy.R")
@@ -21,544 +27,514 @@ output:
  
 # Load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  load("../r_files/pax.Rda")         # pax data
-  load("../r_files/co2_lab.Rda")     # lab co2 levels
-  load("../r_files/co2_sample.Rda")  # diluted sample line co2 levels
-  load("../r_files/scale.Rda")       # scale data
-  load("../r_files/temp.Rda")        # temperature data
-  load("../r_files/smps.Rda")        # smps data
+```{r load_files}
+  tester_one <- readRDS("../r_files/data_tester_one.RDS")
+  tester_two <- readRDS("../r_files/data_tester_two.RDS")
 
-  load("../r_files/ecoc.Rda")        # ecoc analysis
-  load("../r_files/ions.Rda")        # ion and carbonyls
-  load("../r_files/trans.Rda")       # transmissometer data
-  load("../r_files/voc.Rda")         # voc canister data
+  cal_two <- readRDS("../r_files/data_cal_two.RDS")
 
-  load("../r_files/samples.Rda")     # sample info
-  load("../r_files/batch.Rda")       # batch sampling log
-  load("../r_files/wood.Rda")        # wood sampling log
-  load("../r_files/cal_1.Rda")       # meta data
-  load("../r_files/data_1.Rda")      # meta data
-  load("../r_files/cal_2.Rda")       # meta data
-  load("../r_files/data_2.Rda")      # meta data
+  test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
+  fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
 
-# Stove-fuel combinations
+# Sample data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  test_list <- dplyr::filter(samples, type == "SF") %>%
-               dplyr::select(id, stove, fuel, type) %>%
-               dplyr::group_by(stove, fuel) %>%
-               dplyr::summarise(id = paste(id, collapse = ","))
+```{r}
+  test_log <- test_log %>%
+              dplyr::mutate(type = ifelse(grepl("^L", id), "lab", "field")) %>%
+              dplyr::mutate(type = ifelse(grepl("^B", id), "bg", type)) %>%
+              dplyr::mutate(mc_level = ifelse(grepl("^LL|^FL", id), "low", "med")) %>%
+              dplyr::mutate(mc_level = ifelse(grepl("^LH|^FH", id), "high", mc_level)) %>%
+              dplyr::mutate(mc_level = ifelse(grepl("^B", id), NA, mc_level))
+```
 
-  ggplot(test_list, aes(y=stove, x=fuel)) + 
-    geom_tile(colour = "white", width= 0.9, height = 0.9, aes(fill = id)) +
+```{r}
+  # note fix fuel for bg
+  samples <-   test_log %>%
+               dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
+               dplyr::mutate(mc_level = as.factor(mc_level)) %>%
+               dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
+                                dplyr::distinct(),
+                                by = "id") %>%
+               dplyr::mutate(mc_target = as.factor(mc_target))
+
+  saveRDS(samples, "../r_files/samples.RDS")
+```
+
+## Plot test ids
+
+```{r, echo=FALSE}
+  test_list <- samples %>%
+               dplyr::group_by(mc_target, type) %>%
+               dplyr::summarise(id = paste(id, collapse = ", "))
+
+  ggplot(test_list, aes(y = mc_target, type)) + 
+    geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id)) +
     scale_fill_discrete(na.value = 'grey95') +
-    theme_minimal() +
-    theme(legend.position="none") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95)) +
-    theme(axis.text = element_text(size = 14)) +
-    geom_text(aes(label = id, size = 8)) +
-    xlab("") + ylab("")
+    theme_bw(base_size = 14) +
+    theme(legend.position = "none") +
+    geom_text(aes(label = id, size = 6))
 ```
 
 # Clean and save metadata
 
-## batch stove weights
+## fuel weights
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_wgts <- dplyr::filter(tidy_id_date(batch, "^wgt_", "wgt_"), !is.na(value))
+```{r}
+  fuel_mass <- dplyr::filter(tidy_id_date(fuel, "^mass_", "mass_"), !is.na(value))
 
-  save(batch_wgts, file="../r_files/batch_wgts.Rda")
+  pot_mass <- dplyr::filter(tidy_id_date(test_log, "^wgt_", "wgt_"), !is.na(value))
+
+  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass)
+
+  saveRDS(test_mass, file="../r_files/fuel_wgts.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(batch_wgts, var) %>%
+```{r, echo=FALSE, fig.height=8}
+  p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%
+            dplyr::group_by(var, mc_target) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-  ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
+  p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+             theme_bw(base_size = 14) +
+             facet_grid(~mc_target) + 
+             ylab("z score normalized value") +
+             theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+             xlab("")
+
+  p_hist <- ggplot(p_data, aes(x = value, fill = mc_target)) +
+              geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~var, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("mass (g)")
+  
+  grid.arrange(p_hist, p_box, ncol = 1)
 ```
 
 ## batch stove timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_times <- dplyr::filter(tidy_id_date(batch, "^time_", "time_"), !is.na(value))
+```{r}
+  test_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
 
-  save(batch_times, file="../r_files/batch_times.Rda")
-
+  saveRDS(test_times, file="../r_files/test_times.RDS")
 ```
   
  * unexpected values:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+```{r, echo=FALSE}
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
-Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
-
 ## batch lab conditions
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_lab <- dplyr::filter(tidy_id_date(batch, "^lab_", "lab_"), !is.na(value))
-
-  save(batch_lab, file="../r_files/batch_lab.Rda")
+```{r}
+  # lab_cond <- dplyr::filter(tidy_id_date(test_log, "^lab_", "lab_"), !is.na(value))
+  # 
+  # saveRDS(lab_cond, file="../r_files/batch_lab.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
-  p_data <- dplyr::group_by(batch_lab, var) %>%
-            dplyr::mutate(value_norm =
-                         (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+KB: Currently no data is recorded in the test log
 
-  p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
-
-  p_hist <- ggplot(p_data, aes(x = value)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            facet_wrap(~var, scales = "free") +
-            xlab("")
-
-  grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperature]) were all  checked by KF in February 2017; no transcription errors exist nor unusual (out of expected range) values.
-
-## batch pot number
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  batch_pot <- dplyr::filter(tidy_id_date(batch, "^pot_", "pot_"),
-                             !is.na(as.numeric(value))) %>%
-               dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value, rep = var)
-
-  batch_pot$pot <- forcats::fct_recode(batch_pot$pot,
-                                   a = "1", b = "2", c = "3", d = "4")
-
-  save(batch_pot, file="../r_files/batch_pot.Rda")
+```{r, echo=FALSE}
+  # p_data <- dplyr::group_by(lab_cond, var) %>%
+  #           dplyr::mutate(value_norm =
+  #                        (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE),
+  #                         outlier = ifelse(is_outlier(value), as.character(id), NA))
+  # 
+  # p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
+  #          geom_boxplot() +
+  #          geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
+  #          theme_bw() +
+  #          ylab("z score normalized value") +
+  #          xlab("") +
+  #          theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+  #          theme(axis.text.y = element_text(size = 30),
+  #          axis.title=element_text(size=40))
+  # 
+  # p_hist <- ggplot(p_data, aes(x = value)) +
+  #           geom_histogram(binwidth = 15) +
+  #           theme_bw() +
+  #           facet_wrap(~var, scales = "free") +
+  #           xlab("")
+  # 
+  # grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## carbonyl flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  carb_flows <- dplyr::filter(tidy_id_date(data_2, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
+```{r}
+  carb_flows <- dplyr::filter(tidy_id_date(tester_two, "_carb_.*[^avg]$", "_carb_"), !is.na(value))
   
   carb_flows <- split_flows(carb_flows)
   
-  save(carb_flows, file="../r_files/carb_flows.Rda")
+  saveRDS(carb_flows, file="../r_files/carb_flows.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(carb_flows, type) %>%
+```{r, echo=FALSE}
+  p_data <- dplyr::group_by(carb_flows, id, type) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
             dplyr::mutate(value_norm =
                            (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value),
                                     as.character(id), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_bw(base_size = 14) +
+           ylab("z score normalized value") +
+           xlab("")
+ 
+  p_hist <- ggplot(p_data, aes(x = value)) +
+            geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+            theme_bw() +
+            facet_grid(~type) + 
+            theme_bw(base_size = 14) +
+            xlab("flow (lpm)")
+  
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
-
-Outlier 16B checked by KF in February 2017. There is no transcription error, but this measure is QC-flagged as bad due to an issue with the carbonyl line being clogged/having known sampling issues that impacted flow rates. 
 
 ## carbonyl timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  carb_times <- dplyr::filter(tidy_id_date(data_2, "^time_.*carb$", "^time_"), !is.na(value))
+```{r}
+  carb_times <- dplyr::filter(tidy_id_date(tester_two, "^time_.*carb$", "^time_"), !is.na(value))
   
   carb_times <- split_times(carb_times)
   
-  save(carb_times, file="../r_files/carb_times.Rda")
+  saveRDS(carb_times, file="../r_files/carb_times.RDS")
 ```
 
 * unexpected values:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
+```{r, echo=FALSE}
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 8 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
 ## isokinetic sampler flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  iso_flows <- dplyr::filter(tidy_id_date(data_2, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
+```{r}
+  iso_flows <- dplyr::filter(tidy_id_date(tester_two, "_iso_.*[^avg]$", "_iso_"), !is.na(value))
   
   iso_flows <- split_flows(iso_flows)
   
-  save(iso_flows, file="../r_files/iso_flows.Rda")
+  saveRDS(iso_flows, file="../r_files/iso_flows.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE}
   p_data <- dplyr::group_by(iso_flows, type) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
-```
-
-Outlier 1C checked by KF in February 2017. There is no transcription error and the value is within an expected normal range. 
-
-## wood stove weights
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_wgts <- dplyr::filter(tidy_id_date(wood, "^wgt_", "wgt_"), !is.na(value))
-  
-  save(wood_wgts, file="../r_files/wood_wgts.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(wood_wgts, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
-
-  ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
-```
-
-Outliers 10A, 6D, 5A, 2A, 1A checked by KF in February 2017. There are no transcription errors. 
-
-Outliers 6A and 13A were transcription errors that were fixed in wood sampling log on 2/18/17 so should not appear in subsequent re-run versions of this file.
-
-## wood stove times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_times <- dplyr::filter(tidy_id_date(wood, "^time_", "time_"), !is.na(value))
-
-  save(wood_times, file="../r_files/wood_times.Rda")
-```
-
- * unexpected values:
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(wood_times, value < 60 * 60 * 4 | value > 60 * 60 * 19)
-
-  knitr::kable(outliers, "markdown", digits = 2)
-```
-
-
-## wood lab conditions
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_lab <- dplyr::filter(tidy_id_date(wood, "^lab_", "lab_"), !is.na(value))
-  
-  save(wood_lab, file="../r_files/wood_lab.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
-  p_data <- dplyr::group_by(wood_lab, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
-
-  p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-           theme_minimal() +
-           ylab("z score normalized value") +
-           xlab("") +
-           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-           theme(axis.text.y = element_text(size = 30),
-           axis.title=element_text(size=40))
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+             theme_bw(base_size = 14) +
+             ylab("z score normalized value") +
+             xlab("")
 
   p_hist <- ggplot(p_data, aes(x = value)) +
-            geom_histogram(binwidth = 15) +
-            theme_minimal() +
-            facet_wrap(~var, scales = "free") +
-            xlab("")
-
+              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~type) + 
+              theme_bw(base_size = 14) +
+              xlab("flow (lpm)")
+  
   grid.arrange(p_hist, p_box, ncol = 2)
-```
-
-All outliers checked by KF in February 2017. There are no transcription errors. 
-
-## wood pot number
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  wood_pot <- dplyr::filter(tidy_id_date(wood, "^pot_", "pot_"),
-                             !is.na(as.numeric(value))) %>%
-               dplyr::mutate(value = as.factor(value)) %>%
-               dplyr::rename(pot = value, rep = var)
-
-  wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
-                                   a = "1", b = "2", c = "3", d = "4")
-  
-  save(wood_pot, file="../r_files/wood_pot.Rda")
-```
-
-
-## fivegas calibration standards
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_conc <- dplyr::filter(tidy_date(cal_1, "^conc_", "conc_"), !is.na(value))
-  
-  save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(fivegas_cal_conc, var) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
-
-  ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
-```
-
-Outlier date of 3-11-16: No transcription error, but KF thinks there was a mistake in the original data recording. It should have been written as 49.9 but instead was written as 49.5.
-
-## fivegas calibration times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
-  fivegas_cal_times <- dplyr::filter(tidy_date(cal_1, "^time_", "time_"),
-                                     !is.na(value))
-
-  fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
-
-  save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
-```
-
- * unexpected values:
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  outliers <- dplyr::filter(fivegas_cal_times,
-                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
-
-  knitr::kable(outliers, "markdown", digits = 2)
 ```
 
 ## filter cartridge flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_flows <- dplyr::filter(tidy_id_date(data_1,
+```{r}
+  filter_flows <- dplyr::filter(tidy_id_date(tester_one,
                                   "^preflow_.*[^avg]$|postflow.*[^avg]$", ""),
                                   !is.na(value))
 
   filter_flows <- split_filter_flows(filter_flows)
 
-  save(filter_flows, file="../r_files/filter_flows.Rda")
+  saveRDS(filter_flows, file="../r_files/filter_flows.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=16}
+```{r, echo=FALSE}
   p_data <- dplyr::group_by(filter_flows, type, colour) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
+                          outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40)) +
-    facet_wrap(~colour, scales = "free")
+  p_box <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+               geom_boxplot() +
+               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+               theme_bw(base_size = 14) +
+               ylab("z score normalized value") +
+               facet_wrap(~colour) +
+               xlab("") + 
+               facet_wrap(~colour, scales = "free")
+
+  p_hist <- ggplot(p_data, aes(x = value)) +
+              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~type) + 
+              theme_bw(base_size = 14) +
+              xlab("flow (lpm)")
+  
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## filter cartridge timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  filter_times <- dplyr::filter(tidy_id_date(data_1, "^time_.*cart", "time_"), !is.na(value))
+```{r}
+  filter_times <- dplyr::filter(tidy_id_date(tester_one, "^time_.*cart", "time_"), !is.na(value))
 
   filter_times <- split_filter_times(filter_times)
 
-  save(filter_times, file="../r_files/filter_times.Rda")
+  saveRDS(filter_times, file="../r_files/filter_times.RDS")
 ```
 
  * unexpected values:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE}
   outliers <- dplyr::filter(filter_times,
-                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
+                            value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
-Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 is correct (~5-7pm test).
-
 ## co2 (dilution) calibration
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  co2_lab_cal <- dplyr::filter(tidy_date(cal_2, "^sensor_1", "sensor_1_"), !is.na(value))
+* tidy zero conc variable
+
+```{r}
+  cal_two <- dplyr::rename(cal_two,
+                           zero_1_conc = zero_1,
+                           zero_2_conc = zero_2) %>%
+             dplyr::mutate(zero_1_conc = 0,
+                           zero_2_conc = 0)
+```
+
+
+```{r}
+  co2_lab_cal <- dplyr::filter(tidy_date(cal_two, "^zero_1|^co2_1", "_1"), !is.na(value))
 
   co2_lab_cal <- split_co2_cal(co2_lab_cal)
 
-  save(co2_lab_cal, file="../r_files/co2_lab_cal.Rda")
+  co2_lab_cal <- dplyr::mutate(co2_lab_cal, value = as.numeric(value))
+
+  saveRDS(co2_lab_cal, file="../r_files/co2_lab_cal.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
-  p_data <- dplyr::group_by(co2_lab_cal, type) %>%
+```{r, echo=FALSE}
+  p_data <- dplyr::group_by(co2_lab_cal, type, pol) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40)) +
-    ggtitle("lab")
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+             theme_bw(base_size = 14) +
+             facet_wrap(~pol) +
+             ylab("z score normalized value") +
+             xlab("") +
+             ggtitle("lab")
+
+  p_hist <- ggplot(p_data, aes(x = value, color = type)) +
+              geom_histogram(alpha = 0.5) +
+              theme_bw() +
+              facet_grid(~pol, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("conc (ppm)") +
+              ggtitle("lab")
+
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  co2_sample_cal <- dplyr::filter(tidy_date(cal_2, "^sensor_2", "sensor_2_"), !is.na(value))
-  
+```{r}
+  co2_sample_cal <- dplyr::filter(tidy_date(cal_two, "^zero_2|^co2_2", "_2"), !is.na(value))
+
   co2_sample_cal <- split_co2_cal(co2_sample_cal)
-  
-  save(co2_sample_cal, file="../r_files/co2_sample_cal.Rda")
+
+  co2_sample_cal <- dplyr::mutate(co2_sample_cal, value = as.numeric(value))
+
+  saveRDS(co2_sample_cal, file="../r_files/co2_sample_cal.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE}
   p_data <- dplyr::group_by(co2_sample_cal, type) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40)) +
-    ggtitle("sample line")
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+              geom_boxplot() +
+              geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+              theme_bw(base_size = 16) +
+              ylab("z score normalized value") +
+              xlab("") +
+              ggtitle("sample line")
+  
+  p_hist <- ggplot(p_data, aes(x = value)) +
+              geom_histogram(alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~pol, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("conc (ppm)") +
+              ggtitle("sample")
+
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## pax flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  pax_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_pax|^postflow_pax", ""),
+```{r}
+  pax_flows <- dplyr::filter(tidy_date(cal_two, "^pax", ""),
                              !is.na(value))
   
   pax_flows <- split_pax_flows(pax_flows)
   
-  save(pax_flows, file="../r_files/pax_flows.Rda")
+  saveRDS(pax_flows, file="../r_files/pax_flows.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE}
   p_data <- dplyr::filter(pax_flows, loc == "inlet") %>%
             dplyr::group_by(type) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+            geom_boxplot() +
+            geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+            theme_bw(base_size = 14) +
+            ylab("z score normalized value") +
+            xlab("")
+
+  p_hist <- ggplot(p_data, aes(x = value)) +
+              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~type, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("flow (lpm)")
+
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## smps flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  smps_flows <- dplyr::filter(tidy_date(cal_2, "^preflow_smps|^postflow_smps", ""),
+```{r}
+  smps_flows <- dplyr::filter(tidy_date(cal_two, "^smps", ""),
                               !is.na(value))
 
   smps_flows <- split_flows(smps_flows)
   
-  save(smps_flows, file="../r_files/smps_flows.Rda")
+  saveRDS(smps_flows, file="../r_files/smps_flows.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
+```{r, echo=FALSE}
   p_data <- dplyr::group_by(smps_flows, type) %>%
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
-    geom_boxplot() +
-    geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-    theme_minimal() +
-    ylab("z score normalized value") +
-    xlab("") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-    theme(axis.text.y = element_text(size = 30),
-          axis.title=element_text(size=40))
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+              geom_boxplot() +
+              geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+              theme_bw(base_size = 14) +
+              ylab("z score normalized value") +
+              xlab("")
+
+  p_hist <- ggplot(p_data, aes(x = value)) +
+              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~type, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("flow (lpm)")
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+
+## dusttrak flows
+
+```{r}
+  dust_flows <- dplyr::filter(tidy_date(cal_two, "^dust", ""),
+                              !is.na(value))
+
+  dust_flows <- split_flows(dust_flows)
+
+  saveRDS(dust_flows, file="../r_files/dust_flows.RDS")
+```
+
+```{r, echo=FALSE}
+  p_data <- dplyr::group_by(dust_flows, type) %>%
+            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value), as.character(date), NA))
+
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+              geom_boxplot() +
+              geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+              theme_bw(base_size = 14) +
+              ylab("z score normalized value") +
+              xlab("")
+
+  p_hist <- ggplot(p_data, aes(x = value)) +
+              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~type, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("flow (lpm)")
+
+  grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## smps / pax times
 
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  smps_pax_bg_times <- dplyr::filter(tidy_id_date(data_2,
+```{r}
+  smps_pax_bg_times <- dplyr::filter(tidy_id_date(tester_two,
                                                   "^time_.*smps.*", "^time_"),
                                                   !is.na(value))
 
   smps_pax_bg_times <- split_times_smps_pax(smps_pax_bg_times)
 
-  save(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.Rda")
+  saveRDS(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.RDS")
 ```
 
 * unexpected values:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   outliers <- dplyr::filter(smps_pax_bg_times,
-                            value < 60 * 60 * 4 | value > 60 * 60 * 19)
+                            value < 60 * 60 * 4 | value > 60 * 60 * 20)
+
+  knitr::kable(outliers, "markdown", digits = 2)
+```
+
+## five gas
+
+```{r}
+  fivegas_bg_times <- dplyr::filter(tidy_id_date(tester_one,
+                                                 "^time_.*fivegas.*", "^time_"),
+                                    !is.na(value))
+
+  fivegas_bg_times <- split_times(fivegas_bg_times)
+
+  saveRDS(fivegas_bg_times, file="../r_files/fivegas_bg_times.RDS")
+```
+
+* unexpected values:
+
+```{r}
+  outliers <- dplyr::filter(fivegas_bg_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
 
 # Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE}
   count_samples <- dplyr::tally(group_by(samples, type))
-
-  count_stoves <- dplyr::tally(group_by(samples, stove)) 
-  
-  count_fuels <- dplyr::tally(group_by(samples, fuel))
 ```
 
-A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of  `r nrow(count_fuels)` fuels were tested (on the appropriate stove).
+`r as.numeric(count_samples[2,2])` field wood tests, `r as.numeric(count_samples[3,2])` lab wood tests, and `r as.numeric(count_samples[1,2])` background tests were conducted for a total of `r sum(count_samples$n)` tests. The tests were performed between `r min(samples$date)` and `r max(samples$date)`. The `r samples$stove[1]` stove was tested with `r samples$fuel[1]` fuel.

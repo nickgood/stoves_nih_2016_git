@@ -7,12 +7,17 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(knitr)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
+                        fig.width=10, fig.height = 4, cache = TRUE)
+```
+
+```{r}
   source("../r_scripts/R_functions.R")
 ```
 
@@ -20,51 +25,35 @@ output:
 
 * constants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/calc_constants.Rda")
+```{r}
+  #load("../r_files/calc_constants.RDS")
 ```
 
 * metadata
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/wood_wgts.Rda")
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
+  fuel_wgts <- readRDS("../r_files/fuel_wgts.RDS")
 ```
 
 # Timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+```{r}
+  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
+           dplyr::rename(start = set_1, end = end)
 ```
 
 # Fuel
-
-## batch stoves
-
-* fuel consumed
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  batch_mass <- dplyr::filter(batch_wgts, var == "fuel" |
-                                          var == "refueled" |
-                                          var == "preshutdown") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::rename(wgt_fuel = fuel,
-                              wgt_refuel = refueled,
-                              wgt_shutdown = preshutdown) %>%
-                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
-```
 
 ## wood stoves
 
 * fuel consumed
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  wood_mass <- dplyr::filter(wood_wgts, var == "fuel" |
+```{r}
+  wood_mass <- dplyr::filter(fuel_wgts, var == "fuel" |
                                         var == "ashpot_unusedfuel" |
                                         var == "ashpot_char_ash" |
                                         var == "ashpot_lid") %>%
@@ -81,7 +70,7 @@ output:
 
 ## merge
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_mass, id, mass_fuel),
                                  dplyr::select(wood_mass, id, mass_fuel)) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
@@ -90,7 +79,7 @@ output:
 
 # Plot
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+```{r, fig.width=12, fig.height=8}
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id)) %>%
             dplyr::filter(grepl("^[0-9]", id) == TRUE)
@@ -105,8 +94,8 @@ output:
 
 # Save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fuel_burnt, file = "../r_files/fuel_burnt.Rda")
+```{r}
+  saveRDS(fuel_burnt, file = "../r_files/fuel_burnt.RDS")
 ```
 
 ___

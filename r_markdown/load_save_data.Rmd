@@ -34,10 +34,11 @@ Loads and saves the CO2 voltage data (`calibration?`)
 
 ## ecoc
 
-Loads ecoc data file and saves (`waiting on data`)
+Loads ecoc data file and saves
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- load_ecoc_file()
+  ecoc
   saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
@@ -73,11 +74,10 @@ Loads and resaves data as .RDS.
 Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
-  save(pax, file = "../r_files/pax.RDS")
+  saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
 ## smps
@@ -147,3 +147,11 @@ Loads the microgram sheet  and resaves data as an .Rda.
   data_cal_two <- load_cal_two()
   saveRDS(data_cal_two, file = "../r_files/data_cal_two.RDS")
 ```
+
+* Test log
+
+```{r, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  mc_test_log <- load_test_log()
+  saveRDS(mc_test_log, file = "../r_files/mc_test_log.RDS")
+```
+
