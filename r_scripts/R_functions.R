@@ -140,8 +140,8 @@ filter_times <- function(times, df){
                            as.character(id) == as.character(times$id[i]),
                            time >= times$start[i],
                            time <= times$end[i])
-      
-  # if first match
+
+      # if first match
       if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
         out <- tmp
       }

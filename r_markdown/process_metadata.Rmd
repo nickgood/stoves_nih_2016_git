@@ -16,7 +16,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height=4, cache = TRUE)
+                        fig.width = 10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
@@ -30,9 +30,9 @@ output:
 ```{r load_files}
   tester_one <- readRDS("../r_files/data_tester_one.RDS")
   tester_two <- readRDS("../r_files/data_tester_two.RDS")
- 
+
   cal_two <- readRDS("../r_files/data_cal_two.RDS")
- 
+
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
@@ -49,17 +49,12 @@ output:
 ```
 
 ```{r}
-  # rename variable
-  fuel <- dplyr::rename(fuel, id = fuel_id, date = date_test)
-```
-
-
-```{r}
+  # note fix fuel for bg
   samples <-   test_log %>%
                dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
                dplyr::mutate(mc_level = as.factor(mc_level)) %>%
                dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
-                                 dplyr::distinct(),
+                                dplyr::distinct(),
                                 by = "id") %>%
                dplyr::mutate(mc_target = as.factor(mc_target))
 
@@ -81,8 +76,6 @@ output:
     geom_text(aes(label = id, size = 6))
 ```
 
-KB: Are LL1 and FL1 supposed to be 5?
-
 # Clean and save metadata
 
 ## fuel weights
@@ -103,21 +96,21 @@ KB: Are LL1 and FL1 supposed to be 5?
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
-           geom_boxplot() +
-           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
-           theme_bw(base_size = 14) +
-           facet_grid(~mc_target) + 
-           ylab("z score normalized value") +
-           theme(axis.text.x = element_text(angle = 45, hjust=1)) +
-           xlab("")
+  p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+             theme_bw(base_size = 14) +
+             facet_grid(~mc_target) + 
+             ylab("z score normalized value") +
+             theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+             xlab("")
 
   p_hist <- ggplot(p_data, aes(x = value, fill = mc_target)) +
-            geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
-            theme_bw() +
-            facet_grid(~var, scales = "free") + 
-            theme_bw(base_size = 14) +
-            xlab("mass (g)")
+              geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
+              theme_bw() +
+              facet_grid(~var, scales = "free") + 
+              theme_bw(base_size = 14) +
+              xlab("mass (g)")
   
   grid.arrange(p_hist, p_box, ncol = 1)
 ```
@@ -125,15 +118,15 @@ p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
 ## batch stove timestamps
 
 ```{r}
-  batch_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
+  test_times <- dplyr::filter(tidy_id_date(test_log, "^time_", "time_"), !is.na(value))
 
-  saveRDS(batch_times, file="../r_files/batch_times.RDS")
+  saveRDS(test_times, file="../r_files/test_times.RDS")
 ```
   
  * unexpected values:
 
 ```{r, echo=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -184,7 +177,9 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(carb_flows, type) %>%
+  p_data <- dplyr::group_by(carb_flows, id, type) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
             dplyr::mutate(value_norm =
                            (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value),
@@ -220,7 +215,7 @@ KB: Currently no data is recorded in the test log
 * unexpected values:
 
 ```{r, echo=FALSE}
-  outliers <- dplyr::filter(batch_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
+  outliers <- dplyr::filter(test_times, value < 60 * 60 * 8 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
 ```
@@ -274,7 +269,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-  p_hist <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
                geom_boxplot() +
                geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
                theme_bw(base_size = 14) +
@@ -349,8 +344,8 @@ KB: Currently no data is recorded in the test log
              xlab("") +
              ggtitle("lab")
 
-  p_hist <- ggplot(p_data, aes(x = value)) +
-              geom_histogram(alpha = 0.5, color = "black") +
+  p_hist <- ggplot(p_data, aes(x = value, color = type)) +
+              geom_histogram(alpha = 0.5) +
               theme_bw() +
               facet_grid(~pol, scales = "free") + 
               theme_bw(base_size = 14) +
@@ -375,7 +370,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 16) +
@@ -411,7 +406,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             geom_boxplot() +
             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
             theme_bw(base_size = 14) +
@@ -444,7 +439,7 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 14) +
@@ -477,7 +472,7 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 14) +
@@ -510,6 +505,27 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
 
 ```{r}
   outliers <- dplyr::filter(smps_pax_bg_times,
+                            value < 60 * 60 * 4 | value > 60 * 60 * 20)
+
+  knitr::kable(outliers, "markdown", digits = 2)
+```
+
+## five gas
+
+```{r}
+  fivegas_bg_times <- dplyr::filter(tidy_id_date(tester_one,
+                                                 "^time_.*fivegas.*", "^time_"),
+                                    !is.na(value))
+
+  fivegas_bg_times <- split_times(fivegas_bg_times)
+
+  saveRDS(fivegas_bg_times, file="../r_files/fivegas_bg_times.RDS")
+```
+
+* unexpected values:
+
+```{r}
+  outliers <- dplyr::filter(fivegas_bg_times,
                             value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
