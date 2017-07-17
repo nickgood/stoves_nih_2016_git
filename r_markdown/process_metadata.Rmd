@@ -274,7 +274,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(id), NA))
 
-  p_hist <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
                geom_boxplot() +
                geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
                theme_bw(base_size = 14) +
@@ -375,7 +375,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 16) +
@@ -411,7 +411,7 @@ KB: Currently no data is recorded in the test log
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             geom_boxplot() +
             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
             theme_bw(base_size = 14) +
@@ -444,7 +444,7 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 14) +
@@ -477,7 +477,7 @@ p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
                           outlier = ifelse(is_outlier(value), as.character(date), NA))
 
-  p_hist <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
+  p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
               geom_boxplot() +
               geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
               theme_bw(base_size = 14) +
