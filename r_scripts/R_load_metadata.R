@@ -12,11 +12,11 @@
   source("../r_scripts/R_functions.R")
 #_______________________________________________________________________________
 
-  #_______________________________________________________________________________
-  # load fuel prep file
-  # file <- "../data/logs/Fuel Prep Final.xlsx"
-  # sheet <- "Fuel Prep"
-  # out <- load_fuel_prep(file)
+#_______________________________________________________________________________
+# load fuel prep file
+# file <- "../data/logs/Fuel Prep Final.xlsx"
+# sheet <- "Fuel Prep"
+# out <- load_fuel_prep(file)
   load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "Fuel Prep"){
    # load raw file
    out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)

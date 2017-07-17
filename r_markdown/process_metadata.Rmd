@@ -51,7 +51,7 @@ output:
 ```{r}
   # note fix fuel for bg
   samples <-   test_log %>%
-               dplyr::select(id, date, stove, fuel, type, mc_level) %>%
+               dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
                dplyr::mutate(mc_level = as.factor(mc_level)) %>%
                dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
                                 dplyr::distinct(),
