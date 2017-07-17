@@ -64,12 +64,6 @@ Remove NOx and oxygen rows (channels not used during study)
  fivegas_merged <- dplyr::filter(fivegas_conc, pol != "nox", pol != "o2")
 ```
 
-Remove nox rows
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- fivegas_merged<- dplyr::filter(fivegas_merged_first, pol != "nox")
-```
-
 # QC
 
 Extract notes relevant to  fivegas analyzer
@@ -124,7 +118,7 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
 
 # Plots
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
+```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width = 12, fig.height = 40, eval = TRUE}
   df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
         dplyr::arrange(id) %>%
         dplyr::mutate(id = as.factor(id))
