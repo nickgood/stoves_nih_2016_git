@@ -23,7 +23,7 @@ Load files that contain any notes or test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- readRDS("../r_files/notes.RDS")
-  notes_kf <- readr::read_csv("../data/logs/startup_qc_notes.csv")
+  notes_kf <- readRDS("../r_files/notes_kf.RDS")
 ```
 
 # Add flags
