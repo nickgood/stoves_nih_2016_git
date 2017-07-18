@@ -21,21 +21,19 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
+---
+
 # Load
-
-* constants
-
-```{r}
-  #load("../r_files/calc_constants.RDS")
-```
 
 * metadata
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  test_times <- readRDS("../r_files/test_times.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
   fuel_wgts <- readRDS("../r_files/fuel_wgts.RDS")
 ```
+
+---
 
 # Timestamps
 
@@ -46,40 +44,21 @@ output:
            dplyr::rename(start = set_1, end = end)
 ```
 
-# Fuel
+---
 
-## wood stoves
+# Fuel
 
 * fuel consumed
 
-```{r}
-  wood_mass <- dplyr::filter(fuel_wgts, var == "fuel" |
-                                        var == "ashpot_unusedfuel" |
-                                        var == "ashpot_char_ash" |
-                                        var == "ashpot_lid") %>%
+```{r, eval = FALSE}
+  fuel_burnt <- dplyr::filter(fuel_wgts, 
+                             var == "start" |
+                             var == "end") %>%
                 tidyr::spread(var, value) %>%
-                dplyr::rename(wgt_fuel = fuel,
-                              wgt_pot_unusedfuel = ashpot_unusedfuel,
-                              wgt_pot_char_ash = ashpot_char_ash,
-                              wgt_pot = ashpot_lid) %>%
-                dplyr::mutate(mass_fuel = wgt_fuel -
-                                          wgt_pot_unusedfuel -
-                                          wgt_pot_char_ash +
-                                          2 * wgt_pot)
+                dplyr::mutate(delta_fuel = start - end)
 ```
 
-## merge
-
-```{r}
-  fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_mass, id, mass_fuel),
-                                 dplyr::select(wood_mass, id, mass_fuel)) %>%
-                dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::filter(grepl("^[0-9]", id) == TRUE)
-```
-
-# Plot
-
-```{r, fig.width=12, fig.height=8}
+```{r, fig.width = 12, fig.height = 8, eval = FALSE}
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id)) %>%
             dplyr::filter(grepl("^[0-9]", id) == TRUE)
@@ -92,11 +71,13 @@ output:
         ylab("fuel burnt (g)")
 ```
 
+---
+
 # Save
 
 ```{r}
   saveRDS(fuel_burnt, file = "../r_files/fuel_burnt.RDS")
 ```
 
-___
+---
 
