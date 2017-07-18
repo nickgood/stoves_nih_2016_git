@@ -217,7 +217,6 @@ ___
                 dplyr::mutate(id = as.factor(id))
 ```
 
-
 * merge background with fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -243,13 +242,11 @@ ___
   head(co_co2_ch4, 2)
 ```
 
-___
+---
 
 # PAX - DATA GOOD BUT HAVE NOT ATTEMPTED TO RUN CODE YET - no code from main aim 1? 
 
-* xyz
-
-___
+---
 
 # grav - FIRST ATTEMPT DONE as of 6/27/17; note question on negative emissions
 
@@ -287,13 +284,13 @@ ___
   head(grav, 2)
 ```
 
-___
+---
 
 # pah - NO DATA YET
 
 * waiting on data
 
-___
+---
 
 # voc
 
@@ -308,8 +305,7 @@ ___
          dplyr::left_join(dplyr::select(pol_properties,
                                         pol,
                                         mw,
-                                        num_c), by = "pol") %>% 
-         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                                        num_c), by = "pol")
 ```
 
 * calculate concentrations
