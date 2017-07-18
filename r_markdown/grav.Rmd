@@ -243,9 +243,13 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 ```
 
 ```{r}
- 
+  ggplot(bg, aes(id, conc)) +
+  geom_point() +
+  theme_minimal() +
+  ylab(expression(PM[2.5]~~mu~g/m^3))
 ```
 
+```{r}
         dplyr::summarise(conc_bg = mean(conc),
                          sd = sd(conc),
                          min = min(conc),
