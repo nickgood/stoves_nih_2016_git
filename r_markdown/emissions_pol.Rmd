@@ -23,26 +23,43 @@ output:
 
 # Load
 
-* pollutant data
+* fivegas
 
 ```{r}
-  #load("../r_files/ecoc_merged.Rda")
+ # fivegas data
   fivegas_merged <- readRDS("../r_files/fivegas_merged.RDS")
-  background <- readRDS("../r_files/background_co.RDS")
-    bg_co <- background$bg
-    bg_co_mean <- background$mean
-  background <- readRDS("../r_files/background_co2.RDS")
-    bg_co2 <- background$bg
-    bg_co2_mean <- background$mean
-  backgrounds <- readRDS("../r_files/background_ch4.RDS")
-    bg_ch4 <- background$bg
-    bg_ch4_mean <- background$mean
+
+ # background co
+  bg_co <- readRDS("../r_files/background_co.RDS")
+  bg_co_tests <- bg_co$bg
+  bg_co_mean <- bg_co$mean
+
+ # background co2
+  bg_co2 <- readRDS("../r_files/background_co2.RDS")
+  bg_co2_tests <- bg_co2$bg
+  bg_co2_mean <- bg_co2$mean
+
+ # background ch4
+  bg_ch4 <- readRDS("../r_files/background_ch4.RDS")
+  bg_ch4_tests <- bg_ch4$bg
+  bg_ch4_mean <- bg_ch4$mean
+```
+
+* gravimetric data
+
+```{r}
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
-  # load("../r_files/smps_ultrafine.Rda")
-  # load("../r_files/smps_ultrafine_bg.Rda")
-  # load("../r_files/ions_merged.Rda")
-  # load("../r_files/carbonyls_merged.Rda")
-  # load("../r_files/voc_merged.Rda")
+```
+
+* other data (yest to be pre-processed)
+
+```{r, eval = FALSE}
+  load("../r_files/ecoc_merged.Rda")
+  load("../r_files/smps_ultrafine.Rda")
+  load("../r_files/smps_ultrafine_bg.Rda")
+  load("../r_files/ions_merged.Rda")
+  load("../r_files/carbonyls_merged.Rda")
+  load("../r_files/voc_merged.Rda")
 ```
 
 * constants
