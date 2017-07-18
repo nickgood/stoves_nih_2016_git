@@ -21,41 +21,39 @@ output:
 * pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one (shows as 0)! (emailed Arsineh on 6/27/17)
-carbonyls_merged <- readRDS("../r_files/ions_merged.RDS") 
-grav_merged <- readRDS("../r_files/grav_merged.RDS")
+  voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one (shows as 0)! (emailed Arsineh on 6/27/17)
+  carbonyls_merged <- readRDS("../r_files/ions_merged.RDS")
+
+  grav_merged <- readRDS("../r_files/grav_merged.RDS")
 #ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
 
 * pollutant data - realtime
 
 ```{r}
-fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
-fivegas_bg <- readRDS("../r_files/fivegas_background.RDS") #may not need since bg data is in full
-    bg_co <- dplyr::filter(fivegas_bg, pol == "co")
-    bg_co2 <- dplyr::filter(fivegas_bg, pol == "co2")
-    bg_ch4 <- dplyr::filter(fivegas_bg, pol == "ch4")
+  fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
+  fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") #may not need
+  fivegas_bg_mean <- readRDS("../r_files/fivegas_background_mean.RDS")
 
-fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") #may not need...
-
-pax_full <- readRDS("../r_files/pax_merged_full.RDS")
-pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
-pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
+  pax_full <- readRDS("../r_files/pax_merged_full.RDS")
+  pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
+  pax_byrep <- readRDS("../r_files/pax_merged_rep.RDS")
 ```
 
 * fuel data
+
 ```{r}
-fuel_burnt_reps <- readRDS("../r_files/fuel_burnt_reps.RDS")
-fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
+  fuel_burnt_reps <- readRDS("../r_files/fuel_burnt_reps.RDS")
+  fuel_burnt_test <- readRDS("../r_files/fuel_burnt_test.RDS")
 ```
 
 * test times
-```{r}
-times_test <- readRDS("../r_files/times_test.RDS")
-times_fuel <- readRDS("../r_files/times_fuel.RDS")
-times_bg <- readRDS("../r_files/times_bg.RDS")
-```
 
+```{r}
+  times_test <- readRDS("../r_files/times_test.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+```
 
 * constants
 
@@ -121,7 +119,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 * select data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
           dplyr::select(id, cassette,
                         start, end,
@@ -132,7 +130,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 * calculate concentrations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
                               conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
 ```
@@ -141,7 +139,7 @@ times_bg <- readRDS("../r_files/times_bg.RDS")
 
 Use replicate average artifact (probably clean up spreadsheet at some point)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
             dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
             dplyr::ungroup() %>%
@@ -159,7 +157,7 @@ Use replicate average artifact (probably clean up spreadsheet at some point)
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
                         mass_carbon = mass_emitted,
@@ -168,13 +166,13 @@ Concentration is corrected for background by removing background test average co
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   head(ecoc, 2)
 ```
 
 ___
 
-# fivegas - DATA GOOD BUT HAVE NOT ATTEMPTED TO RUN CODE YET
+# fivegas
 
 * select co, co2 and ch4.
 
@@ -216,24 +214,21 @@ ___
                 dplyr::mutate(id = as.factor(id))
 ```
 
-* combine background for all pollutants
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
-```
 
 * merge background with fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(bg, id, pol, bg_ppm), by = c("id", "pol"))
+                dplyr::select(fivegas_bg_mean, id, pol, bg_ppm), by = c("id", "pol")) %>%
+                dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
 ```
 
 * calculate micrograms emitted during tests (background-corrected mass emitted)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
-                              mass_emitted = (conc - bg_ppm) * hood_flow * (dur / 60),
+                              conc_emitted = conc - bg_conc,
+                              mass_emitted = conc_emitted * hood_flow * (dur / 60), # ug/m^3 * m^3/min * s/60 = ug
                               num_c = 1,
                               mass_carbon = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
@@ -387,7 +382,7 @@ ___
 * convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:5)
 ```
 
 
