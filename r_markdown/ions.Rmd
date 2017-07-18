@@ -43,7 +43,7 @@ output:
   ions <- tidyr::gather(ions, "var", "val", 2:17) %>%
           dplyr::select(-id)
 
-  info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
+  info <- dplyr::select(test_info, id_test, id, fuel, fuel_quant)
 
   flow <- dplyr::filter(flow, inst == "carbonyl") %>%
           dplyr::select(id, mean, delta) %>%
@@ -68,7 +68,7 @@ output:
 * extract notes for carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("carbonyl|all", instrument))
+  notes <- dplyr::filter(notes, grepl("carbonyl|all", inst))
 
   ions <- dplyr::left_join(ions, notes, by = "id")
 ```
@@ -87,7 +87,7 @@ output:
 *  background average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_bg <- dplyr::filter(ions, fuel_type == "background") %>%
+  ions_bg <- dplyr::filter(ions, fuel == "background") %>%
              dplyr::group_by(var) %>%
              dplyr::summarise(bg_mean = mean(val, na.rm = TRUE),
                               bg_sd = sd(val, na.rm = TRUE))
@@ -142,7 +142,7 @@ The study test notes indicated that the QC status of the available data is:
 
 Not background adjusted -  mean background shown in black. 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(ions, aes(id, conc, colour = fuel_type)) +
+  ggplot(ions, aes(id, conc, colour = fuel)) +
   geom_point(size = 4) +
   geom_point(aes(id, bg_mean), size = 4, colour = "black") +
   theme_minimal() +
@@ -155,7 +155,7 @@ Not background adjusted -  mean background shown in black.
 
 ## Background-corrected concentration (ug/m3) by pollutant type 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel_type!="background"), aes(id, conc_bgadj, colour = fuel_type)) +
+  ggplot(filter(ions, fuel!="background"), aes(id, conc_bgadj, colour = fuel)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -167,7 +167,7 @@ Not background adjusted -  mean background shown in black.
 
 ## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel_type!="background"), aes(id, conc, colour = qc)) +
+  ggplot(filter(ions, fuel!="background"), aes(id, conc, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -179,7 +179,7 @@ Not background adjusted -  mean background shown in black.
 
 ## Mass (ug) per replicate accross different pollutants and fuel types (plot per pollutant, fuel type colored) 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(ions, aes(id, mass_rep, colour = fuel_type)) +
+  ggplot(ions, aes(id, mass_rep, colour = fuel)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -190,13 +190,13 @@ Not background adjusted -  mean background shown in black.
 
 ## Mass (ug) per replicate accross different pollutants and fuel types (plot per fuel type), QC status noted
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel_type!="background"), aes(var, mass_rep, colour = qc)) +
+  ggplot(filter(ions, fuel!="background"), aes(var, mass_rep, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("average ug per starter bundle") +
-  facet_wrap(~fuel_type, ncol = 2, scales = "free")
+  facet_wrap(~fuel, ncol = 2, scales = "free")
 ```
 
 # Data Quality Conclusions (KF on 5/26/17)
