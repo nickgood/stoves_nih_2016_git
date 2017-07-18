@@ -117,7 +117,8 @@ Kristen's notes
 
 ```{r, message=FALSE, results='markup', cache=FALSE}
   notes_kf <- readr::read_csv("../data/logs/startup_qc_notes.csv") %>%
-              dplyr::rename(id_test = id) %>%
+              dplyr::rename(id_test = id,
+                            inst = instrument) %>%
               left_join(dplyr::select(samples[[1]], id, id_test), by = "id_test")
   saveRDS(notes_kf, "../r_files/notes_kf.RDS")
 ```
