@@ -102,8 +102,7 @@ Spread data
 ## Test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- grav <- dplyr::left_join(grav,
-                           dplyr::select(times_test, id, start, end))
+ grav <- dplyr::left_join(grav, dplyr::select(times_test, id, start, end))
 ```
 
 ## Test types
@@ -116,13 +115,13 @@ Test are either a sample: `sample`, a background experiment: `bg`, or a filter b
 
 ## Test type
 
-Is B[0-9] are blank filters.BG[0-9] are background tests.
+B[0-9] are blank filters.BG[0-9] are background tests.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
-                         type = ifelse(grepl("^BG.*", id_test),
-                         "bg", type),
-                         type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
+                        type = ifelse(grepl("^BG.*", id_test),
+                        "bg", type),
+                        type = ifelse(grepl("^B[0-9].*", id_test), "bk", type))
 
 ```
 
@@ -131,7 +130,7 @@ Is B[0-9] are blank filters.BG[0-9] are background tests.
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", instrument))
+  notes <- dplyr::filter(notes, grepl("grav|all", inst))
 
   grav <- dplyr::left_join(grav, notes, by = c("id", "id_test", "date"))
 ```
@@ -255,7 +254,7 @@ Generally, no concerning QC directly related to the gravimetric measure; some QC
     theme_minimal() +
     theme(text = element_text(size = 20)) +
     ylab("delta mass (ug)") +
-    facet_wrap(~fuel_type, scales = "free")
+    facet_wrap(~fuel, scales = "free")
 ```
 
 ## plot delta mass per startup replicate by fuel type, qc status noted
@@ -266,7 +265,7 @@ Generally, no concerning QC directly related to the gravimetric measure; some QC
     theme_minimal() +
     theme(text = element_text(size = 20)) +
     ylab("average delta mass (ug) per replicate") +
-    facet_wrap(~fuel_type, scales = "free")
+    facet_wrap(~fuel, scales = "free")
 ```
 
 ## plot concentration (ug/m3)
@@ -287,14 +286,14 @@ Not background adjusted -  mean background shown in black.
 (note: assume "NA" for QC means the grav is good)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=15}
-  ggplot(filter(grav, fuel_type!="background"), aes(id, conc_bgadj, colour = qc)) +
+  ggplot(filter(grav, fuel != "background"), aes(id, conc_bgadj, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("ug/m^3") +
   #scale_y_log10() +
-  facet_wrap(~fuel_type, ncol = 5, scales = "free")
+  facet_wrap(~fuel, ncol = 5, scales = "free")
 ```
 
 ## plot flows
