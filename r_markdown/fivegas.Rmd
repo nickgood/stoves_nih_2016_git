@@ -79,31 +79,13 @@ output:
 * calculate mean backgrounds
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::group_by(out_bg, id, type, pol) %>%
-        dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
-        tidyr::spread(type, mean) %>%
-        mutate(delta = post - pre,
-               bg_ppm = (pre + post) / 2,
-               bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm),
-               bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm))
-```
-
-* append to fivegas data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  out_full <- dplyr::left_join(out_full,
-                               dplyr::select(bg, id, pol, bg_ppm),
-                               by = c("id", "pol"))
-  out_full <- dplyr::left_join(out_full, 
-                              dplyr::select(test_info, id, fuel_type),
-                              by = "id")
-  
-  out_rep <- dplyr::left_join(out_rep,
-                              dplyr::select(bg, id, pol, bg_ppm),
-                              by = c("id", "pol"))
-  out_rep <- dplyr::left_join(out_rep, 
-                              dplyr::select(test_info, id, fuel_type),
-                              by = "id")
+  bg_mean <- dplyr::group_by(out_bg, id, type, pol) %>%
+             dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+             tidyr::spread(type, mean) %>%
+             mutate(delta = post - pre,
+                    bg_ppm = (pre + post) / 2,
+                    bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm),
+                    bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm))
 ```
 
 # QC
@@ -113,17 +95,14 @@ output:
 
   out_full <- dplyr::left_join(out_full, 
                               dplyr::select(notes, id, qc, id_test),
-                              by = "id")
-  
+                              by = "id") %>%
+              dplyr::left_join(select(test_info, id, fuel_type),
+                               by = "id")
 
-  
   out_rep <- dplyr::left_join(out_rep,
-                              dplyr::select(bg, id, pol, bg_ppm),
-                              by = c("id", "pol"))
-  
-  out_bg <- dplyr::left_join(out_bg,
-                             dplyr::select(bg, id, pol, bg_ppm),
-                             by = c("id", "pol")) 
+                              dplyr::select(bg_mean, id, pol, bg_ppm),
+                              by = c("id", "pol")) %>%
+             dplyr::left_join(select(test_info, id, fuel_type), by = "id")
 ```
 
 # Save to file
@@ -132,6 +111,7 @@ output:
   saveRDS(out_full, file = "../r_files/fivegas_full.RDS")
   saveRDS(out_bg, file = "../r_files/fivegas_background.RDS")
   saveRDS(out_rep, file = "../r_files/fivegas_byrep.RDS")
+  saveRDS(bg_mean, file = "../r_files/fivegas_background_mean.RDS")
 ```
 
 # Summary
@@ -198,7 +178,7 @@ gas_sum_bg2 <- plyr::ddply(out_bg, c("pol"), summarise,
 knitr::kable(gas_sum_bg, format = "markdown", col.names=c("pollutant","mean value (ppm)", " value median (ppm)", "max value (ppm)", "minimum value (ppm)", "standard error"), caption = "Summary Values for Background Measured Before and After Each Test")
 ```
 
-##Test Plots 
+## Test Plots 
 
 ### All pollutants 
 
