@@ -212,8 +212,8 @@ Additional bad tests
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_var <- signal$lod[1]
-  loq_var <- signal$loq[1]
+  lod_var <- grav_lod$lod[1]
+  loq_var <- grav_lod$loq[1]
 ```
 
 The LOD is `r lod_var`, the LOQ is `r loq_var`.
@@ -261,7 +261,7 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg_mean, "markdown", digits = 2)
+  knitr::kable(bg_summary, "markdown", digits = 2)
 ```
 
 * add background to main dataframe
