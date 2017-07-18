@@ -14,7 +14,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = TRUE)
+                        fig.width=10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r load_functions}
@@ -107,7 +107,7 @@ output:
 # Save data
 
 ```{r}
-  saveRDS(test_times, file = "../r_files/test_times.RDS")
+  saveRDS(test_times, file = "../r_files/test_times_all.RDS")
 ```
 
 # Summary
