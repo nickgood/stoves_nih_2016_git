@@ -9,9 +9,10 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
+  library(knitr)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   source("../r_scripts/R_load_data.R")
   source("../r_scripts/R_load_metadata.R")
   source("../r_scripts/R_tidy.R")
@@ -19,187 +20,194 @@ output:
 
 # Load data
 
-* carbonyls
+* load carbonyls data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")
+  ions <- readRDS("../r_files/ions.RDS")
 ```
 
 * metadata
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/carb_flows.Rda")
-  load("../r_files/carb_times.Rda")
-  load("../r_files/notes.Rda")
-
-  load("../r_files/data_2.Rda")
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
 
-## extract ions data
-
-* separate from carbonyls in same file
-* remove G8B (breakthrough test)
-
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::select(ions, 24:39, type, id, id_ions) %>%
-                      dplyr::filter(type == "test" | type == "bg", id != "G8B")
+  ions <- tidyr::gather(ions, "var", "val", 2:17) %>%
+          dplyr::select(-id)
+
+  info <- dplyr::select(test_info, id_test, id, fuel, fuel_quant)
+
+  flow <- dplyr::filter(flow, inst == "carbonyl") %>%
+          dplyr::select(id, mean, delta) %>%
+          dplyr::rename(flow_mean = mean,
+                        flow_delta = delta)
+
+  times <- dplyr::select(times_test, id, start, end)
+
+  ions <- dplyr::left_join(ions, info, by = c("id_ions" = "id_test")) %>%
+          dplyr::left_join(flow, by = "id") %>%
+          dplyr::left_join(times, by = "id")
 ```
 
-## flows and times
-
-* average flows
+# LOD
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flows <- dplyr::select(carb_flows, -date) %>%
-           dplyr::group_by(id, type) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE))
-```
-
-* match cassette timestamps to id
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::select(carb_times, -date) %>%
-           tidyr::spread(type, value)
-```
-
-* merge ions with metadata
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged,
-                                  flows,
-                                  by = "id") %>%
-                 dplyr::left_join(times,
-                                  by = "id")
+  ions <- dplyr::mutate(ions, lod = ifelse(is.na(val), "below", "above"))
 ```
 
 # QC
 
-Load notes
+* extract notes for carbonyl data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carbonyl|all", inst))
+
+  ions <- dplyr::left_join(ions, notes, by = "id")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(dplyr::filter(notes, grepl(".*carb.*", inst)) %>% 
-               dplyr::select(-inst, -date),
-               "markdown", digits = 2)
-```
-
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+# Concentration calculations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           group_by(id) %>%
-           arrange(qc) %>%
-           summarise(qc = first(qc))
+ # (ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
+  ions <- dplyr::mutate(ions, 
+                        conc = (val) * 60 * 1000 /
+                               (flow_mean * (end - start)))
+```
+
+# Background analysis
+
+*  background average
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions_bg <- dplyr::filter(ions, fuel == "background") %>%
+             dplyr::group_by(var) %>%
+             dplyr::summarise(bg_mean = mean(val, na.rm = TRUE),
+                              bg_sd = sd(val, na.rm = TRUE))
 ```
 
 * merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged, flags, by = "id") %>%
-                      dplyr::mutate(id = as.factor(id)) %>%
-                      dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+  ions <- dplyr::left_join(ions, ions_bg, by = "var")
 ```
 
-* additional bad tests
+* calculate background-adjusted concentration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # carbonyls_merged$qc[carbonyls_merged$id == ""] <- "bad"
+  ions$conc_bgadj <- ions$conc - ions$bg_mean
 ```
 
-# Reformat
-
-* convert to longer format
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  carbonyls_merged <- tidyr::gather(carbonyls_merged, "pol", "mass_ug",
-                                    -id, -id_ions, -flow,
-                                    -start, -end, -type, -qc) %>%
-                      dplyr::filter(!is.na(pol)) %>%
-                      dplyr::mutate(pol = as.factor(pol)) %>%
-                      dplyr::select(-id_ions)
-```
-
-# Background analysis
-
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
+* calculate mass per startup replicate
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(carbonyls_merged, type == "bg", qc == "ok") %>%
-        dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
-        na.omit() %>%
-        dplyr::mutate(dur = end - start) %>%
-        # ug * 1000 * 60 / (L/min * s) = ug / m^3
-        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%
-        dplyr::group_by(pol) %>%
-        dplyr::summarise(mean = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n())
+  ions$mass_rep <- ions$val / ions$fuel_quant
+  ions$mass_rep <- as.numeric(gsub("Inf", "0", ions$mass_rep))
+  
 ```
 
-* background concentration ($\mu g/m^3$)
+# Summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
-```
+Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
 
-* merge with test data
+Tests 36 through 43 are blanks; no fivegas data expected.
+Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test.
+
+All carbonyl data is present as expected as of 5/24/17.
+
+The study test notes indicated that the QC status of the available data is:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, mean) %>%
-        dplyr::rename(conc_bg = mean)
-
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "pol") %>%
-                      dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
+  single <- filter(ions,var=="acetaldehyde")
+  table(single$qc) 
+  print(single$id_test[which(single$qc == "bad")])
+  print(single$notes.x[which(single$qc == "bad")])
+  print(single$id_test[which(single$qc == "maybe")])
 ```
 
-## Save merged file
+
+# Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
+  saveRDS(ions, file = "../r_files/ions_merged.RDS")
 ```
-
-## Summary
-
-Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` experiments. There is no carbonyl data for tests: `r setdiff(as.character(samples$id), as.character(carbonyls_merged$id))`.
 
 # Plots
 
-## mass by pollutant
+## Concentrations (ug/m3) by pollutant type
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = pol)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top") +
-         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-         facet_wrap(~type, ncol = 1, scales = "free")
+Not background adjusted -  mean background shown in black.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, conc, colour = fuel)) +
+  geom_point(size = 4) +
+  geom_point(aes(id, bg_mean), size = 4, colour = "black") +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
 ```
 
-## qc
+## Background-corrected concentration (ug/m3) by pollutant type
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = qc)) +
-         geom_point() +
-         geom_line() +
-         scale_y_log10() +
-         theme_minimal() +
-         ylab("ug") +
-         theme(legend.position="top") +
-         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-         facet_wrap(~type, ncol = 1, scales = "free")
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel!="background"), aes(id, conc_bgadj, colour = fuel)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  #scale_y_log10() + #not sure why this line causes error when it doesn't on previous and following graph...
+  facet_wrap(~var, ncol = 2, scales = "free")
 ```
+
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel!="background"), aes(id, conc, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("ug/m^3") +
+  scale_y_log10() +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per pollutant, fuel type colored) 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(ions, aes(id, mass_rep, colour = fuel)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~var, ncol = 2, scales = "free")
+```
+
+## Mass (ug) per replicate accross different pollutants and fuel types (plot per fuel type), QC status noted
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
+  ggplot(filter(ions, fuel!="background"), aes(var, mass_rep, colour = qc)) +
+  geom_point(size = 4) +
+  theme_minimal() +
+  theme(text = element_text(size = 28)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("average ug per starter bundle") +
+  facet_wrap(~fuel, ncol = 2, scales = "free")
+```
+
+# Data Quality Conclusions (KF on 5/26/17)
+
+Test N1 should be dropped from analysis due to bad QC and note that flow at end of test was zero due to clog; though, it looks like the clog likely occurred very close to the end of the test as the data point is in line with other data points from the other N tests. Using the pre-test flow rate as the average test flow rate may be an OK approximation to salvage this data point.
+
+All "maybe" QC tests should be kept within the dataset.
