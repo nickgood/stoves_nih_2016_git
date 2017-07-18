@@ -68,6 +68,8 @@ With default value `good` for `all` insts in no notes; `maybe` for `all` if note
 Compile the two note files into one.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  qc_levels <- c("bad", "maybe", "good")
+
   notes_kf <- notes_kf %>%
               dplyr::mutate(id_test = as.factor(id_test),
                             inst = as.factor(inst),
@@ -85,7 +87,8 @@ Compile the two note files into one.
                                             "; ",
                                             notes_kf),
                              notes = gsub("; NA", "", notes),
-                             notes = gsub("NA;", "", notes))
+                             notes = gsub("NA;", "", notes),
+                             qc = factor(qc, qc_levels))
 ```
 
 # Save
