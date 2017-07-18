@@ -77,7 +77,7 @@ output:
 # Info
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  info <- dplyr::select(test_info, id_test, id, fuel_type, fuel_quant)
+  info <- dplyr::select(test_info, id_test, id, fuel, fuel_quant)
 
   pax_full <- dplyr::left_join(pax_full, info, "id")
   pax_rep <- dplyr::left_join(pax_rep, info, "id")
@@ -87,7 +87,7 @@ output:
 # QC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("pax|all", instrument))
+  notes <- dplyr::filter(notes, grepl("pax|all", inst))
 
   pax_full <- dplyr::left_join(pax_full, notes, by = "id")
   pax_rep <- dplyr::left_join(pax_rep, notes, by = "id")
