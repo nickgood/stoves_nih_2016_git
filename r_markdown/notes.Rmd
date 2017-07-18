@@ -79,7 +79,8 @@ Compile the two note files into one.
                                 notes_kf,
                                 by = c("id_test",
                                        "inst",
-                                       "qc")) %>%
+                                       "qc",
+                                       "id")) %>%
                dplyr::mutate(notes = paste0(notes_log,
                                             "; ",
                                             notes_kf),
