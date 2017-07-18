@@ -151,7 +151,7 @@ output:
                            by = "id")
 ```
 
-* break out by low,medium,high MC
+* break out by low, medium, high MC
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged<- dplyr::mutate(grav_merged,mc_level=ifelse(grepl("^G[1-9]",id)== TRUE, "none",
@@ -230,7 +230,6 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 * extract background data
 * remove missing data
-* calculate average concentration emitted (and other stats)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(grav_merged, type == "bg") %>% #, qc == "ok") %>%
@@ -242,24 +241,27 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
                       conc = wgt_delta * 1000 / (flow * dur))
 ```
 
-```{r}
+```{r, fig.width = 6, fig.height = 4}
   ggplot(bg, aes(id, conc)) +
   geom_point() +
   theme_minimal() +
   ylab(expression(PM[2.5]~~mu~g/m^3))
 ```
 
+* calculate average concentration emitted (and other stats)
+
 ```{r}
-        dplyr::summarise(conc_bg = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n()) %>%
-        dplyr::mutate(type = factor("bg", "bg"))
+  bg_summary <- bg %>%
+                dplyr::summarise(mean_bg = mean(conc),
+                                 sd = sd(conc),
+                                 min = min(conc),
+                                 max = max(conc),
+                                 n = n()) %>%
+                dplyr::mutate(type = factor("bg", "bg"))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
+  knitr::kable(bg_mean, "markdown", digits = 2)
 ```
 
 * add background to main dataframe
@@ -267,14 +269,14 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- grav_merged %>%
                  dplyr::filter(type == "test") %>%
-                 dplyr::mutate(conc_bg = bg$conc_bg)
+                 dplyr::mutate(conc_bg = bg_summary$mean_bg)
 ```
 
 # Summary 
 
 Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r #setdiff(as.character(samples$id), as.character(grav_merged$id))`.
 
-Gravimetric data is expected to be missing for: nO TESTS
+Gravimetric data is expected to be missing for: no tests.
 
 # Save merged file
 
@@ -284,28 +286,10 @@ Gravimetric data is expected to be missing for: nO TESTS
 
 # Plots
 
-## weights REMOVE COLOR=QC OR SET DIFF COLOR
+## Test blanks
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav_merged, !grepl("^G[0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta)) +
-  geom_point() +
-  theme_minimal()
-  
-  # ggplot(dplyr::filter(grav_merged, grepl("^[1][0-9][A-Z]", id)==TRUE),
-  #        aes(id, wgt_delta, color= 'blue')) +
-  # geom_point() +
-  # theme_minimal()
-  # 
-  # ggplot(dplyr::filter(grav_merged, grepl("^[2-3][0-9][A-Z]", id)==TRUE),
-  #        aes(id, wgt_delta, color= 'green')) +
-  # geom_point() +
-  # theme_minimal()
-  
-  #Edited the below section 7/12 to capture lab blanks from original grav file
-  
-  ggplot(dplyr::filter(grav, grepl("^G[1-9]", id)==TRUE),
-         aes(id, wgt_dif)) +
+  ggplot(dplyr::filter(grav_merged, type == "test_blank"), aes(id, wgt_delta)) +
   geom_point() +
   theme_minimal()
 ```
