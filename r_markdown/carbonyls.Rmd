@@ -23,7 +23,7 @@ output:
 * load carbonyls data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- readRDS("../r_files/ions.RDS")
+  carbonyls <- readRDS("../r_files/ions.RDS")
 ```
 
 * metadata
@@ -40,7 +40,7 @@ output:
 # Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- tidyr::gather(ions, "var", "val", 2:17) %>%
+  carbonyls <- tidyr::gather(carbonyls, "var", "val", 2:17) %>%
           dplyr::select(-id)
 
   info <- dplyr::select(test_info, id_test, id, fuel, fuel_quant)
@@ -52,7 +52,7 @@ output:
 
   times <- dplyr::select(times_test, id, start, end)
 
-  ions <- dplyr::left_join(ions, info, by = c("id_ions" = "id_test")) %>%
+  carbonyls <- dplyr::left_join(carbonyls, info, by = c("id_ions" = "id_test")) %>%
           dplyr::left_join(flow, by = "id") %>%
           dplyr::left_join(times, by = "id")
 ```
@@ -60,7 +60,7 @@ output:
 # LOD
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::mutate(ions, lod = ifelse(is.na(val), "below", "above"))
+  carbonyls <- dplyr::mutate(carbonyls, lod = ifelse(is.na(val), "below", "above"))
 ```
 
 # QC
@@ -70,14 +70,14 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("carbonyl|all", inst))
 
-  ions <- dplyr::left_join(ions, notes, by = "id")
+  carbonyls <- dplyr::left_join(carbonyls, notes, by = "id")
 ```
 
-# Concentration calculations
+# Carbonyl concentration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
  # (ug) * 60 * 1000 / ((L / min) * (s - s)) = ug / m^3
-  ions <- dplyr::mutate(ions, 
+  carbonyls <- dplyr::mutate(carbonyls, 
                         conc = (val) * 60 * 1000 /
                                (flow_mean * (end - start)))
 ```
@@ -87,35 +87,35 @@ output:
 *  background average
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_bg <- dplyr::filter(ions, fuel == "background") %>%
-             dplyr::group_by(var) %>%
-             dplyr::summarise(bg_mean = mean(val, na.rm = TRUE),
-                              bg_sd = sd(val, na.rm = TRUE))
+  carbonyls_bg <- dplyr::filter(carbonyls, fuel == "background") %>%
+                  dplyr::group_by(var) %>%
+                  dplyr::summarise(bg_conc = mean(val, na.rm = TRUE),
+                                   bg_sd = sd(val, na.rm = TRUE))
 ```
 
 * merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions <- dplyr::left_join(ions, ions_bg, by = "var")
+  carbonyls <- dplyr::left_join(carbonyls, carbonyls_bg, by = "var")
 ```
 
 * calculate background-adjusted concentration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions$conc_bgadj <- ions$conc - ions$bg_mean
+  carbonyls$conc_adj <- carbonyls$conc - carbonyls$bg_conc
 ```
 
-* calculate mass per startup replicate
+* calculate raw mass per startup replicate
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions$mass_rep <- ions$val / ions$fuel_quant
-  ions$mass_rep <- as.numeric(gsub("Inf", "0", ions$mass_rep))
+  carbonyls$mass_rep <- carbonyls$val / carbonyls$fuel_quant
+  carbonyls$mass_rep <- as.numeric(gsub("Inf", "0", carbonyls$mass_rep))
   
 ```
 
 # Summary
 
-Ion data was collected during `r length(unique(ions$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(ions$id))`.
+Ion data was collected during `r length(unique(carbonyls$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(carbonyls$id))`.
 
 Tests 36 through 43 are blanks; no fivegas data expected.
 Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test.
@@ -125,7 +125,7 @@ All carbonyl data is present as expected as of 5/24/17.
 The study test notes indicated that the QC status of the available data is:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  single <- filter(ions,var=="acetaldehyde")
+  single <- filter(carbonyls,var=="acetaldehyde")
   table(single$qc) 
   print(single$id_test[which(single$qc == "bad")])
   print(single$notes.x[which(single$qc == "bad")])
@@ -136,19 +136,19 @@ The study test notes indicated that the QC status of the available data is:
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(ions, file = "../r_files/ions_merged.RDS")
+  saveRDS(carbonyls, file = "../r_files/carbonyls_merged.RDS")
 ```
 
 # Plots
 
-## Concentrations (ug/m3) by pollutant type
+## Concentratcarbonyls (ug/m3) by pollutant type
 
 Not background adjusted -  mean background shown in black.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(ions, aes(id, conc, colour = fuel)) +
+  ggplot(carbonyls, aes(id, conc, colour = fuel)) +
   geom_point(size = 4) +
-  geom_point(aes(id, bg_mean), size = 4, colour = "black") +
+  geom_point(aes(id, bg_conc), size = 4, colour = "black") +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -160,7 +160,7 @@ Not background adjusted -  mean background shown in black.
 ## Background-corrected concentration (ug/m3) by pollutant type
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel!="background"), aes(id, conc_bgadj, colour = fuel)) +
+  ggplot(filter(carbonyls, fuel!="background"), aes(id, conc_adj, colour = fuel)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -173,7 +173,7 @@ Not background adjusted -  mean background shown in black.
 ## Background-corrected concentration (ug/m3) by fuel type, QC status noted
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel!="background"), aes(id, conc, colour = qc)) +
+  ggplot(filter(carbonyls, fuel!="background"), aes(id, conc, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -186,7 +186,7 @@ Not background adjusted -  mean background shown in black.
 ## Mass (ug) per replicate accross different pollutants and fuel types (plot per pollutant, fuel type colored) 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(ions, aes(id, mass_rep, colour = fuel)) +
+  ggplot(carbonyls, aes(id, mass_rep, colour = fuel)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
@@ -197,7 +197,7 @@ Not background adjusted -  mean background shown in black.
 
 ## Mass (ug) per replicate accross different pollutants and fuel types (plot per fuel type), QC status noted
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=40}
-  ggplot(filter(ions, fuel!="background"), aes(var, mass_rep, colour = qc)) +
+  ggplot(filter(carbonyls, fuel!="background"), aes(var, mass_rep, colour = qc)) +
   geom_point(size = 4) +
   theme_minimal() +
   theme(text = element_text(size = 28)) +
