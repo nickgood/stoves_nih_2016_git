@@ -40,8 +40,8 @@ output:
 * make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::rename(data, notes = voc_note) %>%
-         tidyr::gather("pol", "ppb", starts_with("voc_"))
+  voc <- data %>% dplyr::rename(id_kf = voc_kf_id) %>%
+                  tidyr::gather("pol", "ppb", starts_with("voc_"))
 ```
 
 * merge with test data
@@ -92,7 +92,6 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   bg <- dplyr::filter(voc, type == "BG", qc == "ok") %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
-     #   na.omit() %>%
         dplyr::select(-id_can)
 ```
 
@@ -125,13 +124,13 @@ output:
 ## average background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::group_by(bg, pol) %>%
-        dplyr::summarise(mean = mean(ppb),
-                         sd = sd(ppb),
-                         min = min(ppb),
-                         max = max(ppb),
-                         mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
-                         n = n())
+  bg_mean <- dplyr::group_by(bg, pol) %>%
+             dplyr::summarise(mean = mean(ppb),
+                              sd = sd(ppb),
+                              min = min(ppb),
+                              max = max(ppb),
+                              mean_maxrm = mean(ppb[ppb != max(ppb, na.rm = TRUE)]),
+                              n = n())
 ```
 
 * background values (ppb)
@@ -145,10 +144,10 @@ Backgrounds all look as expected (also indicative that match of IDs is correct).
 ## merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, mean) %>%
-        dplyr::rename(ppb_bg = mean)
+  bg_mean <- dplyr::select(bg_mean, pol, mean) %>%
+             dplyr::rename(ppb_bg = mean)
 
-  voc <- dplyr::left_join(voc, bg, by = "pol") %>%
+  voc <- dplyr::left_join(voc, bg_mean, by = "pol") %>%
          dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 
                                        0,
                                        ppb_bg))
@@ -173,7 +172,7 @@ All data for VOCs is therefore as expected as of 6/26/2017.
 ## plot by fuel type
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=25}
-  ggplot(voc, aes(id, ppb, colour = fuel_type)) +
+  ggplot(voc, aes(id, ppb, colour = fuel)) +
     geom_point(size = 5) +
     facet_wrap(~pol, ncol = 1, scales = "free") +
     theme_minimal() +
