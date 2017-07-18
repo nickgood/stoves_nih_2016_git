@@ -96,13 +96,13 @@ output:
   out_full <- dplyr::left_join(out_full, 
                               dplyr::select(notes, id, qc, id_test),
                               by = "id") %>%
-              dplyr::left_join(select(test_info, id, fuel_type),
+              dplyr::left_join(select(test_info, id, fuel),
                                by = "id")
 
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg_mean, id, pol, bg_ppm),
                               by = c("id", "pol")) %>%
-             dplyr::left_join(select(test_info, id, fuel_type), by = "id")
+             dplyr::left_join(select(test_info, id, fuel), by = "id")
 ```
 
 # Save to file
@@ -142,7 +142,7 @@ There are no "bad" fivegas data according to study protocol notes - only some "b
 ***Summary Values Across All Fuel Tests*** 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-gas_sum_tests <- plyr::ddply(filter(out_full, fuel_type != "background"), c("pol"), summarise, 
+gas_sum_tests <- plyr::ddply(filter(out_full, fuel != "background"), c("pol"), summarise, 
                    meanval = round(mean(val, na.rm = TRUE), 2),
                    medianval = median(val, na.rm = TRUE),
                    maxval = max(val, na.rm = TRUE),
@@ -155,7 +155,7 @@ knitr::kable(gas_sum_tests, format = "markdown", col.names=c("pollutant","mean v
 ***Summary Values Across All Background Tests*** 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-gas_sum_bg <- plyr::ddply(filter(out_full, fuel_type == "background"), c("pol"), summarise, 
+gas_sum_bg <- plyr::ddply(filter(out_full, fuel == "background"), c("pol"), summarise, 
                    meanval = round(mean(val, na.rm = TRUE), 2),
                    medianval = median(val, na.rm = TRUE),
                    maxval = max(val, na.rm = TRUE),
@@ -221,7 +221,7 @@ The CH4 looks odd for all tests.
 #### by time total
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
+  ggplot(filter(out_full, pol == "ch4"), aes(datetime, val, color = fuel)) + 
     geom_point() +
     scale_y_log10() +
     facet_wrap(~id, ncol = 4, scales = "free_x") +
@@ -233,7 +233,7 @@ The CH4 looks odd for all tests.
 #### by replicates 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  ggplot(filter(out_rep, pol == "ch4"), aes(datetime, val, color = fuel_type)) + 
+  ggplot(filter(out_rep, pol == "ch4"), aes(datetime, val, color = fuel)) + 
     geom_point() +
     scale_y_log10() +
     facet_wrap(~id, ncol = 4, scales = "free_x") +
@@ -258,7 +258,7 @@ The CH4 looks odd for all tests.
 #### by replicates, average background shown.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=20, eval=TRUE}
- df <- filter(out_rep, pol == "ch4") %>% group_by(fuel_type, id) %>% mutate(x = seq_along(val)) %>% ungroup()
+ df <- filter(out_rep, pol == "ch4") %>% group_by(fuel, id) %>% mutate(x = seq_along(val)) %>% ungroup()
   ggplot(df, aes(x , y = val, color = id)) +
     geom_line() +
     geom_hline(yintercept = gas_sum_bg2$meanval[which(gas_sum_bg2$pol == "ch4")], color = "blue") +
