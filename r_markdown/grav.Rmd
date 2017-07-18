@@ -281,7 +281,7 @@ Not background adjusted -  mean background shown in black.
     ylab("conc. ug/m^3")
 ```
 
-## Background-corrected concentration (ug/m3) by fuel type, QC status noted 
+## Background-corrected concentration (ug/m3) by fuel type, QC status noted
 
 (note: assume "NA" for QC means the grav is good)
 
