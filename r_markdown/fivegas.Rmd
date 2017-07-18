@@ -14,7 +14,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = TRUE)
+                        fig.width=10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
@@ -133,7 +133,7 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
 
   ggplot(df, aes(datetime, ppm, group = pol, colour=pol)) + 
     geom_line() +
-    scale_y_log10(limits = c(.01, 10^3)) +
+    scale_y_log10(limits = c(.01, 10^4)) +
     scale_colour_manual(breaks= df$pol,
                         values = 
                         c("ch4" = "mediumaquamarine",
