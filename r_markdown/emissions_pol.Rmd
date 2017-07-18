@@ -92,39 +92,40 @@ output:
 
 * select data
 
-```{r}
-  # carbonyls <- dplyr::select(carbonyls_merged,
-  #                            id, qc,
-  #                            flow,
-  #                            start, end,
-  #                            pol, mass_ug,
-  #                            conc_bg) %>%
-  #              dplyr::left_join(dplyr::select(pol_properties, 
-  #                                             pol, 
-  #                                             mw, 
-  #                                             num_c), by = "pol") %>%
-  #              dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```{r, eval = FALSE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             flow,
+                             start, end,
+                             pol, mass_ug,
+                             conc_bg) %>%
+               dplyr::left_join(dplyr::select(pol_properties, 
+                                              pol, 
+                                              mw, 
+                                              num_c),
+                                       by = "pol") %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
 
-```{r}
-  # carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-  #                            conc = (mass_ug * 1000 / (flow * dur)))
+```{r, eval = FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             conc = (mass_ug * 1000 / (flow * dur)))
 ```
 
 * calculate mass emitted
 
-```{r}
-  # carbonyls <- dplyr::mutate(carbonyls, 
-  #                            mass_emitted = (conc - conc_bg) * hood_flow * dur,
-  #                            mass_carbon = mass_emitted * (num_c * mw_c / mw),
-  #                            inst = "carbs")
+```{r, eval = FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             inst = "carbs")
 ```
 
 * output
 
-```{r}
+```{r, eval = FALSE}
   # head(carbonyls, 2)
 ```
 
@@ -132,20 +133,20 @@ output:
 
 * select data
 
-```{r}
-  # ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
-  #         dplyr::select(id, cassette,
-  #                       start, end,
-  #                       flow,
-  #                       pol, ug_sq_cm,
-  #                       conc_bg, type, qc)
+```{r, eval = FALSE}
+  ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
+          dplyr::select(id, cassette,
+                        start, end,
+                        flow,
+                        pol, ug_sq_cm,
+                        conc_bg, type, qc)
 ```
 
 * calculate concentrations
 
-```{r}
-  # ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
-  #                             conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
+```{r, eval = FALSE}
+  ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
+                              conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
 ```
 
 * account for artifact
@@ -170,20 +171,20 @@ Use replicate average artifact (probably clean up spreadsheet at some point)
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r}
-  # ecoc <- dplyr::mutate(ecoc, 
-  #                       mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
-  #                       mass_carbon = mass_emitted,
-  #                       inst = "ecoc")
+```{r, eval = FALSE}
+  ecoc <- dplyr::mutate(ecoc, 
+                        mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted,
+                        inst = "ecoc")
 ```
 
 * output
 
-```{r}
-  # head(ecoc, 2)
+```{r, eval = FALSE}
+  head(ecoc, 2)
 ```
 
-___
+---
 
 # fivegas
 
@@ -203,8 +204,7 @@ ___
 
 ```{r}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>% #,
-                                 #qc = first(qc)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
 ```
 
