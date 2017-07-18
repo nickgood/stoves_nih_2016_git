@@ -28,40 +28,39 @@ Load files that contain any notes or test metadata
 
 # Add flags
 
-* Add qc status and instrument to `notes` file
+* Add qc status and inst to `notes` file
 
-With default value `good` for `all` instruments in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby.
+With default value `good` for `all` insts in no notes; `maybe` for `all` if note was that hood 2 was running/other tests occuring nearby.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::mutate(notes,
-                          instrument = ifelse(grepl("", notes),
+                          inst = ifelse(grepl("", notes),
                                               "all", 
                                               ""),
-                          instrument = ifelse(grepl("", notes),
-                                               "all",
-                                               ""),
                           qc = ifelse(grepl("", notes),
                                              "maybe",
                                              ""),
-                          instrument = ifelse(is.na(notes),
+                          inst = ifelse(is.na(notes),
                                                "all",
-                                               instrument),
+                                               inst),
                           qc = ifelse(is.na(notes),
                                        "good",
                                        qc),
-                          instrument = ifelse(grepl("carbonyl", notes),                                                  "carbonyl",
-                                               instrument),
+                          inst = ifelse(grepl("carbonyl", notes),
+                                              "carbonyl",
+                                              inst),
                           qc = ifelse(grepl("carbonyl", notes),
                                        "bad",
                                        qc),
-                          instrument = ifelse(grepl("hood|charcoal",
+                          inst = ifelse(grepl("hood|charcoal",
                                                notes),
                                                "all",
-                                               instrument),
+                                               inst),
                           qc = ifelse(grepl("hood|charcoal",
                                              notes),
                                              "maybe",
-                                             qc))
+                                             qc)) %>%
+            rename(notes_log = notes)
 ```
 
 # Organize 
@@ -69,26 +68,23 @@ With default value `good` for `all` instruments in no notes; `maybe` for `all` i
 Compile the two note files into one.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes_kf <- dplyr::rename(notes_kf,
-                            id_test = id) %>%
+  notes_kf <- notes_kf %>%
               dplyr::mutate(id_test = as.factor(id_test),
-                            instrument = as.factor(instrument),
+                            inst = as.factor(inst),
                             qc = as.factor(qc),
-                            notes = as.character(notes))
+                            notes = as.character(notes)) %>%
+              rename(notes_kf = notes)
 
   notes_all <- dplyr::full_join(notes, 
                                 notes_kf,
                                 by = c("id_test",
-                                       "instrument",
+                                       "inst",
                                        "qc")) %>%
-               dplyr::mutate(notes = paste0(notes.x,
+               dplyr::mutate(notes = paste0(notes_log,
                                             "; ",
-                                            notes.y),
+                                            notes_kf),
                              notes = gsub("; NA", "", notes),
-                             notes = gsub("NA;", "", notes)) %>%
-                dplyr::rename(notes_log = notes.x,
-                              notes_csv = notes.y,
-                              inst = instrument)
+                             notes = gsub("NA;", "", notes))
 ```
 
 # Save
