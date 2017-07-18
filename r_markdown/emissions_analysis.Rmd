@@ -21,7 +21,7 @@ output: html_document
   #2. set variable types from character -> factor
   #3. removes duplicate rows that were remnants of when real-time monitors had timestamps, so multiple rows per test even though the mass_ef was a single value for the test. 
   ef_bymass <- filter(emission_factors, metric == "mass_emitted") %>%
-               dplyr::mutate(fuel_type = factor(fuel_type)) %>%
+               dplyr::mutate(fuel_type = factor(fuel)) %>%
                dplyr::mutate(qc = factor(qc)) %>%
                dplyr::mutate(pol = factor(pol))
 ```
@@ -58,6 +58,6 @@ knitr::kable(ef_mean_table)
 # Figure 1. Mean emission factors (mass basis) for various startup materials and pollutants
 
 ```{r}
-
+  
 ```
 
