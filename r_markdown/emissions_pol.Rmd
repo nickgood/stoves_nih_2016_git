@@ -74,7 +74,7 @@ output:
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  test_times <- readRDS("../r_files/test_times.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 # timestamps
