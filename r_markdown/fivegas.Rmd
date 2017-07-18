@@ -27,7 +27,7 @@ output:
 * data logged in ppm units.
 
 ```{r}
-  fivegas<- readRDS("../r_files/fivegas.RDS")    
+  fivegas <- readRDS("../r_files/fivegas.RDS")
 ```
 
 * sample information
@@ -40,6 +40,14 @@ output:
 
 ```{r}
   #load("../r_files/notes.Rda")
+```
+
+# Units
+
+* Convert co2 from percent to ppm (note CO and CH4 are collected as ppm)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  fivegas <- dplyr::mutate(fivegas, co2 = co2 * 10^4)
 ```
 
 # Reformat data
@@ -69,13 +77,13 @@ Remove NOx and oxygen rows (channels not used during study)
 Extract notes relevant to  fivegas analyzer
 
 ```{r}
-  #notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
+  # notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
 
 ```{r}
-  #notes$qc[33:35] <- "ok"
+  # notes$qc[] <- "ok"
 ```
 
 Make one flag per test precidented from bad to ok.
@@ -100,10 +108,10 @@ Merge with data
 Additional bad tests
 
 ```{r}
-  # fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
-  # fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
-  # fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
-  # fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
 ```
 
 # Save merged file
