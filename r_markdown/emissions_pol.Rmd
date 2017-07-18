@@ -21,18 +21,22 @@ output:
 * pollutant data - integrated
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- readRDS("../r_files/voc_merged.RDS") #currently not complete data - missing one (shows as 0)! (emailed Arsineh on 6/27/17)
+ # currently not complete data - missing one (shows as 0)
+ # (emailed Arsineh on 6/27/17)
+  voc_merged <- readRDS("../r_files/voc_merged.RDS")
+
   carbonyls_merged <- readRDS("../r_files/ions_merged.RDS")
 
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
-#ec/oc, PAHs - no data yet (as of 6/22/17)
+
+ # ec/oc, PAHs - no data yet (as of 6/22/17)
 ```
 
-* pollutant data - realtime
+* pollutant data - time-resolved
 
 ```{r}
-  fivegas_full <- readRDS("../r_files/fivegas_full.RDS") #also contains bg
-  fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") #may not need
+  fivegas_full <- readRDS("../r_files/fivegas_full.RDS") # also contains bg
+  fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") # may not need
   fivegas_bg_mean <- readRDS("../r_files/fivegas_background_mean.RDS")
 
   pax_full <- readRDS("../r_files/pax_merged_full.RDS")
@@ -72,11 +76,12 @@ output:
 
 # calculate emissions factors
 
-## carbonyls -FIRST ATTEMPT DONE as of 6/27/17
+## carbonyls
 
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # rename var as pol
   names(carbonyls_merged)[names(carbonyls_merged) =='var'] <- 'pol'
   
   carbonyls <- dplyr::select(carbonyls_merged,
@@ -88,16 +93,14 @@ output:
                dplyr::left_join(dplyr::select(pol_properties, 
                                               pol, 
                                               mw, 
-                                              num_c), by = "pol") %>%
-               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                                              num_c), by = "pol")
 ```
 
 * calculate concentrations
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-                             conc = (val * 1000 / (flow_mean * dur))) #"val" originally in ug; now conc in ug/m3
-# confirmed this is same as "conc" variable that was in original carbonyls_merged file (cut out in last chunk)
+                             conc = (val * 1000 / (flow_mean * dur))) # ug to ug/m3
 ```
 
 * calculate mass emitted
