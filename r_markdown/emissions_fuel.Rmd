@@ -33,16 +33,6 @@ output:
   fuel_wgts <- readRDS("../r_files/fuel_wgts.RDS")
 ```
 
----
-
-# Timestamps
-
-```{r}
-  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = set_1, end = end)
-```
 
 ---
 
