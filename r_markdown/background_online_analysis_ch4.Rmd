@@ -26,7 +26,7 @@ output:
 * test times
 
 ```{r}
-  test_times <- readRDS("../r_files/test_times.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 * fivegas ch4
