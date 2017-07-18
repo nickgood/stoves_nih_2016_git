@@ -112,3 +112,13 @@ Load metadata. Function to save files for: flows, canister pressure, background_
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   metadata <- load_singlefiles("meta")
 ```
+
+Kristen's notes
+
+```{r, message=FALSE, results='markup', cache=FALSE}
+  notes_kf <- readr::read_csv("../data/logs/startup_qc_notes.csv") %>%
+              dplyr::rename(id_test = id) %>%
+              left_join(dplyr::select(samples[[1]], id, id_test), by = "id_test")
+  saveRDS(notes_kf, "../r_files/notes_kf.RDS")
+```
+
