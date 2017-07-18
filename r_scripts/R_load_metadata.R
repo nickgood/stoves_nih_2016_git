@@ -40,10 +40,10 @@ load_matrix <- function(file, sheet = "matrix"){
   out$fuel_quant[28] <- 6 # fixes change in format
   
  # fuel_type
-  out <- dplyr::mutate(out, fuel_type = as.factor(tolower(material)))
+  out <- dplyr::mutate(out, fuel = as.factor(tolower(material)))
 
  # extract test information
-  test_info <- dplyr::select(out, id, id_test, date, fuel_type, fuel_quant)
+  test_info <- dplyr::select(out, id, id_test, date, fuel, fuel_quant)
 
  # convert integrated sample ids to long format
   ids_int <- dplyr::select(out, date, matches(".*id.*")) %>%
