@@ -21,7 +21,7 @@ output: html_document
   #2. set variable types from character -> factor
   #3. removes duplicate rows that were remnants of when real-time monitors had timestamps, so multiple rows per test even though the mass_ef was a single value for the test. 
   ef_bymass <- filter(emission_factors, metric == "mass_emitted") %>%
-               dplyr::mutate(fuel_type = factor(fuel)) %>%
+               dplyr::mutate(fuel = factor(fuel)) %>%
                dplyr::mutate(qc = factor(qc)) %>%
                dplyr::mutate(pol = factor(pol))
 ```
@@ -35,18 +35,16 @@ output: html_document
 # Summarize emissions factors by pollutant and fuel type
 ```{r}
 ef_sum <- ef_bymass %>%
-                    dplyr::group_by(.dots = c("fuel_type", "pol")) %>%
-                    dplyr::summarize(#pol = pol,
-                                     #fuel_type = fuel_type,
-                                     nreps = n(),
-                                     mean_ef = round(mean(mass_ef, na.rm = TRUE), 4),
-                                     min_ef = min(mass_ef, na.rm = TRUE),
-                                     max_ef = max(mass_ef, na.rm = TRUE)) 
+                    dplyr::group_by(fuel, pol) %>%
+                    dplyr::summarize(nreps = n(),
+                                     mean_ef = round(mean(mass_per_mass_fuel, na.rm = TRUE), 4),
+                                     min_ef = round(min(mass_per_mass_fuel, na.rm = TRUE), 4),
+                                     max_ef = round(max(mass_per_mass_fuel, na.rm = TRUE), 4))
 #mass_ef in units g pol / kg fuel; one average value per fuel_type
 
-ef_mean_table <- select(ef_sum, c("fuel_type", "pol", "mean_ef")) %>%
-                 spread(fuel_type, mean_ef) %>%
-                 select(-background)
+ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
+                 spread(fuel, mean_ef) %>%
+                 select(-background, -blank)
 ```
 
 ### Table 1. Mean emission factors (mass basis) for various startup materials and pollutants
