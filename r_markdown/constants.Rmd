@@ -29,7 +29,7 @@ output:
 # Fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-#startup fuel carbon contents  
+# startup fuel carbon contents  
   tshirt <- mean(c(39.47, 40.82, 40.71))
   news <- mean(c(42.66, 40.48, 44.18))
   wood <- mean(c(50.02, 49.8, 49.59))
@@ -43,7 +43,7 @@ output:
   startvec <- c(tshirt, news, wood, rub, flip, bags, pack, leaves, kero)
   startvec <- startvec / 100 
 
-  #main fuel carbon contents
+  # main fuel carbon contents
   oak <- (mean(c(46.97, 47.62, 46.76) / 100))
   westslope <- (mean(c(49.86, 49.34, 49.28) / 100))
   

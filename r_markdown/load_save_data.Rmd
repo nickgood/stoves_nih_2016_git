@@ -101,14 +101,25 @@ Loads the microgram sheet and resaves data as an .RDS.
 
 ## sample matrix
 
-Load sample matrix. Function saves two .RDS files (ids_int and test_info).
+Load sample matrix. Function saves two .RDS files (test_info and ids_int).
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- load_singlefiles("sample")
 ```
 
-Load metadata. Function to save files for: flows, times, canister pressure, fuel mass, and notes.
+Load metadata. Function to save files for: flows, canister pressure, background_times, fuel_times, fuel mass, and notes.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   metadata <- load_singlefiles("meta")
 ```
+
+Kristen's notes
+
+```{r, message=FALSE, results='markup', cache=FALSE}
+  notes_kf <- readr::read_csv("../data/logs/startup_qc_notes.csv") %>%
+              dplyr::rename(id_test = id,
+                            inst = instrument) %>%
+              left_join(dplyr::select(samples[[1]], id, id_test), by = "id_test")
+  saveRDS(notes_kf, "../r_files/notes_kf.RDS")
+```
+

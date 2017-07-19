@@ -16,6 +16,22 @@
 #________________________________________________________
   
 #________________________________________________________
+# select emissions data
+  select_emissions <- function(df) {
+   out <- dplyr::select(df, id, pol, 
+                 conc,
+                 bg_conc,
+                 conc_emitted,
+                 mass_emitted,
+                 mass_carbon_emitted,
+                 inst,
+                 qc)
+  # return
+    return(out)
+  }
+#________________________________________________________
+  
+#________________________________________________________
 # convert POSIXct to seconds of day
   posixct_secsofday <- function(x) {
 
@@ -135,7 +151,6 @@ filter_times <- function(times, df){
  
   # loop ids
     for(i in 1:length(ids)){
-
       tmp <- dplyr::filter(df,
                            as.character(id) == as.character(times$id[i]),
                            time >= times$start[i],
