@@ -173,7 +173,7 @@ Concentration is corrected for background by removing background test average co
   head(ecoc, 2)
 ```
 
-___
+---
 
 # fivegas
 
