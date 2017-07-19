@@ -83,9 +83,17 @@ output:
 ## fuel weights
 
 ```{r}
-  fuel_mass <- dplyr::filter(tidy_id_date(fuel, "^mass_", "mass_"), !is.na(value))
+  fuel_mass <- dplyr::select(fuel, id, order, starts_with("mass")) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first)) %>%
+               tidyr::gather("var", "val", 2:15)
 
-  pot_mass <- dplyr::filter(tidy_id_date(test_log, "^wgt_", "wgt_"), !is.na(value))
+  pot_mass <- dplyr::select(test_log, id, starts_with("wgt")) %>%
+              dplyr::rename(wgt_water_pot = wgt_pot_a,
+                            wgt_water_on = wgt_on_1,
+                            wgt_water_off = wgt_off_1) %>%
+               tidyr::gather("var", "val", 2:26) %>%
+               dplyr::filter(!is.na(val))
 
   test_mass <- dplyr::bind_rows(fuel_mass, pot_mass)
 
