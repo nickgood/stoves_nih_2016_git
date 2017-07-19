@@ -62,6 +62,22 @@ output:
                     dplyr::mutate(mass_fuel_scale_kg = mass_burnt * (1e-3))
 ```
 
+```{r}
+  ggplot(carbon_emitted, aes(mass_fuel_scale_kg, mass_fuel_from_carbon_balance_kg)) + 
+  geom_point() +
+  theme_minimal() +
+  geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x)
+
+```
+
+```{r}
+df <- dplyr::select(carbon_emitted, mass_fuel_from_carbon_balance_kg, mass_fuel_scale_kg) %>%
+      dplyr::rename(y = mass_fuel_from_carbon_balance_kg, x = mass_fuel_scale_kg)
+
+summary(lm(y ~ x, data = df))
+
+
+```
 
 
 # Calculate emissions factors
@@ -70,10 +86,8 @@ output:
   emission_factors <- dplyr::left_join(emission_factors, 
                                 dplyr::select(mass_fuel, id, mass_fuel_c, 
                                                          mass_fuel_kg, lhv), by = "id" ) %>%
-               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
-                             mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),
-                             energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
+               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg))
+                            
 ```
 
 # Save
