@@ -231,9 +231,13 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(iso_flows, type) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+  p_data <- dplyr::group_by(iso_flows, id, type) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
+            dplyr::mutate(value_norm =
+                           (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value),
+                                    as.character(id), NA))
 
   p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
              geom_boxplot() +
@@ -265,9 +269,13 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(filter_flows, type, colour) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+  p_data <- dplyr::group_by(filter_flows, id, type, colour) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
+            dplyr::mutate(value_norm =
+                           (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value),
+                                    as.character(id), NA))
 
   p_box <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
                geom_boxplot() +
