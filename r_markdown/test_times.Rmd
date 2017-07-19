@@ -93,12 +93,23 @@ output:
                       dplyr::mutate(id = as.factor(id))
 ```
 
+* filter times
+
+```{r}
+  times_filters <- dplyr::select(tester_one, id, date, matches(".*time.*white.*")) %>%
+                   dplyr::rename(start_filters = time_start_cart_white_orange,
+                                 end_filters = time_end_cart_white_orange) %>%
+                   tidyr::gather("var", "value", 3:4)
+```
+
+
 * combine times
 
 ```{r}
   test_times <- dplyr::bind_rows(test_times,
                                  times_bg_fivegas,
-                                 times_bg_pax_smps) %>%
+                                 times_bg_pax_smps,
+                                 times_filters) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
                 dplyr::mutate(var = as.factor(var)) %>%
                 tibble::as_data_frame()
