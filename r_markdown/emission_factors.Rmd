@@ -18,29 +18,27 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")
+
   fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")
+
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
-  # load("../r_files/energy.Rda") # not yet created
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/hood_flow.Rda")
-  load("../r_files/pol_properties.Rda")
-  load("../r_files/inst_constants.Rda")
-  load("../r_files/calc_constants.Rda")
-  load("../r_files/fuel_properties.Rda")
+  hood_flow <- readRDS("../r_files/hood_flow.RDS")
+
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
+  
+  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
+
 ```
 
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
-               dplyr::group_by(id) %>%
-               dplyr::filter(value >= 0) %>%  # ignore negatives
-               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
-               dplyr::mutate(mass_carbon = 
-                               ifelse(grepl("^1A$|^2A$", id),
-                                      NA, mass_carbon))  # ignore tests with missing fivegas data
+  carbon_emitted <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
+                    dplyr::group_by(id) %>%
+                    dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE))
 ```
 
 # Merge with fuel properties
