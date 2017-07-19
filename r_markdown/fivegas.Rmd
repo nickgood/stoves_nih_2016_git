@@ -93,8 +93,19 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("fivegas|all", inst))
 
-  out_full <- dplyr::left_join(out_full, 
-                              dplyr::select(notes, id, qc, id_test),
+  flags <- dplyr::select(notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc)) %>%
+           dplyr::right_join(dplyr::select(test_info, id), by = "id") %>%
+           dplyr::mutate(qc = ifelse(is.na(qc), "good", qc))
+```
+
+
+```
+
+  out_full_ <- dplyr::left_join(out_full, 
+                              dplyr::select(notes, id, qc),
                               by = "id") %>%
               dplyr::left_join(select(test_info, id, fuel),
                                by = "id")
