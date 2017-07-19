@@ -86,10 +86,10 @@ output:
 * integrated sample start & end times
 
 ```{r}
-  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+  times <- dplyr::filter(test_times, var == "start_filters" | var == "end_filters") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
-           dplyr::rename(start = set_1, end = end)
+           dplyr::rename(start = start_filters, end = end_filters)
 ```
 
 ---
