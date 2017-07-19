@@ -33,7 +33,9 @@ output:
 
 ```
 
-# Mass carbon per test
+# Carbon balance
+
+* calc mass carbon emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbon_emitted <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
@@ -41,34 +43,26 @@ output:
                     dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE))
 ```
 
-# Merge with fuel properties
+* merge with fuel sample info, fuel properties and fuel burnt
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel,
+  carbon_emitted <- dplyr::left_join(carbon_emitted,
                                 dplyr::select(samples, id, fuel),
                                 by = "id") %>%
-               dplyr::left_join(fuel_properties, by = "fuel")
+                    dplyr::left_join(fuel_properties, by = "fuel") %>%
+                    dplyr::left_join(select(fuel_burnt, -units), by = "id") %>%
+                    dplyr::filter(!is.na(fuel))
 ```
-
-# Carbon balance
 
 * Calculate fuel burned using carbon balance method
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel, fuel_burnt, by = "id") %>%
-               dplyr::mutate(mass_fuel_c = mass_carbon * (1e-9) *
-                               (1 / carbon_fraction)) %>%
-               dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+  carbon_emitted <- carbon_emitted %>%
+                    dplyr::mutate(mass_fuel_from_carbon_balance_kg = mass_carbon * (1e-9) * (1 / carbon_fraction)) %>%
+                    dplyr::mutate(mass_fuel_scale_kg = mass_burnt * (1e-3))
 ```
 
-* Filter out bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  # NG: are these still unrealistic?
-  emission_factors <- dplyr::filter(emissions_long, qc != "bad") %>%
-                      dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
-               
-```
 
 # Calculate emissions factors
  
