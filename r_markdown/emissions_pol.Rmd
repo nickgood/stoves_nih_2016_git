@@ -108,7 +108,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - bg_mean) * hood_flow * dur,
-                             mass_carbon = mass_emitted * (num_c * mw_c / mw), #this is mass of carbon emitted for a carbon balance QC; not for calculating emissions factors. 
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
                              inst = "carbs")
 ```
 
@@ -186,7 +186,7 @@ ___
 * filter out data from outside emissions window
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  co_co2_ch4 <- filter_times(times_test, co_co2_ch4)
+  co_co2_ch4 <- dplyr::distinct(filter_times(times_test, co_co2_ch4))
 ```
 
 * calculate average for each test
