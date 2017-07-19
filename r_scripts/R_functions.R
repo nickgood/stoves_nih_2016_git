@@ -135,7 +135,7 @@ filter_times <- function(times, df){
  
   # loop ids
     for(i in 1:length(ids)){
-
+ print(i)
       tmp <- dplyr::filter(df,
                            as.character(id) == as.character(times$id[i]),
                            time >= times$start[i],
