@@ -98,21 +98,20 @@ output:
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc)) %>%
            dplyr::right_join(dplyr::select(test_info, id), by = "id") %>%
-           dplyr::mutate(qc = ifelse(is.na(qc), "good", qc))
+           dplyr::mutate(qc = ifelse(is.na(qc), "good", as.character(qc)))
 ```
 
 
-```
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
-  out_full_ <- dplyr::left_join(out_full, 
-                              dplyr::select(notes, id, qc),
-                              by = "id") %>%
+  out_full <- dplyr::left_join(out_full, flags, by = "id") %>%
               dplyr::left_join(select(test_info, id, fuel),
                                by = "id")
 
   out_rep <- dplyr::left_join(out_rep,
                               dplyr::select(bg_mean, id, pol, bg_ppm),
                               by = c("id", "pol")) %>%
+             dplyr::left_join(flags, by = "id") %>%
              dplyr::left_join(select(test_info, id, fuel), by = "id")
 ```
 
