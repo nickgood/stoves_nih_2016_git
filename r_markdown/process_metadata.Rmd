@@ -29,11 +29,13 @@ output:
 
 ```{r load_files}
   tester_one <- readRDS("../r_files/data_tester_one.RDS")
+
   tester_two <- readRDS("../r_files/data_tester_two.RDS")
 
   cal_two <- readRDS("../r_files/data_cal_two.RDS")
 
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
+  
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
 
@@ -49,14 +51,14 @@ output:
 ```
 
 ```{r}
-  # note fix fuel for bg
   samples <-   test_log %>%
                dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
                dplyr::mutate(mc_level = as.factor(mc_level)) %>%
                dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
                                 dplyr::distinct(),
                                 by = "id") %>%
-               dplyr::mutate(mc_target = as.factor(mc_target))
+               dplyr::mutate(mc_target = as.factor(mc_target),
+                             fuel = ifelse(type == "bg", NA, as.character(fuel)))
 
   saveRDS(samples, "../r_files/samples.RDS")
 ```
