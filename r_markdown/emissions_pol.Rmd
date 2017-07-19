@@ -203,7 +203,8 @@ Concentration is corrected for background by removing background test average co
 * filter out data from outside emissions window
 
 ```{r}
-  co_co2_ch4 <- filter_times(times, co_co2_ch4)
+  co_co2_ch4 <- filter_times(times, co_co2_ch4) %>%
+                dplyr::distinct()
 ```
 
 * calculate average for each test
@@ -222,7 +223,7 @@ Concentration is corrected for background by removing background test average co
                                                pol,
                                                mw,
                                                num_c), by = "pol") %>%
-                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
+                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84)) # ug/m^3
 ```
 
 * merge with sample time data and calculate test duration
@@ -253,7 +254,9 @@ Concentration is corrected for background by removing background test average co
                           conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
                           pol = "ch4")
 
-  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
+  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4) %>%
+        dplyr::select(-ppm, -conc)
+   
 ```
 
 * merge background with fivegas data
