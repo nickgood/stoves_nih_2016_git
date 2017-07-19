@@ -93,7 +93,7 @@ output:
                             wgt_water_on = wgt_on_1,
                             wgt_water_off = wgt_off_1) %>%
                tidyr::gather("var", "val", 2:26) %>%
-               dplyr::filter(!is.na(val))
+               dplyr::filter(!is.na(val), id != "BG2")
 
   test_mass <- dplyr::bind_rows(fuel_mass, pot_mass)
 
@@ -102,9 +102,10 @@ output:
 
 ```{r, echo=FALSE, fig.height=8}
   p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%
+            dplyr::filter(!is.na(val)) %>%
             dplyr::group_by(var, mc_target) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+            dplyr::mutate(value_norm = (val - mean(val)) / sd(val),
+                          outlier = ifelse(is_outlier(val), as.character(id), NA))
 
   p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
              geom_boxplot() +
@@ -115,7 +116,7 @@ output:
              theme(axis.text.x = element_text(angle = 45, hjust=1)) +
              xlab("")
 
-  p_hist <- ggplot(p_data, aes(x = value, fill = mc_target)) +
+  p_hist <- ggplot(p_data, aes(x = val, fill = mc_target)) +
               geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
               theme_bw() +
               facet_grid(~var, scales = "free") + 
