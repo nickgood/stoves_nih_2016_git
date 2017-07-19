@@ -25,7 +25,7 @@ output:
  # (emailed Arsineh on 6/27/17)
   voc_merged <- readRDS("../r_files/voc_merged.RDS")
 
-  carbonyls_merged <- readRDS("../r_files/ions_merged.RDS")
+  carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
 
@@ -74,7 +74,7 @@ output:
   test_info <- readRDS("../r_files/test_info.RDS")
 ```
 
-# calculate emissions factors
+# calculate emissions
 
 ## carbonyls
 
@@ -89,7 +89,7 @@ output:
                              flow_mean,
                              start, end,
                              pol, val,
-                             bg_mean) %>%
+                             bg_conc) %>%
                dplyr::left_join(dplyr::select(pol_properties, 
                                               pol, 
                                               mw, 
@@ -107,8 +107,9 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   carbonyls <- dplyr::mutate(carbonyls, 
-                             mass_emitted = (conc - bg_mean) * hood_flow * dur,
-                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             conc_emitted = conc - bg_conc,
+                             mass_emitted = conc_emitted * hood_flow * dur,
+                             mass_carbon_emitted = mass_emitted * (num_c * mw_c / mw),
                              inst = "carbs")
 ```
 
@@ -163,7 +164,7 @@ Concentration is corrected for background by removing background test average co
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
-                        mass_carbon = mass_emitted,
+                        mass_carbon_emitted = mass_emitted,
                         inst = "ecoc")
 ```
 
@@ -232,7 +233,7 @@ Concentration is corrected for background by removing background test average co
                               conc_emitted = conc - bg_conc,
                               mass_emitted = conc_emitted * hood_flow * (dur / 60), # ug/m^3 * m^3/min * s/60 = ug
                               num_c = 1,
-                              mass_carbon = mass_emitted * (mw_c * num_c / mw),
+                              mass_carbon_emitted = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
 ```
 
@@ -273,8 +274,9 @@ Concentration is corrected for background by removing background test average co
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
-                        mass_emitted = (conc - bg_conc) * hood_flow * dur,
-                        mass_carbon = mass_emitted * 0, #0 because EC/OC accounts for the carbon in the PM.  
+                        conc_emitted = conc - bg_conc,
+                        mass_emitted = conc_emitted * hood_flow * dur,
+                        mass_carbon_emitted = mass_emitted * 0,
                         inst = "grav")
 ```
 
@@ -314,14 +316,15 @@ Concentration is corrected for background by removing background test average co
   voc <- dplyr::mutate(voc, dur = (time_end - time_start) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
-                            conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
+                            bg_conc = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
 ```
 
 * calculate mass emitted
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                            mass_carbon = mass_emitted * (mw_c * num_c / mw),
+  voc <- dplyr::mutate(voc, conc_emitted = conc - bg_conc,
+                            mass_emitted = conc_emitted * hood_flow * dur,
+                            mass_carbon_emitted = mass_emitted * (mw_c * num_c / mw),
                             inst = "voc")
 ```
 
@@ -340,57 +343,23 @@ ___
 * mass based
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions <- dplyr::select(co_co2_ch4, id, pol, 
-                                         conc, #conc_bg, change name from bg_ppm to conc_bg (no conversions necessary)
-                                         mass_emitted,
-                                         mass_carbon,
-                                         inst, qc) %>%
-               dplyr::bind_rows(dplyr::select(
-                 carbonyls, id, pol,
-                                                         conc, #conc_bg, change from bg_mean to conc_bg - need to convert? 
-                                                         mass_emitted,
-                                                         mass_carbon,
-                                                         inst, qc) %>%
-               #dplyr::bind_rows(dplyr::select(ecoc, id, pol,
-               #                                     conc, conc_bg,
-               #                                     mass_emitted,
-               #                                     mass_carbon,
-               #                                     inst, qc)) %>%
-               dplyr::bind_rows(dplyr::select(grav, id, pol,
-                                                    conc, #conc_bg, need to change name from bg_conc to conc_bg
-                                                    mass_emitted,
-                                                    mass_carbon,
-                                                    inst, qc)) %>%
-               dplyr::bind_rows(dplyr::select(voc, id, pol,
-                                                   conc, #conc_bg, conc_bg vs ppb_bg: what's difference? ppm vs conc for main value too? 
-                                                   mass_emitted,
-                                                   mass_carbon,
-                                                   inst, qc))) #%>%
-               #dplyr::bind_rows(dplyr::select(pax, id, pol,
-               #                                     conc, conc_bg,
-               #                                     mass_emitted,
-               #                                     mass_carbon,
-               #                                     inst, qc)) %>%
-               #dplyr::bind_rows(dplyr::select(pah, id, pol,
-               #                                     conc, conc_bg,
-               #                                     mass_emitted,
-               #                                     mass_carbon,
-               #                                     inst, qc)) %>%
+  emissions <- dplyr::bind_rows(select_emissions(co_co2_ch4),
+                                select_emissions(carbonyls),
+                                select_emissions(grav),
+                                select_emissions(voc))
 ```
 
 * convert to longer format
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:5)
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:7)
 ```
-
 
 ## save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
 ```
-
 
 ## negative emissions
 
