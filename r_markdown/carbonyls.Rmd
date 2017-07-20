@@ -117,7 +117,7 @@ output:
 
 Ion data was collected during `r length(unique(carbonyls$id))` experiments. There is no ion data for tests: `r setdiff(unique(test_info$id), unique(carbonyls$id))`.
 
-Tests 36 through 43 are blanks; no fivegas data expected.
+Tests 36 through 43 are blanks; no carbonyl data expected.
 Test 30 (ID K3) conducted on 1/17/2017.No carbonyl was collected for this test.
 
 All carbonyl data is present as expected as of 5/24/17.
