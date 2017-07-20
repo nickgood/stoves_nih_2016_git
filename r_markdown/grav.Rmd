@@ -183,7 +183,7 @@ grav$mass_rep <- as.numeric(gsub("Inf", "0", grav$mass_rep))
 
 * remove filter that has id = NA (an excess blank)
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_ <- dplyr::filter(grav, id !='NA')
+  grav <- dplyr::filter(grav, id !='NA')
 ```
 # Summary
 
