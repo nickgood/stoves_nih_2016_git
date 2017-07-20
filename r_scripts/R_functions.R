@@ -500,8 +500,8 @@ calc_mw <- function(pol_properties){
                                   mw + 40.078, mw)) %>%
         dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
                                   mw + 35.4515, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 32.0675, mw)) 
+        dplyr::mutate(mw = ifelse(ions == "S" & !is.na(ions),
+                                  mw + 32.065, mw))
 
   # return the molecular weight
   return(pol_properties$mw)
