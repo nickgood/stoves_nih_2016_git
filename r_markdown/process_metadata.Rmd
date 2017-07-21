@@ -420,10 +420,14 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::filter(pax_flows, loc == "inlet") %>%
-            dplyr::group_by(type) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(date), NA))
+  p_data <- dplyr::group_by(pax_flows, date, type) %>%
+            dplyr::filter(loc == "inlet") %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+           # dplyr::group_by(date) %>%
+            dplyr::mutate(value_norm =
+                           (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value),
+                                    as.character(date), NA))
 
   p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
             geom_boxplot() +
@@ -433,7 +437,7 @@ KB: Currently no data is recorded in the test log
             xlab("")
 
   p_hist <- ggplot(p_data, aes(x = value)) +
-              geom_histogram(binwidth = 0.1, alpha = 0.5, color = "black") +
+              geom_histogram(binwidth = 0.01, alpha = 0.5, color = "black") +
               theme_bw() +
               facet_grid(~type, scales = "free") + 
               theme_bw(base_size = 14) +
