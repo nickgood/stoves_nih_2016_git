@@ -83,7 +83,11 @@ output:
 ## fuel weights
 
 ```{r}
-  fuel_mass <- dplyr::select(fuel, id, order, starts_with("mass")) %>%
+ # remove FH2 rep 3 becuase fuel was not burned
+  fuel_no_fh2_3 <- dplyr::setdiff(fuel,
+                                  dplyr::filter(fuel, (id == "FH2" & order == "3")))
+
+  fuel_mass <- dplyr::select(fuel_no_fh2_3, id, order, starts_with("mass")) %>%
                dplyr::group_by(id) %>%
                dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first)) %>%
                tidyr::gather("var", "val", 2:15)
