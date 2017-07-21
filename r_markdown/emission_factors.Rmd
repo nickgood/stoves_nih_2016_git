@@ -130,6 +130,42 @@ output:
   
 ```
 
+```{r}
+ df <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
+       dplyr::mutate(type = as.factor(type),
+                     mc_level = as.factor(mc_level)) %>%
+       dplyr::filter(pol == "grav", id != "FH2")
+ 
+ f <- formula(mass_pol_mass_fuel ~ mc_level + type + mc_level*type)
+ 
+ mod_grav <- glm(f, data = df)
+```
+
+```{r}
+  mod_grav$formula
+```
+
+```{r}
+  summary(mod_grav)
+```
+ 
+```{r}
+   plot(mod_grav)
+```
+
+```{r}
+  ggplot(df, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
+  geom_boxplot(outlier.size = NA) +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ylab("g pol / kg fuel") + xlab("moisture content") +
+  facet_wrap(~pol, scales = "free")
+```
+
+
+
+
 ## Plot emissions by moisture content
 
 ```{r}
