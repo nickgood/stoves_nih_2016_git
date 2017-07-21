@@ -48,9 +48,15 @@ output:
 * retain test and background data (blanks fall under test category)
 
 ```{r}
-  ecoc_merged <- dplyr::filter(ecoc, type == "test" | type == "bg") %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
+  ecoc_merged <- ecoc %>%
+                 tidyr::separate(filter_id, c("id", "filter_type"), extra = "merge") %>%
+                 dplyr::mutate(filter_type = ifelse(id == "blank", "blank", filter_type),
+                               filter_type = ifelse(grepl(".*Blank.*", filter_type), "blank", filter_type),
+                               filter_type = ifelse(grepl(".*of day.*", filter_type), "start_blank", filter_type),
+                               filter_type = ifelse(grepl(".*Test.*", filter_type), "test", filter_type),
+                               id = ifelse(grepl(".*blank.*", filter_type), "blank", id),
+                               id = ifelse(grepl(".*start_blank.*", filter_type), "start_blank", id),
+                               id = ifelse(grepl(".*test.*", filter_type), "test", id))
 ```
 
 # Meta data
@@ -58,7 +64,7 @@ output:
 * match cassette flows to id
 
 ```{r}
- flows <- dplyr::select(filter_flows, -date) %>%
+  flows <- dplyr::select(filter_flows, -date) %>%
            dplyr::filter(colour == "white" | colour == "orange") %>%
            dplyr::group_by(id, type, colour) %>%
            dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
