@@ -106,7 +106,7 @@ output:
 * extract ecoc notes
 
 ```{r}
-  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("ecoc|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
