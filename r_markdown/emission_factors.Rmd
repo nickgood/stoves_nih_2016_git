@@ -18,59 +18,67 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")
+
   fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")
+
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
-  # load("../r_files/energy.Rda") # not yet created
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/hood_flow.Rda")
-  load("../r_files/pol_properties.Rda")
-  load("../r_files/inst_constants.Rda")
-  load("../r_files/calc_constants.Rda")
-  load("../r_files/fuel_properties.Rda")
-```
+  hood_flow <- readRDS("../r_files/hood_flow.RDS")
 
-# Mass carbon per test
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
+  
+  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
-               dplyr::group_by(id) %>%
-               dplyr::filter(value >= 0) %>%  # ignore negatives
-               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
-               dplyr::mutate(mass_carbon = 
-                               ifelse(grepl("^1A$|^2A$", id),
-                                      NA, mass_carbon))  # ignore tests with missing fivegas data
-```
-
-# Merge with fuel properties
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel,
-                                dplyr::select(samples, id, fuel),
-                                by = "id") %>%
-               dplyr::left_join(fuel_properties, by = "fuel")
 ```
 
 # Carbon balance
 
+* calc mass carbon emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbon_emitted <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
+                    dplyr::group_by(id) %>%
+                    dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE))
+```
+
+* merge with fuel sample info, fuel properties and fuel burnt
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  carbon_emitted <- dplyr::left_join(carbon_emitted,
+                                dplyr::select(samples, id, fuel),
+                                by = "id") %>%
+                    dplyr::left_join(fuel_properties, by = "fuel") %>%
+                    dplyr::left_join(select(fuel_burnt, -units), by = "id") %>%
+                    dplyr::filter(!is.na(fuel))
+```
+
 * Calculate fuel burned using carbon balance method
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel, fuel_burnt, by = "id") %>%
-               dplyr::mutate(mass_fuel_c = mass_carbon * (1e-9) *
-                               (1 / carbon_fraction)) %>%
-               dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+  carbon_emitted <- carbon_emitted %>%
+                    dplyr::mutate(mass_fuel_from_carbon_balance_kg = mass_carbon * (1e-9) * (1 / carbon_fraction)) %>%
+                    dplyr::mutate(mass_fuel_scale_kg = mass_burnt * (1e-3))
 ```
 
-* Filter out bad tests
+```{r}
+  ggplot(carbon_emitted, aes(mass_fuel_scale_kg, mass_fuel_from_carbon_balance_kg)) + 
+  geom_point() +
+  theme_minimal() +
+  geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
-  # NG: are these still unrealistic?
-  emission_factors <- dplyr::filter(emissions_long, qc != "bad") %>%
-                      dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
-               
 ```
+
+```{r}
+df <- dplyr::select(carbon_emitted, mass_fuel_from_carbon_balance_kg, mass_fuel_scale_kg) %>%
+      dplyr::rename(y = mass_fuel_from_carbon_balance_kg, x = mass_fuel_scale_kg)
+
+summary(lm(y ~ x, data = df))
+
+
+```
+
 
 # Calculate emissions factors
  
@@ -78,10 +86,8 @@ output:
   emission_factors <- dplyr::left_join(emission_factors, 
                                 dplyr::select(mass_fuel, id, mass_fuel_c, 
                                                          mass_fuel_kg, lhv), by = "id" ) %>%
-               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
-                             mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),
-                             energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
+               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg))
+                            
 ```
 
 # Save

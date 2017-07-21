@@ -14,7 +14,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = TRUE)
+                        fig.width=10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
@@ -26,7 +26,7 @@ output:
 * test times
 
 ```{r}
-  test_times <- readRDS("../r_files/test_times.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 * fivegas co2

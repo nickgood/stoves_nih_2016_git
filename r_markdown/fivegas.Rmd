@@ -14,7 +14,7 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = TRUE)
+                        fig.width=10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
@@ -27,7 +27,7 @@ output:
 * data logged in ppm units.
 
 ```{r}
-  fivegas<- readRDS("../r_files/fivegas.RDS")    
+  fivegas <- readRDS("../r_files/fivegas.RDS")
 ```
 
 * sample information
@@ -40,6 +40,14 @@ output:
 
 ```{r}
   #load("../r_files/notes.Rda")
+```
+
+# Units
+
+* Convert co2 from percent to ppm (note CO and CH4 are collected as ppm)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  fivegas <- dplyr::mutate(fivegas, co2 = co2 * 10^4)
 ```
 
 # Reformat data
@@ -69,13 +77,13 @@ Remove NOx and oxygen rows (channels not used during study)
 Extract notes relevant to  fivegas analyzer
 
 ```{r}
-  #notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
+  # notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
 ```
 
 Flag bad data from notes and plots
 
 ```{r}
-  #notes$qc[33:35] <- "ok"
+  # notes$qc[] <- "ok"
 ```
 
 Make one flag per test precidented from bad to ok.
@@ -100,10 +108,10 @@ Merge with data
 Additional bad tests
 
 ```{r}
-  # fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
-  # fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
-  # fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
-  # fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
+  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
 ```
 
 # Save merged file
@@ -125,7 +133,7 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
 
   ggplot(df, aes(datetime, ppm, group = pol, colour=pol)) + 
     geom_line() +
-    scale_y_log10(limits = c(.01, 10^3)) +
+    scale_y_log10(limits = c(.01, 10^4)) +
     scale_colour_manual(breaks= df$pol,
                         values = 
                         c("ch4" = "mediumaquamarine",

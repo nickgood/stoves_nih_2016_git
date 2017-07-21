@@ -14,35 +14,56 @@ output:
 
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = TRUE)
+                        fig.width = 10, fig.height = 4, cache = FALSE)
 ```
 
 ```{r}
   source("../r_scripts/R_functions.R")
 ```
 
+---
+
 # Load
 
-* pollutant data
+* fivegas
 
 ```{r}
-  #load("../r_files/ecoc_merged.Rda")
+ # fivegas data
   fivegas_merged <- readRDS("../r_files/fivegas_merged.RDS")
-  background <- readRDS("../r_files/background_co.RDS")
-    bg_co <- background$bg
-    bg_co_mean <- background$mean
-  background <- readRDS("../r_files/background_co2.RDS")
-    bg_co2 <- background$bg
-    bg_co2_mean <- background$mean
-  backgrounds <- readRDS("../r_files/background_ch4.RDS")
-    bg_ch4 <- background$bg
-    bg_ch4_mean <- background$mean
+
+ # background co
+  bg_co <- readRDS("../r_files/background_co.RDS")
+  bg_co_tests <- bg_co$bg
+  bg_co_mean <- bg_co$mean
+
+ # background co2
+  bg_co2 <- readRDS("../r_files/background_co2.RDS")
+  bg_co2_tests <- bg_co2$bg
+  bg_co2_mean <- bg_co2$mean
+
+ # background ch4
+  bg_ch4 <- readRDS("../r_files/background_ch4.RDS")
+  bg_ch4_tests <- bg_ch4$bg
+  bg_ch4_mean <- bg_ch4$mean
+```
+
+---
+
+* gravimetric pm2.5
+
+```{r}
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
-  # load("../r_files/smps_ultrafine.Rda")
-  # load("../r_files/smps_ultrafine_bg.Rda")
-  # load("../r_files/ions_merged.Rda")
-  # load("../r_files/carbonyls_merged.Rda")
-  # load("../r_files/voc_merged.Rda")
+```
+
+* other data (yest to be pre-processed)
+
+```{r, eval = FALSE}
+  load("../r_files/ecoc_merged.Rda")
+  load("../r_files/smps_ultrafine.Rda")
+  load("../r_files/smps_ultrafine_bg.Rda")
+  load("../r_files/ions_merged.Rda")
+  load("../r_files/carbonyls_merged.Rda")
+  load("../r_files/voc_merged.Rda")
 ```
 
 * constants
@@ -57,7 +78,7 @@ output:
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  test_times <- readRDS("../r_files/test_times.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 # timestamps
@@ -65,49 +86,52 @@ output:
 * integrated sample start & end times
 
 ```{r}
-  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+  times <- dplyr::filter(test_times, var == "start_filters" | var == "end_filters") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
-           dplyr::rename(start = set_1, end = end)
+           dplyr::rename(start = start_filters, end = end_filters)
 ```
+
+---
 
 # carbonyls
 
 * select data
 
-```{r}
-  # carbonyls <- dplyr::select(carbonyls_merged,
-  #                            id, qc,
-  #                            flow,
-  #                            start, end,
-  #                            pol, mass_ug,
-  #                            conc_bg) %>%
-  #              dplyr::left_join(dplyr::select(pol_properties, 
-  #                                             pol, 
-  #                                             mw, 
-  #                                             num_c), by = "pol") %>%
-  #              dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```{r, eval = FALSE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             flow,
+                             start, end,
+                             pol, mass_ug,
+                             conc_bg) %>%
+               dplyr::left_join(dplyr::select(pol_properties, 
+                                              pol, 
+                                              mw, 
+                                              num_c),
+                                       by = "pol") %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
 
-```{r}
-  # carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-  #                            conc = (mass_ug * 1000 / (flow * dur)))
+```{r, eval = FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             conc = (mass_ug * 1000 / (flow * dur)))
 ```
 
 * calculate mass emitted
 
-```{r}
-  # carbonyls <- dplyr::mutate(carbonyls, 
-  #                            mass_emitted = (conc - conc_bg) * hood_flow * dur,
-  #                            mass_carbon = mass_emitted * (num_c * mw_c / mw),
-  #                            inst = "carbs")
+```{r, eval = FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             inst = "carbs")
 ```
 
 * output
 
-```{r}
+```{r, eval = FALSE}
   # head(carbonyls, 2)
 ```
 
@@ -115,20 +139,20 @@ output:
 
 * select data
 
-```{r}
-  # ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
-  #         dplyr::select(id, cassette,
-  #                       start, end,
-  #                       flow,
-  #                       pol, ug_sq_cm,
-  #                       conc_bg, type, qc)
+```{r, eval = FALSE}
+  ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
+          dplyr::select(id, cassette,
+                        start, end,
+                        flow,
+                        pol, ug_sq_cm,
+                        conc_bg, type, qc)
 ```
 
 * calculate concentrations
 
-```{r}
-  # ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
-  #                             conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
+```{r, eval = FALSE}
+  ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
+                              conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
 ```
 
 * account for artifact
@@ -153,20 +177,20 @@ Use replicate average artifact (probably clean up spreadsheet at some point)
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r}
-  # ecoc <- dplyr::mutate(ecoc, 
-  #                       mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
-  #                       mass_carbon = mass_emitted,
-  #                       inst = "ecoc")
+```{r, eval = FALSE}
+  ecoc <- dplyr::mutate(ecoc, 
+                        mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted,
+                        inst = "ecoc")
 ```
 
 * output
 
-```{r}
-  # head(ecoc, 2)
+```{r, eval = FALSE}
+  head(ecoc, 2)
 ```
 
-___
+---
 
 # fivegas
 
@@ -179,15 +203,15 @@ ___
 * filter out data from outside emissions window
 
 ```{r}
-  co_co2_ch4 <- filter_times(times, co_co2_ch4)
+  co_co2_ch4 <- filter_times(times, co_co2_ch4) %>%
+                dplyr::distinct()
 ```
 
 * calculate average for each test
 
 ```{r}
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>% #,
-                                 #qc = first(qc)) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
 ```
 
@@ -199,7 +223,7 @@ ___
                                                pol,
                                                mw,
                                                num_c), by = "pol") %>%
-                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
+                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84)) # ug/m^3
 ```
 
 * merge with sample time data and calculate test duration
@@ -215,22 +239,24 @@ ___
 * combine pollutants
 
 ```{r}
-  bg_co <- dplyr::left_join(dplyr::select(samples, id), bg_co) %>%
+  bg_co <- dplyr::left_join(dplyr::select(samples, id), bg_co_tests) %>%
            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
                          conc_bg = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
                          pol = "co")
 
-  bg_co2 <- dplyr::left_join(dplyr::select(samples, id), bg_co2) %>%
+  bg_co2 <- dplyr::left_join(dplyr::select(samples, id), bg_co2_tests) %>%
             dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
                           conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
                           pol = "co2")
 
-  bg_ch4 <- dplyr::left_join(dplyr::select(samples, id), bg_ch4) %>%
+  bg_ch4 <- dplyr::left_join(dplyr::select(samples, id), bg_ch4_tests) %>%
             dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
                           conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
                           pol = "ch4")
 
-  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
+  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4) %>%
+        dplyr::select(-ppm, -conc)
+   
 ```
 
 * merge background with fivegas data
@@ -256,7 +282,7 @@ ___
   head(co_co2_ch4, 2)
 ```
 
-___
+---
 
 # grav
 
@@ -268,16 +294,14 @@ ___
                         start, end,
                         flow,
                         wgt_delta,
-                        conc_bg) %>% #, qc) %>%
-          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                        conc_bg)
 ```
 
 * calculate concentrations
 
 ```{r}
   grav <- dplyr::mutate(grav, dur = (end - start) / 60,
-                              conc = wgt_delta * 1000 / (flow * dur)) #, 
-                              #qc = as.factor(qc))
+                              conc = wgt_delta * 1000 / (flow * dur))
 ```
 
 * calculate mass emitted
@@ -295,87 +319,93 @@ ___
   head(grav, 2)
 ```
 
+---
+
 # ions
 
 * select data
 
-```{r}
-#   ions <- dplyr::select(ions_merged,
-#                         id, qc,
-#                         flow,
-#                         start, end,
-#                         pol, mass_ug,
-#                         conc_bg) %>%
-# 	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```{r, eval = FALSE}
+  ions <- dplyr::select(ions_merged,
+                        id,
+                        qc,
+                        flow,
+                        start, end,
+                        pol,
+                        mass_ug,
+                        conc_bg)
 ```
 
 * calculate concentrations
 
-```{r}
-  # ions <- dplyr::mutate(ions, dur = (end - start) / 60,
-  #                             conc = (mass_ug * 1000 / (flow * dur)))
+```{r, eval = FALSE}
+  ions <- dplyr::mutate(ions,
+                        dur = (end - start) / 60,
+                        conc = (mass_ug * 1000 / (flow * dur)))
 ```
 
 * calculate mass emitted
 
-```{r}
-  # ions <- dplyr::mutate(ions, 
-  #                       mass_emitted = (conc - conc_bg) * hood_flow * dur,
-  #                       mass_carbon = mass_emitted * 0,
-  #                       inst = "ions")
+```{r, eval = FALSE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted * 0,
+                        inst = "ions")
 ```
 
 * output
 
-```{r}
-  # head(ions, 2)
+```{r, eval = FALSE}
+  head(ions, 2)
 ```
 
-___
+---
 
 # smps
 
 * calculate test average number concentration
 * calculate test duration
 
-```{r}
-  # ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
-  #              dplyr::group_by(id) %>%
-  #              dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
-  #                               n = n(),
-  #              	                qc = first(qc)) %>%
-  #              dplyr::ungroup(id) %>%
-  #              dplyr::left_join(times, by = "id") %>%
-  #              dplyr::mutate(dur = end - start)
+```{r, eval = FALSE}
+  ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
+                                n = n(),
+               	                qc = first(qc)) %>%
+               dplyr::ungroup(id) %>%
+               dplyr::left_join(times, by = "id") %>%
+               dplyr::mutate(dur = end - start)
 ```
 
 * calculate average background (use other method?)
 
-```{r}
-  # bg <- dplyr::filter(smps_ultrafine_bg, qc == "ok", n_bad == 0) %>%
-  #       dplyr::group_by(id) %>%
-  #       dplyr::summarise(conc_bg = mean(number_conc)) %>%
-  #       dplyr::ungroup()
-  # 
-  # conc_bg <- mean(bg$conc_bg)
+```{r, eval = FALSE}
+  bg_smps <- dplyr::filter(smps_ultrafine_bg,
+                           qc == "ok",
+                           n_bad == 0) %>%
+             dplyr::group_by(id) %>%
+             dplyr::summarise(conc_bg = mean(number_conc)) %>%
+             dplyr::ungroup()
+
+  conc_bg <- mean(bg_smps$conc_bg)
 ```
 
 * calculate number of particles emitted during tests (check this is all???)
 
-```{r}
+```{r, eval = FALSE}
  # # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
- #  ultrafine <- dplyr::mutate(ultrafine,
- #                             num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
- #                             inst = "smps")
+  ultrafine <- dplyr::mutate(ultrafine,
+                             num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
+                             inst = "smps")
 ```
 
 * output
 
-```{r}
-  # head(ultrafine, 2)
+```{r, eval = FALSE}
+  head(ultrafine, 2)
 ```
 
-___
+---
 
 # pah
 
@@ -385,43 +415,44 @@ ___
 
 * select data
 
-```{r}
-  # voc <- dplyr::select(voc_merged,
-  #                      id,
-  #                      start, end,
-  #                      pol, ppb,
-  #                      ppb_bg, qc) %>%
-  #        dplyr::left_join(dplyr::select(pol_properties,
-  #                                       pol,
-  #                                       mw,
-  #                                       num_c), by = "pol") %>% 
-  #        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```{r, eval = FALSE}
+  voc <- dplyr::select(voc_merged,
+                       id,
+                     start, end,
+                        pol, ppb,
+                      ppb_bg, qc) %>%
+         dplyr::left_join(dplyr::select(pol_properties,
+                                        pol,
+                                        mw,
+                                        num_c),
+                                        by = "pol") %>% 
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
 
-```{r}
-  # voc <- dplyr::mutate(voc, dur = (end - start) / 60,
-  #                           ppm = ppb / 1000,
-  #                           conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
-  #                           conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
+```{r, eval = FALSE}
+  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+                            ppm = ppb / 1000,
+                            conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
+                            conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
 ```
 
 * calculate mass emitted
 
-```{r}
-  # voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
-  #                           mass_carbon = mass_emitted * (mw_c * num_c / mw),
-  #                           inst = "voc")
+```{r, eval = FALSE}
+  voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                            mass_carbon = mass_emitted * (mw_c * num_c / mw),
+                            inst = "voc")
 ```
 
 * output
 
-```{r}
-  # head(voc, 2)
+```{r, eval = FALSE}
+  head(voc, 2)
 ```
 
-___
+---
 
 # Output
 
@@ -430,11 +461,23 @@ ___
 * mass based
 
 ```{r}
-  emissions <- dplyr::select(co_co2_ch4, id, pol, 
-                                         conc, conc_bg,
-                                         mass_emitted,
-                                         mass_carbon,
-                                         inst) %>% #, qc) %>%
+  emissions <- dplyr::select(co_co2_ch4,
+                             id,
+                             pol, 
+                             conc, conc_bg,
+                             mass_emitted,
+                             mass_carbon,
+                             inst) %>%
+               dplyr::bind_rows(dplyr::select(grav,
+                                              id,
+                                              pol,
+                                              conc, conc_bg,
+                                              mass_emitted,
+                                              mass_carbon,
+                                              inst))
+``` 
+ 
+```{r, eval = FALSE}
                # dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
                #                                           conc, conc_bg,
                #                                           mass_emitted,
@@ -445,11 +488,7 @@ ___
                #                                      mass_emitted,
                #                                      mass_carbon,
                #                                      inst, qc)) %>%
-               dplyr::bind_rows(dplyr::select(grav, id, pol,
-                                                    conc, conc_bg,
-                                                    mass_emitted,
-                                                    mass_carbon,
-                                                    inst)) #, qc)) %>%
+
                # dplyr::bind_rows(dplyr::select(ions, id, pol,
                #                                      conc, conc_bg,
                #                                      mass_emitted,
@@ -470,16 +509,16 @@ ___
 
 * number based
 
-```{r}
-  # number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
-  #           dplyr::mutate(pol = "number") %>%
-  #           tidyr::gather("metric", "value", 2:3)
+```{r, eval = FALSE}
+  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
+            dplyr::mutate(pol = "number") %>%
+            tidyr::gather("metric", "value", 2:3)
 ```
 
 * combine mass and number instruments
 
-```{r}
-  #emissions_long  <- dplyr::bind_rows(emissions_long, number)
+```{r, eval = FALSE}
+  emissions_long  <- dplyr::bind_rows(emissions_long, number)
 ```
 
 ## save
@@ -488,11 +527,3 @@ ___
   saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
 ```
 
-## negative emissions
-
-* tests with negative net emissions
-
-```{r, fig.width=10, fig.height=40} 
-  kable(dplyr::filter(emissions, mass_emitted < 0),
-        align = 'c', caption = "Tests with negative values")
-```

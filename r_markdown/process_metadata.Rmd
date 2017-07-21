@@ -29,11 +29,13 @@ output:
 
 ```{r load_files}
   tester_one <- readRDS("../r_files/data_tester_one.RDS")
+
   tester_two <- readRDS("../r_files/data_tester_two.RDS")
 
   cal_two <- readRDS("../r_files/data_cal_two.RDS")
 
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
+  
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
 ```
 
@@ -49,14 +51,14 @@ output:
 ```
 
 ```{r}
-  # note fix fuel for bg
   samples <-   test_log %>%
                dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
                dplyr::mutate(mc_level = as.factor(mc_level)) %>%
                dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
                                 dplyr::distinct(),
                                 by = "id") %>%
-               dplyr::mutate(mc_target = as.factor(mc_target))
+               dplyr::mutate(mc_target = as.factor(mc_target),
+                             fuel = ifelse(type == "bg", NA, as.character(fuel)))
 
   saveRDS(samples, "../r_files/samples.RDS")
 ```
@@ -81,9 +83,17 @@ output:
 ## fuel weights
 
 ```{r}
-  fuel_mass <- dplyr::filter(tidy_id_date(fuel, "^mass_", "mass_"), !is.na(value))
+  fuel_mass <- dplyr::select(fuel, id, order, starts_with("mass")) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first)) %>%
+               tidyr::gather("var", "val", 2:15)
 
-  pot_mass <- dplyr::filter(tidy_id_date(test_log, "^wgt_", "wgt_"), !is.na(value))
+  pot_mass <- dplyr::select(test_log, id, starts_with("wgt")) %>%
+              dplyr::rename(wgt_water_pot = wgt_pot_a,
+                            wgt_water_on = wgt_on_1,
+                            wgt_water_off = wgt_off_1) %>%
+               tidyr::gather("var", "val", 2:26) %>%
+               dplyr::filter(!is.na(val), id != "BG2")
 
   test_mass <- dplyr::bind_rows(fuel_mass, pot_mass)
 
@@ -92,9 +102,10 @@ output:
 
 ```{r, echo=FALSE, fig.height=8}
   p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%
+            dplyr::filter(!is.na(val)) %>%
             dplyr::group_by(var, mc_target) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+            dplyr::mutate(value_norm = (val - mean(val)) / sd(val),
+                          outlier = ifelse(is_outlier(val), as.character(id), NA))
 
   p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
              geom_boxplot() +
@@ -105,7 +116,7 @@ output:
              theme(axis.text.x = element_text(angle = 45, hjust=1)) +
              xlab("")
 
-  p_hist <- ggplot(p_data, aes(x = value, fill = mc_target)) +
+  p_hist <- ggplot(p_data, aes(x = val, fill = mc_target)) +
               geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
               theme_bw() +
               facet_grid(~var, scales = "free") + 
@@ -231,9 +242,13 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(iso_flows, type) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+  p_data <- dplyr::group_by(iso_flows, id, type) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
+            dplyr::mutate(value_norm =
+                           (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value),
+                                    as.character(id), NA))
 
   p_box <- ggplot(p_data, aes(x = factor(type), y = value_norm)) +
              geom_boxplot() +
@@ -265,9 +280,13 @@ KB: Currently no data is recorded in the test log
 ```
 
 ```{r, echo=FALSE}
-  p_data <- dplyr::group_by(filter_flows, type, colour) %>%
-            dplyr::mutate(value_norm = (value - mean(value)) / sd(value),
-                          outlier = ifelse(is_outlier(value), as.character(id), NA))
+  p_data <- dplyr::group_by(filter_flows, id, type, colour) %>%
+            summarise(value = mean(value, na.rm = TRUE)) %>%
+            dplyr::group_by(type) %>%
+            dplyr::mutate(value_norm =
+                           (value - mean(value)) / sd(value),
+                          outlier = ifelse(is_outlier(value),
+                                    as.character(id), NA))
 
   p_box <-  ggplot(p_data, aes(x = factor(type), y = value_norm)) +
                geom_boxplot() +
