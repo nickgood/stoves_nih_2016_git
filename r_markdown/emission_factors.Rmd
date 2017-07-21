@@ -103,14 +103,44 @@ output:
 # Pollutant mass per kg fuel
  
 ```{r}
-  emission_factors <- dplyr::left_join(emissions_long, 
+  emission_factors <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted"), 
                                        dplyr::select(fuel_burnt, id, mass_burnt),
                                        by = "id" ) %>%
-                      dplyr::mutate(mass_pol_mass_fuel = ((value * 1e-3) / mass_burnt)) # mg pol / kg fuel
+                      dplyr::mutate(mass_pol_mass_fuel = ((value * 1e-3) / mass_burnt)) # g pol / kg fuel
                             
 ```
 
+## Plot emissions by id
 
+```{r, fig.width=12}
+  p_data <- dplyr::left_join(emission_factors,
+                             dplyr::select(samples, id, type, mc_level),
+                             by = "id") %>%
+            dplyr::filter(type != "bg") %>%
+            dplyr::mutate(mc_level = factor(mc_level,levels(mc_level)[c(3,1,2)]))
+
+  ggplot(p_data, aes(id, mass_pol_mass_fuel, color = pol)) +
+  geom_point(size = 4) +
+  scale_y_log10() +
+  theme_minimal() +
+  theme(legend.position = "top",
+        text = element_text(size=20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("g pol / kg fuel") + xlab("")
+  
+```
+
+## Plot emissions by moisture content
+
+```{r}
+  ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
+  geom_point() +
+  facet_wrap(~pol, scales = "free") +
+  theme(legend.position = "none") +
+  ylab("g pol / kg fuel") + xlab("moisture content")
+ 
+  
+```
 
 
 # Save
