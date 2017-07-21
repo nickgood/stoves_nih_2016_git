@@ -31,7 +31,7 @@ output:
 * ecoc
 
 ```{r,}
-  readRDS("../r_files/ecoc.RDS")
+  ecoc <- readRDS("../r_files/ecoc.RDS")
 ```
 
 * metadata
