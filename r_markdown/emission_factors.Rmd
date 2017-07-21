@@ -116,10 +116,8 @@ output:
   p_data <- dplyr::left_join(emission_factors,
                              dplyr::select(samples, id, type, mc_level),
                              by = "id") %>%
-            dplyr::filter(type != "bg")
-
-  p_data <- p_data %>%
-            dplyr::mutate(mc_level = factor(p_data$mc_level,levels(p_data$mc_level)[c(3,1,2)]))
+            dplyr::filter(type != "bg") %>%
+            dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low", "med", "high"))
 
   ggplot(p_data, aes(id, mass_pol_mass_fuel, color = pol)) +
   geom_point(size = 4) +
@@ -136,7 +134,7 @@ output:
 
 ```{r}
   ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
-  geom_boxplot(outlier.size=NA) +
+  geom_boxplot(outlier.size = NA) +
   geom_point() +
   theme_bw() +
   theme(legend.position = "none") +
@@ -157,7 +155,7 @@ output:
 
 # Save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   saveRDS(carbon_emitted, file = "../r_files/carbon_emitted.RDS")
   saveRDS(emission_factors, file = "../r_files/emission_factors.RDS")
 ```
