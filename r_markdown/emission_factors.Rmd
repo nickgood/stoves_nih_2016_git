@@ -140,11 +140,18 @@ output:
   theme(legend.position = "none") +
   ylab("g pol / kg fuel") + xlab("moisture content") +
   facet_wrap(~pol, scales = "free")
-  
- 
-  
 ```
 
+## Plot emissions by moisture content and fuel type
+
+```{r}
+  ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = type)) +
+  geom_boxplot(outlier.size = NA, mapping = aes(color = type)) +
+  theme_bw() +
+  theme(legend.position = "top") +
+  ylab("g pol / kg fuel") + xlab("moisture content") +
+  facet_wrap(~pol, scales = "free")
+```
 
 # Save
 
