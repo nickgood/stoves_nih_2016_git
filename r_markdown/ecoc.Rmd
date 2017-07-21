@@ -160,7 +160,7 @@ output:
 # LOD / LOQ
 
 ```{r}
-  blanks <- dplyr::filter(ecoc_merged, id == "lab_blank") %>%
+  blanks <- dplyr::filter(ecoc_merged, filter_type == "blank") %>%
             dplyr::group_by(pol) %>%
             dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
                              loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
