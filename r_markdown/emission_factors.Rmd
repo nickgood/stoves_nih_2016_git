@@ -117,7 +117,7 @@ output:
                              dplyr::select(samples, id, type, mc_level),
                              by = "id") %>%
             dplyr::filter(type != "bg") %>%
-            dplyr::mutate(mc_level = factor(mc_level,levels(mc_level)[c(3,1,2)]))
+            dplyr::mutate(mc_level = factor(p_data$mc_level,levels(p_data$mc_level)[c(3,1,2)]))
 
   ggplot(p_data, aes(id, mass_pol_mass_fuel, color = pol)) +
   geom_point(size = 4) +
@@ -134,10 +134,13 @@ output:
 
 ```{r}
   ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
+  geom_boxplot(outlier.size=NA) +
   geom_point() +
-  facet_wrap(~pol, scales = "free") +
+  theme_bw() +
   theme(legend.position = "none") +
-  ylab("g pol / kg fuel") + xlab("moisture content")
+  ylab("g pol / kg fuel") + xlab("moisture content") +
+  facet_wrap(~pol, scales = "free")
+  
  
   
 ```
