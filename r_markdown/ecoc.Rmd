@@ -240,8 +240,6 @@ output:
 * extract "ok" background data
 * remove missing data
 * calculate average concentration emitted ( and other stats)
-* average any repeat measurements (non in G8-G14)
-* note G12 missing measurement data
 * calculate averge background by pollutant / type
 * the filter areas is `r area ` cm^2.
 
@@ -250,10 +248,10 @@ output:
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
-        dplyr::group_by(pol, id, cassette) %>%
+        dplyr::group_by(pol, id, filter_type) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
-        dplyr::group_by(pol, cassette) %>%
+        dplyr::group_by(pol, filter_type) %>%
         dplyr::summarise(mean = mean(rep_mean),
                          sd = sd(rep_mean),
                          min = min(rep_mean),
@@ -264,8 +262,8 @@ output:
 * account for artifact
 
 ```{r}
-  bg <- dplyr::select(bg, pol, cassette, mean) %>%
-        tidyr::spread(cassette, mean) %>%
+  bg <- dplyr::select(bg, pol, filter_type, mean) %>%
+        tidyr::spread(filter_type, mean) %>%
         dplyr::mutate(conc_bg = e - a)
 ```
 
