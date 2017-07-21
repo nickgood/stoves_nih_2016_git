@@ -59,62 +59,59 @@ output:
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
 ```
 
-# Carbon balance
+# Carbon calculations
 
-* calc mass carbon emitted
+* sum carbon over all pollutants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+* calculate fuel burned using carbon balance method
+
+```{r}
   carbon_emitted <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
                     dplyr::group_by(id) %>%
-                    dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE))
-```
-
-* merge with fuel sample info, fuel properties and fuel burnt
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  carbon_emitted <- dplyr::left_join(carbon_emitted,
-                                dplyr::select(samples, id, fuel),
-                                by = "id") %>%
+                    dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
+                    dplyr::left_join(dplyr::select(samples, id, fuel),
+                                     by = "id") %>%
                     dplyr::left_join(fuel_properties, by = "fuel") %>%
                     dplyr::left_join(select(fuel_burnt, -units), by = "id") %>%
-                    dplyr::filter(!is.na(fuel))
+                    dplyr::filter(!is.na(fuel)) %>%
+                    dplyr::mutate(mass_fuel_from_carbon_balance_kg =
+                                  mass_carbon * (1e-9) * (1 / carbon_fraction),
+                                  mass_fuel_scale_kg = mass_burnt * (1e-3)) %>%
+                    dplyr::select(-mass_burnt)
 ```
 
-* Calculate fuel burned using carbon balance method
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  carbon_emitted <- carbon_emitted %>%
-                    dplyr::mutate(mass_fuel_from_carbon_balance_kg = mass_carbon * (1e-9) * (1 / carbon_fraction)) %>%
-                    dplyr::mutate(mass_fuel_scale_kg = mass_burnt * (1e-3))
-```
+* plot fuel from carbon balance versus measured fuel mass
 
 ```{r}
   ggplot(carbon_emitted, aes(mass_fuel_scale_kg, mass_fuel_from_carbon_balance_kg)) + 
   geom_point() +
   theme_minimal() +
-  geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x)
+  geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x) +
+  geom_abline(intercept = 0, slope = 1, color = "grey90") +
+  xlim(0, NA) + ylim(0, NA) +
+  geom_text(aes(label = id), nudge_x = -0.01, nudge_y = 0.01)
 
 ```
 
 ```{r}
-df <- dplyr::select(carbon_emitted, mass_fuel_from_carbon_balance_kg, mass_fuel_scale_kg) %>%
-      dplyr::rename(y = mass_fuel_from_carbon_balance_kg, x = mass_fuel_scale_kg)
+  df <- dplyr::select(carbon_emitted, mass_fuel_from_carbon_balance_kg, mass_fuel_scale_kg) %>%
+      dplyr::rename(mass_carbon_balance = mass_fuel_from_carbon_balance_kg, mass_scale = mass_fuel_scale_kg)
 
-summary(lm(y ~ x, data = df))
-
-
+  summary(lm(mass_carbon_balance ~ mass_scale, data = df))
 ```
 
-
-# Calculate emissions factors
+# Pollutant mass per kg fuel
  
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::left_join(emission_factors, 
-                                dplyr::select(mass_fuel, id, mass_fuel_c, 
-                                                         mass_fuel_kg, lhv), by = "id" ) %>%
-               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg))
+```{r}
+  emission_factors <- dplyr::left_join(emissions_long, 
+                                       dplyr::select(fuel_burnt, id, mass_burnt),
+                                       by = "id" ) %>%
+                      dplyr::mutate(mass_pol_mass_fuel = ((value * 1e-3) / mass_burnt)) # mg pol / kg fuel
                             
 ```
+
+
+
 
 # Save
 
