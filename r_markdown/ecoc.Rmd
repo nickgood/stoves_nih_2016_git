@@ -22,16 +22,16 @@ output:
 * ecoc
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc.Rda")
+  readRDS("../r_files/ecoc.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/filter_times.Rda")
-  load(file = "../r_files/filter_flows.Rda")
-  load(file = "../r_files/notes.Rda")
-  load(file = "../r_files/samples.Rda")
+  filter_times <- readRDS(file = "../r_files/filter_times.RDS")
+  filter_flows <- readRDS(file = "../r_files/filter_flows.RDS")
+  notes <- readRDS(file = "../r_files/notes.RDS")
+  samples <- readRDS(file = "../r_files/samples.RDS")
 ```
 
 # Filter data
