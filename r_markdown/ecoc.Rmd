@@ -7,12 +7,21 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/',
+                        warning = FALSE,
+                        message = FALSE,
+                        fig.width = 10, fig.height = 4,
+                        cache = FALSE,
+                        results='markup')
+```
+
+```{r}
   library(tidyverse)
   library(knitr)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
 ```
@@ -105,7 +114,7 @@ output:
 
 * merge flags with data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   ecoc_merged <- dplyr::left_join(ecoc_merged, flags,
                                   by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
@@ -121,7 +130,7 @@ output:
 * 8D, very high value
 * 9B, artifact gives very high values.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2),
                                                  as.character(qc), "bad")) %>%
                   dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
@@ -139,7 +148,7 @@ output:
                                             as.character(qc)))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
 
   maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
@@ -188,7 +197,7 @@ output:
                              loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   lod_ec <- dplyr::filter(blanks, pol == "ec")$lod[1]
   lod_oc <- dplyr::filter(blanks, pol == "oc")$lod[1]
   loq_ec <- dplyr::filter(blanks, pol == "ec")$loq[1]
@@ -229,7 +238,7 @@ output:
 
 * add oc lod and loq flags
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
 
   ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
                                             (type == "test" | type == "bg") &
@@ -255,7 +264,7 @@ output:
 
 # Background analysis
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
  area <- 11.79  # filter area (cm^2)
 ```
 
@@ -291,7 +300,7 @@ output:
         dplyr::mutate(conc_bg = e - a)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
@@ -311,7 +320,7 @@ output:
 
 # Plots
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   ecoc_merged <- dplyr::left_join(ecoc_merged,
                                   dplyr::select(samples, id, stove, fuel),
                                                 by = "id") %>%
@@ -321,7 +330,7 @@ output:
 ## values below lod
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+```{r, fig.width=12, fig.height=8}
   test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
                                        qc == "ok" &
                                        type == "test" &
