@@ -12,31 +12,50 @@ output:
                         warning = FALSE,
                         message = FALSE,
                         fig.width = 10, fig.height = 4,
-                        cache = FALSE)
+                        cache = FALSE,
+                        results='markup')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE}
   library(tidyverse)
   library(knitr)
 ```
 
 # Load
 
-* pollutant data
+* sample info
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- readRDS("../r_files/samples.RDS")
+```
 
+* fuel burnt
+
+```{r}
   fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")
+```
 
+* emissions
+
+```{r}
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  hood_flow <- readRDS("../r_files/hood_flow.RDS")
+* hood flow
 
+```{r}
+  hood_flow <- readRDS("../r_files/hood_flow.RDS")
+```
+
+* polultant information
+
+```{r}
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
-  
+```
+
+* fuel information
+
+```{r}
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
 ```
 
