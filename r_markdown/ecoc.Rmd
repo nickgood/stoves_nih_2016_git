@@ -129,43 +129,6 @@ output:
                  dplyr::mutate(qc = as.factor(qc))
 ```
 
-## additional bad tests
-
-* tests where fid2 is out of range
-* first 6D measurement, that produced very high value (repeated)
-* 8D, very high value
-* 9B, artifact gives very high values.
-
-```{r}
-  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2),
-                                                 as.character(qc), "bad")) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
-                                            time == 42234 &
-                                            id == "6D", 
-                                            "bad",
-                                            as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
-                                            time == 53318 &
-                                            id == "8D",
-                                            "bad",
-                                             as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(id == "9B",
-                                            "bad",
-                                            as.character(qc)))
-```
-
-```{r}
-  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
-
-  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
-```
-
-## bad tests
-
-* the following tests are flagged as bad: `r unique(bad$id)`.
-
-* the following tests are flagged as maybe bad: `r unique(maybe$id)`.
-
 # Reformat
 
 * select columns of interest (others?)
