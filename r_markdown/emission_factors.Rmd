@@ -7,6 +7,14 @@ output:
     theme: united
 ---
 
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/',
+                        warning = FALSE,
+                        message = FALSE,
+                        fig.width = 10, fig.height = 4,
+                        cache = FALSE)
+```
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
   library(knitr)
@@ -30,7 +38,6 @@ output:
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
   
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
-
 ```
 
 # Carbon balance
