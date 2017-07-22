@@ -57,7 +57,9 @@ output:
 
 # Molecular formula and weight 
 
-```{r}
+# Molecular formula and weight 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "ec", "oc",
                                                 "tc", "grav", "ultrafines",
                                                 "voc_ethane", "voc_ethene",
@@ -74,7 +76,7 @@ output:
                                                 "voc_isoprene", "voc_1_hexene",
                                                 "voc_c_2_hexene",
                                                 "voc_2_4_dimethylpentane",
-                                                "voc_methylcyclohexane",
+                                                "voc_methylcyclohexane", 
                                                 "voc_n_heptane", "voc_benzene",
                                                 "voc_3_methylpentane",
                                                 "voc_2_3_dimethylpentane",
@@ -133,10 +135,10 @@ output:
                                                  6, 4, 8, 6, 10, 10,
                                                  2, 8, 8, 8, 8, 10, 12, 12,
                                                  10, 10, 10, 10, 12, 14, 8,
-                                                 12, 12, 16, 14, 16, 16,
+                                                 12, 12, 16, 14, 16, 6,
                                                  14, 16, 16, 16, 18, 18,
                                                  8, 18, 18, 18, 10, 10,
-                                                 18, 10, 20, 12, 16, 12,
+                                                 8, 10, 20, 12, 16, 12,
                                                  12, 12, 12, 12, 12, 22,
                                                  12, 14, 14, 14, 10, 10,
                                                  10, 12, 12, 12, 8, 10,
@@ -176,7 +178,9 @@ output:
                     dplyr::select(pol, mw, num_c)
 
   mw_c <- 12.0106
+```
 
+```{r}
   saveRDS(pol_properties, file = "../r_files/pol_properties.RDS")
   saveRDS(mw_c, file = "../r_files/mw_carbon.RDS")
 ```
