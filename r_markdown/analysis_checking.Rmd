@@ -1,0 +1,130 @@
+---
+title: "Checking / Analysis"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/',
+                        warning = FALSE,
+                        message = FALSE,
+                        fig.width = 10, fig.height = 4,
+                        cache = FALSE,
+                        results='markup')
+```
+
+```{r, echo=FALSE}
+  library(tidyverse)
+  library(knitr)
+  source("../r_scripts/R_functions.R")
+```
+
+---
+
+# Load
+
+```{r}
+  emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
+
+  emissions_pol <- readRDS(file = "../r_files/emissions_long.RDS")
+
+  fivegas <- readRDS(file = "../r_files/fivegas_full.RDS")
+
+  tests <- readRDS(file = "../r_files/test_info.RDS")
+  
+  fuel_consumed <- readRDS(file = "../r_files/fuel_burnt_test.RDS")
+```
+
+# Extract metrics
+
+```{r}
+  mass_emitted <- emission_factors %>%
+                  dplyr::filter(metric == "mass_emitted")
+
+  unique(mass_emitted$pol)
+```
+
+# Pollutants
+
+```{r}
+  co2 <- get_pol_info(emission_factors, tests, fuel_consumed,
+                      "co2", "mass_emitted")
+
+  co <- get_pol_info(emission_factors, tests, fuel_consumed,
+                     "co", "mass_emitted")
+  
+  ch4 <- get_pol_info(emission_factors, tests, fuel_consumed,
+                      "ch4", "mass_emitted")
+  
+  formaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                               "formaldehyde", "mass_emitted")
+  
+  acetaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                               "acetaldehyde", "mass_emitted")
+  
+  acetone <- get_pol_info(emission_factors, tests, fuel_consumed,
+                          "acetone", "mass_emitted")
+  
+  acrolein <- get_pol_info(emission_factors, tests, fuel_consumed,
+                           "acrolein", "mass_emitted")
+  
+  propionaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                  "propionaldehyde", "mass_emitted")
+  
+  crotonaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                 "crotonaldehyde", "mass_emitted")
+  
+  butanone <- get_pol_info(emission_factors, tests, fuel_consumed,
+                           "butanone", "mass_emitted")
+  
+  methacrolein <- get_pol_info(emission_factors, tests, fuel_consumed,
+                               "methacrolein", "mass_emitted")
+  
+  butyraldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                "butyraldehyde", "mass_emitted")
+  
+  benzaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                               "benzaldehyde", "mass_emitted")
+  
+  isovaleraldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                   "isovaleraldehyde", "mass_emitted")
+  
+  valeraldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                "valeraldehyde", "mass_emitted")
+  
+  o_tolualdehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                 "o_tolualdehyde", "mass_emitted")
+  
+  m_p_tolualdehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                   "m_p_tolualdehyde", "mass_emitted")
+  
+  hexaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                              "hexaldehyde", "mass_emitted")
+  
+  dimethylbenzaldehyde <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                       "2_5_dimethylbenzaldehyde", "mass_emitted")
+  
+  grav <- get_pol_info(emission_factors, tests, fuel_consumed,
+                       "grav", "mass_emitted")
+  
+  voc_benzene <- get_pol_info(emission_factors, tests, fuel_consumed,
+                              "voc_benzene", "mass_emitted")
+  
+  voc_toluene <- get_pol_info(emission_factors, tests, fuel_consumed,
+                              "voc_toluene", "mass_emitted")
+  
+  voc_ethylbenzene <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                   "voc_ethylbenzene", "mass_emitted")
+  
+  voc_m_p_xylene <- get_pol_info(emission_factors, tests, fuel_consumed,
+                                 "voc_m_p_xylene", "mass_emitted")
+  
+  voc_o_xylene <- get_pol_info(emission_factors, tests, fuel_consumed,
+                               "voc_o_xylene", "mass_emitted")
+
+```
+
+
