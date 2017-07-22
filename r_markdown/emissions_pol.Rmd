@@ -219,21 +219,22 @@ Concentration is corrected for background by removing background test average co
 ```
 
 * merge background with fivegas data
+* if background is missing us averge across all tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   fivegas_background_mean <- fivegas_background %>%
                              dplyr::group_by(pol) %>%
                              dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
 
-  co_co2_ch4_ <- dplyr::left_join(co_co2_ch4, 
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
                 dplyr::select(fivegas_background, id, pol, bg_ppm), by = c("id", "pol"))
 
-  bg_missing <- dplyr::filter(co_co2_ch4_, is.na(bg_ppm)) %>%
+  bg_missing <- dplyr::filter(co_co2_ch4, is.na(bg_ppm)) %>%
                 dplyr::select(-bg_ppm) %>%
                 dplyr::left_join(dplyr::select(fivegas_background_mean, pol, bg_ppm),
                                  by = "pol")
 
-  co_co2_ch4_ <- dplyr::bind_rows(dplyr::filter(co_co2_ch4_, !is.na(bg_ppm)),
+  co_co2_ch4 <- dplyr::bind_rows(dplyr::filter(co_co2_ch4, !is.na(bg_ppm)),
                                  bg_missing) %>%
                 dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
 ```
