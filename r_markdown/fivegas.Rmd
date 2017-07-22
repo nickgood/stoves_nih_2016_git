@@ -76,16 +76,16 @@ output:
 
 ## Background
 
-* calculate mean backgrounds
+* backgrounds by test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg_mean <- dplyr::group_by(out_bg, id, type, pol) %>%
-             dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
-             tidyr::spread(type, mean) %>%
-             mutate(delta = post - pre,
-                    bg_ppm = (pre + post) / 2,
-                    bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm),
-                    bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm))
+  background_test_mean <- dplyr::group_by(out_bg, id, type, pol) %>%
+                          dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+                          tidyr::spread(type, mean) %>%
+                          mutate(delta = post - pre,
+                                 bg_ppm = (pre + post) / 2, # pre/post mean
+                                 bg_ppm = ifelse(is.na(bg_ppm), pre, bg_ppm), # try pre only
+                                 bg_ppm = ifelse(is.na(bg_ppm), post, bg_ppm)) # try post only
 ```
 
 # QC
@@ -104,15 +104,15 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
-  out_full <- dplyr::left_join(out_full, flags, by = "id") %>%
+  out_full <- out_full %>%
+              dplyr::left_join(flags, by = "id") %>%
               dplyr::left_join(select(test_info, id, fuel),
                                by = "id")
 
-  out_rep <- dplyr::left_join(out_rep,
-                              dplyr::select(bg_mean, id, pol, bg_ppm),
-                              by = c("id", "pol")) %>%
+  out_rep <- out_rep %>% 
              dplyr::left_join(flags, by = "id") %>%
-             dplyr::left_join(select(test_info, id, fuel), by = "id")
+             dplyr::left_join(select(test_info, id, fuel),
+                              by = "id")
 ```
 
 # Save to file
@@ -121,7 +121,7 @@ output:
   saveRDS(out_full, file = "../r_files/fivegas_full.RDS")
   saveRDS(out_bg, file = "../r_files/fivegas_background.RDS")
   saveRDS(out_rep, file = "../r_files/fivegas_byrep.RDS")
-  saveRDS(bg_mean, file = "../r_files/fivegas_background_mean.RDS")
+  saveRDS(background_test_mean, file = "../r_files/fivegas_background_mean.RDS")
 ```
 
 # Summary
