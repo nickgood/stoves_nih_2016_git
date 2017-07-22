@@ -517,7 +517,7 @@ get_pol_info <- function(em_df, test_df, fuel_df, pol, metric){
   dplyr::filter(em_df, # pollutant metric
                 pol == !!pol,
                 metric == !!metric) %>%
-  dplyr::select(id, value, metric) %>%
+  dplyr::select(id, value, metric, qc) %>%
   dplyr::right_join(dplyr::select(test_df, id, fuel), by = "id") %>% # add test info
   dplyr::left_join(dplyr::select(fuel_df, id, fuelmass_total), by = "id") # add fuel info
 }
