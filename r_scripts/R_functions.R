@@ -507,3 +507,18 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
+
+#________________________________________________________
+# Calculate the molecular weight of study pollutants
+get_pol_info <- function(em_df, test_df, fuel_df, pol, metric){
+ # libraries
+  library(tidyverse)
+ # data
+  dplyr::filter(em_df, # pollutant metric
+                pol == !!pol,
+                metric == !!metric) %>%
+  dplyr::select(id, value, metric) %>%
+  dplyr::right_join(dplyr::select(test_df, id, fuel), by = "id") %>% # add test info
+  dplyr::left_join(dplyr::select(fuel_df, id, fuelmass_total), by = "id") # add fuel info
+}
+#________________________________________________________
