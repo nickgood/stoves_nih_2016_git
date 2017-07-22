@@ -37,7 +37,7 @@ output:
 ```{r}
   fivegas_full <- readRDS("../r_files/fivegas_full.RDS") # also contains bg
   fivegas_byrep <- readRDS("../r_files/fivegas_byrep.RDS") # may not need
-  fivegas_bg_mean <- readRDS("../r_files/fivegas_background_mean.RDS")
+  fivegas_background <- readRDS("../r_files/fivegas_background_mean.RDS")
 
   pax_full <- readRDS("../r_files/pax_merged_full.RDS")
   pax_bg <- readRDS("../r_files/pax_merged_bg.RDS")
@@ -221,8 +221,9 @@ Concentration is corrected for background by removing background test average co
 * merge background with fivegas data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
-                dplyr::select(fivegas_bg_mean, id, pol, bg_ppm), by = c("id", "pol")) %>%
+                dplyr::select(fivegas_background, id, pol, bg_ppm), by = c("id", "pol")) %>%
                 dplyr::mutate(bg_conc = convert_ppmv_ugpmc(bg_ppm, mw, 25, 84))
 ```
 
