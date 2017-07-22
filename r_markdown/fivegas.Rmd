@@ -105,7 +105,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
   out_full <- out_full %>%
-              dplyr::left_join(out_full, flags, by = "id") %>%
+              dplyr::left_join(flags, by = "id") %>%
               dplyr::left_join(select(test_info, id, fuel),
                                by = "id")
 
