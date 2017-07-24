@@ -485,6 +485,13 @@ Concentration is corrected for background by removing background test average co
                                               conc, conc_bg,
                                               mass_emitted,
                                               mass_carbon,
+                                              inst)) %>%
+               dplyr::bind_rows(dplyr::select(ecoc,
+                                              id,
+                                              pol,
+                                              conc, conc_bg,
+                                              mass_emitted,
+                                              mass_carbon,
                                               inst))
 ``` 
  
