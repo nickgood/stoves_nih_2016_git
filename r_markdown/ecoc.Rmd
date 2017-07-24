@@ -54,9 +54,16 @@ output:
                                filter_type = ifelse(grepl(".*Blank.*", filter_type), "blank", filter_type),
                                filter_type = ifelse(grepl(".*of day.*", filter_type), "start_blank", filter_type),
                                filter_type = ifelse(grepl(".*Test.*", filter_type), "test", filter_type),
+                               filter_type = tolower(filter_type),
                                id = ifelse(grepl(".*blank.*", filter_type), "blank", id),
                                id = ifelse(grepl(".*start_blank.*", filter_type), "start_blank", id),
-                               id = ifelse(grepl(".*test.*", filter_type), "test", id))
+                               id = ifelse(grepl(".*test.*", filter_type), "test", id)) %>%
+                  dplyr::rename(cassette = filter_type,
+                                oc_ug_sq_cm = oc_ugsqcm,
+                                ec_ug_sq_cm = ec_ugsqcm,
+                                tc_ug_sq_cm = tc_ugsqcm,
+                                punch_area = puch_area_cm2) %>%
+                  dplyr::filter(grepl("^G", id) == FALSE)
 ```
 
 # Meta data
@@ -72,8 +79,8 @@ output:
            dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
            dplyr::mutate(colour = factor(colour)) %>%
            dplyr::mutate(cassette = 
-                         forcats::fct_recode(colour, "a" = "white",
-                                                     "e" = "orange")) %>%
+                         forcats::fct_recode(colour, "qb" = "white",
+                                                     "qf" = "orange")) %>%
            dplyr::select(-colour)
 ```
 
@@ -84,8 +91,8 @@ output:
            dplyr::filter(color == "white" | color == "orange") %>%
            tidyr::spread(type, value) %>%
            dplyr::mutate(cassette = 
-                         forcats::fct_recode(color, "a" = "white",
-                                                     "e" = "orange")) %>%
+                         forcats::fct_recode(color, "qb" = "white",
+                                                     "qf" = "orange")) %>%
            dplyr::select(-color)
 ```
 
@@ -142,7 +149,7 @@ output:
                                flow,
                                start, end,
                                qc,
-                               type, cassette,
+                               cassette,
                                punch_area,
                                analyst) %>%
                   tidyr::gather("pol", "ug_sq_cm",
@@ -160,7 +167,7 @@ output:
 # LOD / LOQ
 
 ```{r}
-  blanks <- dplyr::filter(ecoc_merged, filter_type == "blank") %>%
+  blanks <- dplyr::filter(ecoc_merged, id == "blank") %>%
             dplyr::group_by(pol) %>%
             dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
                              loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
@@ -184,22 +191,22 @@ output:
                                 loq = NA,
                                 lod = NA) %>%
                   dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm >= lod_ec,
                                             "above",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm < lod_ec,
                                             "below",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm >= lod_ec,
                                             "above",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm < lod_ec,
                                             "below",
                                             loq))
@@ -210,22 +217,22 @@ output:
 ```{r}
 
   ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm >= lod_oc,
                                             "above",
                                             lod)) %>%
                   dplyr::mutate(lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm < lod_oc,
                                             "below",
                                             lod)) %>%
 	                dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm >= loq_oc,
                                             "above",
                                             loq)) %>%
                   dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
+                                            (grepl("blank", id) == FALSE) &
                                             ug_sq_cm < loq_oc,
                                             "below",
                                             loq))
@@ -244,27 +251,32 @@ output:
 * the filter areas is `r area ` cm^2.
 
 ```{r}
-  bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(ecoc_merged, grepl("^BG", id), qc == "ok") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
-        dplyr::group_by(pol, id, filter_type) %>%
+        dplyr::group_by(pol, id, cassette) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
-        dplyr::group_by(pol, filter_type) %>%
+        dplyr::group_by(pol, cassette) %>%
         dplyr::summarise(mean = mean(rep_mean),
                          sd = sd(rep_mean),
                          min = min(rep_mean),
                          max = max(rep_mean),
-                         n = n())
+                         n = n()) %>%
+        dplyr::ungroup()
 ```
 
 * account for artifact
 
 ```{r}
-  bg <- dplyr::select(bg, pol, filter_type, mean) %>%
-        tidyr::spread(filter_type, mean) %>%
-        dplyr::mutate(conc_bg = e - a)
+  bg <- dplyr::select(bg, pol, mean, cassette) %>%
+        tidyr::spread(cassette, mean) %>%
+        dplyr::mutate(conc_bg = qf - qb)
+
+  bg <- bg %>% 
+        dplyr::bind_rows(dplyr::summarise_if(bg, is.numeric, sum) %>%
+                         dplyr::mutate(pol = "tc"))
 ```
 
 ```{r}
@@ -282,7 +294,7 @@ output:
 # Save merged file
 
 ```{r}
-  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
+  saveRDS(ecoc_merged, file ="../r_files/ecoc_merged.RDS")
 ```
 
 # Plots
@@ -294,24 +306,28 @@ output:
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## values below lod
+## all data
 
+```{r, fig.width = 12, fig.height = 10}
+  ggplot(ecoc_merged, aes(id, ug_sq_cm, color = cassette)) +
+  geom_point() +
+  facet_wrap(~pol, scales = "free", ncol = 1) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## values below lod
 
 ```{r, fig.width=12, fig.height=8}
   test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
                                        qc == "ok" &
-                                       type == "test" &
-                                       grepl("^[0-9]", id) &
-                                       cassette == "e")
+                                       cassette == "qf")
 
   ggplot(test_data, aes(id, ug_sq_cm, colour = lod)) +
     geom_point() +
     theme_minimal() +
     theme(legend.position = "top") +
-    scale_y_log10() +
-    scale_colour_manual(values = c("ok" = "mediumorchid",
-                                   "maybe" = "mediumaquamarine",
-                                   "bad" = "mistyrose4")) +
     facet_wrap(~pol, ncol = 1, scales = "free") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
