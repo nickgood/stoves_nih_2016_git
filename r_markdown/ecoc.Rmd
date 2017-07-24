@@ -289,7 +289,7 @@ output:
 # Save merged file
 
 ```{r}
-  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
+  saveRDS(ecoc_merged, file ="../r_files/ecoc_merged.RDS")
 ```
 
 # Plots
