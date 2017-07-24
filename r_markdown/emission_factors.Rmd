@@ -130,11 +130,21 @@ output:
   
 ```
 
+## Remove tests
+
+* remove FH2 from further plots
+
+```{r}
+ p_data <- p_data %>%
+           dplyr::filter(id != "FH2")
+```
+
+
 ```{r}
  df <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
        dplyr::mutate(type = as.factor(type),
                      mc_level = as.factor(mc_level)) %>%
-       dplyr::filter(pol == "grav", id != "FH2")
+       dplyr::filter(pol == "grav")
  
  f <- formula(mass_pol_mass_fuel ~ mc_level + type + mc_level*type)
  
