@@ -62,7 +62,8 @@ output:
                                 oc_ug_sq_cm = oc_ugsqcm,
                                 ec_ug_sq_cm = ec_ugsqcm,
                                 tc_ug_sq_cm = tc_ugsqcm,
-                                punch_area = puch_area_cm2)
+                                punch_area = puch_area_cm2) %>%
+                  dplyr::filter(grepl("^G", id) == FALSE)
 ```
 
 # Meta data
@@ -300,8 +301,18 @@ output:
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## values below lod
+## all data
 
+```{r, fig.width = 12, fig.height = 10}
+  ggplot(ecoc_merged, aes(id, ug_sq_cm, color = cassette)) +
+  geom_point() +
+  facet_wrap(~pol, scales = "free", ncol = 1) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## values below lod
 
 ```{r, fig.width=12, fig.height=8}
   test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
