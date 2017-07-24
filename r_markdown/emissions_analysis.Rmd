@@ -30,10 +30,8 @@ table(ef_bymass$id)
 ```
 * Expected number of rows: 896 
 ** 25 pol x 34 tests + 1 pol x 8 tests (blanks #36-43, grav only) + 0 pol x 2 tests (full censor for bad QC on #8, 24) + 20 x 1 test (#44; no VOCs) + 9 pol x 2 tests (#1,30; no carbonyls - censored for bad QC). 
-* final dataset = 942 rows - 46 more than expected! 
-* using `table(ef_bymass$id)`, discovered that id #8 has all 25 when expect 0; #24 has 22 when expect 0. #1 has only 8 (expect 9).  
-** #1 was missing gravametric from the QC-filtered set but not full set because QC = NA. 
-** #24 has only 5gas as qc=bad, carbs and grav are maybe where VOCs are OK (should be whole test = bad). 
+* final dataset when QC bad censored = 921 rows - 30 more than expected!
+* using `table(ef_bymass$id)`, discovered that id #8 has all 25 when expect 0.
 ** #8 all QC are maybe or OK (should be whole test = bad). 
 
 * NEED TO GO BACK AND FIGURE OUT WHERE/HOW TO CENSOR THIS DATA APPROPRIATELY. 
