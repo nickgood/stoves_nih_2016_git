@@ -263,7 +263,8 @@ output:
                          sd = sd(rep_mean),
                          min = min(rep_mean),
                          max = max(rep_mean),
-                         n = n())
+                         n = n()) %>%
+        dplyr::ungroup()
 ```
 
 * account for artifact
@@ -272,6 +273,10 @@ output:
   bg <- dplyr::select(bg, pol, mean, cassette) %>%
         tidyr::spread(cassette, mean) %>%
         dplyr::mutate(conc_bg = qf - qb)
+
+  bg <- bg %>% 
+        dplyr::bind_rows(dplyr::summarise_if(bg, is.numeric, sum) %>%
+                         dplyr::mutate(pol = "tc"))
 ```
 
 ```{r}
