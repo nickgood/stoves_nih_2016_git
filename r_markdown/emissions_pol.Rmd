@@ -58,10 +58,15 @@ output:
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
 ```
 
+* ecoc
+
+```{r}
+  ecoc_merged <- readRDS("../r_files/ecoc_merged.RDS")
+```
+
 * other data (yest to be pre-processed)
 
 ```{r, eval = FALSE}
-  load("../r_files/ecoc_merged.Rda")
   load("../r_files/smps_ultrafine.Rda")
   load("../r_files/smps_ultrafine_bg.Rda")
   load("../r_files/ions_merged.Rda")
@@ -142,7 +147,7 @@ output:
 
 * select data
 
-```{r, eval = FALSE}
+```{r,}
   ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
           dplyr::select(id, cassette,
                         start, end,
