@@ -115,7 +115,7 @@ Test are either a sample: `sample`, a background experiment: `bg`, or a filter b
 
 ## Test type
 
-B[0-9] are blank filters.BG[0-9] are background tests.
+B[0-9] are blank filters. BG[0-9] are background tests.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav <- dplyr::mutate(grav, 
