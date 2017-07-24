@@ -144,7 +144,8 @@ output:
  df <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
        dplyr::mutate(type = as.factor(type),
                      mc_level = as.factor(mc_level)) %>%
-       dplyr::filter(pol == "grav")
+       dplyr::filter(pol == "grav") %>%
+       dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_"))
  
  f <- formula(mass_pol_mass_fuel ~ mc_level + type + mc_level*type)
  
@@ -158,6 +159,31 @@ output:
 ```{r}
   summary(mod_grav)
 ```
+
+```{r}
+  grav_mean <- df %>%
+               dplyr::group_by(test_fuel_type) %>%
+               dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+
+  grav_mean_wide <- grav_mean %>%
+                    tidyr::spread(test_fuel_type, mass_pol_mass_fuel)
+
+  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "none")
+
+  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "bonf")
+
+  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "holm")
+
+  pairwise.t.test(df$mass_pol_mass_fuel, df$mc_level, p.adj = "holm")
+
+
+  TukeyHSD(aov(mass_pol_mass_fuel ~ test_fuel_type, df))
+  
+  TukeyHSD(aov(mass_pol_mass_fuel ~ mc_level, df))
+```
+
+ 
+
  
 ```{r}
    plot(mod_grav)
