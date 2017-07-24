@@ -17,19 +17,26 @@ output: html_document
 ```
 
 ```{r}
-  #1. limit data to only the rows with mass emitted metric (1/4 the number of rows of original - exlude concentrations,mass of carbon emitted, and instrument) 
-  #2. set variable types from character -> factor
-  #3. removes duplicate rows that were remnants of when real-time monitors had timestamps, so multiple rows per test even though the mass_ef was a single value for the test. 
-  ef_bymass <- filter(emission_factors, metric == "mass_emitted") %>%
-               dplyr::mutate(fuel = factor(fuel)) %>%
-               dplyr::mutate(qc = factor(qc)) %>%
-               dplyr::mutate(pol = factor(pol))
-```
-* final dataset = 880 rows, 8 less than expected. using `table(ef_bymass$id)`, discovered that N1 (id #1) and K3 (id #30) tests each had 4 less rows than expected. 
-* Using `table(ef_bymass$pol[ef_bymass$id =='#'])`, discovered that both were missing the 3 five-gas measures (CO, CO2, CH4) and gravimetric measures. 
-* At the point of individual pollutant QCs (grav.rmd, fivegas.rmd), these values were not missing and there are no QC notes to indicated censoring of these values from the emissions data. 
+#set variable types from character -> factor
+#filter out bad QC data
+  ef_bymass <- dplyr::mutate(emission_factors, fuel = factor(fuel),
+                                              qc = factor(qc),
+                                              pol = factor(pol)) %>%
+               dplyr::filter(qc != "bad")
 
-* NEED TO GO BACK AND FIGURE OUT WHERE THESE VALUES DISAPPEARED AND RECOVER THE DATA. 
+#check how many rows (pollutants) per test
+table(ef_bymass$id)
+
+```
+* Expected number of rows: 896 
+** 25 pol x 34 tests + 1 pol x 8 tests (blanks #36-43, grav only) + 0 pol x 2 tests (full censor for bad QC on #8, 24) + 20 x 1 test (#44; no VOCs) + 9 pol x 2 tests (#1,30; no carbonyls - censored for bad QC). 
+* final dataset = 942 rows - 46 more than expected! 
+* using `table(ef_bymass$id)`, discovered that id #8 has all 25 when expect 0; #24 has 22 when expect 0. #1 has only 8 (expect 9).  
+** #1 was missing gravametric from the QC-filtered set but not full set because QC = NA. 
+** #24 has only 5gas as qc=bad, carbs and grav are maybe where VOCs are OK (should be whole test = bad). 
+** #8 all QC are maybe or OK (should be whole test = bad). 
+
+* NEED TO GO BACK AND FIGURE OUT WHERE/HOW TO CENSOR THIS DATA APPROPRIATELY. 
 
 
 # Summarize emissions factors by pollutant and fuel type
