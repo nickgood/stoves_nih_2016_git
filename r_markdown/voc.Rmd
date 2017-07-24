@@ -32,7 +32,7 @@ output:
   times_fuel <- readRDS("../r_files/times_fuel.RDS")
   times_bg <- readRDS("../r_files/times_bg.RDS")
   times_test <- readRDS("../r_files/times_test.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Organize
@@ -68,8 +68,7 @@ output:
 # QC
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl(".*voc.*|.*all.*", notes)) %>%
-           dplyr::mutate(qc = "ok")
+  notes <- dplyr::filter(notes, grepl("voc|all", inst))
 
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
