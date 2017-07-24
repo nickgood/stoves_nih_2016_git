@@ -199,6 +199,24 @@ output:
   facet_wrap(~pol, scales = "free")
 ```
 
+## Plot tc vs grav
+
+```{r, echo = FALSE, fig.width = 12, fig.height = 8}
+  data_grav_tc <- dplyr::filter(emissions_long,
+                               (pol == "grav" | pol == "tc") & metric == "conc") %>%
+                  dplyr::select(-inst)%>%
+                  tidyr::spread(pol, value)
+
+  p <- ggplot(data_grav_tc, aes(grav, tc)) +
+       geom_point(aes(color = id)) +
+       theme_bw() +
+       theme(legend.position = "top") +
+       geom_abline(slope = 1, intercept = 0) +
+       geom_text(aes(label = id), nudge_x = 200)
+
+  p
+```
+
 # Save
 
 ```{r}
