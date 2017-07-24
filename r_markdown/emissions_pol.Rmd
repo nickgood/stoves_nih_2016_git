@@ -188,7 +188,7 @@ output:
 
 Concentration is corrected for background by removing background test average concentration from each test.
 
-```{r, eval = FALSE}
+```{r}
   ecoc <- dplyr::mutate(ecoc, 
                         mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
                         mass_carbon = mass_emitted,
