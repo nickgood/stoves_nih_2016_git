@@ -94,7 +94,7 @@ output:
 ```
 
 
-```{r, fig.width = 15, fig.height = 30}
+```{r, fig.width = 25, fig.height = 40}
   ggplot(dplyr::filter(emission_factors, fuel != "background"), aes(fuel, mass_per_mass_fuel, colour = fuel)) + 
   geom_point() +
   facet_wrap(~pol, scales = "free", ncol = 2) +
