@@ -50,20 +50,26 @@ output:
 ```{r}
   ecoc_merged <- ecoc %>%
                  tidyr::separate(filter_id, c("id", "filter_type"), extra = "merge") %>%
-                 dplyr::mutate(filter_type = ifelse(id == "blank", "blank", filter_type),
-                               filter_type = ifelse(grepl(".*Blank.*", filter_type), "blank", filter_type),
-                               filter_type = ifelse(grepl(".*of day.*", filter_type), "start_blank", filter_type),
-                               filter_type = ifelse(grepl(".*Test.*", filter_type), "test", filter_type),
+                 dplyr::mutate(filter_type = ifelse(id == "blank", "blank",
+                                                    filter_type),
+                               filter_type = ifelse(grepl(".*Blank.*", filter_type),
+                                                    "blank", filter_type),
+                               filter_type = ifelse(grepl(".*of day.*", filter_type),
+                                                    "start_blank", filter_type),
+                               filter_type = ifelse(grepl(".*Test.*", filter_type),
+                                                    "test", filter_type),
                                filter_type = tolower(filter_type),
-                               id = ifelse(grepl(".*blank.*", filter_type), "blank", id),
-                               id = ifelse(grepl(".*start_blank.*", filter_type), "start_blank", id),
-                               id = ifelse(grepl(".*test.*", filter_type), "test", id)) %>%
+                               id = ifelse(grepl(".*blank.*", filter_type),
+                                           "blank", id),
+                               id = ifelse(grepl(".*start_blank.*", filter_type),
+                                           "start_blank", id),
+                               id = ifelse(grepl(".*test.*", filter_type),
+                                           "test", id)) %>%
                   dplyr::rename(cassette = filter_type,
                                 oc_ug_sq_cm = oc_ugsqcm,
                                 ec_ug_sq_cm = ec_ugsqcm,
                                 tc_ug_sq_cm = tc_ugsqcm,
-                                punch_area = puch_area_cm2) %>%
-                  dplyr::filter(grepl("^G", id) == FALSE)
+                                punch_area = puch_area_cm2)
 ```
 
 # Meta data
@@ -88,12 +94,12 @@ output:
 
 ```{r}
  times <- dplyr::select(filter_times, -date) %>%
-           dplyr::filter(color == "white" | color == "orange") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::mutate(cassette = 
-                         forcats::fct_recode(color, "qb" = "white",
+          dplyr::filter(color == "white" | color == "orange") %>%
+          tidyr::spread(type, value) %>%
+          dplyr::mutate(cassette = 
+                        forcats::fct_recode(color, "qb" = "white",
                                                      "qf" = "orange")) %>%
-           dplyr::select(-color)
+          dplyr::select(-color)
 ```
 
 * merge ecoc with metadata
@@ -167,7 +173,7 @@ output:
 # LOD / LOQ
 
 ```{r}
-  blanks <- dplyr::filter(ecoc_merged, id == "blank") %>%
+  blanks <- dplyr::filter(ecoc_merged, grepl("^G", id)) %>%
             dplyr::group_by(pol) %>%
             dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
                              loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
