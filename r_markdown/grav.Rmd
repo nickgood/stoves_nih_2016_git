@@ -271,7 +271,6 @@ The LOD is `r lod_var`, the LOQ is `r loq_var`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- grav_merged %>%
-                 dplyr::filter(type == "test") %>%
                  dplyr::mutate(conc_bg = bg_summary$mean_bg)
 ```
 
