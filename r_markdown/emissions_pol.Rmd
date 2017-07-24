@@ -80,6 +80,7 @@ output:
   hood_flow <- readRDS("../r_files/hood_flow.RDS")
   pol_properties <- readRDS("../r_files/pol_properties.RDS")
   mw_c <- readRDS("../r_files/mw_carbon.RDS")
+  filter_area <- readRDS("../r_files/filter_area.RDS")
 ```
 
 * metadata
@@ -148,37 +149,39 @@ output:
 * select data
 
 ```{r,}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
+  ecoc <- samples %>%
+          dplyr::left_join(ecoc_merged, by = "id") %>%
           dplyr::select(id, cassette,
                         start, end,
                         flow,
-                        pol, ug_sq_cm,
-                        conc_bg, type, qc)
+                        pol,
+                        ug_sq_cm,
+                        conc_bg,
+                        qc)
 ```
 
 * calculate concentrations
 
-```{r, eval = FALSE}
+```{r}
   ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
                               conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
 ```
 
-* account for artifact
-
-Use replicate average artifact (probably clean up spreadsheet at some point)
+* account for artifact 
 
 ```{r}
-  # ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
-  #           dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
-  #           dplyr::ungroup() %>%
-  #           tidyr::spread(cassette, rep_mean) %>%
-  #           dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
-  #           dplyr::mutate(conc_cor = e - a)
-  # 
-  # ecoc <- dplyr::left_join(
-  #           dplyr::filter(ecoc, cassette == "e"),
-  #           dplyr::select(ecoc_a, -a, -e), 
-  #         by = c("id", "pol"))
+  ecoc_artifact <- ecoc %>%
+                   dplyr::select(id, cassette, pol, conc) %>%
+                   dplyr::group_by(pol, id, cassette) %>%
+                   tidyr::spread(cassette, conc) %>%
+                   dplyr::rename(conc_front = qf,
+                                 conc_back = qb) %>%
+                   dplyr::mutate(conc_back = ifelse(is.na(conc_back), 0, conc_back)) %>%
+                   dplyr::mutate(conc_cor = conc_front - conc_back)
+
+  ecoc <- ecoc %>%
+          dplyr::filter(cassette == "qf") %>%
+          dplyr::left_join(ecoc_artifact, by = c("id", "pol"))
 ```
 
 * calculate mass emitted
