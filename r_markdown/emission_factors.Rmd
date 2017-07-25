@@ -115,9 +115,11 @@ output:
 ```{r, fig.width = 12, fig.height = 8}
   p_data <- dplyr::left_join(emission_factors,
                              dplyr::select(samples, id, type, mc_level),
-                             by = "id") %>%
+                                           by = "id") %>%
             dplyr::filter(type != "bg") %>%
-            dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low", "med", "high"))
+            dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low",
+                                                                    "med",
+                                                                    "high"))
 
   ggplot(p_data, aes(id, mass_pol_mass_fuel, color = pol)) +
   geom_point(size = 4) +
@@ -139,6 +141,7 @@ output:
            dplyr::filter(id != "FH2")
 ```
 
+## Gravimetric analysis
 
 ```{r}
  df <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
@@ -176,15 +179,11 @@ output:
 
   pairwise.t.test(df$mass_pol_mass_fuel, df$mc_level, p.adj = "holm")
 
-
   TukeyHSD(aov(mass_pol_mass_fuel ~ test_fuel_type, df))
-  
+
   TukeyHSD(aov(mass_pol_mass_fuel ~ mc_level, df))
 ```
 
- 
-
- 
 ```{r}
    plot(mod_grav)
 ```
@@ -199,8 +198,38 @@ output:
   facet_wrap(~pol, scales = "free")
 ```
 
+## ecoc
 
+```{r}
+  ecoc <- emissions_long %>%
+          dplyr::filter(pol == "ec" | pol == "oc", metric == "conc") %>%
+          dplyr::select(-inst) %>%
+          tidyr::spread(pol, value) %>%
+          dplyr::mutate(ratio = ec / oc) %>%
+          dplyr::right_join(samples, by = "id") %>%
+          dplyr::filter(type != "bg") %>%
+          dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low",
+                                                                  "med",
+                                                                  "high"),
+                        test_fuel_type = paste(type, mc_level, sep = "_"))
 
+  ggplot(ecoc, aes(mc_level, ratio)) +
+  geom_boxplot(outlier.size = NA) +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ylab("g pol / kg fuel") + xlab("moisture content") +
+  ggtitle("ec : oc ratio")
+
+  ecoc_summary <- ecoc %>%
+                  dplyr::group_by(mc_level) %>%
+                  dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+
+  pairwise.t.test(ecoc$ratio, ecoc$mc_level, p.adj = "none")
+
+  pairwise.t.test(ecoc$ratio, ecoc$test_fuel_type, p.adj = "none")
+
+```
 
 ## Plot emissions by moisture content
 
