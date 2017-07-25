@@ -19,10 +19,16 @@ output: html_document
 ```{r}
 #set variable types from character -> factor
 #filter out bad QC data
+#set fuel type order by survey result "commonality" of use. 
   ef_bymass <- dplyr::mutate(emission_factors, fuel = factor(fuel),
                                               qc = factor(qc),
                                               pol = factor(pol)) %>%
-               dplyr::filter(qc != "bad")
+               dplyr::filter(qc != "bad") %>%
+               dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                      "plastic_bags", "newspaper",
+                                                      "leaves_twigs", "rubber",
+                                                      "flipflops", "t_shirts",
+                                                      "food_packaging", "wood_shims")) 
 
 #check how many rows (pollutants) per test
 table(ef_bymass$id)
@@ -40,7 +46,7 @@ ef_sum <- ef_bymass %>%
                                      mean_ef = round(mean(mass_per_mass_fuel, na.rm = TRUE), 4),
                                      min_ef = round(min(mass_per_mass_fuel, na.rm = TRUE), 4),
                                      max_ef = round(max(mass_per_mass_fuel, na.rm = TRUE), 4))
-#mass_ef in units g pol / kg fuel; one average value per fuel_type
+#mass_ef in units g pol / kg fuel; one average value per fuel_type.
 
 ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
                  spread(fuel, mean_ef) %>%
@@ -55,7 +61,17 @@ knitr::kable(ef_mean_table)
 
 # Figure 1. Mean emission factors (mass basis) for various startup materials and pollutants
 
-```{r}
+```{r fig.width=20, fig.height= 20}
+  p_data <- filter(ef_bymass, fuel != "background") 
   
+  ggplot(p_data, aes(fuel, mass_per_mass_fuel, color = fuel)) +
+  geom_boxplot(outlier.size = NA) +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("g pol / kg fuel") + xlab("fuel type") +
+  facet_wrap(~pol, scales = "free")
 ```
 
