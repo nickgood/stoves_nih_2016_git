@@ -77,15 +77,15 @@ knitr::kable(ef_mean_table)
 
 ## Figure 1A. Mean emission factors (mass basis) for various startup materials and VOCs
 
-```{r fig.width=20, fig.height= 20}
+```{r fig.width=18, fig.height= 12}
   p_data2 <- dplyr::filter(p_data, inst == "voc")
 
   ggplot(p_data2, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
+  geom_boxplot(outlier.size = NA, size = 1.25) +
+  geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
-        text = element_text(size=20),
+        text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("g pol / kg fuel") + xlab("fuel type") +
   facet_wrap(~pol, scales = "free")
@@ -93,32 +93,32 @@ knitr::kable(ef_mean_table)
 
 ## Figure 1B. Mean emission factors (mass basis) for various startup materials and carbonyls
 
-```{r fig.width=20, fig.height= 20}
+```{r fig.width=24, fig.height= 25}
   p_data3 <- dplyr::filter(p_data, inst == "carbs")
 
   ggplot(p_data3, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
+  geom_boxplot(outlier.size = NA, size = 1.5) +
+  geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
-        text = element_text(size=20),
+        text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("g pol / kg fuel") + xlab("fuel type") +
-  facet_wrap(~pol, scales = "free")
+  facet_wrap(~pol, scales = "free", ncol = 4)
 ```
 
 
 ## Figure 1C. Mean emission factors (mass basis) for various startup materials and CO/CO2/CH4
 
-```{r fig.width=20, fig.height= 12}
+```{r fig.width=18, fig.height= 6}
   p_data4 <- dplyr::filter(p_data, inst == "fivegas")
 
   ggplot(p_data4, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
+  geom_boxplot(outlier.size = NA, size = 1.5) +
+  geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
-        text = element_text(size=20),
+        text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("g pol / kg fuel") + xlab("fuel type") +
   facet_wrap(~pol, scales = "free")
@@ -126,15 +126,15 @@ knitr::kable(ef_mean_table)
 
 ## Figure 1D. Mean emission factors (mass basis) for various startup materials and carbons
 
-```{r fig.width=8, fig.height= 8}
+```{r fig.width=6, fig.height= 6}
   p_data5 <- dplyr::filter(p_data, inst == "grav")
 
   ggplot(p_data5, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
+  geom_boxplot(outlier.size = NA, size = 1.5) +
+  geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
-        text = element_text(size=20),
+        text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylab("g pol / kg fuel") + xlab("fuel type") #+
   #facet_wrap(~pol, scales = "free")
