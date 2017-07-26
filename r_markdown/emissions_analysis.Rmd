@@ -75,7 +75,7 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-# Figure 1A. Mean emission factors (mass basis) for various startup materials and VOCs
+## Figure 1A. Mean emission factors (mass basis) for various startup materials and VOCs
 
 ```{r fig.width=20, fig.height= 20}
   p_data2 <- dplyr::filter(p_data, inst == "voc")
@@ -91,7 +91,7 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-# Figure 1B. Mean emission factors (mass basis) for various startup materials and carbonyls
+## Figure 1B. Mean emission factors (mass basis) for various startup materials and carbonyls
 
 ```{r fig.width=20, fig.height= 20}
   p_data3 <- dplyr::filter(p_data, inst == "carbs")
@@ -108,9 +108,9 @@ knitr::kable(ef_mean_table)
 ```
 
 
-# Figure 1C. Mean emission factors (mass basis) for various startup materials and CO/CO2/CH4
+## Figure 1C. Mean emission factors (mass basis) for various startup materials and CO/CO2/CH4
 
-```{r fig.width=20, fig.height= 20}
+```{r fig.width=20, fig.height= 12}
   p_data4 <- dplyr::filter(p_data, inst == "fivegas")
 
   ggplot(p_data4, aes(fuel, mass_per_mass_fuel, color = fuel)) +
@@ -124,10 +124,10 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-# Figure 1D. Mean emission factors (mass basis) for various startup materials and carbons
+## Figure 1D. Mean emission factors (mass basis) for various startup materials and carbons
 
-```{r fig.width=20, fig.height= 20}
-  p_data5 <- dplyr::filter(p_data, inst == "grav|ecoc")
+```{r fig.width=8, fig.height= 8}
+  p_data5 <- dplyr::filter(p_data, inst == "grav")
 
   ggplot(p_data5, aes(fuel, mass_per_mass_fuel, color = fuel)) +
   geom_boxplot(outlier.size = NA) +
