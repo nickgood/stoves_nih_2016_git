@@ -40,7 +40,7 @@ table(ef_bymass$id)
 
 # Summarize emissions factors by pollutant and fuel type
 ```{r}
-ef_sum <- ef_bymass %>%
+ef_sum <- ef_bymass %>% filter(!grepl("36|37|38|39|40|41|42|43", id)) %>%
                     dplyr::group_by(fuel, pol) %>%
                     dplyr::summarize(nreps = n(),
                                      mean_ef = round(mean(mass_per_mass_fuel, na.rm = TRUE), 4),
