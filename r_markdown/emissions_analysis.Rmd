@@ -75,12 +75,12 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-## Figure 1A. Mean emission factors (mass basis) for various startup materials and VOCs
+## Figure 1A. Mean emission factors (mass basis) for VOCs
 
 ```{r fig.width=18, fig.height= 12}
-  p_data2 <- dplyr::filter(p_data, inst == "voc")
+  p_data_voc <- dplyr::filter(p_data, inst == "voc")
 
-  ggplot(p_data2, aes(fuel, mass_per_mass_fuel, color = fuel)) +
+  ggplot(p_data_voc, aes(fuel, mass_per_mass_fuel, color = fuel)) +
   geom_boxplot(outlier.size = NA, size = 1.25) +
   geom_point(size = 4) +
   theme_bw() +
@@ -90,13 +90,22 @@ knitr::kable(ef_mean_table)
   ylab("g pol / kg fuel") + xlab("fuel type") +
   facet_wrap(~pol, scales = "free")
 ```
+## Pairwise tests for VOCs
 
-## Figure 1B. Mean emission factors (mass basis) for various startup materials and carbonyls
+* benzene
+```{r}
+pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_benzene"], p_data_voc$fuel[p_data_voc$pol == "voc_benzene"], p.adj = "none")
+```
+* toluene
+```{r}
+pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_toluene"], p_data_voc$fuel[p_data_voc$pol == "voc_toluene"], p.adj = "none")
+```
+## Figure 1B. Mean emission factors (mass basis) for carbonyls
 
 ```{r fig.width=24, fig.height= 25}
-  p_data3 <- dplyr::filter(p_data, inst == "carbs")
+  p_data_carbs <- dplyr::filter(p_data, inst == "carbs")
 
-  ggplot(p_data3, aes(fuel, mass_per_mass_fuel, color = fuel)) +
+  ggplot(p_data_carbs, aes(fuel, mass_per_mass_fuel, color = fuel)) +
   geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
@@ -107,13 +116,19 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free", ncol = 4)
 ```
 
+## Pairwise tests for carbs
 
-## Figure 1C. Mean emission factors (mass basis) for various startup materials and CO/CO2/CH4
+* formaldehyde
+```{r}
+pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyde"], p_data_carbs$fuel[p_data_carbs$pol == "formaldehyde"], p.adj = "none")
+```
+
+## Figure 1C. Mean emission factors (mass basis) for  CO/CO2/CH4
 
 ```{r fig.width=18, fig.height= 6}
-  p_data4 <- dplyr::filter(p_data, inst == "fivegas")
+  p_data_gas <- dplyr::filter(p_data, inst == "fivegas")
 
-  ggplot(p_data4, aes(fuel, mass_per_mass_fuel, color = fuel)) +
+  ggplot(p_data_gas, aes(fuel, mass_per_mass_fuel, color = fuel)) +
   geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
@@ -124,12 +139,27 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-## Figure 1D. Mean emission factors (mass basis) for various startup materials and carbons
+### Pairwise tests for CO/CO2/CH4
+* CO
+```{r}
+pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "co"], p_data_carbs$fuel[p_data_gas$pol == "co"], p.adj = "none")
+```
+
+* CO2
+```{r}
+pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "co2"], p_data_carbs$fuel[p_data_gas$pol == "co2"], p.adj = "none")
+```
+
+* CH4
+```{r}
+pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "ch4"], p_data_carbs$fuel[p_data_gas$pol == "ch4"], p.adj = "none")
+```
+## Figure 1D. Mean emission factors (mass basis) for PM2.5
 
 ```{r fig.width=6, fig.height= 6}
-  p_data5 <- dplyr::filter(p_data, inst == "grav")
+  p_data_pm <- dplyr::filter(p_data, inst == "grav")
 
-  ggplot(p_data5, aes(fuel, mass_per_mass_fuel, color = fuel)) +
+  ggplot(p_data_pm, aes(fuel, mass_per_mass_fuel, color = fuel)) +
   geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
@@ -139,3 +169,10 @@ knitr::kable(ef_mean_table)
   ylab("g pol / kg fuel") + xlab("fuel type") #+
   #facet_wrap(~pol, scales = "free")
 ```
+
+### Pairwise tests for PM2.5
+```{r}
+pairwise.t.test(p_data_pm$mass_per_mass_fuel, p_data_pm$fuel, p.adj = "none")
+```
+
+
