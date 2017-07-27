@@ -190,35 +190,21 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 
   pmco_means <- dplyr::filter(ef_sum, grepl('^grav$|^co$', pol)) %>%
         select(fuel, pol, mean_ef) %>%
-        tidyr::spread(pol, mean_ef) 
+        tidyr::spread(pol, mean_ef) %>%
+        dplyr::filter(fuel != 'background')
 
-  ggplot(pmco, aes(x = grav, y = co, colour = fuel)) + 
-          geom_point(size = 3) +
-        pmco_means, aes(x = grav, y = co, colour = fuel)) + 
-          geom_point(size = 5, shape = 18) +
+  ggplot() + 
+        geom_point(data = pmco_means, aes(x = grav, y = co, colour = fuel), size = 4, shape = 18) +
+        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 3, shape = 21) +
           ylab("CO EF (g/kg of fuel) ") +
           xlab("PM2.5 EF (g/kg of fuel)") +
-          #scale_x_log10() +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
           theme_bw() +
-          #scale_y_log10() +
+          scale_y_log10() +
           theme(text = element_text(size = 18),
                 legend.position = "top",
                 legend.key.size = unit(0.1, "cm"),
                 legend.title = element_blank())
 ```
 
-
-```{r}
-
-ggplot(pmco_means, aes(x = grav, y = co, colour = fuel)) + 
-          geom_point(size = 5, shape = 18) +
-          ylab("CO EF (g/kg of fuel) ") +
-          xlab("PM2.5 EF (g/kg of fuel)") +
-          #scale_x_log10() +
-          theme_bw() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 18),
-                legend.position = "top",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
