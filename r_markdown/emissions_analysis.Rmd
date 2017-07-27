@@ -182,6 +182,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 
 ## Correlation Plots
 
+* PM vs. CO
 ```{r}
   pmco <- dplyr::filter(emission_factors, grepl('^grav$|^co$', pol)) %>%
         select(id, fuel, pol, mass_per_mass_fuel) %>%
@@ -195,7 +196,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 
   ggplot() + 
         geom_point(data = pmco_means, aes(x = grav, y = co, colour = fuel), size = 4, shape = 18) +
-        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 3, shape = 21) +
+        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
           ylab("CO EF (g/kg of fuel) ") +
           xlab("PM2.5 EF (g/kg of fuel)") +
           scale_color_hue(l=50, c=80) +
@@ -208,3 +209,58 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
                 legend.title = element_blank())
 ```
 
+
+* Benzene vs. CO
+```{r}
+  benzco <- dplyr::filter(emission_factors, grepl('^voc_benzene$|^co$', pol)) %>%
+        select(id, fuel, pol, mass_per_mass_fuel) %>%
+        tidyr::spread(pol, mass_per_mass_fuel) %>%
+        dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
+
+  benzco_means <- dplyr::filter(ef_sum, grepl('^voc_benzene$|^co$', pol)) %>%
+        select(fuel, pol, mean_ef) %>%
+        tidyr::spread(pol, mean_ef) %>%
+        dplyr::filter(fuel != 'background')
+
+  ggplot() + 
+        geom_point(data = benzco_means, aes(x = voc_benzene, y = co, colour = fuel), size = 4, shape = 18) +
+        geom_point(data = benzco, aes(x = voc_benzene, y = co, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
+          ylab("CO EF (g/kg of fuel) ") +
+          xlab("Benzene EF (g/kg of fuel)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+* PM vs. formaldehyde
+```{r}
+  pmform <- dplyr::filter(emission_factors, grepl('^grav$|^formaldehyde$', pol)) %>%
+        select(id, fuel, pol, mass_per_mass_fuel) %>%
+        tidyr::spread(pol, mass_per_mass_fuel) %>%
+        dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
+
+  pmform_means <- dplyr::filter(ef_sum, grepl('^grav$|^formaldehyde$', pol)) %>%
+        select(fuel, pol, mean_ef) %>%
+        tidyr::spread(pol, mean_ef) %>%
+        dplyr::filter(fuel != 'background')
+
+  ggplot() + 
+        geom_point(data = pmform_means, aes(x = grav, y = formaldehyde, colour = fuel), size = 4, shape = 18) +
+        geom_point(data = pmform, aes(x = grav, y = formaldehyde, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
+          ylab("Formaldehyde EF (g/kg of fuel) ") +
+          xlab("PM2.5 EF (g/kg of fuel)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
