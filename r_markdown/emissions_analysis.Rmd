@@ -17,6 +17,11 @@ output: html_document
 ```
 
 ```{r}
+ source("../r_scripts/R_functions.R")
+```
+
+
+```{r}
 #set variable types from character -> factor
 #filter out bad QC data
 #set fuel type order by survey result "commonality" of use. 
@@ -142,17 +147,17 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 ### Pairwise tests for CO/CO2/CH4
 * CO
 ```{r}
-pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "co"], p_data_carbs$fuel[p_data_gas$pol == "co"], p.adj = "none")
+  pairwise.t.test(p_data_gas$mass_per_mass_fuel[p_data_gas$pol == "co"], p_data_gas$fuel[p_data_gas$pol == "co"], p.adj = "none")
 ```
 
 * CO2
 ```{r}
-pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "co2"], p_data_carbs$fuel[p_data_gas$pol == "co2"], p.adj = "none")
+  pairwise.t.test(p_data_gas$mass_per_mass_fuel[p_data_gas$pol == "co2"], p_data_gas$fuel[p_data_gas$pol == "co2"], p.adj = "none")
 ```
 
 * CH4
 ```{r}
-pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "ch4"], p_data_carbs$fuel[p_data_gas$pol == "ch4"], p.adj = "none")
+  pairwise.t.test(p_data_gas$mass_per_mass_fuel[p_data_gas$pol == "ch4"], p_data_gas$fuel[p_data_gas$pol == "ch4"], p.adj = "none")
 ```
 ## Figure 1D. Mean emission factors (mass basis) for PM2.5
 
@@ -172,7 +177,48 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_gas$pol == "ch4"], p_data
 
 ### Pairwise tests for PM2.5
 ```{r}
-pairwise.t.test(p_data_pm$mass_per_mass_fuel, p_data_pm$fuel, p.adj = "none")
+  pairwise.t.test(p_data_pm$mass_per_mass_fuel, p_data_pm$fuel, p.adj = "none")
+```
+
+## Correlation Plots
+
+```{r}
+  pmco <- dplyr::filter(emission_factors, grepl('^grav$|^co$', pol)) %>%
+        select(id, fuel, pol, mass_per_mass_fuel) %>%
+        tidyr::spread(pol, mass_per_mass_fuel) %>%
+        dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
+
+  pmco_means <- dplyr::filter(ef_sum, grepl('^grav$|^co$', pol)) %>%
+        select(fuel, pol, mean_ef) %>%
+        tidyr::spread(pol, mean_ef) 
+
+  ggplot(pmco, aes(x = grav, y = co, colour = fuel)) + 
+          geom_point(size = 3) +
+        pmco_means, aes(x = grav, y = co, colour = fuel)) + 
+          geom_point(size = 5, shape = 18) +
+          ylab("CO EF (g/kg of fuel) ") +
+          xlab("PM2.5 EF (g/kg of fuel)") +
+          #scale_x_log10() +
+          theme_bw() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
 ```
 
 
+```{r}
+
+ggplot(pmco_means, aes(x = grav, y = co, colour = fuel)) + 
+          geom_point(size = 5, shape = 18) +
+          ylab("CO EF (g/kg of fuel) ") +
+          xlab("PM2.5 EF (g/kg of fuel)") +
+          #scale_x_log10() +
+          theme_bw() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
