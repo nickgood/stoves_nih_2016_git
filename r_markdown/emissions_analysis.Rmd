@@ -5,11 +5,12 @@ date: "July 27, 2017"
 output:
   rmarkdown::html_document:
     toc: true
-    toc_float: true
+    toc_float: 
+      collapsed: false
     theme: yeti
 ---
 
-# Setup 
+[//]: # # Setup 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
@@ -17,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
   library(knitr)
 ```
 
-# Load and format data
+[//]: # # Load and format data
 ```{r}
   emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
 ```
@@ -27,7 +28,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 
-```{r}
+```{r include = FALSE}
 #set variable types from character -> factor
 #filter out bad QC data
 #set fuel type order by survey result "commonality" of use. 
@@ -45,11 +46,16 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 table(ef_bymass$id)
 
 ```
-* Expected number of rows: 896 
-* 25 pol x 34 tests + 1 pol x 8 tests (blanks #36-43, grav only) + 0 pol x 2 tests (full censor for bad QC on #8, 24) + 20 x 1 test (#44; no VOCs) + 9 pol x 2 tests (#1,30; no carbonyls - censored for bad QC). 
-* final dataset when QC bad censored = 896 rows - as expected!
 
-# Summarize emissions factors by pollutant and fuel type
+```{r}
+#notes:
+## * Expected number of rows: 896 [25 pol x 34 tests + 1 pol x 8 tests (blanks #36-43, grav only) + 0 pol x 2 tests (full censor for bad QC on #8, 24) + 20 x 1 test (#44; no VOCs) + 9 pol x 2 tests (#1,30; no carbonyls - censored for bad QC)
+
+## * final dataset when QC bad censored = 896 rows - as expected!
+
+```
+
+
 ```{r}
 ef_sum <- ef_bymass %>% filter(!grepl("36|37|38|39|40|41|42|43", id)) %>%
                     dplyr::group_by(fuel, pol) %>%
@@ -64,15 +70,15 @@ ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
                  select(-background)
 ```
 
-### Table 1. Mean emission factors (mass basis) for various startup materials and pollutants
+# Mean emission factors (mass basis)
 * units = g pollutant emitted per kg of fuel burned
 ```{r echo = FALSE}
 knitr::kable(ef_mean_table)
 ```
 
-# Figure 1. Mean emission factors (mass basis) for various startup materials and pollutants
+# Boxplots and t-test comparisons
 
-```{r fig.width=20, fig.height= 20}
+```{r fig.width=20, fig.height= 20, include = FALSE}
   p_data <- filter(ef_bymass, fuel != "background") 
   
   ggplot(p_data, aes(fuel, mass_per_mass_fuel, color = fuel)) +
@@ -86,7 +92,7 @@ knitr::kable(ef_mean_table)
   facet_wrap(~pol, scales = "free")
 ```
 
-## Figure 1A. Mean emission factors (mass basis) for VOCs
+## Figure 1A. VOCs
 
 ```{r fig.width=18, fig.height= 12}
   p_data_voc <- dplyr::filter(p_data, inst == "voc")
@@ -101,6 +107,7 @@ knitr::kable(ef_mean_table)
   ylab("g pol / kg fuel") + xlab("fuel type") +
   facet_wrap(~pol, scales = "free")
 ```
+
 ## Pairwise tests for VOCs
 
 * benzene
@@ -111,7 +118,7 @@ pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_benzene"], 
 ```{r}
 pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_toluene"], p_data_voc$fuel[p_data_voc$pol == "voc_toluene"], p.adj = "none")
 ```
-## Figure 1B. Mean emission factors (mass basis) for carbonyls
+## Figure 1B. Carbonyls
 
 ```{r fig.width=24, fig.height= 25}
   p_data_carbs <- dplyr::filter(p_data, inst == "carbs")
@@ -127,14 +134,14 @@ pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_toluene"], 
   facet_wrap(~pol, scales = "free", ncol = 4)
 ```
 
-## Pairwise tests for carbs
+## Pairwise tests for Carbonyls
 
 * formaldehyde
 ```{r}
 pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyde"], p_data_carbs$fuel[p_data_carbs$pol == "formaldehyde"], p.adj = "none")
 ```
 
-## Figure 1C. Mean emission factors (mass basis) for  CO/CO2/CH4
+## Figure 1C. CO/CO2/CH4
 
 ```{r fig.width=18, fig.height= 6}
   p_data_gas <- dplyr::filter(p_data, inst == "fivegas")
@@ -165,7 +172,8 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 ```{r}
   pairwise.t.test(p_data_gas$mass_per_mass_fuel[p_data_gas$pol == "ch4"], p_data_gas$fuel[p_data_gas$pol == "ch4"], p.adj = "none")
 ```
-## Figure 1D. Mean emission factors (mass basis) for PM2.5
+
+## Figure 1D. PM2.5
 
 ```{r fig.width=6, fig.height= 6}
   p_data_pm <- dplyr::filter(p_data, inst == "grav")
@@ -186,9 +194,9 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
   pairwise.t.test(p_data_pm$mass_per_mass_fuel, p_data_pm$fuel, p.adj = "none")
 ```
 
-## Correlation Plots
+# Correlation Plots
 
-* PM vs. CO
+## PM vs. CO
 ```{r}
   pmco <- dplyr::filter(emission_factors, grepl('^grav$|^co$', pol)) %>%
         select(id, fuel, pol, mass_per_mass_fuel) %>%
@@ -216,7 +224,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 ```
 
 
-* Benzene vs. CO
+## Benzene vs. CO
 ```{r}
   benzco <- dplyr::filter(emission_factors, grepl('^voc_benzene$|^co$', pol)) %>%
         select(id, fuel, pol, mass_per_mass_fuel) %>%
@@ -244,7 +252,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
 ```
 
 
-* PM vs. formaldehyde
+## PM vs. formaldehyde
 ```{r}
   pmform <- dplyr::filter(emission_factors, grepl('^grav$|^formaldehyde$', pol)) %>%
         select(id, fuel, pol, mass_per_mass_fuel) %>%
