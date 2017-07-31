@@ -31,14 +31,17 @@ output:
 # Compile notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_id_date <-  dplyr::select(mc_test_log, id, date)  # get id and date
-  
-  # no notes_1 for this study
+  test_id_date <-  dplyr::select(mc_test_log, id, date) # get id and date
+                   
+  notes_1 <- dplyr::select(mc_test_log, id, notes) %>%
+             dplyr::filter(!is.na(notes)) %>%
+             dplyr::left_join(test_id_date, by = "id") %>%
+             dplyr::mutate(inst= "procedural")
 
   notes_2 <- dplyr::select(cal_2, date, notes) %>%
-              dplyr::filter(!is.na(notes)) %>%
-              dplyr::left_join(test_id_date, by = "date") %>%
-              dplyr::mutate(inst = "co2")
+             dplyr::filter(!is.na(notes)) %>%
+             dplyr::left_join(test_id_date, by = "date") %>%
+             dplyr::mutate(inst = "co2")
 
   notes_3 <- dplyr::select(data_1, id, notes) %>%
              dplyr::filter(!is.na(notes)) %>%
@@ -60,7 +63,8 @@ output:
              dplyr::left_join(test_id_date, by = 'id') %>%
              dplyr::mutate(inst = "all")
  
-  notes <- dplyr::bind_rows(notes_2,
+  notes <- dplyr::bind_rows(notes_1,
+                            notes_2,
                             notes_3,
                             notes_4,
                             notes_5,
