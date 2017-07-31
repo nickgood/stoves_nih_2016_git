@@ -20,14 +20,14 @@ output:
 * pot and hood temperature
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp<- readRDS("../r_files/temp.RDS")
+  temp <- readRDS("../r_files/temp.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #load(file = "../r_files/samples.Rda")
-  #load("../r_files/notes.Rda")
+  samples <- readRDS(file = "../r_files/samples.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
 # Tidy
@@ -41,8 +41,8 @@ output:
 # Switch probes
 
 * standard set-up is `t_1 = t_pot` and `t_4 = flue`
-* test `10x, 11x and 12x` have two pots and prob location locies
-* some tests have inconsistant prob locations
+* test `10x, 11x and 12x` have two pots and probe location locies
+* some tests have inconsistant probe locations
 
 * filter out `NAs`
 
@@ -53,82 +53,22 @@ output:
 * one pot stoves
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  flipped_25a <- dplyr::filter(temp_merged,
-                           id =="25A") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                           loc = ifelse(loc == "t_4", "front", loc))
+  flipped_tests <- dplyr::filter(temp_merged,
+                           id =="FL2" |id =="FM2" |id == "LL2" |id == "LL4" |id == "LM4" |id == "FH4") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "stove", loc),
+                           loc = ifelse(loc == "t_2", "pot", loc))
 
-  flipped_25bc <- dplyr::filter(temp_merged,
-                           id =="25B" |id =="25C") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                           loc = ifelse(loc == "t_2", "front", loc))
+  regular <- dplyr::filter(temp_merged, id !="FL2" & id !="FM2" & id !="LL2" & id !="LL4" & id !="LM4" & id !="FH4") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "pot", loc),
+                           loc = ifelse(loc == "t_2", "stove", loc))
 
-  regular <- dplyr::filter(temp_merged,
-                          id !="25A" & id !="25B" & id !="25C" &
-                          grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                           loc = ifelse(loc == "t_4", "flue", loc))
-
-```
-
-* two pot stoves
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_10a <- dplyr::filter(temp_merged, id == "10A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_10b <- dplyr::filter(temp_merged, id == "10B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                            loc = ifelse(loc == "t_3", "front", loc),
-                            loc = ifelse(loc == "t_4", "back", loc))
-
-  temp_10c <- dplyr::filter(temp_merged, id == "10C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-  
-  temp_11a <- dplyr::filter(temp_merged, id == "11A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_11b <- dplyr::filter(temp_merged, id == "11B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_11c <- dplyr::filter(temp_merged, id == "11C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_12a <- dplyr::filter(temp_merged, id == "12A") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
-
-  temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
-                            loc = ifelse(loc == "t_3", "back", loc),
-                            loc = ifelse(loc == "t_4", "front", loc))
-
-  temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
-              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
-                            loc = ifelse(loc == "t_2", "back", loc),
-                            loc = ifelse(loc == "t_4", "flue", loc))
 ```
 
 * combine
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
   temp_merged <- dplyr::bind_rows(regular,
-                                  flipped_25a,
-                                  flipped_25bc,
-                                  temp_10a, temp_10b, temp_10c,
-                                  temp_11a, temp_11b, temp_11c,
-                                  temp_12a, temp_12b, temp_12c)
+                                  flipped_tests)
 
 ```
 
@@ -168,7 +108,7 @@ output:
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(temp_merged, file = "../r_files/temp_merged.Rda")
+  saveRDS(temp_merged, file = "../r_files/temp_merged.RDS")
 ```
 
 # Summary
@@ -191,7 +131,7 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
          facet_wrap(~id, ncol = 3, scales = "free") +
          theme_minimal() +
          theme(legend.position = "top") +
-         ylab("degress celsius")
+         ylab("degrees celsius")
 ```
 
 ## pot
