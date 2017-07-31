@@ -133,18 +133,3 @@ All "G" tests (1-18). We did not collect stove/pot temperature for background te
          theme(legend.position = "top") +
          ylab("degrees celsius")
 ```
-
-## pot
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
-  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
-                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
-
-  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
-```
