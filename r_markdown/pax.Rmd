@@ -14,13 +14,13 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 ## Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/pax.Rda")
+ pax <- readRDS("../r_files/pax.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -30,17 +30,17 @@ output: html_document
 ## Load flow data and test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_2.Rda")       # measured flowrates
+  data_cal_two <- readRDS("../r_files/data_cal_two.RDS")       # measured flowrates
 
-  load("../r_files/test_times.Rda")  # test times and ids
+  test_times <- readRDS("../r_files/test_times.RDS")  # test times and ids
 ```
 
 * extract start and end times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
+  test_times <- dplyr::filter(test_times, var == "ignite" | var == "end") %>%
+                tidyr::spread(var, value) # %>%
+                #dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
 ```
 
 Extract measured flows.
