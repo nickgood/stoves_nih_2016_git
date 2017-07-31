@@ -35,7 +35,7 @@ output: html_document
   test_times <- readRDS("../r_files/test_times.RDS")  # test times and ids
 ```
 
-* extract start and end times
+* extract start and end times DOUBLE CHECK THESE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_times <- dplyr::filter(test_times, var == "ignite" | var == "end") %>%
@@ -43,10 +43,10 @@ output: html_document
                 #dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
 ```
 
-Extract measured flows.
+Extract measured flows. FIX HERE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- tidy_date(cal_2, "^preflow_pax|^postflow_pax", "")
+  pax_flows <- tidy_date(data_cal_two, "^pax_preflow|^pax_postflow", "")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
