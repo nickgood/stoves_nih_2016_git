@@ -63,12 +63,12 @@ output: html_document
 
 ## Melt
 
-Make longer and remove missing values
+Make longer and remove missing values *THIS CHUNK NOW WORKS BUT NOT SURE WHAT IT DOES?
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   trans_merged <- dplyr::filter(trans_merged, !is.na(test_id)) %>%
                   dplyr::filter(!grepl("Pilot", test_id)) %>%
-                  tidyr::gather_(trans_merged, "var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
+                  tidyr::gather_("var", "val", grep("^*ir*|^*uv*", colnames(trans_merged), value = TRUE)) %>%
                   dplyr::mutate(lamda = sub("_.*", "", var)) %>%
                   dplyr::mutate(pos = sub(".*_", "", var)) %>%
                   dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
