@@ -79,7 +79,7 @@ Make longer and remove missing values *THIS CHUNK NOW WORKS BUT NOT SURE WHAT IT
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
+  notes <- readRDS("../r_files/notes.RDS")
 
   notes <- dplyr::filter(notes, grepl("trans|all", notes$inst) == TRUE)
 ```
@@ -96,7 +96,8 @@ Set one flag per test
 Merge with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans_merged, flags, by = "id") %>%
+  trans_merged <- dplyr::rename(trans_merged, id = val) %>%
+                  dplyr::left_join(flags, by = "id") %>%
                   dplyr::mutate(id = as.factor(id)) %>%
                   dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
@@ -110,10 +111,28 @@ Additional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(trans_merged, file = "../r_files/trans_merged.Rda")
+  saveRDS(trans_merged, file = "../r_files/trans_merged.RDS")
 ```
 
 ## Data summary
 
 Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
+
+#plots
+
+```{r}
+  ggplot(trans_merged, aes(id, atn_uv)) +
+  geom_point() +
+  theme_minimal() +
+  ylab("Pre Test UV Attenuation") +
+  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+```
+
+```{r}
+ggplot(trans_merged, aes(id, atn_uv_2)) +
+  geom_point() +
+  theme_minimal() +
+  ylab("Post Test UV Attenuation") +
+  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+```
 
