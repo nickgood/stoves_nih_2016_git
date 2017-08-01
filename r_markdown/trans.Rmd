@@ -33,7 +33,7 @@ output: html_document
   grav <- readRDS("../r_files/grav.RDS") 
 
   filter_info <- dplyr::select(grav, id, id_filter) %>%
-                 dplyr::rename("id_filter" = "filter_id")
+                 dplyr::rename(filter_id = id_filter)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -54,11 +54,11 @@ output: html_document
 ## Filters without matches
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, id_filter),
-                                     dplyr::select(trans, id_filter),
-                                     by = "id_filter")
+  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, filter_id),
+                                     dplyr::select(trans, filter_id),
+                                     by = "filter_id")
 
-  save(trans_no_match, file = "../r_files/trans_no_match.Rda")
+  saveRDS(trans_no_match, file = "../r_files/trans_no_match.RDS")
 ```
 
 ## Melt
@@ -66,8 +66,9 @@ output: html_document
 Make longer and remove missing values
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
-                  tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
+  trans_merged <- dplyr::filter(trans_merged, !is.na(test_id)) %>%
+                  dplyr::filter(!grepl("Pilot", test_id)) %>%
+                  tidyr::gather_(trans_merged, "var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
                   dplyr::mutate(lamda = sub("_.*", "", var)) %>%
                   dplyr::mutate(pos = sub(".*_", "", var)) %>%
                   dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
@@ -116,4 +117,3 @@ Additional bad tests
 
 Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
 
-$transmissometer$ data is expected to be missing for: 17A only. This filter ruptured during the test so was not able to be transmissometer-ed.
