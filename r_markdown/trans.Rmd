@@ -14,13 +14,13 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 ## Load transmissometer data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/trans.Rda")
+  trans <- readRDS("../r_files/trans.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -30,9 +30,10 @@ output: html_document
 ## Load filter id numbers
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/grav.Rda") 
+  grav <- readRDS("../r_files/grav.RDS") 
 
-  filter_info <- dplyr::select(grav, id, id_filter)
+  filter_info <- dplyr::select(grav, id, id_filter) %>%
+                 dplyr::rename("id_filter" = "filter_id")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -42,7 +43,7 @@ output: html_document
 ## Merge data with id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans, filter_info, "id_filter") %>%
+  trans_merged <- dplyr::left_join(trans, filter_info, "filter_id") %>%
                   dplyr::mutate(id = as.factor(id))
 ```
 
