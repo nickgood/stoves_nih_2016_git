@@ -38,15 +38,14 @@ output: html_document
 * extract start and end times DOUBLE CHECK THESE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::filter(test_times, var == "ignite" | var == "end") %>%
-                tidyr::spread(var, value) # %>%
-                #dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
+  test_times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+                tidyr::spread(var, value)
 ```
 
 Extract measured flows. FIX HERE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- tidy_date(data_cal_two, "^pax_preflow|^pax_postflow", "")
+  pax_flows <- tidy_date(data_cal_two, "^pax_preflow_[0-9]|^pax_postflow_[0-9]", "")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -92,7 +91,8 @@ Split variable to get measurement type, location and replicate information.
 ## Map experiment id to pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_id <-  map_id(pax, test_times)
+  test_times_renamed <- dplyr::rename(test_times, start = set_1)  
+  pax_id <-  map_id(pax, test_times_renamed)
   
   pax_noid <- dplyr::setdiff(pax, select(pax_id, -id)) %>%
               dplyr::mutate(id = NA)
@@ -106,7 +106,7 @@ Split variable to get measurement type, location and replicate information.
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
+  notes <- readRDS("../r_files/notes.RDS")
 
   notes <- dplyr::filter(notes, grepl("pax|all", notes$inst) == TRUE)
 ```
@@ -114,11 +114,8 @@ Load notes
 Flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
+  
+ 
 ```
 
 Set one flag per test
@@ -147,7 +144,7 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(pax_merged, file="../r_files/pax_merged.Rda")
+  saveRDS(pax_merged, file="../r_files/pax_merged.RDS")
 ```
 
 ## Summary
@@ -179,7 +176,7 @@ Addtional bad tests
 
 ## Data summary
 
-The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
+The PAX measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
 
 
-$PAX$ data is expected to be missing for: no tests
+PAX data is expected to be missing for: no tests
