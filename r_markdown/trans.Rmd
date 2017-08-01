@@ -136,3 +136,4 @@ ggplot(trans_merged, aes(id, atn_uv_2)) +
   theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
 ```
 
+Note: in pre UV plot: all 5 filters around the 35 mark are from the same batch of filters which were trans'd on a later date than the original filters; all 6 filters around the 11 mark are from a batch of filters which were trans'd on a different date from original
