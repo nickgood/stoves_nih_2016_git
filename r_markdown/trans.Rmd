@@ -129,11 +129,14 @@ Transmissometer was was collected for `r length(unique(trans_merged$id))` experi
 ```
 
 ```{r}
-ggplot(trans_merged, aes(id, atn_uv_2)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Post Test UV Attenuation") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+  trans_no_err <- dplyr::filter(trans_merged, !grepl("^ERR60", atn_uv_2)) %>%
+                  dplyr::mutate(as.numeric(atn_uv_2))
+
+  ggplot(trans_no_err, aes(id, atn_uv_2)) +
+    geom_point() +
+    theme_minimal() +
+    ylab("Post Test UV Attenuation") +
+    theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
 ```
 
 Note: in pre UV plot: all 5 filters around the 35 mark are from the same batch of filters which were trans'd on a later date than the original filters; all 6 filters around the 11 mark are from a batch of filters which were trans'd on a different date from original
