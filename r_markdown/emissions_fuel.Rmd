@@ -48,7 +48,7 @@ output:
 # Plot
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(filter(fuel_burnt_reps, fuel_type != "blank"), aes(x = rep, y = dm, colour = fuel_type)) +
+  ggplot(filter(fuel_burnt_reps, fuel != "blank"), aes(x = rep, y = dm, colour = fuel)) +
         geom_point() +
         theme_minimal() + 
         facet_wrap(~ id_test) +
@@ -64,11 +64,11 @@ Notes:
 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(filter(fuel_burnt_test, fuel_type != "blank"), 
+  ggplot(filter(fuel_burnt_test, fuel != "blank"), 
          aes(x = id_test, y = fuelmass_total, colour = as.character(fuel_quant))) +
         geom_point() +
         theme_minimal() + 
-        facet_wrap(~ fuel_type, scales = "free") +
+        facet_wrap(~ fuel, scales = "free") +
         #theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
         theme(legend.position = "top") +
         ylab("fuel burnt total (g)") +

@@ -70,7 +70,17 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   notes <- dplyr::filter(notes, grepl("carbonyl|all", inst))
 
-  carbonyls <- dplyr::left_join(carbonyls, notes, by = "id")
+  flags <- dplyr::select(notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc)) %>%
+           dplyr::right_join(dplyr::select(test_info, id), by = "id") %>%
+           dplyr::mutate(qc = ifelse(is.na(qc), "good", as.character(qc)))
+
+  carbonyls <- carbonyls %>% 
+               dplyr::left_join(flags, by = "id") %>%
+               dplyr::left_join(select(test_info, id, fuel),
+                               by = c("id", "fuel"))
 ```
 
 # Carbonyl concentration
