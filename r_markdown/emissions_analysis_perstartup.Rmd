@@ -124,6 +124,8 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 ```
 
 ## Correlations
+* all individual data points shown. 
+
 ## PM vs others 
 ### PM vs. CO
 ```{r}
