@@ -83,7 +83,254 @@ knitr::kable(ef_mean_table)
 ```
 
 
+# Plots
+
+## Overview: All pollutants
+```{r fig.width = 15, fig.height=15}
+ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=20),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("mg per startup event") + xlab("fuel type") +
+  facet_wrap(~pol, scales = "free")
+```
+
+## Key Pollutants only! 
+
+* all individual data points shown as circles; black star is mean value for that group. Fuel types ordered by highest to lowest PM.  
+```{r fig.width=18, fig.height= 12}
+  p_data_key <- dplyr::filter(ef_su_event, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
+                dplyr::mutate(pol = forcats::fct_relevel(pol, "grav", "co",
+                                                      "formaldehyde", "acetaldehyde",
+                                                      "voc_benzene", "voc_toluene")) %>%
+                dplyr::mutate(fuel = forcats::fct_relevel(fuel, "kerosene", "leaves_twigs",
+                                                          "flipflops", "rubber", "newspaper",
+                                                          "wood_shims", "t_shirts", 
+                                                          "food_packaging", "plastic_bags"))
+
+  p_data_key_means <- filter(ef_sum, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol))
+
+  ggplot(p_data_key, aes(fuel, masspol_per_startup, color = fuel)) +
+  geom_point(size = 5) +
+  geom_point(data = p_data_key_means, aes(x = fuel, y = mean_ef), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
+  theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylab("mg per startup event") + xlab("fuel type") +
+  facet_wrap(~pol, scales = "free")
+```
+
+## Correlations
+## PM vs others 
+### PM vs. CO
+```{r}
+  pmco <- dplyr::filter(ef_su_event, grepl('^grav$|^co$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 2) +
+          ylab("CO EF (mg per startup event)") +
+          xlab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs. benzene
+```{r}
+  pmbz <- dplyr::filter(ef_su_event, grepl('^grav$|^voc_benzene$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmbz, aes(x = grav, y = voc_benzene, colour = fuel), size = 2) +
+          ylab("benzene EF (mg per startup event)") +
+          xlab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
 
 
+### PM vs. toluene
+```{r}
+  pmto <- dplyr::filter(ef_su_event, grepl('^grav$|^voc_toluene$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmto, aes(x = grav, y = voc_toluene, colour = fuel), size = 2) +
+          ylab("toluene EF (mg per startup event)") +
+          xlab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### PM vs. formaldehyde
+```{r}
+  pmfd <- dplyr::filter(ef_su_event, grepl('^grav$|^formaldehyde$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmfd, aes(x = grav, y = formaldehyde, colour = fuel), size = 2) +
+          ylab("formaldehyde EF (mg per startup event) ") +
+          xlab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### PM vs. acetaldehyde
+```{r}
+  pmfd <- dplyr::filter(ef_su_event, grepl('^grav$|^acetaldehyde$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmfd, aes(x = grav, y = acetaldehyde, colour = fuel), size = 2) +
+          ylab("acetaldehyde EF (mg per startup event) ") +
+          xlab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+## CO vs others 
+### CO vs. PM
+```{r}
+  pmco <- dplyr::filter(ef_su_event, grepl('^grav$|^co$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = pmco, aes(x = co, y = grav, colour = fuel), size = 2) +
+          xlab("CO EF (mg per startup event) ") +
+          ylab("PM2.5 EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs. benzene
+```{r}
+  cobz <- dplyr::filter(ef_su_event, grepl('^co$|^voc_benzene$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = cobz, aes(x = co, y = voc_benzene, colour = fuel), size = 2) +
+          ylab("benzene EF (mg per startup event) ") +
+          xlab("CO EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### CO vs. toluene
+```{r}
+  coto <- dplyr::filter(ef_su_event, grepl('^co$|^voc_toluene$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = coto, aes(x = co, y = voc_toluene, colour = fuel), size = 2) +
+          ylab("toluene EF (mg per startup event)") +
+          xlab("CO EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### CO vs. formaldehyde
+```{r}
+  cofd <- dplyr::filter(ef_su_event, grepl('^co$|^formaldehyde$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = cofd, aes(x = co, y = formaldehyde, colour = fuel), size = 2) +
+          ylab("formaldehyde EF (mg per startup event)") +
+          xlab("CO EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### CO vs. acetaldehyde
+```{r}
+  coad <- dplyr::filter(ef_su_event, grepl('^co$|^acetaldehyde$', pol)) %>%
+          dplyr::select(id, fuel, pol, masspol_per_startup) %>%
+          tidyr::spread(pol, masspol_per_startup) 
+
+  ggplot() + 
+        geom_point(data = coad, aes(x = co, y = acetaldehyde, colour = fuel), size = 2) +
+          ylab("acetaldehyde EF (mg per startup event)") +
+          xlab("CO EF (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 18),
+                legend.position = "top",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
 
 
