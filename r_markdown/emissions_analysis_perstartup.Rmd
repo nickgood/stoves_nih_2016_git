@@ -44,7 +44,22 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
                                                       "leaves_twigs", "rubber",
                                                       "flipflops", "t_shirts",
                                                       "food_packaging", "wood_shims")) %>%
-              dplyr::mutate(masspol_per_startup = value / fuel_quant,
-                            mass_avg_startup = fuelmass_total / fuel_quant) %>%
+              dplyr::mutate(masspol_per_startup = (value * 1e-6) / fuel_quant, 
+                            #value = ug emitted per test, so *1e-6 to convert to g for unit = g per event 
+                            mass_avg_startup = fuelmass_total / fuel_quant) %>% 
+                            #fuelmass = g, so unit = g per startup bundle
               dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
+```
+
+# Summary Table
+```{r}
+  ef_sum <- ef_su_event %>% dplyr::group_by(fuel, pol) %>%
+                            dplyr::summarize(nreps = n(),
+                                     mean_ef = round(mean(masspol_per_startup, na.rm = TRUE), 5),
+                                     min_ef = round(min(masspol_per_startup, na.rm = TRUE), 5),
+                                     max_ef = round(max(masspol_per_startup, na.rm = TRUE), 5))
+#mass_ef in units g pol / startup event; one average value per fuel_type.
+
+ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
+                 spread(fuel, mean_ef)
 ```
