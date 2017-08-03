@@ -68,6 +68,13 @@ ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
 knitr::kable(ef_mean_table)
 ```
 
+```{r}
+fuel_sum <- dplyr::filter(ef_su_event, pol == 'grav') %>% 
+            dplyr::group_by(fuel) %>%
+            dplyr::summarize(n_events_pertest = round(mean(fuel_quant), 2),
+                             mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 3))
+```
+
 
 
 
