@@ -51,7 +51,21 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
               dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
 ```
 
-# Summary Table
+# Summary Tables
+
+## Average mass of material burned per startup event
+* unit = grams of material 
+```{r}
+fuel_sum <- dplyr::filter(ef_su_event, pol == 'grav') %>% 
+            dplyr::group_by(fuel) %>%
+            dplyr::summarize(n_tests = n(),
+                             n_events_pertest = round(mean(fuel_quant), 2),
+                             mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 3))
+
+knitr::kable(fuel_sum)
+```
+
+## Emissions Per startup Event
 ```{r}
   ef_sum <- ef_su_event %>% dplyr::group_by(fuel, pol) %>%
                             dplyr::summarize(nreps = n(),
@@ -66,13 +80,6 @@ ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
 * units = mg pollutant emitted per startup event
 ```{r echo = FALSE}
 knitr::kable(ef_mean_table)
-```
-
-```{r}
-fuel_sum <- dplyr::filter(ef_su_event, pol == 'grav') %>% 
-            dplyr::group_by(fuel) %>%
-            dplyr::summarize(n_events_pertest = round(mean(fuel_quant), 2),
-                             mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 3))
 ```
 
 
