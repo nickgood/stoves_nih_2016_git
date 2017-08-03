@@ -76,13 +76,13 @@ ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
 knitr::kable(ef_mean_table)
 ```
 
-# Boxplots and t-test comparisons
+# Data plots and t-test comparisons
 
 ```{r fig.width=20, fig.height= 20, include = FALSE}
   p_data <- filter(ef_bymass, fuel != "background") 
   
   ggplot(p_data, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA) +
+  #geom_boxplot(outlier.size = NA) +
   geom_point() +
   theme_bw() +
   theme(legend.position = "none",
@@ -98,7 +98,7 @@ knitr::kable(ef_mean_table)
   p_data_voc <- dplyr::filter(p_data, inst == "voc")
 
   ggplot(p_data_voc, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA, size = 1.25) +
+  #geom_boxplot(outlier.size = NA, size = 1.25) +
   geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
@@ -124,7 +124,7 @@ pairwise.t.test(p_data_voc$mass_per_mass_fuel[p_data_voc$pol == "voc_toluene"], 
   p_data_carbs <- dplyr::filter(p_data, inst == "carbs")
 
   ggplot(p_data_carbs, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA, size = 1.5) +
+  #geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
@@ -147,7 +147,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
   p_data_gas <- dplyr::filter(p_data, inst == "fivegas")
 
   ggplot(p_data_gas, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA, size = 1.5) +
+  #geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
@@ -179,7 +179,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
   p_data_pm <- dplyr::filter(p_data, inst == "grav")
 
   ggplot(p_data_pm, aes(fuel, mass_per_mass_fuel, color = fuel)) +
-  geom_boxplot(outlier.size = NA, size = 1.5) +
+  #geom_boxplot(outlier.size = NA, size = 1.5) +
   geom_point(size = 4) +
   theme_bw() +
   theme(legend.position = "none",
@@ -209,7 +209,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
         dplyr::filter(fuel != 'background')
 
   ggplot() + 
-        geom_point(data = pmco_means, aes(x = grav, y = co, colour = fuel), size = 4, shape = 18) +
+        #geom_point(data = pmco_means, aes(x = grav, y = co, colour = fuel), size = 4, shape = 18) +
         geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
           ylab("CO EF (g/kg of fuel) ") +
           xlab("PM2.5 EF (g/kg of fuel)") +
@@ -237,7 +237,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
         dplyr::filter(fuel != 'background')
 
   ggplot() + 
-        geom_point(data = benzco_means, aes(x = voc_benzene, y = co, colour = fuel), size = 4, shape = 18) +
+        #geom_point(data = benzco_means, aes(x = voc_benzene, y = co, colour = fuel), size = 4, shape = 18) +
         geom_point(data = benzco, aes(x = voc_benzene, y = co, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
           ylab("CO EF (g/kg of fuel) ") +
           xlab("Benzene EF (g/kg of fuel)") +
@@ -265,7 +265,7 @@ pairwise.t.test(p_data_carbs$mass_per_mass_fuel[p_data_carbs$pol == "formaldehyd
         dplyr::filter(fuel != 'background')
 
   ggplot() + 
-        geom_point(data = pmform_means, aes(x = grav, y = formaldehyde, colour = fuel), size = 4, shape = 18) +
+        #geom_point(data = pmform_means, aes(x = grav, y = formaldehyde, colour = fuel), size = 4, shape = 18) +
         geom_point(data = pmform, aes(x = grav, y = formaldehyde, colour = fuel), size = 2, shape = 21, stroke = 1.5) +
           ylab("Formaldehyde EF (g/kg of fuel) ") +
           xlab("PM2.5 EF (g/kg of fuel)") +
