@@ -1,0 +1,50 @@
+---
+title: "Startup Emissions Analysis - g pol / startup event "
+author: "Kristen Fedak"
+date: "July 27, 2017"
+output:
+  rmarkdown::html_document:
+    toc: true
+    toc_float: 
+      collapsed: false
+    theme: yeti
+---
+
+# Setup 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+  library(tidyverse)
+  library(knitr)
+
+```
+
+# Load and format data
+```{r}
+  emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
+```
+
+```{r}
+ source("../r_scripts/R_functions.R")
+```
+
+```{r include = FALSE}
+# set variable types from character -> factor
+# filter out bad QC data
+# set fuel type order by survey result "commonality" of use. 
+# create variable mass (g) pollutant emitted per startup event
+# create variable average mass (g) of startup material per startup event
+# filter out backgrounds and blanks
+  ef_su_event <- dplyr::mutate(emission_factors, fuel = factor(fuel),
+                                              qc = factor(qc),
+                                              pol = factor(pol)) %>%
+               dplyr::filter(qc != "bad") %>%
+               dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                      "plastic_bags", "newspaper",
+                                                      "leaves_twigs", "rubber",
+                                                      "flipflops", "t_shirts",
+                                                      "food_packaging", "wood_shims")) %>%
+              dplyr::mutate(masspol_per_startup = value / fuel_quant,
+                            mass_avg_startup = fuelmass_total / fuel_quant) %>%
+              dplyr::filter(!grepl('31|32|33|34|35|36|37|38|39|40|41|42|43', id))
+```
