@@ -23,8 +23,12 @@ output: html_document
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   filter_vol <- dplyr::group_by(filter_flows, id, colour) %>%
-                dplyr::summarise(mean_flow = mean(value)) %>%
+                dplyr::summarise(mean_flow = mean(value) * 60) %>%
                 dplyr::filter(colour == "white")
+
+  filter_dur <- dplyr::filter(filter_times, color =="white") %>%
+                dplyr::group_by(id) %>%
+                tidyr::spread(type, value)
 ```
 
 
