@@ -74,6 +74,16 @@ Make longer and remove missing values *THIS CHUNK NOW WORKS BUT NOT SURE WHAT IT
                   dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
 ```
 
+#Recalculate attenuations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  trans_merged <- dplyr::mutate(trans_merged, uv_atn_pre = 100 * log(blankuv/sampleuv)) %>%
+                  dplyr::mutate(ir_atn_pre = 100 * log(blankir/sampleir)) %>%
+                  dplyr::mutate(uv_atn_post = 100 * log(as.numeric(post_blankuv)/as.numeric(post_sampleuv))) %>%
+                  dplyr::mutate(ir_atn_post = 100 * log(as.numeric(post_blankir)/as.numeric(post_sampleir)))
+```
+
+
 ## QC
 
 Load notes
@@ -121,7 +131,7 @@ Transmissometer was was collected for `r length(unique(trans_merged$id))` experi
 #plots
 
 ```{r}
-  ggplot(trans_merged, aes(id, atn_uv)) +
+  ggplot(trans_merged, aes(id, uv_atn_pre)) +
   geom_point() +
   theme_minimal() +
   ylab("Pre Test UV Attenuation") +
@@ -129,14 +139,13 @@ Transmissometer was was collected for `r length(unique(trans_merged$id))` experi
 ```
 
 ```{r}
-  trans_no_err <- dplyr::filter(trans_merged, !grepl("^ERR60", atn_uv_2)) %>%
-                  dplyr::mutate(as.numeric(atn_uv_2))
+  trans_no_err <- dplyr::filter(trans_merged, !grepl("^ERR60", atn_uv_2))
 
-  ggplot(trans_no_err, aes(id, atn_uv_2)) +
+  ggplot(trans_no_err, aes(id, uv_atn_post)) +
     geom_point() +
     theme_minimal() +
     ylab("Post Test UV Attenuation") +
     theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
 ```
 
-Note: in pre UV plot: all 5 filters around the 35 mark are from the same batch of filters which were trans'd on a later date than the original filters; all 6 filters around the 11 mark are from a batch of filters which were trans'd on a different date from original
+Note: in pre UV plot: all 5 filters around the 35 mark are from the same batch of filters which were trans'd on a later date than the original filters; all 6 filters around the 11 mark are from a batch of filters which were trans'd on a different date from originals
