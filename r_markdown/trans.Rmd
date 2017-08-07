@@ -15,7 +15,18 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")
+  filter_times <- readRDS("../r_files/filter_times.RDS")
+  filter_flows <- readRDS("../r_files/filter_flows.RDS")
 ```
+
+## Get mean flows and turn flowrate/ duration into total volume of air through filter
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  filter_vol <- dplyr::group_by(filter_flows, id, colour) %>%
+                dplyr::summarise(mean_flow = mean(value)) %>%
+                dplyr::filter(colour == "white")
+```
+
 
 ## Load transmissometer data
 
@@ -51,14 +62,14 @@ output: html_document
   head(trans_merged, 2)
 ```
 
-## Filters without matches
+## Filters without matches - NONE FOUND FOR MC STUDY
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, filter_id),
-                                     dplyr::select(trans, filter_id),
-                                     by = "filter_id")
-
-  saveRDS(trans_no_match, file = "../r_files/trans_no_match.RDS")
+  # trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, filter_id),
+  #                                    dplyr::select(trans, filter_id),
+  #                                    by = "filter_id")
+  # 
+  # saveRDS(trans_no_match, file = "../r_files/trans_no_match.RDS")
 ```
 
 ## Melt
