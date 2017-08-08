@@ -60,6 +60,8 @@ fuel_sum <- dplyr::filter(ef_su_event, pol == 'grav') %>%
             dplyr::group_by(fuel) %>%
             dplyr::summarize(n_tests = n(),
                              n_events_pertest = round(mean(fuel_quant), 2),
+                             min_events_pertest = min(fuel_quant),
+                             max_events_pertest = max(fuel_quant),
                              mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 3))
 
 knitr::kable(fuel_sum)
@@ -133,8 +135,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel), size = 2) +
+  ggplot(data = pmco, aes(x = grav, y = co)) + 
+    geom_smooth(method = "lm", se= FALSE) +
+    geom_point(size = 2, aes(colour = fuel)) +
           ylab("CO EF (mg per startup event)") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
