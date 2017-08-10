@@ -64,7 +64,7 @@ output:
   ecoc_merged <- readRDS("../r_files/ecoc_merged.RDS")
 ```
 
-* other data (yest to be pre-processed)
+* other data (yest to be pre-processed) PULL DATA UP AND OUT AS PROCESSED
 
 ```{r, eval = FALSE}
   load("../r_files/smps_ultrafine.Rda")

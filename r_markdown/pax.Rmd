@@ -14,13 +14,13 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 ## Load pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/pax.Rda")
+ pax <- readRDS("../r_files/pax.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -30,23 +30,22 @@ output: html_document
 ## Load flow data and test times
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_2.Rda")       # measured flowrates
+  data_cal_two <- readRDS("../r_files/data_cal_two.RDS")       # measured flowrates
 
-  load("../r_files/test_times.Rda")  # test times and ids
+  test_times <- readRDS("../r_files/test_times.RDS")  # test times and ids
 ```
 
-* extract start and end times
+* extract start and end times DOUBLE CHECK THESE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::filter(test_times, var == "ignite" | var == "shutdown") %>%
-                tidyr::spread(var, value) %>%
-                dplyr::mutate(start = ignite - 10*60, end = shutdown + 10*60)
+  test_times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+                tidyr::spread(var, value)
 ```
 
-Extract measured flows.
+Extract measured flows. FIX HERE
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_flows <- tidy_date(cal_2, "^preflow_pax|^postflow_pax", "")
+  pax_flows <- tidy_date(data_cal_two, "^pax_preflow_[0-9]|^pax_postflow_[0-9]", "")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -92,7 +91,8 @@ Split variable to get measurement type, location and replicate information.
 ## Map experiment id to pax data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  pax_id <-  map_id(pax, test_times)
+  test_times_renamed <- dplyr::rename(test_times, start = set_1)  
+  pax_id <-  map_id(pax, test_times_renamed)
   
   pax_noid <- dplyr::setdiff(pax, select(pax_id, -id)) %>%
               dplyr::mutate(id = NA)
@@ -106,7 +106,7 @@ Split variable to get measurement type, location and replicate information.
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
+  notes <- readRDS("../r_files/notes.RDS")
 
   notes <- dplyr::filter(notes, grepl("pax|all", notes$inst) == TRUE)
 ```
@@ -114,11 +114,8 @@ Load notes
 Flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc <- "bad"
-  notes$qc[1:9] <- "maybe"
-  notes$qc[15:16] <- "maybe"
-  notes$qc[17:22] <- "ok"
-  notes$qc[23:27] <- "maybe"
+  
+ 
 ```
 
 Set one flag per test
@@ -147,7 +144,7 @@ Addtional bad tests
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(pax_merged, file="../r_files/pax_merged.Rda")
+  saveRDS(pax_merged, file="../r_files/pax_merged.RDS")
 ```
 
 ## Summary
@@ -179,12 +176,7 @@ Addtional bad tests
 
 ## Data summary
 
-The $PAX$ measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no $PAX$ data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
+The PAX measured during `r length(unique(pax_merged$id))` experiments between `r min(pax_merged$date, na.rm = TRUE)` and `r max(pax_merged$date, na.rm = TRUE)`. There is no PAX data for tests: `r setdiff(as.character(samples$id), as.character(pax_merged$id))`.
 
 
-$PAX$ data is expected to be missing for:
-
-All "G" background tests. PAX was not run during backgrounds.
-
-26A: PAX stopped at 3pm this day, and this test was in late afternoon (after 3pm)
-29A, 2A: there is a file for these days, but looks like there is an issue with the wood log times that is causing them not to line up?
+PAX data is expected to be missing for: no tests
