@@ -22,17 +22,17 @@ output:
 * smps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/smps.Rda")
+  smps <- readRDS("../r_files/smps.RDS")
 ```
 
 * metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/notes.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/smps_pax_bg_times.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  cal_2 <- readRDS("../r_files/data_cal_two.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
+  smps_pax_bg_times <- readRDS("../r_files/smps_pax_bg_times.RDS")
 ```
 
 # Organize
