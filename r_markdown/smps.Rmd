@@ -146,15 +146,13 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine <- dplyr::select(smps_merged, id, dw, size_nm, time, sample) %>%
-                    dplyr::filter(size <= 100)
+                    dplyr::filter(size_nm <= 100)
 ```
 
 * get timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
+  times <- dplyr::select(test_times, -date) %>%
            dplyr::rename(start = set_1)
 ```
 
@@ -168,15 +166,13 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
-                    dplyr::summarise(number_conc = sum(value) * 0.015625355,
-                                     n_bad = sum(qc == "bad"),
-                                     qc = first(qc))
+                    dplyr::summarise(number_conc = sum(as.numeric(dw) * 0.015625355))
 ```
 
 * plot timeseries for each experiment
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80} 
-  ggplot(smps_ultrafine, aes(sample, number_conc, colour = qc)) +
+  ggplot(smps_ultrafine, aes(sample, number_conc)) +
          geom_point() +
          facet_wrap(~id, ncol = 3, scales = "free") +
          scale_y_log10() +
@@ -195,14 +191,14 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_avg <- dplyr::filter(smps_ultrafine) %>%
                     dplyr::group_by(id) %>%
-                    dplyr::summarise(mean_number_conc = mean(number_conc),
-                                     qc = first(qc))
+                    dplyr::summarise(mean_number_conc = mean(number_conc)) #,
+                                     #qc = first(qc))
 ```
 
 * plot test average
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8} 
-  ggplot(smps_ultrafine_avg, aes(id, mean_number_conc, colour = qc)) +
+  ggplot(smps_ultrafine_avg, aes(id, mean_number_conc)) +
          geom_point() +
          scale_y_log10() +
          theme_minimal() + 
@@ -217,19 +213,19 @@ output:
 # Background (G tests)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <-  dplyr::filter(smps_merged, size <= 100, type == "bg") %>%
-                        dplyr::select(id, value, size, time, sample, qc, type)
+  smps_ultrafine_bg <-  dplyr::filter(smps_merged, size_nm <= 100, type == "bg") %>%
+                        dplyr::select(id, dw, size_nm, time, sample, type)
 ```
 
 * reformat time data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times_bg <- dplyr::filter(smps_pax_bg_times, grepl("^G", id), type == "sample") %>%
+  times_bg <- dplyr::filter(smps_pax_bg_times, !grepl("^G", id), type == "sample") %>%
               tidyr::spread(time_point, value) %>%
               dplyr::select(-date)
 ```
 
-* filter by test time window
+* filter by test time window START HERE 8/10/17
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_bg <- filter_times(times_bg, smps_ultrafine_bg)
