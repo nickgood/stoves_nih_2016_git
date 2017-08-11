@@ -42,7 +42,7 @@ output: html_document
                 tidyr::spread(var, value)
 ```
 
-Extract measured flows. FIX HERE
+Extract measured flows.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax_flows <- tidy_date(data_cal_two, "^pax_preflow_[0-9]|^pax_postflow_[0-9]", "")

@@ -37,10 +37,18 @@ output:
 
 # Organize
 
+* extract test times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+                tidyr::spread(var, value)
+```
+
+
 * extract measured flows.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_flows <- tidy_date(cal_2, "^preflow_smps|^postflow_smps", "")
+  smps_flows <- tidy_date(cal_2, "^smps_preflow_[0-9]|^smps_postflow_[0-9]", "")
 
   smps_flows <- split_flows(smps_flows)
 ```
@@ -57,6 +65,21 @@ output:
                 tidyr::unite(temp1, type, temp, sep = "_") %>%
                 tidyr::spread(temp1, val)
 ```
+
+* map ids to smps files
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times_renamed <- dplyr::rename(test_times, start = set_1)  
+  smps <- dplyr::rename(smps, time = start_time)
+  smps_id <-  map_id(smps, test_times_renamed)
+  
+  smps_noid <- dplyr::setdiff(smps, select(smps_id, -id)) %>%
+              dplyr::mutate(id = NA)
+  
+ # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
+  smps_merged <- dplyr::arrange(rbind(smps_id, smps_noid), datetime)
+```
+
 
 * merge
 
@@ -129,10 +152,10 @@ output:
 * get timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
+           dplyr::rename(start = set_1)
 ```
 
 * filter by test time window
@@ -255,15 +278,7 @@ output:
 
 The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
 
-SMPS data is expected to be missing for: 
-13A, 17A, 18A, 19A, 20A, G3, G4. "no data" was noted on QC log for these tests. 
-
-G1, 23A: test date 1/7/2016: data lost from this day. 
-29B: test date 6/29/2016; for some reason there are 2 files, part 1 and 2, where file name is 20160622_29B(1)_SMPS and 20160622_29B(2)_SMPS. Part 1 only contains 24 scans, start times from 13:14 through 14:06. Part 2 starts at 14:22, only 8 scans through 14:45 start. Test start, according to log sheet, was 13:33 - electrical problem with stove at 14:14:00 forced test shutdown early. Need to combine files, or it's possible that this whole test should be scrapped? 
-
-28A: test date 6/23/2016; file is there with correct naming convention…only 9 scans from 9:46 through 10:13; log sheet says test time was from 10:02 through 11:28…suspect an issue occurred with SMPS?
-
-11A: test date 7/19/2016; file is there with correct naming convention…42 scans from 9:53 to 12:09 - but test time in log listed as 12:12 through 13:43…suspect an issue occurred with SMPS?
+SMPS data is expected to be missing for: first test day
 
 # Plots
 
