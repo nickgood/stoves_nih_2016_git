@@ -84,7 +84,7 @@ output:
 * merge
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps, smps_flows, "date") %>%
+  smps_merged <- dplyr::left_join(smps_merged, smps_flows, "date") %>%
                  dplyr::mutate(sample = as.factor(sample))
 ```
 
@@ -126,10 +126,10 @@ output:
 * error from instrument
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::mutate(smps_merged,
-                               qc = ifelse(grepl("^Normal Scan$", instrument_errors),
-                                           as.character(qc),
-                                           "bad"))
+  # smps_merged <- dplyr::mutate(smps_merged,
+  #                              qc = ifelse(grepl("^Normal Scan$", instrument_errors),
+  #                                          as.character(qc),
+  #                                          "bad"))
 ```
 
 * additional bad tests
@@ -145,7 +145,7 @@ output:
 * select sub-100nm data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::select(smps_merged, id, value, size, time, sample, qc) %>%
+  smps_ultrafine <- dplyr::select(smps_merged, id, dw, size_nm, time, sample) %>%
                     dplyr::filter(size <= 100)
 ```
 
