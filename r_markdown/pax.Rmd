@@ -132,7 +132,8 @@ Merge pax with qc flags
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   pax_merged <- dplyr::left_join(pax_merged, flags, by = "id") %>%
                 dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc)))) %>%
+                dplyr::filter(mode == 1 | 2)
 ```
 
 Addtional bad tests
