@@ -22,24 +22,24 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
-  load("../r_files/temp_merged.Rda")
+  temp_merged <- readRDS("../r_files/temp_merged.RDS")
 ```
 
 * constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/calc_constants.Rda")
+  calc_constants <- readRDS("../r_files/calc_constants.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/batch_pot.Rda")
-  load("../r_files/wood_wgts.Rda")
-  load("../r_files/wood_pot.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
+  batch_wgts <- readRDS("../r_files/batch_wgts.RDS")
+  batch_pot <- readRDS("../r_files/batch_pot.RDS")
+  wood_wgts <- readRDS("../r_files/wood_wgts.RDS")
+  wood_pot <- readRDS("../r_files/wood_pot.RDS")
 ```
 
 # Test timestamps
