@@ -332,46 +332,6 @@ Concentration is corrected for background by removing background test average co
 
 ---
 
-# ions
-
-* select data
-
-```{r, eval = FALSE}
-  ions <- dplyr::select(ions_merged,
-                        id,
-                        qc,
-                        flow,
-                        start, end,
-                        pol,
-                        mass_ug,
-                        conc_bg)
-```
-
-* calculate concentrations
-
-```{r, eval = FALSE}
-  ions <- dplyr::mutate(ions,
-                        dur = (end - start) / 60,
-                        conc = (mass_ug * 1000 / (flow * dur)))
-```
-
-* calculate mass emitted
-
-```{r, eval = FALSE}
-  ions <- dplyr::mutate(ions, 
-                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
-                        mass_carbon = mass_emitted * 0,
-                        inst = "ions")
-```
-
-* output
-
-```{r, eval = FALSE}
-  head(ions, 2)
-```
-
----
-
 # smps
 
 * calculate test average number concentration
@@ -417,10 +377,6 @@ Concentration is corrected for background by removing background test average co
 ```
 
 ---
-
-# pah
-
-* waiting on data
 
 # voc
 
