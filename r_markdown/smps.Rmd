@@ -71,13 +71,13 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   test_times_renamed <- dplyr::rename(test_times, start = set_1)  
   smps <- dplyr::rename(smps, time = start_time)
-  smps_id <-  map_id(smps, test_times_renamed)
+  smps_merged <-  map_id(smps, test_times_renamed) # used to be smps_id
   
-  smps_noid <- dplyr::setdiff(smps, select(smps_id, -id)) %>%
-              dplyr::mutate(id = NA)
+  # smps_noid <- dplyr::setdiff(smps, select(smps_id, -id)) %>%
+              # dplyr::mutate(id = NA)
   
  # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
-  smps_merged <- dplyr::arrange(rbind(smps_id, smps_noid), datetime)
+  # smps_merged <- dplyr::arrange(rbind(smps_id, smps_noid), datetime)
 ```
 
 
@@ -119,23 +119,23 @@ output:
                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
                                                      "ok",
                                                      as.character(qc)))) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
-                               type = ifelse(grepl("^G", id), "bg", type))
+                 dplyr::mutate(type = ifelse(grepl("^[A-Z][A-Z][0-9]", id), "test", NA),
+                               type = ifelse(grepl("^BG[0-9]", id), "bg", type))
 ```
 
 * error from instrument
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # smps_merged <- dplyr::mutate(smps_merged,
-  #                              qc = ifelse(grepl("^Normal Scan$", instrument_errors),
-  #                                          as.character(qc),
-  #                                          "bad"))
+   # smps_merged <- dplyr::mutate(smps_merged,
+   #                              qc = ifelse(grepl("^Normal Scan$", instrument_errors),
+   #                                          as.character(qc),
+   #                                          "bad"))
 ```
 
 * additional bad tests
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # smps_merged$qc[smps_merged$id == ""] <- "bad"
+   # smps_merged$qc[smps_merged$id == ""] <- "bad"
 ```
 
 # Ultrafine number
@@ -210,7 +210,7 @@ output:
                                         "bad" = "mistyrose4"))
 ```
 
-# Background (G tests)
+# Background (BG tests)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_bg <-  dplyr::filter(smps_merged, size_nm <= 100, type == "bg") %>%
@@ -233,7 +233,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_bg <- dplyr::group_by(smps_ultrafine_bg, id, sample) %>%
-                       dplyr::summarise(number_conc = sum(value) * 0.015625355,
+                       dplyr::summarise(number_conc = sum(as.numeric(dw)) * 0.015625355,
                                         n_bad = sum(qc == "bad"),
                                         qc = first(qc)) %>%
                        dplyr::ungroup()
