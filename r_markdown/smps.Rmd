@@ -233,9 +233,9 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps_ultrafine_bg <- dplyr::group_by(smps_ultrafine_bg, id, sample) %>%
-                       dplyr::summarise(number_conc = sum(as.numeric(dw)) * 0.015625355,
-                                        n_bad = sum(qc == "bad"),
-                                        qc = first(qc)) %>%
+                       dplyr::summarise(number_conc = sum(as.numeric(dw)) * 0.015625355) %>%
+                                       # n_bad = sum(qc == "bad")) %>%
+                                        # qc = first(qc)) %>%
                        dplyr::ungroup()
 ```
 

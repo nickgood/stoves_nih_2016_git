@@ -64,11 +64,17 @@ output:
   ecoc_merged <- readRDS("../r_files/ecoc_merged.RDS")
 ```
 
+* particle size distributions (smps)
+
+```{r}
+  smps_ultrafine <- readRDS("../r_files/smps_ultrafine.RDS")
+  smps_ultrafine_bg <- readRDS("../r_files/smps_ultrafine_bg.RDS")
+```
+
 * other data (yest to be pre-processed) PULL DATA UP AND OUT AS PROCESSED
 
 ```{r, eval = FALSE}
-  load("../r_files/smps_ultrafine.Rda")
-  load("../r_files/smps_ultrafine_bg.Rda")
+  
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")

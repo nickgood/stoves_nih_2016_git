@@ -174,5 +174,5 @@ With default value `maybe`.
 # Save notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes<- saveRDS(notes, file = "../r_files/notes.RDS")
+  saveRDS(notes, file = "../r_files/notes.RDS")
 ```
