@@ -493,7 +493,7 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   names(df)[3] <- "datetime_start"
   names(df)[4] <- "datetime_end"
   
-  df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na)) 
+  df_num <- subset(df, select = c(-id_can, -id_voc))
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(x)))
 
