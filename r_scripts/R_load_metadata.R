@@ -596,6 +596,7 @@ load_wood <- function(file, sheet = "Wood Sampling Form"){
   
 #________________________________________________________
 # load kb qc data
+# file <- "../data/logs/aim_1_qaqc.csv"
 load_qc_kb <- function(file , grep_str){
  # read csv file
   notes_kb <- read_csv(file)

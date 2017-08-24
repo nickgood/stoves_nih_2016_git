@@ -79,7 +79,7 @@ Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")
 
-  notes <- dplyr::filter(notes, grepl("trans|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("trans|all", inst) == TRUE)
 ```
 
 Set one flag per test

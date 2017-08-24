@@ -561,4 +561,4 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
   count_fuels <- dplyr::tally(group_by(samples, fuel))
 ```
 
-A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of  `r nrow(count_fuels)` fuels were tested (on the appropriate stove).
+A total of `r (as.numeric(count_samples[1,2]) + as.numeric(count_samples[2,2]))` tests were performed between `r min(samples$date)` and `r max(samples$date)`. A total of `r nrow(count_stoves)` stoves types were tested. A total of `r nrow(count_fuels)` fuels were tested (on the appropriate stove).

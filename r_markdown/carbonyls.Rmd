@@ -82,7 +82,7 @@ output:
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", inst) == TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
