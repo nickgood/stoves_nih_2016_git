@@ -139,7 +139,7 @@ output:
 * extract notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("temp|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`

@@ -187,7 +187,7 @@ Load notes
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/notes.Rda")
   
-  notes <- dplyr::filter(notes, grepl("co2|all", notes$inst) == TRUE) %>%
+  notes <- dplyr::filter(notes, grepl("co2|all", inst) == TRUE) %>%
            dplyr::select(-date)
 ```
 
