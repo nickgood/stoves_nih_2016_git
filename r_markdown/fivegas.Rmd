@@ -301,7 +301,7 @@ Remove ozone and nox rows (channels not used during study)
 Extract notes relevant to  fivegas analyzer
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("fivegas|all", inst) == TRUE)
 ```
 
 Flag bad data from notes and plots

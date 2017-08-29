@@ -18,8 +18,8 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   load("../r_files/samples.Rda")
-  load("../r_files/emissions.Rda")
   load("../r_files/fuel_burnt.Rda")
+  emissions_long <- readRDS("../r_files/emissions_long.RDS")
   # load("../r_files/energy.Rda") # not yet created
 ```
 
@@ -34,9 +34,10 @@ output:
 # Mass carbon per test
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  mass_fuel <- dplyr::group_by(emissions, id) %>%
-               dplyr::filter(mass_carbon >= 0) %>%  # ignore negatives
-               dplyr::summarise(mass_carbon = sum(mass_carbon, na.rm = TRUE)) %>%
+  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
+               dplyr::group_by(id) %>%
+               dplyr::filter(value >= 0) %>%  # ignore negatives
+               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
                dplyr::mutate(mass_carbon = 
                                ifelse(grepl("^1A$|^2A$", id),
                                       NA, mass_carbon))  # ignore tests with missing fivegas data
@@ -66,7 +67,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   # NG: are these still unrealistic?
-  emission_factors <- dplyr::filter(emissions, qc != "bad") %>%
+  emission_factors <- dplyr::filter(emissions_long, qc != "bad") %>%
                       dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
                
 ```
@@ -77,17 +78,17 @@ output:
   emission_factors <- dplyr::left_join(emission_factors, 
                                 dplyr::select(mass_fuel, id, mass_fuel_c, 
                                                          mass_fuel_kg, lhv), by = "id" ) %>%
-               dplyr::mutate(mass_ef = ((mass_emitted * 1e-3) / mass_fuel_kg),  # mg / kg
-                             mass_c_ef = ((mass_emitted * 1e-3) / mass_fuel_c),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3), 
+               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
+                             mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg
+                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),
                              energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
 ```
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(mass_fuel, file = "../r_files/mass_fuel.Rda")
-  save(emission_factors, file = "../r_files/emission_factors.Rda")
+  saveRDS(mass_fuel, file = "../r_files/mass_fuel.RDS")
+  saveRDS(emission_factors, file = "../r_files/emission_factors.RDS")
 ```
 
 # Plots
@@ -106,8 +107,8 @@ output:
 ## carbon from CO2
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(emission_factors, pol == "co2"),
-         aes(x = id, y = mass_carbon)) +
+  ggplot(dplyr::filter(emission_factors, pol == "co2", metric == "mass_carbon"),
+         aes(x = id, y = value)) +
     geom_point() +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
@@ -128,7 +129,8 @@ output:
 ## carbon emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(emission_factors, aes(x = id, y = mass_carbon, fill = inst), na.rm = TRUE) +
+  ggplot(dplyr::filter(emission_factors, metric == "mass_carbon"),
+                       aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +
@@ -140,7 +142,8 @@ output:
 ## mass emitted (bar)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
-  ggplot(emission_factors, aes(x = id, y = mass_emitted, fill = inst), na.rm = TRUE) +
+  ggplot(dplyr::filter(emission_factors, metric == "mass_emitted"),
+        aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
     coord_flip() +
     theme_minimal() +

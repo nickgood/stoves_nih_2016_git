@@ -146,7 +146,7 @@ output:
 * extract notes for gravimetric data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("grav|all", inst) == TRUE)
 ```
 
 * mark `bad` tests

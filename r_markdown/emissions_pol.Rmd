@@ -338,7 +338,8 @@ ___
   ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
                dplyr::group_by(id) %>%
                dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
-                                n = n()) %>%
+                                n = n(),
+               	                qc = first(qc)) %>%
                dplyr::ungroup(id) %>%
                dplyr::left_join(times, by = "id") %>%
                dplyr::mutate(dur = end - start)
@@ -422,6 +423,8 @@ ___
 
 ## combine pollutants
 
+* mass based
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions <- dplyr::select(co_co2_ch4, id, pol, 
                                          conc, conc_bg,
@@ -455,10 +458,30 @@ ___
                                                    inst, qc))
 ```
 
+* convert to longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
+```
+
+* number based
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
+            dplyr::mutate(pol = "number") %>%
+            tidyr::gather("metric", "value", 2:3)
+```
+
+* combine mass and number instruments
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emissions_long  <- dplyr::bind_rows(emissions_long, number)
+```
+
 ## save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(emissions, file = "../r_files/emissions.Rda")
+  saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
 ```
 
 ## negative emissions
