@@ -298,7 +298,7 @@ plot_ef_box <- function(emission_factors, pol_name){
     ylab("") +
     xlab("") +
     theme_bw() +
-    scale_y_log10() +
+    #scale_y_log10() +
     ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
     theme(text = element_text(size = 18),
           legend.position = "none")
