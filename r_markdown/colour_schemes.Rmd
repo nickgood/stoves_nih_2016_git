@@ -1,0 +1,32 @@
+---
+title: "Colour schemes"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+# Libraries / source files
+
+```{r setup, include=FALSE}
+  library(tidyverse)
+  library(tibble)
+```
+
+# Qaqc
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  qc_colours = c("ok" = "mediumaquamarine",
+                 "maybe" = "darkorange1",
+                 "bad" = "mediumorchid1")
+```
+
+# Temperature probe location
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_colours = c("front" = "slateblue",
+                 "back" = "lightseagreen",
+                 "flue" = "tomato3",
+                 "t_2" = "snow4")
+```

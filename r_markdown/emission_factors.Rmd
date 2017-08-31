@@ -78,9 +78,11 @@ output:
   emission_factors <- dplyr::left_join(emission_factors, 
                                 dplyr::select(mass_fuel, id, mass_fuel_c, 
                                                          mass_fuel_kg, lhv), by = "id" ) %>%
+
                dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
                              mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg
                              energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),
+
                              energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
 ```
 

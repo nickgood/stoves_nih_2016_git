@@ -159,108 +159,14 @@ filter_times <- function(times, df){
 #________________________________________________________
 
 #________________________________________________________
-# plot mass based emission factors 
-plot_mass_ef <- function(df, pol_name){
-  
-  p1 <- ggplot(df, aes(x = stove_fuel, y = mass_ef, colour = fuel)) +
-    geom_point(size = 2) +
-    facet_grid(pol ~ stovecat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
-    xlab("stove type") +
-    ylab("mass based emissions factors (mg/kg of fuel)") +
-    theme_minimal() +
-    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
-    theme(text = element_text(size=18),
-          legend.position = "top", 
-          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
-          panel.spacing = unit(2, "lines"))
-  
-  p2 <- ggplot(df, aes(x = stove, y = mass_ef, colour = fuel)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ stovecat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove type")) +
-    xlab("stove type") +
-    ylab("mass based emissions factors (mg/kg of fuel)") +
-    theme_minimal() +
-    theme(text = element_text(size=18),
-          legend.position = "top", 
-          axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
-          panel.spacing = unit(2, "lines"))
-  
-  p3 <- ggplot(df, aes(x = fuel, y = mass_ef, colour = stove)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ fuelcat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by fuel type")) +
-    xlab("fuel type") +
-    ylab("mass based emissions factors (mg/kg of fuel)") +
-    theme_minimal() +
-    theme(text = element_text(size=18),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
-          panel.spacing = unit(2, "lines"))
-  
-  #print(p1)
-  print(p2)
-  #print(p3)
-}
-#________________________________________________________
-
-#________________________________________________________
-# plot energy based emission factors 
-plot_energy_ef <- function(df, pol_name){
-  
-  p1 <- ggplot(df, aes(x = stove_fuel, y = energy_ef, colour = fuel)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ stovecat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove/fuel combination")) +
-    xlab("stove type") +
-    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
-    theme_minimal() +
-    scale_x_discrete(label=function(x) sub(" [: : :].*", "", x)) +
-    theme(text = element_text(size=18),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1.18, hjust = 1, size=7.5),
-          panel.spacing = unit(2, "lines"))
-  
-  p2 <- ggplot(df, aes(x = stove, y = energy_ef, colour = fuel)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ stovecat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by stove type")) +
-    xlab("stove type") +
-    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
-    theme_minimal() +
-    theme(text = element_text(size=18),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1.1, hjust = 1, size=10),
-          panel.spacing = unit(2, "lines"))
-  
-  p3 <- ggplot(df, aes(x = fuel, y = energy_ef, colour = stove)) +
-    geom_point(size = 1) +
-    facet_grid(pol ~ fuelcat, scales = 'free') +
-    ggtitle(paste(pol_name, "ef by fuel type")) +
-    xlab("fuel type") +
-    ylab("fuel energy based emissions factors (g/MJ of fuel)") +
-    theme_minimal() +
-    theme(text = element_text(size=18),
-          legend.position = "top",
-          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=14),
-          panel.spacing = unit(2, "lines"))
-  
-  print(p1)
-  print(p2)
-  print(p3)
-}
-#________________________________________________________
-
-#________________________________________________________
 # plot ef summary
 plot_ef_bar <- function(emission_factors, pol_name){
   
   ef_summary <- dplyr::group_by(emission_factors, stove_fuel = paste(stove, ":", fuel)) %>%
-                dplyr::summarise(mean_ef = mean(mass_ef_comb, na.rm = TRUE),
-                                 min_ef = min(mass_ef_comb, na.rm = TRUE),
-                                 max_ef = max(mass_ef_comb, na.rm = TRUE),
-                                 std_ef = sd(mass_ef_comb, na.rm = TRUE),
+                dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE),
+                                 std_ef = sd(energy_ef_comb, na.rm = TRUE),
                                  stove = first(stove),
                                  fuel = first(fuel),
                                  stovecat = first(stovecat),
@@ -275,9 +181,9 @@ plot_ef_bar <- function(emission_factors, pol_name){
           ylab("") +
           xlab("") +
           theme_bw() +
-          scale_y_log10() +
+          #scale_y_log10() +
           scale_x_discrete(label=function(x) sub(" [: ( :]", "\n (", x)) +
-          ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+          ggtitle(paste(pol_name, "EF (g/MJ of fuel) ")) +
           theme(text = element_text(size = 14),
                 legend.position = "top",
                 legend.text = element_text(size = 10),
@@ -288,18 +194,258 @@ plot_ef_bar <- function(emission_factors, pol_name){
   print(p1)
 }
 #________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+                dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) +   
+        geom_col(position = "dodge") +
+        facet_grid(~ fuelcat) +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        scale_y_log10() + 
+        theme_bw() +
+        theme(text = element_text(size = 25),
+              legend.position = "none",
+              legend.text = element_text(size = 25),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 30),
+              strip.text.y = element_text(size = 30))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_bar_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(pol != "co2") %>%
+    dplyr::filter(inst != "ions") %>%
+    dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+    dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = inst)) +   
+    geom_bar(position = "stack", stat = "identity") +
+    theme_minimal() +
+    ylab("Emission Factor (g/kJ fuel)") +
+    xlab("") +
+    scale_y_log10() + 
+    theme_bw() +
+    coord_flip () +
+    scale_fill_brewer(palette = "Set1") + 
+    theme(text = element_text(size = 20),
+          legend.position = "top",
+          legend.text = element_text(size = 20),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 20),
+          strip.text.x = element_text(size = 25),
+          strip.text.y = element_text(size = 25))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_pie_all <- function(emission_factors, pollutant){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(inst == pollutant) %>%
+    dplyr::group_by_(.dots = c("id", "pol", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE)) #%>%
+    #dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    #dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    #dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    #dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = fuelcat, y = mean_ef, fill = pol)) +   
+    geom_bar(position = "stack") +
+    coord_polar("y") +
+    theme_minimal() +
+    ylab("Emission Factor (g/kJ fuel)") +
+    xlab("") +
+    scale_y_log10() + 
+    theme_bw() +
+    coord_flip () +
+    scale_fill_brewer(palette = "Set1") + 
+    theme(text = element_text(size = 20),
+          legend.position = "top",
+          legend.text = element_text(size = 20),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 20),
+          strip.text.x = element_text(size = 25),
+          strip.text.y = element_text(size = 25))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_bar_2_all <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+    dplyr::filter(pol != "co2") %>%
+    dplyr::filter(inst != "ions") %>%
+    dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+    dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+    dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel", "fuelcat")) %>% 
+    dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE)) %>%
+    dplyr::group_by_(.dots = c("inst", "fuelcat")) %>% 
+    dplyr::summarise(mean_ef = mean(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) + 
+    geom_bar(stat = "identity", width = 1) +
+    facet_grid(~ fuelcat) +
+    theme_minimal() +
+    ylab("") +
+    xlab("") +
+    scale_y_log10() + 
+    coord_polar() +
+    theme_bw() +
+    theme(text = element_text(size = 25),
+          legend.position = "none",
+          legend.text = element_text(size = 25),
+          legend.key.size = unit(0.5, "cm"),
+          axis.text.x = element_text(size = 25),
+          strip.text.x = element_text(size = 30),
+          strip.text.y = element_text(size = 30))
+  
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar_2_all <- function(emission_factors){
+
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE),
+                                 mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE))
+  
+  
+  p1 <- ggplot(ef_summary, aes(x = factor(inst), y = mean_ef, fill = inst)) +   
+        geom_bar(width = 1) +
+        facet_grid(stove ~ fuel) +
+        coord_polar() +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        scale_y_log10() + 
+        theme_bw() +
+        theme(text = element_text(size = 25),
+              legend.position = "none",
+              legend.text = element_text(size = 25),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 25),
+              strip.text.y = element_text(size = 25))
+
+  print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot ef summary
+plot_ef_polar <- function(emission_factors){
+  
+  
+  ef_summary <- dplyr::distinct(emission_factors) %>%
+                dplyr::filter(pol != "co2") %>%
+                dplyr::filter(inst != "ions") %>%
+                dplyr::mutate(inst = ifelse(inst == "fivegas", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = ifelse(inst == "ecoc", as.character(pol), as.character(inst))) %>%
+                dplyr::mutate(inst = factor(inst, levels = c("carbs", "ec", "oc", "grav", "voc", "ch4", "co"))) %>%
+                dplyr::mutate(energy_ef_comb = ifelse(inst == "co", energy_ef_comb/5, energy_ef_comb)) %>%
+                dplyr::group_by_(.dots = c("id", "pol","inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = mean(energy_ef_comb, na.rm = TRUE)) %>%
+                dplyr::group_by_(.dots = c("id", "inst", "stove", "fuel")) %>% 
+                dplyr::summarise(energy_ef_comb = sum(energy_ef_comb, na.rm = TRUE),
+                                 mean_ef = mean(energy_ef_comb, na.rm = TRUE),
+                                 min_ef = min(energy_ef_comb, na.rm = TRUE),
+                                 max_ef = max(energy_ef_comb, na.rm = TRUE))
+
+  
+  p1 <- ggplot(ef_summary, aes(x = inst, y = mean_ef, fill = inst)) +   
+        geom_col(position = "dodge") +
+        facet_grid(stove ~ fuel) +
+        theme_minimal() +
+        ylab("") +
+        xlab("") +
+        coord_polar(theta = "y") +
+        theme_bw() +
+        theme(text = element_text(size = 25),
+              legend.position = "none",
+              legend.text = element_text(size = 25),
+              legend.key.size = unit(0.5, "cm"),
+              axis.text.x = element_text(size = 25),
+              strip.text.x = element_text(size = 25),
+              strip.text.y = element_text(size = 25))
+  
+  print(p1)
+}
+#________________________________________________________
+
 #________________________________________________________
 # plot ef summary
 plot_ef_box <- function(emission_factors, pol_name){
 
-  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = mass_ef_comb, fill = fuelcat)) +   
+  p1 <- ggplot(emission_factors, aes(x = fuelcat, y = energy_ef_comb, fill = fuelcat)) +   
     geom_boxplot() +
     theme_bw() +
     ylab("") +
     xlab("") +
     theme_bw() +
-    scale_y_log10() +
-    ggtitle(paste(pol_name, "EF (mg/kg of fuel) ")) +
+    #scale_y_log10() +
+    ggtitle(paste(pol_name, "EF (g/MJ of fuel) ")) +
     theme(text = element_text(size = 18),
           legend.position = "none")
   
@@ -316,19 +462,122 @@ plot_correlation <- function(ef_1, ef_2, pol_name_1, pol_name_2){
   ef_summary <- dplyr::left_join(ef_1, dplyr::select(ef_2, id, mass_ef_comb_2),
                                  by = "id")
 
-    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat)) + 
-          geom_point(size = 3) +
+    p1 <- ggplot(ef_summary, aes(x = mass_ef_comb, y = mass_ef_comb_2, colour = fuelcat, shape = stove)) + 
+          geom_point(size = 3, stroke = 1.5) +
+          geom_smooth(method = "rlm") +
+          scale_shape_manual(values=1:nlevels(ef_1$stove)) +
           ylab(paste(pol_name_2, "EF (mg/kg of fuel) ")) +
           xlab(paste(pol_name_1, "EF (mg/kg of fuel) ")) +
           scale_x_log10() +
           theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 18),
-                legend.position = "top",
-                legend.key.size = unit(0.1, "cm"),
+          theme(text = element_text(size = 12),
+                legend.key = element_rect(fill = 'white'),
+                legend.position = "right",
                 legend.title = element_blank())
 
   print(p1)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot correlation maps
+plot_cormap <- function(data, cor_method){
+
+  ef_corr <- round(cor(data[-1],
+                       use = "pairwise.complete.obs",
+                       method = cor_method), 2)
+  
+  ef_corr[lower.tri(ef_corr)] <- NA
+  ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
+  ef_corr_l <- ef_corr_l[!(ef_corr_l$value == 1),]
+  
+  p <- ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
+       geom_tile(color = "white")+
+       geom_text(color = "black", size = 3.5) +
+       scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                             midpoint = 0, limit = c(-1,1), space = "Lab", 
+                             name="Spearman Correlation") +
+       theme_bw() + 
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 14, hjust = 1),
+             axis.text.y = element_text(size = 14),
+             axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             panel.grid.major = element_blank(),
+             panel.border = element_blank(),
+             panel.background = element_blank(),
+             axis.ticks = element_blank(),
+             legend.justification = c(1, 0),
+             legend.position = c(0.4, 0.8),
+             legend.direction = "horizontal", 
+             legend.title = element_text(size = 12),
+             legend.text = element_text(size = 16)) +
+       guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+                                    title.position = "top", title.hjust = 0.5)) +
+       coord_fixed()
+  return(p)
+}
+#________________________________________________________
+
+#________________________________________________________
+# plot color maps of replicate counts
+summarise_reps <- function(emission_factors, type){
+
+  if(type == "pol") {
+    replicates <- dplyr::distinct(emission_factors) %>%
+                  dplyr::filter(grepl(measure_names, inst)) %>%
+                  dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
+                  dplyr::count() %>%
+                  tidyr::spread(pol, n) %>%
+                  dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
+                  tidyr::gather("pol", "n", 4:ncol(.)) %>%
+                  dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
+                  dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
+                                                                     "charcoal", "advanced")))
+  } else {
+    replicates <- dplyr::distinct(emission_factors) %>%
+                  dplyr::group_by_(.dots = c("inst", "id", "stove", "fuel", "fuelcat")) %>% 
+                  dplyr::summarise(conc = mean(conc)) %>%
+                  dplyr::group_by_(.dots = c("inst", "stove", "fuel", "fuelcat")) %>% 
+                  dplyr::count() %>%
+                  tidyr::spread(inst, n) %>%
+                  dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
+                  tidyr::gather("pol", "n", 4:ncol(.)) %>%
+                  dplyr::mutate(stove_fuel = paste(stove, ":", fuel)) %>%
+                  dplyr::mutate(fuelcat = factor(fuelcat, levels = c("wood", "pellets",
+                                                                     "charcoal", "advanced")))
+  }
+  
+
+  p <- ggplot(data = replicates, aes(stove_fuel, pol, fill = n, label = n))+
+       geom_tile(color = "black") +
+       geom_text(color = "black", size = 7) +
+       scale_fill_gradient2(low = "blue", high = "white",
+                            midpoint = 3, limit = c(0, max(replicates$n)), space = "Lab", 
+                            name = "Number of replicates") +
+       facet_wrap( ~ fuelcat, scales = "free") +
+       theme_bw() + 
+       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1),
+             axis.text.y = element_text(size = 12),
+             axis.title.x = element_blank(),
+             axis.title.y = element_blank(),
+             panel.grid.major = element_blank(),
+             panel.border = element_blank(),
+             panel.background = element_blank(),
+             axis.ticks = element_blank(),
+             legend.position = "top",
+             legend.direction = "horizontal", 
+             legend.title = element_text(size = 16),
+             legend.text = element_text(size = 12),
+             strip.text.x = element_text(size = 18),
+             strip.text.y = element_text(size = 12),
+             plot.margin = margin(10, 10, 10, 150)) +
+       scale_x_discrete(label=function(x) sub(" [: : :]", "\n", x)) +
+       guides(fill = guide_colorbar(barwidth = 20, barheight = 1,
+                                    title.position = "top", title.hjust = 0.5)) +
+       coord_equal()
+
+  return(p)
 }
 #________________________________________________________
 
