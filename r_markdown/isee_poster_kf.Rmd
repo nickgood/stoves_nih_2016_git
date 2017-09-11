@@ -55,15 +55,44 @@ output: html_document
                       dplyr::filter(energy_ef_comb > 0)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Remove outliers
-  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
-                      dplyr::filter(energy_ef_comb > 0)
+```{r}
+  # filter/setup for analysis
+  ef_plotdata <- dplyr::filter(emission_factors, grepl('^grav$|^co$|^voc_benzene$|^voc_toluene$|^formaldehyde$|^acetaldehyde$', pol)) %>%
+                 dplyr::select(id, pol, mass_ef_comb, stove, fuel, stovecat, fuelcat) %>%
+                 tidyr::spread(pol, mass_ef_comb, -id, -stove, -fuel, -stovecat, -fuelcat) 
 ```
+
 
 # Plot relationships 
 
+## PM vs CO
 ```{r}
-test
+
+  ggplot(ef_plotdata, aes(x = grav, y = co, colour = fuelcat, shape = stove)) + 
+      geom_point(size = 3, stroke = 1.5) +
+      geom_smooth(method = "rlm") +
+      ylab("PM2.5 EF (mg/kg of fuel)") +
+      xlab("CO EF (mg/kg of fuel)") +
+      scale_x_log10() +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 12),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "right",
+            legend.title = element_blank())
+
 ```
+
+## PM vs benzene
+
+## PM vs formaldehyde
+
+## PM vs acetaldehyde
+
+## CO vs benzene
+
+## CO vs formaldehyde
+
+## CO vs acetaldehyde
+
 
