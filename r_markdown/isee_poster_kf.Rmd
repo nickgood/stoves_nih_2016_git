@@ -4,3 +4,57 @@ author: "Kristen Fedak"
 date: "September 11, 2017"
 output: html_document
 ---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE)
+```
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(forcats)
+  library(reshape2)
+  library(MASS)
+  library(GGally)
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load data and meta data
+  load("../r_files/emission_factors.Rda")
+  load("../r_files/samples.Rda")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load functions
+  source("../r_scripts/R_functions.R")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Add stove/fuel information
+  emission_factors <- dplyr::left_join(emission_factors, 
+                                       dplyr::select(samples, id, stove, fuel,
+                                                     fuelcat, stovecat),
+                                       by = "id")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Use carbon balance method for missing emissions factors
+  emission_factors <- dplyr::mutate(emission_factors, 
+                                    mass_ef_comb = 
+                                      ifelse(is.na(mass_ef),
+                                             mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_ef_comb =
+                                      ifelse(is.na(energy_ef), energy_c_ef,
+                                             energy_ef))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Remove outliers
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
+                      dplyr::filter(energy_ef_comb > 0)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Remove outliers
+  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
+                      dplyr::filter(energy_ef_comb > 0)
+```
