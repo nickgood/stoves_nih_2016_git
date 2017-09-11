@@ -14,14 +14,13 @@ output: html_document
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
   library(forcats)
-  library(reshape2)
   library(MASS)
   library(GGally)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Load data and meta data
-  load("../r_files/emission_factors.Rda")
+  emission_factors <- readRDS("../r_files/emission_factors.RDS")
   load("../r_files/samples.Rda")
 ```
 
@@ -35,11 +34,12 @@ output: html_document
   emission_factors <- dplyr::left_join(emission_factors, 
                                        dplyr::select(samples, id, stove, fuel,
                                                      fuelcat, stovecat),
-                                       by = "id")
+                                       by = "id") %>%
+	                    dplyr::filter(metric == "mass_emitted")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Use carbon balance method for missing emissions factors
+ # Use carbon balance method for missing emissions factors
   emission_factors <- dplyr::mutate(emission_factors, 
                                     mass_ef_comb = 
                                       ifelse(is.na(mass_ef),
@@ -50,27 +50,48 @@ output: html_document
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Remove outliers
+ # Remove outliers
   emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0) %>%
                       dplyr::filter(energy_ef_comb > 0)
 ```
 
 ```{r}
-  # filter/setup for analysis
-  ef_plotdata <- dplyr::filter(emission_factors, grepl('^grav$|^co$|^voc_benzene$|^voc_toluene$|^formaldehyde$|^acetaldehyde$', pol)) %>%
-                 dplyr::select(id, pol, mass_ef_comb, stove, fuel, stovecat, fuelcat) %>%
-                 tidyr::spread(pol, mass_ef_comb, -id, -stove, -fuel, -stovecat, -fuelcat) 
+ # filter/setup for analysis
+  ef_plotdata <- emission_factors %>%
+                 dplyr::select(id, pol, mass_ef_comb, fuel, fuelcat, stove, stovecat) %>%
+                 dplyr::distinct() %>%
+                 tidyr::spread(pol, mass_ef_comb)
 ```
 
 
 # Plot relationships 
 
-## PM vs CO
-```{r}
+```{r, echo=FALSE}
+#_______________________________________________________________________________
+ # fit lm to formula
+lm_mod = function(out = ef_plotdata, fm = "grav ~ co"){
+  m = lm(fm, out)
+  eq <- substitute(~~R^2~"="~r2, 
+                   list(r2 = format(summary(m)$r.squared, digits = 2)))
+  as.character(as.expression(eq))
+}
+#_______________________________________________________________________________
+```
 
-  ggplot(ef_plotdata, aes(x = grav, y = co, colour = fuelcat, shape = stove)) + 
-      geom_point(size = 3, stroke = 1.5) +
-      geom_smooth(method = "rlm") +
+
+
+## PM vs CO
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "grav ~ co")))
+
+  ggplot(ef_plotdata, aes(x = grav, y = co)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
+      geom_smooth(method = "lm", se = FALSE, color = "black") +
+      geom_text(data = r2_data, aes(x = 45, y = 1.9e5, label = eq, family = "Helvetica Neue"),
+                      color = 'black',  parse = TRUE,
+                      size = 6) +
       ylab("PM2.5 EF (mg/kg of fuel)") +
       xlab("CO EF (mg/kg of fuel)") +
       scale_x_log10() +
@@ -80,6 +101,32 @@ output: html_document
             legend.key = element_rect(fill = 'white'),
             legend.position = "right",
             legend.title = element_blank())
+
+```
+
+```{r}
+
+ #_______________________________________________________________________________
+ # r2 for each fuel
+  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
+  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
+ #_______________________________________________________________________________
+
+  ggplot(ef_plotdata, aes(x = grav, y = co)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
+      geom_smooth(method = "lm", se = FALSE, color = "black") +
+      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq, family = "Helvetica Neue"),
+                      color = 'black',  parse = TRUE,
+                      vjust = 1.5, hjust = "inward",
+                      size = 6) +
+      ylab("PM2.5 EF (mg/kg of fuel)") +
+      xlab("CO EF (mg/kg of fuel)") +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "right",
+            legend.title = element_blank()) +
+      facet_wrap(~fuelcat, scales = "free")
 
 ```
 
