@@ -63,22 +63,19 @@ output: html_document
                  tidyr::spread(pol, mass_ef_comb)
 ```
 
-
 # Plot relationships 
 
 ```{r, echo=FALSE}
-#_______________________________________________________________________________
+ # function for calculating  r2 value to add to plots
  # fit lm to formula
-lm_mod = function(out = ef_plotdata, fm = "grav ~ co"){
-  m = lm(fm, out)
-  eq <- substitute(~~R^2~"="~r2, 
-                   list(r2 = format(summary(m)$r.squared, digits = 2)))
-  as.character(as.expression(eq))
-}
-#_______________________________________________________________________________
+  lm_mod = function(out = ef_plotdata, fm = "grav ~ co"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+
 ```
-
-
 
 ## PM vs CO
 
@@ -119,8 +116,8 @@ lm_mod = function(out = ef_plotdata, fm = "grav ~ co"){
                       color = 'black',  parse = TRUE,
                       vjust = 1.5, hjust = "inward",
                       size = 6) +
-      ylab("PM2.5 EF (mg/kg of fuel)") +
-      xlab("CO EF (mg/kg of fuel)") +
+      xlab("PM2.5 EF (mg/kg of fuel)") +
+      ylab("CO EF (mg/kg of fuel)") +
       theme_bw() +
       theme(text = element_text(size = 12),
             legend.key = element_rect(fill = 'white'),
@@ -131,6 +128,54 @@ lm_mod = function(out = ef_plotdata, fm = "grav ~ co"){
 ```
 
 ## PM vs benzene
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "grav ~ voc_benzene")))
+
+  ggplot(ef_plotdata, aes(x = grav, y = voc_benzene)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
+      geom_smooth(method = "lm", se = FALSE, color = "black") +
+      geom_text(data = r2_data, aes(x = 45, y = 1e4, label = eq, family = "Helvetica Neue"),
+                      color = 'black',  parse = TRUE,
+                      size = 6) +
+      xlab("PM2.5 EF (mg/kg of fuel)") +
+      ylab("Benzene EF (mg/kg of fuel)") +
+      scale_x_log10() +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 12),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "right",
+            legend.title = element_blank())
+
+```
+
+```{r}
+
+ #_______________________________________________________________________________
+ # r2 for each fuel
+  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
+  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
+ #_______________________________________________________________________________
+
+  ggplot(ef_plotdata, aes(x = grav, y = voc_benzene)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
+      geom_smooth(method = "lm", se = FALSE, color = "black") +
+      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
+                      color = 'black',  parse = TRUE,
+                      vjust = 1.5, hjust = "inward",
+                      size = 6) +
+      xlab("PM2.5 EF (mg/kg of fuel)") +
+      ylab("Benzene EF (mg/kg of fuel)") +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "right",
+            legend.title = element_blank()) +
+      facet_wrap(~fuelcat, scales = "free")
+
+```
 
 ## PM vs formaldehyde
 
