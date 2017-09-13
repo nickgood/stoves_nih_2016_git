@@ -128,7 +128,7 @@ output: html_document
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "PM2.5 ~ CO")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ PM2.5")))
 
   ggplot(ef_plotdata, aes(x = PM2.5, y = CO)) + 
       geom_point(size = 3, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
@@ -147,328 +147,96 @@ output: html_document
 
 ```
 
-```{r}
 
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = grav, y = co)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
-                      size = 6) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("CO EF (mg/kg of fuel)") +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
-
-```
-
-## PM vs benzene
+## PM vs Benzene
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "grav ~ voc_benzene")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "benzene ~ PM2.5")))
 
-  ggplot(ef_plotdata, aes(x = grav, y = voc_benzene)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 45, y = 1e4, label = eq, family = "Helvetica Neue"),
+  ggplot(ef_plotdata, aes(x = PM2.5, y = benzene)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq, family = "Helvetica Neue"),
                       color = 'black',  parse = TRUE,
                       size = 6) +
       xlab("PM2.5 EF (mg/kg of fuel)") +
       ylab("Benzene EF (mg/kg of fuel)") +
-      scale_x_log10() +
       theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
+      theme(text = element_text(size = 20),
             legend.key = element_rect(fill = 'white'),
             legend.position = "right",
             legend.title = element_blank())
 
 ```
 
+## CO vs Benzene
+
 ```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "benzene ~ CO")))
 
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = grav, y = voc_benzene)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
+  ggplot(ef_plotdata, aes(x = CO, y = benzene)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq, family = "Helvetica Neue"),
                       color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
                       size = 6) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
       ylab("Benzene EF (mg/kg of fuel)") +
+      xlab("CO EF (mg/kg of fuel)") +
       theme_bw() +
-      theme(text = element_text(size = 12),
+      theme(text = element_text(size = 20),
             legend.key = element_rect(fill = 'white'),
             legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
+            legend.title = element_blank())
 
 ```
 
-## PM vs formaldehyde
+## PM vs Formaldehyde
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "grav ~ formaldehyde")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "formaldehyde ~ PM2.5")))
 
-  ggplot(ef_plotdata, aes(x = grav, y = formaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 45, y = 1500, label = eq, family = "Helvetica Neue"),
+  ggplot(ef_plotdata, aes(x = PM2.5, y = formaldehyde)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq, family = "Helvetica Neue"),
                       color = 'black',  parse = TRUE,
                       size = 6) +
       xlab("PM2.5 EF (mg/kg of fuel)") +
       ylab("Formaldehyde EF (mg/kg of fuel)") +
-      scale_x_log10() +
       theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
+      theme(text = element_text(size = 20),
             legend.key = element_rect(fill = 'white'),
             legend.position = "right",
             legend.title = element_blank())
 
 ```
 
+## CO vs Formaldehyde
+
 ```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "formaldehyde ~ CO")))
 
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = grav, y = formaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
+  ggplot(ef_plotdata, aes(x = CO, y = formaldehyde)) + 
+      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq, family = "Helvetica Neue"),
                       color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
                       size = 6) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
       ylab("Formaldehyde EF (mg/kg of fuel)") +
+      xlab("CO EF (mg/kg of fuel)") +
       theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
-
-```
-
-## PM vs acetaldehyde
-
-```{r}
- # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "grav ~ acetaldehyde")))
-
-  ggplot(ef_plotdata, aes(x = grav, y = acetaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 45, y = 1e3, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 6) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Acetaldehyde EF (mg/kg of fuel)") +
-      scale_x_log10() +
-      theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
+      theme(text = element_text(size = 20),
             legend.key = element_rect(fill = 'white'),
             legend.position = "right",
             legend.title = element_blank())
-
-```
-
-```{r}
-
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = grav, y = acetaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
-                      color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
-                      size = 6) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Acetaldehyde EF (mg/kg of fuel)") +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
-
-```
-
-## CO vs benzene
-
-```{r}
- # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "co ~ voc_benzene")))
-
-  ggplot(ef_plotdata, aes(x = co, y = voc_benzene)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 6e3, y = 1.7e3, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Benzene EF (mg/kg of fuel)") +
-      scale_x_log10() +
-      theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank())
-
-```
-
-```{r}
-
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = co, y = voc_benzene)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
-                      color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Benzene EF (mg/kg of fuel)") +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
-
-```
-
-## CO vs formaldehyde
-
-```{r}
- # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "co ~ formaldehyde")))
-
-  ggplot(ef_plotdata, aes(x = co, y = formaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 5e3, y = 1e3, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
-      scale_x_log10() +
-      theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank())
-
-```
-
-```{r}
-
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = co, y = formaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
-                      color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
-
-```
-## CO vs acetaldehyde
-
-```{r}
- # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "co ~ acetaldehyde")))
-
-  ggplot(ef_plotdata, aes(x = co, y = acetaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = 5e3, y = 4e2, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Acetaldehyde EF (mg/kg of fuel)") +
-      scale_x_log10() +
-      theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank())
-
-```
-
-```{r}
-
- #_______________________________________________________________________________
- # r2 for each fuel
-  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
-  r2_data <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
- #_______________________________________________________________________________
-
-  ggplot(ef_plotdata, aes(x = co, y = acetaldehyde)) + 
-      geom_point(size = 3, stroke = 1.5, aes(color = fuelcat)) +
-      geom_smooth(method = "lm", se = FALSE, color = "black") +
-      geom_text(data = r2_data, aes(x = -Inf, y = Inf, label = eq),
-                      color = 'black',  parse = TRUE,
-                      vjust = 1.5, hjust = "inward",
-                      size = 6) +
-      xlab("CO EF (mg/kg of fuel)") +
-      ylab("Acetaldehyde EF (mg/kg of fuel)") +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
-            legend.title = element_blank()) +
-      facet_wrap(~fuelcat, scales = "free")
 
 ```
 
