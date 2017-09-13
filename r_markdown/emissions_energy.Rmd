@@ -124,7 +124,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   t_range <- dplyr::group_by(e_temp, id, rep) %>%
-            dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
+             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
                              t_max = quantile(t_oc, 0.95, na.rm = TRUE))
 ```
 
