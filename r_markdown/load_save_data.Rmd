@@ -66,7 +66,7 @@ Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
   carbonyls <- load_singlefiles("carbonyls")
-  save(carbonyls, file = "../r_files/carbonyls.RDS")
+  saveRDS(carbonyls, file = "../r_files/carbonyls.RDS")
 ```
 
 ## pax
