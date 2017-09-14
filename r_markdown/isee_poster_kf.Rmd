@@ -52,7 +52,7 @@ output: html_document
 ```{r}
   emissions_factors <- emissions_factors %>% 
                        dplyr::filter(pol == "grav" | pol == "voc_benzene" | pol == "co" |
-                                     pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene")
+                                     pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene", id != "1A")
 
   emissions_factors$pol <- forcats::fct_recode(emissions_factors$pol, PM2.5 = "grav",
                                                                   benzene = "voc_benzene",
@@ -94,7 +94,7 @@ output: html_document
 
   plot_ef <- ggplot(emissions_factors, aes(y = energy_ef_comb, x = stovecat)) +
          geom_point(position = position_dodge(0.5), size = 2, aes(group = fuel, color = fuel)) +
-         geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 8, size = 4) +
+         geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 4, size = 2, stroke = 2) +
          facet_wrap(~pol, ncol = 2, scales = "free") +
          theme_bw() +
          ylab("mg emitted per MJ delivered") +
@@ -102,7 +102,8 @@ output: html_document
          theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.55),
                text = element_text(size=20)) +
          theme(legend.position = "top") +
-         scale_color_hue(l = 55) 
+         scale_color_hue(l = 55) +
+         theme(legend.title=element_blank())
   plot_ef
 
 ```
