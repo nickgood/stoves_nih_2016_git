@@ -21,7 +21,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Load data and meta data
-  emissions_factors <- readRDS("../r_files/emission_factors.RDS")
+  emissions_factors <- readRDS("../r_files/emissions_factors.RDS")
   load("../r_files/samples.Rda")
 ```
 
@@ -79,14 +79,25 @@ output: html_document
                                                  "kerosene")
 ```
 
-```{r}
-  options(scipen = 999)
+* average emissions by stovecat and fuelcat
 
-  plot_ef <- ggplot(emissions_factors, aes(y = mass_ef_comb, x = stovecat, group = fuel, color = fuel)) +
-         geom_point(position = position_dodge(0.5), size = 2) +
+```{r}
+ avg <- emissions_factors %>%
+        dplyr::group_by(stovecat, fuelcat, pol) %>%
+        dplyr::summarise(mean = round(mean(energy_ef_comb, na.rm = TRUE), 1))
+```
+
+
+
+```{r}
+  #options(scipen = 999)
+
+  plot_ef <- ggplot(emissions_factors, aes(y = energy_ef_comb, x = stovecat)) +
+         geom_point(position = position_dodge(0.5), size = 2, aes(group = fuel, color = fuel)) +
+         geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 8, size = 4) +
          facet_wrap(~pol, ncol = 2, scales = "free") +
          theme_bw() +
-         ylab("mg emitted /kg fuel") +
+         ylab("mg emitted per MJ delivered") +
          xlab("stove category") +
          theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.55),
                text = element_text(size=20)) +
