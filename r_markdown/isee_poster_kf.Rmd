@@ -21,7 +21,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Load data and meta data
-  emission_factors <- readRDS("../r_files/emission_factors.RDS")
+  emissions_factors <- readRDS("../r_files/emission_factors.RDS")
   load("../r_files/samples.Rda")
 ```
 
@@ -34,7 +34,7 @@ output: html_document
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Add stove/fuel information
   # Use carbon balance method for missing emissions factors
-  emissions <- dplyr::left_join(emission_factors, 
+  emissions_factors <- dplyr::left_join(emissions_factors, 
                                dplyr::select(samples,
                                              id,
                                              stove, stovecat,
@@ -50,7 +50,7 @@ output: html_document
 # Emissions Factors
 
 ```{r}
-  emissions_factors <- emissions %>% 
+  emissions_factors <- emissions_factors %>% 
                        dplyr::filter(pol == "grav" | pol == "voc_benzene" | pol == "co" |
                                      pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene")
 
@@ -96,12 +96,6 @@ output: html_document
 
 ```
 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # Remove outliers
-  emission_factors <- dplyr::filter(emissions_factors, mass_ef_comb > 0) %>%
-                      dplyr::filter(energy_ef_comb > 0)
-```
 
 ```{r}
  # filter/setup for analysis
