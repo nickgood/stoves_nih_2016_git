@@ -158,12 +158,12 @@ output: html_document
       geom_text(data = r2_each, aes(x = 260, y = 9000, label = eq[4]),
                        color = 'purple3',  parse = TRUE,
                        size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("CO EF (mg/kg of fuel)") +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMCOplot
 ```
@@ -179,15 +179,15 @@ PMCOplot
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Benzene EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq),
+                      #color = 'black',  parse = TRUE,
+                      #size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Benzene EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMbenz_plot
   
@@ -197,21 +197,21 @@ PMbenz_plot
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "benzene ~ CO")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~benzene")))
 
-  CObenz_plot <- ggplot(ef_plotdata, aes(x = CO, y = benzene)) + 
+  CObenz_plot <- ggplot(ef_plotdata, aes(x = benzene, y = CO)) + 
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      ylab("Benzene EF (mg/kg of fuel)") +
-      xlab("CO EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("Benzene EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 CObenz_plot
 ```
@@ -226,15 +226,15 @@ CObenz_plot
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Formaldehyde EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMform_plot
 ```
@@ -243,21 +243,21 @@ PMform_plot
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "formaldehyde ~ CO")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ formaldehyde")))
 
-  COform_plot <- ggplot(ef_plotdata, aes(x = CO, y = formaldehyde)) + 
+  COform_plot <- ggplot(ef_plotdata, aes(y = CO, x = formaldehyde)) + 
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
-      xlab("CO EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq),
+      #                color = 'black',  parse = TRUE,
+      #                size = 8) +
+      xlab("Formaldehyde EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 COform_plot
 ```
