@@ -65,8 +65,8 @@ Loads filter weight data and resaves as .RDS.
 Loads and resaves data as .RDS.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ions <- load_singlefiles("ions")
-  save(ions, file = "../r_files/ions.RDS")
+  carbonyls <- load_singlefiles("carbonyls")
+  save(carbonyls, file = "../r_files/carbonyls.RDS")
 ```
 
 ## pax
