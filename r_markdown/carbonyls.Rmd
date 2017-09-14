@@ -22,31 +22,20 @@ output:
 * carbonyls
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")
+  carbonyls <- readRDS("../r_files/carbonyls.RDS")
 ```
 
 * metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/carb_flows.Rda")
-  load("../r_files/carb_times.Rda")
-  load("../r_files/notes.Rda")
-
-  load("../r_files/data_2.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  carb_flows <- readRDS("../r_files/carb_flows.RDS")
+  carb_times <- readRDS("../r_files/carb_times.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
+  cal_data_two <- readRDS("../r_files/data_cal_two.RDS")
 ```
 
 # Organize
-
-## extract ions data
-
-* separate from carbonyls in same file
-* remove G8B (breakthrough test)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::select(ions, 24:39, type, id, id_ions) %>%
-                      dplyr::filter(type == "test" | type == "bg", id != "G8B")
-```
 
 ## flows and times
 
@@ -67,13 +56,13 @@ output:
            tidyr::spread(type, value)
 ```
 
-* merge ions with metadata
+* merge with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::left_join(carbonyls_merged,
+  carbonyls_merged <- dplyr::left_join(carbonyls,
                                   flows,
                                   by = "id") %>%
-                 dplyr::left_join(times,
+                      dplyr::left_join(times,
                                   by = "id")
 ```
 
@@ -82,7 +71,7 @@ output:
 Load notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("carb|carbonyl|carbonyls|all", inst) == TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -120,11 +109,18 @@ Load notes
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
   carbonyls_merged <- tidyr::gather(carbonyls_merged, "pol", "mass_ug",
-                                    -id, -id_ions, -flow,
-                                    -start, -end, -type, -qc) %>%
+                                    -id, -flow,
+                                    -start, -end, -qc) %>%
                       dplyr::filter(!is.na(pol)) %>%
-                      dplyr::mutate(pol = as.factor(pol)) %>%
-                      dplyr::select(-id_ions)
+                      dplyr::mutate(pol = as.factor(pol))
+```
+
+# Calculate concentration
+
+```{r}
+   carbonyls_merged <- dplyr::mutate(carbonyls_merged, dur = end - start) %>%
+                       # ug * 1000 * 60 / (L/min * s) = ug / m^3
+                       dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur))
 ```
 
 # Background analysis
@@ -134,12 +130,9 @@ Load notes
 * calculate average concentration emitted ( and other stats)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(carbonyls_merged, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(carbonyls_merged, grepl("^BG", id), qc != "bad") %>%
         dplyr::mutate(mass_ug = ifelse(is.na(mass_ug), 0, mass_ug)) %>%
         na.omit() %>%
-        dplyr::mutate(dur = end - start) %>%
-        # ug * 1000 * 60 / (L/min * s) = ug / m^3
-        dplyr::mutate(conc = (mass_ug * 1000 * 60) / (flow * dur)) %>%
         dplyr::group_by(pol) %>%
         dplyr::summarise(mean = mean(conc),
                          sd = sd(conc),
@@ -186,8 +179,7 @@ Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` exper
          theme_minimal() +
          ylab("ug") +
          theme(legend.position="top") +
-         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-         facet_wrap(~type, ncol = 1, scales = "free")
+         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ## qc
@@ -200,6 +192,5 @@ Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` exper
          theme_minimal() +
          ylab("ug") +
          theme(legend.position="top") +
-         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-         facet_wrap(~type, ncol = 1, scales = "free")
+         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
