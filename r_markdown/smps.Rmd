@@ -247,27 +247,27 @@ output:
             theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
             theme(legend.position = "top")
 
-  p_qc <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = qc)) +
-            geom_point() +
-            theme_minimal() +
-            scale_y_log10() +
-            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-            theme(legend.position = "top") +
-            scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                           "maybe" = "mediumorchid",
-                                           "bad" = "mistyrose4"))
-
-  grid.arrange(p_id, p_qc, ncol = 1)
+  # p_qc <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = qc)) +
+  #           geom_point() +
+  #           theme_minimal() +
+  #           scale_y_log10() +
+  #           theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  #           theme(legend.position = "top") +
+  #           scale_colour_manual(values = c("ok" = "mediumaquamarine",
+  #                                          "maybe" = "mediumorchid",
+  #                                          "bad" = "mistyrose4"))
+  # 
+  # grid.arrange(p_id, p_qc, ncol = 1)
 ```
 
 # Save files
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(smps_merged, file = "../r_files/smps_merged.Rda")
+  saveRDS(smps_merged, file = "../r_files/smps_merged.RDS")
 
-  save(smps_ultrafine, file = "../r_files/smps_ultrafine.Rda")
+  saveRDS(smps_ultrafine, file = "../r_files/smps_ultrafine.RDS")
 
-  save(smps_ultrafine_bg, file = "../r_files/smps_ultrafine_bg.Rda")
+  saveRDS(smps_ultrafine_bg, file = "../r_files/smps_ultrafine_bg.RDS")
 ```
 
 # Summary
@@ -283,12 +283,12 @@ SMPS data is expected to be missing for: first test day
 * all scans
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
-  ggplot(smps_merged, aes(size, value, group = sample, colour = qc)) +
-         geom_line() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         scale_x_log10() + scale_y_log10() +
-         ylab("dN/dlogDp") +
-         xlab("nm") +
-         theme(legend.position = "none")
+  # ggplot(smps_merged, aes(size, value, group = sample, colour = qc)) +
+  #        geom_line() +
+  #        facet_wrap(~id, ncol = 3, scales = "free") +
+  #        theme_minimal() +
+  #        scale_x_log10() + scale_y_log10() +
+  #        ylab("dN/dlogDp") +
+  #        xlab("nm") +
+  #        theme(legend.position = "none")
 ```
