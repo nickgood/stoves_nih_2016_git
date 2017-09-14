@@ -159,29 +159,18 @@ load_grav_file <- function(file = "../data/grav/Teflon Weight Log Final.xlsx",
 #_______________________________________________________________________________
 
 #_______________________________________________________________________________
-# Load ions and carbonyls file
-# file <- "../data/ions/20161230_IONS.xls"
+# Load carbonyls file
+# file <- "../data/carbonyls/20161230_IONS.xls"
 # set sheet to "ug" or "ug_m3"
-load_ions_file <- function(file, sheet = "ug"){
+load_carbonyls_file <- function(file, sheet = "ug"){
 
   df <- read_excel(path = file, sheet = sheet, col_names = TRUE)
     
   # fix column names
-    names(df)[1] <- "id_ions"
+    names(df)[1] <- "id"
     names(df) <- tolower(colnames(df))
     names(df) <- sub(" \\(ug\\)|\\(ug c\\)", "", colnames(df))
     names(df) <- gsub("/|-|,", "_", colnames(df))
-
-  # test type
-    df$type <- df$id_ions
-    df$type <- ifelse(grepl("[0-9]",substr(df$id_ions,1,1)),"test", df$type) 
-    df$type <- ifelse(grepl("P",substr(df$id_ions,1,1)),"pilot", df$type) 
-    df$type <- ifelse(grepl("G",substr(df$id_ions,1,1)),"bg", df$type)
-    df$type <- as.factor(df$type)
-    
-  # id
-    df$id <- as.factor(ifelse(grepl("^[0-9]|^G[0-9]",df$id_ions), sub("-.*","",df$id_ions),"NA"))
-    df <- dplyr::mutate(df, id = sub("F$","",id))  # remove trailing "F" from id
     
   # return 
     return(df)
@@ -414,10 +403,10 @@ load_singlefiles <- function(log){
     out <- load_grav_file(filelist[1])
   }
   
- # ions
-  if(log == "ions"){
-    filelist <- list.files("../data/ions", "IONS.xls$", full.names = TRUE)
-    out <- load_ions_file(filelist[1])
+ # carbonyls
+  if(log == "carbonyls"){
+    filelist <- list.files("../data/carbonyls", ".xlsx$", full.names = TRUE)
+    out <- load_carbonyls_file(filelist[1])
   }
   
  # pahs
