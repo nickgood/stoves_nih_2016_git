@@ -233,8 +233,9 @@ output:
 
 ## Plot emissions by moisture content
 
-```{r, fig.width = 12, fig.height = 8}
-  ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
+```{r, fig.width = 12, fig.height = 4}
+  p_data_ <- dplyr::filter(p_data, grepl("co2|co|ch4",pol)) # comment this out since p_data redefined here
+  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
   geom_boxplot(outlier.size = NA) +
   geom_point() +
   theme_bw() +
@@ -246,7 +247,8 @@ output:
 ## Plot emissions by moisture content and fuel type
 
 ```{r, fig.width = 12, fig.height = 8}
-  ggplot(p_data, aes(mc_level, mass_pol_mass_fuel, color = type)) +
+  p_data_ <- dplyr::filter(p_data, !grepl("tc",pol))
+  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, color = type)) +
   geom_boxplot(outlier.size = NA, mapping = aes(color = type)) +
   theme_bw() +
   theme(legend.position = "top") +
