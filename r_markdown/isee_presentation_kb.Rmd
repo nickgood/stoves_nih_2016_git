@@ -27,30 +27,44 @@ output:
 # merge with sample info
 
 ```{r merge_data}
-  # Add stove/fuel information
   # Use carbon balance method for missing emissions factors
   samples <- samples %>%
              dplyr::mutate(id = as.character(id))
 
   emissions <- emissions %>%
-               dplyr::left_join(dplyr::select(samples,
-                                              id,
-                                              stove, stovecat,
-                                              fuel, fuelcat),
-                                              by = "id") %>%
-               dplyr::filter(metric == "mass_emitted") %>%
+               dplyr::filter(qc != "bad") %>%
                dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
                                                    mass_c_ef, mass_ef)) %>%
                dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
                                               energy_ef)) %>%
-               dplyr::select(id, pol, inst, qc, mass_ef_comb, energy_ef_comb, stove, fuel, stovecat, fuelcat)
+               dplyr::select(id, pol, inst, mass_ef_comb, energy_ef_comb) %>%
+               tidyr::gather("var", "val", 4:5)
 ```
 
 # aerosol composition bar charts
 
-```{r}
+## tidy aerosol data
+
+```{r sum_ions}
+  # sum ion data
+  ions <- emissions %>% 
+          dplyr::filter(inst == "ions") %>%
+          dplyr::group_by(id, var) %>%
+          dplyr::summarise_if(is.numeric, sum) %>%
+          dplyr::mutate(pol = "ions")
+```
+
+```{r aerosol_var}
+  # create aerosol variable
   aerosols <- emissions %>% 
-              dplyr::filter(inst = fivegas, inst = carbs, inst = voc) %>%
-              
+              dplyr::filter(grepl("ecoc|grav", inst)) %>%
+              dplyr::filter(pol != "tc") %>%
+              dplyr::select(-inst) %>%
+              dplyr::bind_rows(ions)
+```
+
+```{r }
+  # plot ec + oc vs. grav
+  
 ```
 
