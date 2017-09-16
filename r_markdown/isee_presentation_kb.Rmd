@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
@@ -15,3 +14,43 @@ output:
 ```{r global_options, include=FALSE}
   knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
 ```
+
+# tidy data
+
+## load data
+
+```{r load_data}
+  emissions <- readRDS("../r_files/emissions_factors.RDS")
+  load("../r_files/samples.Rda")
+```
+
+# merge with sample info
+
+```{r merge_data}
+  # Add stove/fuel information
+  # Use carbon balance method for missing emissions factors
+  samples <- samples %>%
+             dplyr::mutate(id = as.character(id))
+
+  emissions <- emissions %>%
+               dplyr::left_join(dplyr::select(samples,
+                                              id,
+                                              stove, stovecat,
+                                              fuel, fuelcat),
+                                              by = "id") %>%
+               dplyr::filter(metric == "mass_emitted") %>%
+               dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
+                                                   mass_c_ef, mass_ef)) %>%
+               dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
+                                              energy_ef)) %>%
+               dplyr::select(id, pol, inst, qc, mass_ef_comb, energy_ef_comb, stove, fuel, stovecat, fuelcat)
+```
+
+# aerosol composition bar charts
+
+```{r}
+  aerosols <- emissions %>% 
+              dplyr::filter(inst = fivegas, inst = carbs, inst = voc) %>%
+              
+```
+
