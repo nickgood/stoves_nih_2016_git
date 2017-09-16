@@ -28,30 +28,38 @@ output:
 
 ```{r merge_data}
   # Use carbon balance method for missing emissions factors
-  samples <- samples %>%
-             dplyr::mutate(id = as.character(id))
-
-  emissions <- emissions %>%
-               dplyr::filter(qc != "bad") %>%
-               dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
-                                                   mass_c_ef, mass_ef)) %>%
-               dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
-                                              energy_ef)) %>%
-               dplyr::select(id, pol, inst, mass_ef_comb, energy_ef_comb) %>%
-               tidyr::gather("var", "val", 4:5)
+  emissions %<>%
+    dplyr::filter(qc != "bad") %>%
+    dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
+                                        mass_c_ef, mass_ef)) %>%
+    dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
+                                          energy_ef)) %>%
+    dplyr::select(id, pol, inst, mass_ef_comb, energy_ef_comb) %>%
+    tidyr::gather("var", "val", 4:5)
 ```
 
 # aerosol composition bar charts
 
 ## tidy aerosol data
 
+```{r}
+  # aerosols <- emissions %>% 
+  #             dplyr::filter(grepl("ecoc|grav|ions", inst)) %>%
+  #             dplyr::filter(pol != "tc") %>%
+  #             dplyr::group_by(id, inst, var) %>%
+  #             dplyr::mutate(ions = if(inst == "ions") val else 0) %>%
+  #             dplyr::summarise_if(is.numeric, sum)
+```
+
+
 ```{r sum_ions}
   # sum ion data
-  ions <- emissions %>% 
-          dplyr::filter(inst == "ions") %>%
-          dplyr::group_by(id, var) %>%
-          dplyr::summarise_if(is.numeric, sum) %>%
-          dplyr::mutate(pol = "ions")
+  ions <-
+    emissions %>% 
+    dplyr::filter(inst == "ions") %>%
+    dplyr::group_by(id, var) %>%
+    dplyr::summarise_if(is.numeric, sum) %>%
+    dplyr::mutate(pol = "ions")
 ```
 
 ```{r aerosol_var}
