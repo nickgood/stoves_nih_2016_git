@@ -64,11 +64,12 @@ output:
 
 ```{r aerosol_var}
   # create aerosol variable
-  aerosols <- emissions %>% 
-              dplyr::filter(grepl("ecoc|grav", inst)) %>%
-              dplyr::filter(pol != "tc") %>%
-              dplyr::select(-inst) %>%
-              dplyr::bind_rows(ions)
+  aerosols <-
+    emissions %>% 
+    dplyr::filter(grepl("ecoc|grav", inst)) %>%
+    dplyr::filter(pol != "tc") %>%
+    dplyr::select(-inst) %>%
+    dplyr::bind_rows(ions)
 ```
 
 ```{r }
