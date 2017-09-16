@@ -97,7 +97,7 @@ output: html_document
          geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 4, size = 2, stroke = 2) +
          facet_wrap(~pol, ncol = 2, scales = "free") +
          theme_bw() +
-         ylab("mg emitted per MJ delivered") +
+         ylab("mg emitted per MJ") +
          xlab("stove category") +
          theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.55),
                text = element_text(size=20)) +
