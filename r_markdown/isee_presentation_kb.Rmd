@@ -1,0 +1,17 @@
+---
+title: "ISEE 2017 Presentation"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
