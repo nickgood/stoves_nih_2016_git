@@ -74,6 +74,11 @@ output:
 
 ```{r }
   # plot ec + oc vs. grav
-  
+  aerosols_p <-
+    aerosols %>%
+    dplyr::filter(var == "mass_ef_comb") %>%
+    dplyr::select(-var) %>%
+    dplyr::group_by(id) %>%
+    tidyr::spread(pol, val)
 ```
 
