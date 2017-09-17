@@ -86,7 +86,8 @@ output:
                       dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef, energy_ef)) %>%
                       dplyr::select(-metric, -value, -mass_fuel_c, -mass_fuel_kg, -lhv) %>%
                       tidyr::gather("metric", "value", 5:10) %>%
-                      dplyr::bind_rows(emissions)
+                      dplyr::bind_rows(emissions) %>%
+                      dplyr::distinct()
 ```
 
 # Save
