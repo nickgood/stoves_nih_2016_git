@@ -24,21 +24,16 @@ output:
   load("../r_files/samples.Rda")
 ```
 
-# merge with sample info
-
-```{r merge_data}
-  # Use carbon balance method for missing emissions factors
+```{r select_metric}
   emissions %<>%
-    dplyr::filter(qc != "bad") %>%
-    dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
-                                        mass_c_ef, mass_ef)) %>%
-    dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
-                                          energy_ef)) %>%
-    dplyr::select(id, pol, inst, mass_ef_comb, energy_ef_comb) %>%
-    tidyr::gather("var", "val", 4:5)
+    dplyr::filter(metric == "energy_ef_comb") %>%
+    tidyr::spread(metric, value)
 ```
 
+
 # aerosol composition bar charts
+
+
 
 ## tidy aerosol data
 
@@ -57,7 +52,6 @@ output:
   ions <-
     emissions %>% 
     dplyr::filter(inst == "ions") %>%
-    dplyr::group_by(id, var) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
 ```
