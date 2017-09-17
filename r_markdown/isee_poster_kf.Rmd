@@ -33,18 +33,14 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Add stove/fuel information
-  # Use carbon balance method for missing emissions factors
   emissions_factors <- dplyr::left_join(emissions_factors, 
-                               dplyr::select(samples,
-                                             id,
-                                             stove, stovecat,
-                                             fuel, fuelcat),
-                                             by = "id") %>%
-               dplyr::filter(metric == "mass_emitted") %>%
-               dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef),
-                                                   mass_c_ef, mass_ef)) %>%
-               dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef,
-                                              energy_ef))
+                       dplyr::select(samples,
+                                     id,
+                                     stove, stovecat,
+                                     fuel, fuelcat),
+                                    by = "id") %>%
+                       dplyr::filter(metric == "energy_ef_comb") %>%
+                       tidyr::spread(metric, value)
 ```
 
 # Emissions Factors
