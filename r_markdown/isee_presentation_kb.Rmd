@@ -26,7 +26,7 @@ output:
 
 ```{r select_metric}
   emissions %<>%
-    dplyr::filter(metric == "energy_ef_comb") %>%
+    dplyr::filter(metric == "mass_emitted") %>%
     tidyr::spread(metric, value)
 ```
 
@@ -71,12 +71,15 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
-    dplyr::mutate(ec_oc_ions = ec + oc + ions)
+    tidyr::spread(pol, mass_emitted) %>%
+    dplyr::mutate(ec_oc = ec + oc,
+                  delta_mass = grav - ec_oc)
+
+   
 ```
 
 ```{r plot_aerosols, echo=FALSE}
-  ggplot(aerosols_p, aes(x = grav, y = ec_oc_ions)) +
+  ggplot(aerosols_p, aes(x = grav, y = ec_oc)) +
     theme_bw() +
     geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
     geom_abline(intercept = 0, slope = 1, color = "grey90") +
