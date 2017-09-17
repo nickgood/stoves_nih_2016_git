@@ -52,6 +52,7 @@ output:
   ions <-
     emissions %>% 
     dplyr::filter(inst == "ions") %>%
+    dplyr::group_by(id, qc) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
 ```
@@ -66,13 +67,19 @@ output:
     dplyr::bind_rows(ions)
 ```
 
-```{r }
+```{r sum_aerosols}
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    dplyr::filter(var == "mass_ef_comb") %>%
-    dplyr::select(-var) %>%
-    dplyr::group_by(id) %>%
-    tidyr::spread(pol, val)
+    tidyr::spread(pol, energy_ef_comb) %>%
+    dplyr::mutate(ec_oc_ions = ec + oc + ions)
 ```
 
+```{r plot_aerosols, echo=FALSE}
+  ggplot(aerosols_p, aes(x = grav, y = ec_oc_ions)) +
+    theme_bw() +
+    geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
+    geom_abline(intercept = 0, slope = 1, color = "grey90") +
+    xlim(0, NA) + ylim(0, NA) +
+    geom_text(aes(label = id), nudge_y = 0.01)
+```
