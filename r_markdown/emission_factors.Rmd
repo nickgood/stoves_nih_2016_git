@@ -82,8 +82,10 @@ output:
                                     mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg carbon
                                     energy_ef = ((mass_ef) / (lhv * 1e-3)),  # mg / MJ
                                     energy_c_ef = ((mass_c_ef) / (lhv * 1e-3)))  %>% # mg / MJ 
+                      dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef), mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_ef_comb = ifelse(is.na(energy_ef), energy_c_ef, energy_ef)) %>%
                       dplyr::select(-metric, -value, -mass_fuel_c, -mass_fuel_kg, -lhv) %>%
-                      tidyr::gather("metric", "value", 5:8) %>%
+                      tidyr::gather("metric", "value", 5:10) %>%
                       dplyr::bind_rows(emissions)
 ```
 
