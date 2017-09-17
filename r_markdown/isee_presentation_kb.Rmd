@@ -24,16 +24,15 @@ output:
   load("../r_files/samples.Rda")
 ```
 
+## select metric
+
 ```{r select_metric}
   emissions %<>%
-    dplyr::filter(metric == "mass_emitted") %>%
+    dplyr::filter(metric == "mass_ef_comb") %>%
     tidyr::spread(metric, value)
 ```
 
-
 # aerosol composition bar charts
-
-
 
 ## tidy aerosol data
 
@@ -51,7 +50,7 @@ output:
   # sum ion data
   ions <-
     emissions %>% 
-    dplyr::filter(inst == "ions") %>%
+    dplyr::filter(grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium", pol)) %>%
     dplyr::group_by(id, qc) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
@@ -71,12 +70,28 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, mass_emitted) %>%
-    dplyr::mutate(ec_oc = ec + oc,
-                  delta_mass = grav - ec_oc)
-
-   
+    tidyr::spread(pol, mass_ef_comb) %>%
+    #dplyr::mutate(unaccounted = grav - ec - oc - ions) %>%
+    dplyr::select(-grav) %>%
+    tidyr::gather("pol", "value", 3:5)
 ```
+
+## add sample info
+
+```{r add_info}
+  aerosols_p <-
+    dplyr::left_join(aerosols_p,
+    dplyr::select(samples, id, stove, stovecat,
+                  fuel, fuelcat), by = "id")
+```
+
+```{r}
+  ggplot(aerosols_p, aes(x = id, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    facet_wrap(~fuelcat, scales = "free")
+```
+
 
 ```{r plot_aerosols, echo=FALSE}
   ggplot(aerosols_p, aes(x = grav, y = ec_oc)) +
