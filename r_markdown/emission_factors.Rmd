@@ -68,8 +68,8 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
   # NG: are these still unrealistic?
   emissions <- dplyr::filter(emissions_long, qc != "bad") %>%
-               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
-               dplyr::filter(value >= 0) %>%  # ignore negatives
+               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>% # unrealistic values
+               dplyr::filter(value >= 0)  # ignore negatives
 ```
 
 # Calculate emissions factors
