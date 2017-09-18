@@ -271,7 +271,7 @@ output:
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
-        dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
+        dplyr::mutate(conc = (ug_sq_cm * area * 1000) / (flow * dur)) %>%
         dplyr::group_by(pol, id, cassette) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
