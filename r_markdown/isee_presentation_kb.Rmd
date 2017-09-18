@@ -28,7 +28,8 @@ output:
 
 ```{r select_metric}
   emissions %<>%
-    dplyr::filter(metric == "mass_emitted") %>%
+    dplyr::filter(metric == "conc") %>%
+    dplyr::distinct() %>%
     tidyr::spread(metric, value)
 ```
 
@@ -70,11 +71,11 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, mass_emitted) %>%
+    tidyr::spread(pol, conc) %>%
     na.omit %>% # only keep test cases with all the the data
-    dplyr::mutate(unknown = grav - ec - oc - ions) #%>%
-    #dplyr::select(-grav) %>%
-    #dplyr::mutate_if(is.numeric, funs(. / 1000))
+    dplyr::mutate(unknown = grav - ec - oc - ions) %>%
+    dplyr::select(-grav) %>%
+    dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
 
 ## add sample info
