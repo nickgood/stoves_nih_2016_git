@@ -71,9 +71,10 @@ output:
   aerosols_p <-
     aerosols %>%
     tidyr::spread(pol, mass_ef_comb) %>%
-    #dplyr::mutate(unaccounted = grav - ec - oc - ions) %>%
+    na.omit %>% # only keep test cases with all the the data
+    #dplyr::mutate(unknown = grav - ec - oc - ions) %>%
     dplyr::select(-grav) %>%
-    tidyr::gather("pol", "value", 3:5)
+    dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
 
 ## add sample info
@@ -81,15 +82,28 @@ output:
 ```{r add_info}
   aerosols_p <-
     dplyr::left_join(aerosols_p,
-    dplyr::select(samples, id, stove, stovecat,
-                  fuel, fuelcat), by = "id")
+    dplyr::select(samples, id, stove, fuel), by = "id")
 ```
 
+## summarize by test id 
+
 ```{r}
-  ggplot(aerosols_p, aes(x = id, y = value, fill = pol)) +
+  aerosols_p %<>%
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 3:5) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, stovecat, fuelcat), by = "stove")
+```
+
+```{r aerosol_plot}
+  ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
-    facet_wrap(~fuelcat, scales = "free")
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.55),
+          text = element_text(size=20)) +
+    facet_wrap(~fuel, scales = "free_x") +
+    ylab("gram emitted per MJ") +
+    xlab("")
 ```
 
 
