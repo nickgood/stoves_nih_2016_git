@@ -124,7 +124,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged,
-                            wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
 ```
 
 * change in blank weight
