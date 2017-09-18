@@ -132,14 +132,15 @@ output:
 Use replicate average artifact (probably clean up spreadsheet at some point)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::group_by(ecoc, pol, id, cassette) %>%
-          dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
+  ecoc <- dplyr::group_by(ecoc, pol, id, cassette, qc, type) %>%
+          dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
           dplyr::ungroup()
 
-ecoc_a <- ecoc %>%
-          tidyr::spread(cassette, rep_mean) %>%
-          dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
-          dplyr::mutate(conc_cor = e - a)
+  ecoc_a <- ecoc %>%
+            dplyr::select(id, cassette, conc, pol) %>%
+            tidyr::spread(cassette, conc) %>%
+            dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
+            dplyr::mutate(conc_cor = e - a)
 
   ecoc <- dplyr::left_join(
             dplyr::filter(ecoc, cassette == "e"),
