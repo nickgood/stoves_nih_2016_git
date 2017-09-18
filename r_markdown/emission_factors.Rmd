@@ -65,7 +65,7 @@ output:
 
 * Filter out bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
   # NG: are these still unrealistic?
   emissions <- dplyr::filter(emissions_long, qc != "bad") %>%
                dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>% # unrealistic values
@@ -135,7 +135,7 @@ output:
 
 ## carbon emitted (bar)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
   ggplot(dplyr::filter(emission_factors, metric == "mass_carbon"),
                        aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
@@ -148,7 +148,7 @@ output:
 
 ## mass emitted (bar)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
   ggplot(dplyr::filter(emission_factors, metric == "mass_emitted"),
         aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
