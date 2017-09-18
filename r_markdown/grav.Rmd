@@ -117,7 +117,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   grav_merged <- dplyr::mutate(grav_merged, 
-                            wgt_delta = wgt_post - wgt_pre)
+                               wgt_delta = wgt_post - wgt_pre)
 ```
 
 * change in calibration weight
