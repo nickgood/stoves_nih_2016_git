@@ -156,7 +156,7 @@ output:
                                          "organic carbon")
 ```
 
-```{r}
+```{r aerosols_stoves}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity", space = "free_x") +
     theme_bw() +
@@ -199,7 +199,7 @@ output:
                                          "organic carbon")
 ```
 
-```{r}
+```{r aerosols_wood}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
@@ -238,7 +238,7 @@ output:
                                          "organic carbon")
 ```
 
-```{r}
+```{r aerosols_charcoal}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
@@ -370,7 +370,7 @@ output:
                                       "co")
 ```
 
-```{r}
+```{r gases_stoves}
   ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
@@ -412,7 +412,7 @@ output:
                                       "co")
 ```
 
-```{r aerosol_plot}
+```{r gases_wood}
   ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
@@ -452,7 +452,7 @@ output:
                                       "co")
 ```
 
-```{r}
+```{r gases_charcoal}
   ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
