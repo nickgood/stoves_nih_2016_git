@@ -58,16 +58,22 @@ output:
                                            "clay ring",
                                            "ceramic charcoal",
                                            "rocket elbow",
-                                           "buit-in justa",
-                                           "fan rocket elbow",
+                                           "built-in justa",
                                            "metal charcoal",
+                                           "fan rocket elbow",
                                            "gasifier",
                                            "wick kerosene",
                                            "pressurized kerosene",
                                            "pressurized lpg")
 
   samples$stovecat <- forcats::fct_recode(samples$stovecat, insulated = "improved",
-                                                                  liquid = "advanced")
+                                                            liquid = "advanced")
+```
+
+## extract pm and co data
+
+```{r}
+
 ```
 
 # aerosol composition bar charts
@@ -179,12 +185,10 @@ output:
     aerosols %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
-    #dplyr::mutate(unknown = grav - ec - oc) %>%
     dplyr::select(-grav) %>%
     dplyr::left_join(
-    dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
     dplyr::filter(fuelcat == "charcoal")
-    #dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
 
 ```{r}
@@ -227,6 +231,8 @@ output:
     dplyr::bind_rows(btex)
 ```
 
+## summarize by stove type
+
 ```{r}
   vocs_p <-
     vocs %>%
@@ -256,3 +262,64 @@ output:
     xlab("")
 ```
 
+## summarize by fuel type
+
+```{r}
+  vocs_p <-
+    vocs %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>%
+    dplyr::left_join(
+      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(fuelcat == "wood")
+```
+
+```{r}
+  vocs_p %<>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 2:3) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
+```
+
+```{r aerosol_plot}
+  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
+    xlab("")
+```
+
+```{r}
+  vocs_p <-
+    vocs %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>%
+    dplyr::left_join(
+      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(fuelcat == "charcoal")
+```
+
+```{r}
+  vocs_p %<>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 2:3) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
+```
+
+```{r aerosol_plot}
+  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
+    xlab("")
+```
