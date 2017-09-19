@@ -12,7 +12,8 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', fig.height = 4, fig.width = 10, warning=FALSE, message=FALSE, cache=FALSE)
+  cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
 ```
 
 # tidy data
@@ -22,6 +23,12 @@ output:
 ```{r}
   emissions <- readRDS("../r_files/emissions_factors.RDS")
   load("../r_files/samples.Rda")
+```
+
+## load functions
+
+```{r load_functions}
+  source("../r_scripts/R_plots.R")
 ```
 
 ## select metric
@@ -67,29 +74,31 @@ output:
                                            "pressurized lpg")
 
   samples$stovecat <- forcats::fct_recode(samples$stovecat, insulated = "improved",
+                                                            insulated = "gasifiers",
                                                             liquid = "advanced")
 ```
 
 ## extract pm and co data
 
 ```{r}
+  pm_co <-
+    emissions %>% 
+    dplyr::filter(grepl("^grav$|^co$", pol)) %>%
+    dplyr::select(-inst, -qc)
 
+  pm_co$pol <- forcats::fct_recode(pm_co$pol, "pm2.5" = "grav")
+
+  pm_co$pol <- forcats::fct_relevel(pm_co$pol, "pm2.5", "co")
+  
+  pm_co <-
+    pm_co %>% tidyr::spread(pol, energy_ef_comb)
 ```
 
 # aerosol composition bar charts
 
-## tidy aerosol data
+## organize aerosol data
 
 ```{r}
-  # aerosols <- emissions %>% 
-  #             dplyr::filter(grepl("ecoc|grav|ions", inst)) %>%
-  #             dplyr::filter(pol != "tc") %>%
-  #             dplyr::group_by(id, inst, var) %>%
-  #             dplyr::mutate(ions = if(inst == "ions") val else 0) %>%
-  #             dplyr::summarise_if(is.numeric, sum)
-```
-
-```{r sum_ions}
   # sum ion data
   ions <-
     emissions %>% 
@@ -99,26 +108,34 @@ output:
     dplyr::mutate(pol = "ions")
 ```
 
-```{r aerosol_var}
+```{r}
   # create aerosol variable
   aerosols <-
     emissions %>% 
-    dplyr::filter(grepl("ecoc|grav", inst)) %>%
+    dplyr::filter(grepl("ecoc", inst)) %>%
     dplyr::filter(pol != "tc") %>%
     dplyr::select(-inst) %>%
     dplyr::bind_rows(ions)
 ```
 
+```{r}
+  aerosols$pol <- forcats::fct_recode(aerosols$pol, "elemental carbon" = "ec",
+                                      "organic carbon" = "oc",
+                                      "ions" = "ions")
+  aerosols$pol <- forcats::fct_relevel(aerosols$pol, "organic carbon", "elemental carbon", "ions")
+```
+
+
 ## summarize by stove type
 
-```{r sum_aerosols}
+```{r}
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::mutate(unknown = grav - ec - oc) %>%
-    dplyr::select(-grav) %>%
+    #dplyr::select(-grav) %>%
     dplyr::left_join(
     dplyr::select(samples, id, stove), by = "id")
     #dplyr::mutate_if(is.numeric, funs(. / 1000))
@@ -132,28 +149,36 @@ output:
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
 ```
 
-```{r aerosol_plot}
+```{r}
+  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
+                                         "ions",
+                                         "elemental carbon",
+                                         "organic carbon")
+```
+
+```{r}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
-    geom_bar(stat = "identity") +
+    geom_bar(stat = "identity", space = "free_x") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~stovecat, scales = "free_x", nrow = 1) +
-    ylab("mg emitted per MJ") +
+    scale_fill_manual(values=cbPalette) +
+    facet_grid(~stovecat, scales="free", space="free_x") +
+    ylab("mg emitted per MJ fuel") +
     xlab("")
 ```
 
 ## summarize by fuel type
 
-```{r sum_aerosols}
+```{r}
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::mutate(unknown = grav - ec - oc) %>%
-    dplyr::select(-grav) %>%
+    #dplyr::select(-grav) %>%
     dplyr::left_join(
     dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
     dplyr::filter(fuelcat == "wood")
@@ -167,25 +192,33 @@ output:
     tidyr::gather("pol", "value", 3:5)
 ```
 
-```{r aerosol_plot}
+```{r}
+  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
+                                         "ions",
+                                         "elemental carbon",
+                                         "organic carbon")
+```
+
+```{r}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
-    ylab("mg emitted per MJ") +
+    scale_fill_manual(values=cbPalette) +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+    ylab("mg emitted per MJ fuel") +
     xlab("")
 ```
 
-```{r sum_aerosols}
+```{r}
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
-    dplyr::select(-grav) %>%
+    #dplyr::select(-grav) %>%
     dplyr::left_join(
       dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
     dplyr::filter(fuelcat == "charcoal")
@@ -198,19 +231,76 @@ output:
     tidyr::gather("pol", "value", 3:5)
 ```
 
-```{r aerosol_plot}
+```{r}
+  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
+                                         "ions",
+                                         "elemental carbon",
+                                         "organic carbon")
+```
+
+```{r}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
-    ylab("mg emitted per MJ") +
+      scale_fill_manual(values=cbPalette) +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+    ylab("mg emitted per MJ fuel") +
     xlab("")
 ```
 
-```{r sum_btex}
+## ec and oc correlation plots with pm and co
+
+```{r}
+  # aerosols_p <-
+  #   aerosols %>%
+  #   dplyr::left_join(pm_co, by = "id") %>%
+  #   na.omit %>%
+  #   dplyr::left_join(
+  #     dplyr::select(samples, id, stove, fuel, fuelcat, stovecat), by = "id")
+```
+
+```{r}
+  # co_p <-
+  #   aerosols_p %>%
+  #   dplyr::select(-pm2.5)
+  # 
+  # pm_p <-
+  #   aerosols_p %>%
+  #   dplyr::select(-co) %>%
+  #   dplyr::filter(pol == "organic carbon")
+```
+
+```{r}
+  # eqn <- formula(energy_ef_comb ~ pm2.5)
+  # 
+  # pm_r2 <- pm_p %>%
+  #          dplyr::group_by(stove, pol) %>% 
+  #          dplyr::do(eqn = lm_r2(eqn, .))
+```
+
+
+```{r}
+  # ggplot(pm_p, aes(x = pm2.5, y = energy_ef_comb, colour = fuelcat)) + 
+  #   geom_point(size = 2) +
+  #         theme_bw() + 
+  #         facet_wrap(~stove, scales = "free", nrow = 1) +
+  #         geom_smooth(method = "lm", formula = 'y ~ x',
+  #                     color = 'black', se = FALSE) + 
+  #   geom_text(data = pm_r2, aes(x = -Inf, y = Inf, label = eqn), 
+  #             color = 'black',  parse = TRUE,
+  #             vjust = 1.5, hjust = "inward",
+  #             size = 3)
+```
+
+
+# voc composition bar charts
+
+## organize voc data
+
+```{r}
   # sum ion data
   btex <-
     emissions %>% 
@@ -227,15 +317,35 @@ output:
     dplyr::filter(!grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
-    dplyr::mutate(pol = "vocs (without btex)") %>%
+    dplyr::mutate(pol = "vocs (no btex)") %>%
     dplyr::bind_rows(btex)
 ```
+
+```{r}
+ carbs <- 
+   emissions %>%
+   dplyr::filter(inst == "carbs") %>%
+   dplyr::group_by(id) %>%
+   dplyr::summarise_if(is.numeric, sum) %>%
+   dplyr::mutate(pol = "carbonyls")
+  
+```
+
+
+```{r}
+  gases <-
+    emissions %>%
+    dplyr::filter(inst == "fivegas", grepl("^co$|^ch4$", pol)) %>%
+    dplyr::select(-inst, -qc) %>%
+    dplyr::bind_rows(carbs, vocs)
+```
+
 
 ## summarize by stove type
 
 ```{r}
-  vocs_p <-
-    vocs %>%
+  gases_p <-
+    gases %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>%
     dplyr::left_join(
@@ -243,30 +353,41 @@ output:
 ```
 
 ```{r}
-  vocs_p %<>%
+  gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:3) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
+    tidyr::gather("pol", "value", 2:6) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
+    dplyr::mutate(pol = as.factor(pol))
 ```
 
-```{r aerosol_plot}
-  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+```{r}
+  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+                                      "carbonyls",
+                                      "btex",
+                                      "vocs (no btex)",
+                                      "ch4",
+                                      "co")
+```
+
+```{r}
+  ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~stovecat, scales = "free_x", nrow = 1) +
-    ylab("mg emitted per MJ") +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+      scale_fill_manual(values=cbPalette) +
+    ylab("mg emitted per MJ fuel") +
     xlab("")
 ```
 
 ## summarize by fuel type
 
 ```{r}
-  vocs_p <-
-    vocs %>%
+  gases_p <-
+    gases %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>%
     dplyr::left_join(
@@ -275,28 +396,38 @@ output:
 ```
 
 ```{r}
-  vocs_p %<>%
+  gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:3) %>%
+    tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
 ```
 
+```{r}
+  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+                                      "carbonyls",
+                                      "btex",
+                                      "vocs (no btex)",
+                                      "ch4",
+                                      "co")
+```
+
 ```{r aerosol_plot}
-  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+  ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+      scale_fill_manual(values=cbPalette) +
     ylab("mg emitted per MJ") +
     xlab("")
 ```
 
 ```{r}
-  vocs_p <-
-    vocs %>%
+  gases_p <-
+    gases %>%
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>%
     dplyr::left_join(
@@ -305,21 +436,31 @@ output:
 ```
 
 ```{r}
-  vocs_p %<>%
+  gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:3) %>%
+    tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
 ```
 
-```{r aerosol_plot}
-  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+```{r}
+  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+                                      "carbonyls",
+                                      "btex",
+                                      "vocs (no btex)",
+                                      "ch4",
+                                      "co")
+```
+
+```{r}
+  ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
-    ylab("mg emitted per MJ") +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+      scale_fill_manual(values=cbPalette) +
+    ylab("mg emitted per MJ fuel") +
     xlab("")
 ```
