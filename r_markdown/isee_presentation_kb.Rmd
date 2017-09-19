@@ -19,18 +19,55 @@ output:
 
 ## load data
 
-```{r load_data}
+```{r}
   emissions <- readRDS("../r_files/emissions_factors.RDS")
   load("../r_files/samples.Rda")
 ```
 
 ## select metric
 
-```{r select_metric}
+```{r}
   emissions %<>%
-    dplyr::filter(metric == "energy_ef_comb") %>%
+    dplyr::filter(metric == "energy_ef_comb", !grepl("27|28|29|30", id)) %>%
     dplyr::distinct() %>%
     tidyr::spread(metric, value)
+```
+
+```{r}
+  samples$fuel <- factor(tolower(samples$fuel))
+
+  samples$fuel <- forcats::fct_relevel(samples$fuel, "oak",
+                                                 "eucalyptus",
+                                                 "douglas fir",
+                                                 "lump hardwood (med.)",
+                                                 "lump hardwood (sm.)",
+                                                 "coconut charcoal",
+                                                 "west slope pellets",
+                                                 "eucalyptus pellets",
+                                                 "liquefied petroleum gas",
+                                                 "kerosene")
+```
+
+```{r}
+  samples$stove <- factor(tolower(samples$stove))
+  
+  samples <- dplyr::mutate(samples, stove = gsub(" [:(:].*[:):]", "", stove))
+  
+  samples$stove <- forcats::fct_relevel(samples$stove,
+                                           "three stone fire",
+                                           "clay ring",
+                                           "ceramic charcoal",
+                                           "rocket elbow",
+                                           "buit-in justa",
+                                           "fan rocket elbow",
+                                           "metal charcoal",
+                                           "gasifier",
+                                           "wick kerosene",
+                                           "pressurized kerosene",
+                                           "pressurized lpg")
+
+  samples$stovecat <- forcats::fct_recode(samples$stovecat, insulated = "improved",
+                                                                  liquid = "advanced")
 ```
 
 # aerosol composition bar charts
@@ -45,7 +82,6 @@ output:
   #             dplyr::mutate(ions = if(inst == "ions") val else 0) %>%
   #             dplyr::summarise_if(is.numeric, sum)
 ```
-
 
 ```{r sum_ions}
   # sum ion data
@@ -67,6 +103,8 @@ output:
     dplyr::bind_rows(ions)
 ```
 
+## summarize by stove type
+
 ```{r sum_aerosols}
   # plot ec + oc vs. grav
   aerosols_p <-
@@ -74,64 +112,18 @@ output:
     tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::mutate(unknown = grav - ec - oc) %>%
-    dplyr::select(-grav) #%>%
+    dplyr::select(-grav) %>%
+    dplyr::left_join(
+    dplyr::select(samples, id, stove), by = "id")
     #dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
-
-## add sample info
-
-```{r add_info}
-  aerosols_p <-
-    dplyr::left_join(aerosols_p,
-    dplyr::select(samples, id, stove, fuel, stovecat), by = "id")
-```
-
-```{r}
-  aerosols_p$fuel <- factor(tolower(aerosols_p$fuel))
-
-  aerosols_p$fuel <- forcats::fct_relevel(aerosols_p$fuel, "oak",
-                                                 "eucalyptus",
-                                                 "douglas fir",
-                                                 "lump hardwood (med.)",
-                                                 "lump hardwood (sm.)",
-                                                 "coconut charcoal",
-                                                 "west slope pellets",
-                                                 "eucalyptus pellets",
-                                                 "liquefied petroleum gas",
-                                                 "kerosene")
-```
-
-## summarize by test id 
 
 ```{r}
   aerosols_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 2:4) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
-    dplyr::filter(stove != "Gasifier (Envirofit, Prototype)") 
-```
-
-```{r}
-  aerosols_p$stove <- factor(tolower(aerosols_p$stove))
-  
-  aerosols_p <- dplyr::mutate(aerosols_p, stove = gsub("[:(:].*[:):]", "", stove))
-  
-  aerosols_p$stove <- forcats::fct_relevel(aerosols_p$stove,
-                                           "three stone fire",
-                                           "clay ring",
-                                           "ceramic charcoal",
-                                           "rocket elbow",
-                                           "buit-in justa",
-                                           "fan rocket elbow",
-                                           "metal charcoal",
-                                           "gasifier",
-                                           "wick kerosene",
-                                           "pressurized kerosene",
-                                           "pressurized lpg")
-
-  aerosols_p$stovecat <- forcats::fct_recode(aerosols_p$stovecat, insulated = "improved",
-                                                                  liquid = "advanced")
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
 ```
 
 ```{r aerosol_plot}
@@ -146,13 +138,121 @@ output:
     xlab("")
 ```
 
+## summarize by fuel type
 
-
-```{r plot_aerosols, echo=FALSE}
-  #ggplot(aerosols_p, aes(x = grav, y = ec_oc)) +
-   # theme_bw() +
-  #  geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
-   # geom_abline(intercept = 0, slope = 1, color = "grey90") +
-   # xlim(0, NA) + ylim(0, NA) +
-   # geom_text(aes(label = id), nudge_y = 0.01)
+```{r sum_aerosols}
+  # plot ec + oc vs. grav
+  aerosols_p <-
+    aerosols %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>% # only keep test cases with all the the data
+    #dplyr::mutate(unknown = grav - ec - oc) %>%
+    dplyr::select(-grav) %>%
+    dplyr::left_join(
+    dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(fuelcat == "wood")
+    #dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
+
+```{r}
+  aerosols_p %<>%
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 3:5)
+```
+
+```{r aerosol_plot}
+  ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
+    xlab("")
+```
+
+```{r sum_aerosols}
+  # plot ec + oc vs. grav
+  aerosols_p <-
+    aerosols %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>% # only keep test cases with all the the data
+    #dplyr::mutate(unknown = grav - ec - oc) %>%
+    dplyr::select(-grav) %>%
+    dplyr::left_join(
+    dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(fuelcat == "charcoal")
+    #dplyr::mutate_if(is.numeric, funs(. / 1000))
+```
+
+```{r}
+  aerosols_p %<>%
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 3:5)
+```
+
+```{r aerosol_plot}
+  ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~fuel, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
+    xlab("")
+```
+
+```{r sum_btex}
+  # sum ion data
+  btex <-
+    emissions %>% 
+    dplyr::filter(grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise_if(is.numeric, sum) %>%
+    dplyr::mutate(pol = "btex")
+```
+
+```{r}
+  vocs <-
+    emissions %>% 
+    dplyr::filter(inst == "voc") %>%
+    dplyr::filter(!grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise_if(is.numeric, sum) %>%
+    dplyr::mutate(pol = "vocs (without btex)") %>%
+    dplyr::bind_rows(btex)
+```
+
+```{r}
+  vocs_p <-
+    vocs %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>%
+    dplyr::left_join(
+    dplyr::select(samples, id, stove), by = "id")
+```
+
+```{r}
+  vocs_p %<>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 2:3) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
+```
+
+```{r aerosol_plot}
+  ggplot(vocs_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~stovecat, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
+    xlab("")
+```
+
