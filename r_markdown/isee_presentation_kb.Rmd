@@ -43,6 +43,8 @@ output:
 ```{r}
   samples$fuel <- factor(tolower(samples$fuel))
 
+  samples$fuel <- forcats::fct_recode(samples$fuel, lpg = "liquefied petroleum gas")
+
   samples$fuel <- forcats::fct_relevel(samples$fuel, "oak",
                                                  "eucalyptus",
                                                  "douglas fir",
@@ -51,7 +53,7 @@ output:
                                                  "coconut charcoal",
                                                  "west slope pellets",
                                                  "eucalyptus pellets",
-                                                 "liquefied petroleum gas",
+                                                 "lpg",
                                                  "kerosene")
 ```
 
@@ -76,6 +78,8 @@ output:
   samples$stovecat <- forcats::fct_recode(samples$stovecat, insulated = "improved",
                                                             insulated = "gasifiers",
                                                             liquid = "advanced")
+  
+  samples$fuelcat <- forcats::fct_recode(samples$fuelcat, liquid = "advanced")
 ```
 
 ## extract pm and co data
@@ -160,7 +164,7 @@ output:
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity", space = "free_x") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.6, hjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
     scale_fill_manual(values=cbPalette) +
@@ -203,7 +207,7 @@ output:
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5, hjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
     scale_fill_manual(values=cbPalette) +
@@ -239,6 +243,45 @@ output:
 ```
 
 ```{r aerosols_charcoal}
+  ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+      scale_fill_manual(values=cbPalette) +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+    ylab("mg emitted per MJ fuel") +
+    xlab("")
+```
+
+```{r}
+  # plot ec + oc vs. grav
+  aerosols_p <-
+    aerosols %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>% # only keep test cases with all the the data
+    #dplyr::select(-grav) %>%
+    dplyr::left_join(
+      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(grepl("pellets|liquid", fuelcat))
+```
+
+```{r}
+  aerosols_p %<>%
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 3:5)
+```
+
+```{r}
+  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
+                                         "ions",
+                                         "elemental carbon",
+                                         "organic carbon")
+```
+
+```{r aerosols_advanced}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
@@ -453,6 +496,46 @@ output:
 ```
 
 ```{r gases_charcoal}
+  ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_grid(~fuel, scales = "free", space = "free_x") +
+      scale_fill_manual(values=cbPalette) +
+    ylab("mg emitted per MJ fuel") +
+    xlab("")
+```
+
+```{r}
+  gases_p <-
+    gases %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
+    na.omit %>%
+    dplyr::left_join(
+      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(grepl("pellets|liquid", fuelcat))
+```
+
+```{r}
+  gases_p %<>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, mean) %>%
+    tidyr::gather("pol", "value", 2:6) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
+```
+
+```{r}
+  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+                                      "carbonyls",
+                                      "btex",
+                                      "vocs (no btex)",
+                                      "ch4",
+                                      "co")
+```
+
+```{r gases_advanced}
   ggplot(gases_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
