@@ -28,7 +28,7 @@ output:
 
 ```{r select_metric}
   emissions %<>%
-    dplyr::filter(metric == "conc") %>%
+    dplyr::filter(metric == "energy_ef_comb") %>%
     dplyr::distinct() %>%
     tidyr::spread(metric, value)
 ```
@@ -51,7 +51,7 @@ output:
   # sum ion data
   ions <-
     emissions %>% 
-    dplyr::filter(grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium", pol)) %>%
+    dplyr::filter(grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium|chloride|nitrate|sulfate", pol)) %>%
     dplyr::group_by(id, qc) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
@@ -71,11 +71,11 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, conc) %>%
+    tidyr::spread(pol, energy_ef_comb) %>%
     na.omit %>% # only keep test cases with all the the data
-    dplyr::mutate(unknown = grav - ec - oc - ions) %>%
-    dplyr::select(-grav) %>%
-    dplyr::mutate_if(is.numeric, funs(. / 1000))
+    #dplyr::mutate(unknown = grav - ec - oc) %>%
+    dplyr::select(-grav) #%>%
+    #dplyr::mutate_if(is.numeric, funs(. / 1000))
 ```
 
 ## add sample info
@@ -83,36 +83,76 @@ output:
 ```{r add_info}
   aerosols_p <-
     dplyr::left_join(aerosols_p,
-    dplyr::select(samples, id, stove, fuel), by = "id")
+    dplyr::select(samples, id, stove, fuel, stovecat), by = "id")
+```
+
+```{r}
+  aerosols_p$fuel <- factor(tolower(aerosols_p$fuel))
+
+  aerosols_p$fuel <- forcats::fct_relevel(aerosols_p$fuel, "oak",
+                                                 "eucalyptus",
+                                                 "douglas fir",
+                                                 "lump hardwood (med.)",
+                                                 "lump hardwood (sm.)",
+                                                 "coconut charcoal",
+                                                 "west slope pellets",
+                                                 "eucalyptus pellets",
+                                                 "liquefied petroleum gas",
+                                                 "kerosene")
 ```
 
 ## summarize by test id 
 
 ```{r}
   aerosols_p %<>%
-    dplyr::group_by(stove, fuel) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 3:5) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, stovecat, fuelcat), by = "stove")
+    tidyr::gather("pol", "value", 2:4) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
+    dplyr::filter(stove != "Gasifier (Envirofit, Prototype)") 
+```
+
+```{r}
+  aerosols_p$stove <- factor(tolower(aerosols_p$stove))
+  
+  aerosols_p <- dplyr::mutate(aerosols_p, stove = gsub("[:(:].*[:):]", "", stove))
+  
+  aerosols_p$stove <- forcats::fct_relevel(aerosols_p$stove,
+                                           "three stone fire",
+                                           "clay ring",
+                                           "ceramic charcoal",
+                                           "rocket elbow",
+                                           "buit-in justa",
+                                           "fan rocket elbow",
+                                           "metal charcoal",
+                                           "gasifier",
+                                           "wick kerosene",
+                                           "pressurized kerosene",
+                                           "pressurized lpg")
+
+  aerosols_p$stovecat <- forcats::fct_recode(aerosols_p$stovecat, insulated = "improved",
+                                                                  liquid = "advanced")
 ```
 
 ```{r aerosol_plot}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
     geom_bar(stat = "identity") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 15, vjust = 0.55),
-          text = element_text(size=20)) +
-    facet_wrap(~fuel, scales = "free_x") +
-    ylab("gram emitted per MJ") +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    facet_wrap(~stovecat, scales = "free_x", nrow = 1) +
+    ylab("mg emitted per MJ") +
     xlab("")
 ```
 
 
+
 ```{r plot_aerosols, echo=FALSE}
-  ggplot(aerosols_p, aes(x = grav, y = ec_oc)) +
-    theme_bw() +
-    geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
-    geom_abline(intercept = 0, slope = 1, color = "grey90") +
-    xlim(0, NA) + ylim(0, NA) +
-    geom_text(aes(label = id), nudge_y = 0.01)
+  #ggplot(aerosols_p, aes(x = grav, y = ec_oc)) +
+   # theme_bw() +
+  #  geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
+   # geom_abline(intercept = 0, slope = 1, color = "grey90") +
+   # xlim(0, NA) + ylim(0, NA) +
+   # geom_text(aes(label = id), nudge_y = 0.01)
 ```
