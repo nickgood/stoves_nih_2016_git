@@ -34,11 +34,17 @@ output:
 ## select metric
 
 ```{r}
+ emissions_metric <- "energy_ef"
+```
+
+```{r}
   emissions %<>%
-    dplyr::filter(metric == "energy_ef_comb", !grepl("27|28|29|30", id)) %>%
+    dplyr::filter(metric == emissions_metric, !grepl("27|28|29|30", id)) %>%
     dplyr::distinct() %>%
     tidyr::spread(metric, value)
 ```
+
+## clean up sample info
 
 ```{r}
   samples$fuel <- factor(tolower(samples$fuel))
@@ -82,7 +88,9 @@ output:
   samples$fuelcat <- forcats::fct_recode(samples$fuelcat, liquid = "advanced")
 ```
 
-## extract pm and co data
+## extract specific emissions data
+
+* pm and co
 
 ```{r}
   pm_co <-
@@ -94,13 +102,11 @@ output:
 
   pm_co$pol <- forcats::fct_relevel(pm_co$pol, "pm2.5", "co")
   
-  pm_co <-
-    pm_co %>% tidyr::spread(pol, energy_ef_comb)
+   pm_co <-
+     pm_co %>% tidyr::spread_("pol", emissions_metric)
 ```
 
-# aerosol composition bar charts
-
-## organize aerosol data
+* ions 
 
 ```{r}
   # sum ion data
@@ -112,6 +118,8 @@ output:
     dplyr::mutate(pol = "ions")
 ```
 
+* all aerosols 
+
 ```{r}
   # create aerosol variable
   aerosols <-
@@ -122,13 +130,74 @@ output:
     dplyr::bind_rows(ions)
 ```
 
+* btex
+
+```{r}
+  # sum ion data
+  btex <-
+    emissions %>% 
+    dplyr::filter(grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise_if(is.numeric, sum) %>%
+    dplyr::mutate(pol = "btex")
+```
+
+* vocs
+
+```{r}
+  vocs <-
+    emissions %>% 
+    dplyr::filter(inst == "voc") %>%
+    dplyr::filter(!grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise_if(is.numeric, sum) %>%
+    dplyr::mutate(pol = "vocs (no btex)") %>%
+    dplyr::bind_rows(btex)
+```
+
+* carbonyls 
+
+```{r}
+ carbs <- 
+   emissions %>%
+   dplyr::filter(inst == "carbs") %>%
+   dplyr::group_by(id) %>%
+   dplyr::summarise_if(is.numeric, sum) %>%
+   dplyr::mutate(pol = "carbonyls")
+  
+```
+
+* all gases
+
+```{r}
+  gases <-
+    emissions %>%
+    dplyr::filter(inst == "fivegas", grepl("^co$|^ch4$", pol)) %>%
+    dplyr::select(-inst, -qc) %>%
+    dplyr::bind_rows(carbs, vocs)
+```
+
+* carcinogenic compounds
+
+```{r}
+
+```
+
+# aerosol composition bar charts
+
+## tidy aerosol categories
+
 ```{r}
   aerosols$pol <- forcats::fct_recode(aerosols$pol, "elemental carbon" = "ec",
                                       "organic carbon" = "oc",
                                       "ions" = "ions")
   aerosols$pol <- forcats::fct_relevel(aerosols$pol, "organic carbon", "elemental carbon", "ions")
+  
+  aerosols$pol <- forcats::fct_relevel(aerosols$pol,
+                                       "ions",
+                                       "elemental carbon",
+                                       "organic carbon")
 ```
-
 
 ## summarize by stove type
 
@@ -136,7 +205,7 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::mutate(unknown = grav - ec - oc) %>%
     #dplyr::select(-grav) %>%
@@ -146,28 +215,23 @@ output:
 ```
 
 ```{r}
-  aerosols_p %<>%
+  aerosols_p <- 
+    aerosols_p %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
+    dplyr::summarise_if(is.numeric, funs(mean, min, max), na.rm = TRUE) %>%
     tidyr::gather("pol", "value", 2:4) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
 ```
 
-```{r}
-  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
-                                         "ions",
-                                         "elemental carbon",
-                                         "organic carbon")
-```
-
 ```{r aerosols_stoves}
   ggplot(aerosols_p, aes(x = stove, y = value, fill = pol)) +
-    geom_bar(stat = "identity", space = "free_x") +
+    geom_bar(stat = "identity") +
+    #geom_errorbar(aes(ymin = min, ymax = max)) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.6, hjust = 0.5),
           text = element_text(size=15),
           legend.title = element_blank()) +
-    scale_fill_manual(values=cbPalette) +
+    scale_fill_manual(values = cbPalette) +
     facet_grid(~stovecat, scales="free", space="free_x") +
     ylab("mg emitted per MJ fuel") +
     xlab("")
@@ -179,7 +243,7 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::mutate(unknown = grav - ec - oc) %>%
     #dplyr::select(-grav) %>%
@@ -194,13 +258,6 @@ output:
     dplyr::group_by(stove, fuel) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 3:5)
-```
-
-```{r}
-  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
-                                         "ions",
-                                         "elemental carbon",
-                                         "organic carbon")
 ```
 
 ```{r aerosols_wood}
@@ -220,7 +277,7 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::select(-grav) %>%
     dplyr::left_join(
@@ -233,13 +290,6 @@ output:
     dplyr::group_by(stove, fuel) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 3:5)
-```
-
-```{r}
-  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
-                                         "ions",
-                                         "elemental carbon",
-                                         "organic carbon")
 ```
 
 ```{r aerosols_charcoal}
@@ -259,7 +309,7 @@ output:
   # plot ec + oc vs. grav
   aerosols_p <-
     aerosols %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>% # only keep test cases with all the the data
     #dplyr::select(-grav) %>%
     dplyr::left_join(
@@ -272,13 +322,6 @@ output:
     dplyr::group_by(stove, fuel) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 3:5)
-```
-
-```{r}
-  aerosols_p$pol <- forcats::fct_relevel(aerosols_p$pol,
-                                         "ions",
-                                         "elemental carbon",
-                                         "organic carbon")
 ```
 
 ```{r aerosols_advanced}
@@ -294,102 +337,25 @@ output:
     xlab("")
 ```
 
-## ec and oc correlation plots with pm and co
-
-```{r}
-  # aerosols_p <-
-  #   aerosols %>%
-  #   dplyr::left_join(pm_co, by = "id") %>%
-  #   na.omit %>%
-  #   dplyr::left_join(
-  #     dplyr::select(samples, id, stove, fuel, fuelcat, stovecat), by = "id")
-```
-
-```{r}
-  # co_p <-
-  #   aerosols_p %>%
-  #   dplyr::select(-pm2.5)
-  # 
-  # pm_p <-
-  #   aerosols_p %>%
-  #   dplyr::select(-co) %>%
-  #   dplyr::filter(pol == "organic carbon")
-```
-
-```{r}
-  # eqn <- formula(energy_ef_comb ~ pm2.5)
-  # 
-  # pm_r2 <- pm_p %>%
-  #          dplyr::group_by(stove, pol) %>% 
-  #          dplyr::do(eqn = lm_r2(eqn, .))
-```
-
-
-```{r}
-  # ggplot(pm_p, aes(x = pm2.5, y = energy_ef_comb, colour = fuelcat)) + 
-  #   geom_point(size = 2) +
-  #         theme_bw() + 
-  #         facet_wrap(~stove, scales = "free", nrow = 1) +
-  #         geom_smooth(method = "lm", formula = 'y ~ x',
-  #                     color = 'black', se = FALSE) + 
-  #   geom_text(data = pm_r2, aes(x = -Inf, y = Inf, label = eqn), 
-  #             color = 'black',  parse = TRUE,
-  #             vjust = 1.5, hjust = "inward",
-  #             size = 3)
-```
-
-
 # voc composition bar charts
 
-## organize voc data
+## tidy gas categories
 
 ```{r}
-  # sum ion data
-  btex <-
-    emissions %>% 
-    dplyr::filter(grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
-    dplyr::group_by(id) %>%
-    dplyr::summarise_if(is.numeric, sum) %>%
-    dplyr::mutate(pol = "btex")
+  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+                                      "carbonyls",
+                                      "btex",
+                                      "vocs (no btex)",
+                                      "ch4",
+                                      "co")
 ```
-
-```{r}
-  vocs <-
-    emissions %>% 
-    dplyr::filter(inst == "voc") %>%
-    dplyr::filter(!grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
-    dplyr::group_by(id) %>%
-    dplyr::summarise_if(is.numeric, sum) %>%
-    dplyr::mutate(pol = "vocs (no btex)") %>%
-    dplyr::bind_rows(btex)
-```
-
-```{r}
- carbs <- 
-   emissions %>%
-   dplyr::filter(inst == "carbs") %>%
-   dplyr::group_by(id) %>%
-   dplyr::summarise_if(is.numeric, sum) %>%
-   dplyr::mutate(pol = "carbonyls")
-  
-```
-
-
-```{r}
-  gases <-
-    emissions %>%
-    dplyr::filter(inst == "fivegas", grepl("^co$|^ch4$", pol)) %>%
-    dplyr::select(-inst, -qc) %>%
-    dplyr::bind_rows(carbs, vocs)
-```
-
 
 ## summarize by stove type
 
 ```{r}
   gases_p <-
     gases %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>%
     dplyr::left_join(
     dplyr::select(samples, id, stove), by = "id")
@@ -402,15 +368,6 @@ output:
     tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
     dplyr::mutate(pol = as.factor(pol))
-```
-
-```{r}
-  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
-                                      "carbonyls",
-                                      "btex",
-                                      "vocs (no btex)",
-                                      "ch4",
-                                      "co")
 ```
 
 ```{r gases_stoves}
@@ -431,7 +388,7 @@ output:
 ```{r}
   gases_p <-
     gases %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>%
     dplyr::left_join(
       dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
@@ -444,15 +401,6 @@ output:
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
-```
-
-```{r}
-  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
-                                      "carbonyls",
-                                      "btex",
-                                      "vocs (no btex)",
-                                      "ch4",
-                                      "co")
 ```
 
 ```{r gases_wood}
@@ -471,7 +419,7 @@ output:
 ```{r}
   gases_p <-
     gases %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>%
     dplyr::left_join(
       dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
@@ -484,15 +432,6 @@ output:
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
-```
-
-```{r}
-  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
-                                      "carbonyls",
-                                      "btex",
-                                      "vocs (no btex)",
-                                      "ch4",
-                                      "co")
 ```
 
 ```{r gases_charcoal}
@@ -511,7 +450,7 @@ output:
 ```{r}
   gases_p <-
     gases %>%
-    tidyr::spread(pol, energy_ef_comb) %>%
+    tidyr::spread_("pol", emissions_metric) %>%
     na.omit %>%
     dplyr::left_join(
       dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
@@ -524,15 +463,6 @@ output:
     dplyr::summarise_if(is.numeric, mean) %>%
     tidyr::gather("pol", "value", 2:6) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
-```
-
-```{r}
-  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
-                                      "carbonyls",
-                                      "btex",
-                                      "vocs (no btex)",
-                                      "ch4",
-                                      "co")
 ```
 
 ```{r gases_advanced}
