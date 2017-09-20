@@ -43,7 +43,7 @@ output:
 * remove G8B (breakthrough test)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ions_merged <- dplyr::select(ions, 1:23, type, id) %>%
+  ions_merged <- dplyr::select(ions, 1:25, type, id) %>%
                  dplyr::filter(type == "test" | type == "bg", id != "G8B")
 ```
 
