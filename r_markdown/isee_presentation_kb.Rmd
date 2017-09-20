@@ -342,7 +342,7 @@ output:
 ## tidy gas categories
 
 ```{r}
-  gases_p$pol <- forcats::fct_relevel(gases_p$pol,
+  gases$pol <- forcats::fct_relevel(gases$pol,
                                       "carbonyls",
                                       "btex",
                                       "vocs (no btex)",
