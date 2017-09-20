@@ -166,6 +166,24 @@ output:
             dplyr::summarise(joules = sum(joules, na.rm = TRUE))
 ```
 
+# QC
+
+* add flag: default is "ok"
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  energy <- 
+    energy %>%
+    dplyr::mutate(qc = "ok")
+```
+
+* add bad flags
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  energy <- 
+    energy %>%
+    dplyr::mutate(qc = ifelse(joules <= 0, "bad", qc))
+```
+
 # Plots
 
 ## temperature (id & loc)
@@ -202,7 +220,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(p_data, aes(id, joules, colour = stove)) +
+  ggplot(p_data, aes(id, joules, colour = qc)) +
   geom_point() +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
