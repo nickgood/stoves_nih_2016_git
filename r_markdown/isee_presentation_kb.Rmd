@@ -34,7 +34,7 @@ output:
 ## select metric
 
 ```{r}
- emissions_metric <- "energy_ef"
+ emissions_metric <- "energy_fuel_ef_comb"
 ```
 
 ```{r}
@@ -180,7 +180,50 @@ output:
 * carcinogenic compounds
 
 ```{r}
+  carcinogens <-
+    emissions %>%
+    dplyr::filter(grepl("^voc_benzene$|formaldehyde|acetaldehyde", pol)) %>%
+    dplyr::mutate(inst = "carcinogens")
+```
 
+# carcinogen bar chart
+
+## tidy carcinogen categories
+
+```{r}
+  carcinogens$pol <- forcats::fct_recode(carcinogens$pol, "benzene" = "voc_benzene")
+```
+
+```{r}
+  carcinogens_p <-
+    carcinogens %>%
+    tidyr::spread_("pol", emissions_metric) %>%
+    na.omit %>% 
+    dplyr::left_join(
+    dplyr::select(samples, id, stove), by = "id")
+```
+
+```{r}
+  carcinogens_p <- 
+    carcinogens_p %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    tidyr::gather("pol", "value", 2:4) %>%
+    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
+```
+
+```{r carcinogens_stoves}
+  ggplot(carcinogens_p, aes(x = stove, y = value, fill = pol)) +
+    geom_bar(stat = "identity") +
+    #geom_errorbar(aes(ymin = min, ymax = max)) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.6, hjust = 0.5),
+          text = element_text(size=15),
+          legend.title = element_blank()) +
+    scale_fill_manual(values = cbPalette) +
+    facet_grid(~stovecat, scales="free", space="free_x") +
+    ylab("mg emitted per MJ fuel") +
+    xlab("")
 ```
 
 # aerosol composition bar charts
