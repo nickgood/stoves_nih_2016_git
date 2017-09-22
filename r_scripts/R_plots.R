@@ -131,7 +131,7 @@ isee_bar_charts <- function(data,
   
   ggplot(data, aes_string(x = x_var, y = y_var, fill = fill_var)) +
     geom_bar(stat = "identity") +
-    #geom_errorbar(aes(ymin = min, ymax = max)) +
+    geom_errorbar(aes(ymin = min, ymax = max), alpha = 0.1) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.9, hjust = 0.9),
           text = element_text(size = 20),
