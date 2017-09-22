@@ -12,8 +12,8 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', fig.height = 6, fig.width = 8,
-                        warning=FALSE, message=FALSE, cache=FALSE)
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 6, fig.width = 8,
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 # tidy data
