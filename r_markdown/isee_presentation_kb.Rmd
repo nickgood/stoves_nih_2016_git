@@ -133,10 +133,10 @@ output:
 * btex
 
 ```{r}
-  # sum ion data
+  # sum btex data
   btex <-
     emissions %>% 
-    dplyr::filter(grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
+    dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|^voc_ethylbenzene$|xylene", pol)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "btex")
