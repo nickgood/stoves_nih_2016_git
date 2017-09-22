@@ -39,60 +39,73 @@ output:
 ```
 
 ```{r}
+  # remove extra gasifier tests
   emissions %<>%
     dplyr::filter(metric == emissions_metric, !grepl("27|28|29|30", id)) %>%
-    dplyr::distinct() %>%
     tidyr::spread(metric, value)
 ```
 
 ## clean up sample info
+
+* id to character type
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(id = as.character(id))
+```
 
 * format fuel information
 
 ```{r}
   samples <-
     samples %>%
-    dplyr::mutate(fuel = factor(tolower(fuel)),
-                  fuel = forcats::fct_recode(fuel,
-                                             "lpg" = "liquefied petroleum gas"),
-                  fuel = forcats::fct_relevel(fuel,
-                                              "oak",
-                                              "eucalyptus",
-                                              "douglas fir",
-                                              "lump hardwood (med.)",
-                                              "lump hardwood (sm.)",
-                                              "coconut charcoal",
-                                              "west slope pellets",
-                                              "eucalyptus pellets",
-                                              "lpg",
-                                              "kerosene"))
+    dplyr::mutate(fuel =
+                    fuel %>% 
+                    factor %>%
+                    tolower %>% 
+                    forcats::fct_recode("lpg" = "liquefied petroleum gas") %>%
+                    forcats::fct_relevel("oak",
+                                         "eucalyptus",
+                                         "douglas fir",
+                                         "lump hardwood (med.)",
+                                         "lump hardwood (sm.)",
+                                         "coconut charcoal",
+                                         "west slope pellets",
+                                         "eucalyptus pellets",
+                                         "lpg",
+                                         "kerosene"),
+                  fuelcat = 
+                    fuelcat %>% 
+                    forcats::fct_recode("liquid" = "advanced"))
 ```
 
 * format stove information
 
 ```{r}
-  samples$stove <- factor(tolower(samples$stove))
-  
-  samples <- dplyr::mutate(samples, stove = gsub(" [:(:].*[:):]", "", stove))
-  
-  samples$stove <- forcats::fct_relevel(samples$stove,
-                                           "three stone fire",
-                                           "clay ring",
-                                           "ceramic charcoal",
-                                           "rocket elbow",
-                                           "built-in justa",
-                                           "metal charcoal",
-                                           "fan rocket elbow",
-                                           "gasifier",
-                                           "wick kerosene",
-                                           "pressurized kerosene",
-                                           "pressurized lpg")
-
-  samples$stovecat <- forcats::fct_recode(samples$stovecat, insulated = "improved",
-                                                            insulated = "gasifiers",
-                                                            liquid = "advanced")
-  
-  samples$fuelcat <- forcats::fct_recode(samples$fuelcat, liquid = "advanced")
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "",.) %>%
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in justa",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressurized kerosene",
+                                         "pressurized lpg"),
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated" = "improved",
+                                        "insulated" = "gasifiers",
+                                        "liquid" = "advanced"))
 ```
 
 ## extract specific emissions data
@@ -218,15 +231,16 @@ output:
 ## tidy aerosol categories
 
 ```{r}
-  aerosols$pol <- forcats::fct_recode(aerosols$pol, "elemental carbon" = "ec",
-                                      "organic carbon" = "oc",
-                                      "ions" = "ions")
-  aerosols$pol <- forcats::fct_relevel(aerosols$pol, "organic carbon", "elemental carbon", "ions")
-  
-  aerosols$pol <- forcats::fct_relevel(aerosols$pol,
-                                       "ions",
-                                       "elemental carbon",
-                                       "organic carbon")
+  aerosols <-
+    aerosols %>%
+    dplyr::mutate(pol =
+                    pol %>%
+                    forcats::fct_recode("elemental carbon" = "ec",
+                                        "organic carbon" = "oc",
+                                        "ions" = "ions") %>%
+                    forcats::fct_relevel("organic carbon",
+                                         "elemental carbon",
+                                         "ions"))
 ```
 
 ## summarize by stove type
@@ -335,12 +349,14 @@ output:
 ## tidy gas categories
 
 ```{r}
-  gases$pol <- forcats::fct_relevel(gases$pol,
-                                      "carbonyls",
-                                      "btex",
-                                      "vocs (no btex)",
-                                      "ch4",
-                                      "co")
+  gases <- 
+    gases %>% 
+    dplyr::mutate(pol = 
+                    pol %>% 
+                    forcats::fct_relevel("carbonyls",
+                                         "vocs",
+                                         "ch4",
+                                         "co"))
 ```
 
 ## summarize by stove type
@@ -358,7 +374,7 @@ output:
   gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:6) %>%
+    tidyr::gather("pol", "value", 2:5) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
     dplyr::mutate(pol = as.factor(pol))
 ```
@@ -383,7 +399,7 @@ output:
   gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:6) %>%
+    tidyr::gather("pol", "value", 2:5) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
 ```
 
@@ -405,7 +421,7 @@ output:
   gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:6) %>%
+    tidyr::gather("pol", "value", 2:5) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
 ```
 
@@ -427,7 +443,7 @@ output:
   gases_p %<>%
     dplyr::group_by(stove) %>%
     dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:6) %>%
+    tidyr::gather("pol", "value", 2:5) %>%
     dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
 ```
 
