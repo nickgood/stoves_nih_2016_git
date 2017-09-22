@@ -647,3 +647,18 @@ calc_mw <- function(pol_properties){
   return(pol_properties$mw)
 }
 #________________________________________________________
+#________________________________________________________
+# summarize data by category
+isee_summarize <- function(data, filter_var, emissions_metric){
+
+  data %>%
+    tidyr::spread_("pol", emissions_metric) %>%
+    na.omit %>%
+    dplyr::left_join(samples %>% 
+                       dplyr::select(id, stove, stovecat), by = "id") %>% 
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    tidyr::gather("pol", "value", 3:5)
+
+}
+#________________________________________________________
