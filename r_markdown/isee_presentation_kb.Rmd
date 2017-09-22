@@ -51,7 +51,7 @@ output:
 
 ```{r}
   samples <-
-    samples %<>%
+    samples %>%
     dplyr::mutate(fuel = factor(tolower(fuel)),
                   fuel = forcats::fct_recode(fuel,
                                              "lpg" = "liquefied petroleum gas"),
