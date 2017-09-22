@@ -217,8 +217,8 @@ output:
     geom_bar(stat = "identity") +
     #geom_errorbar(aes(ymin = min, ymax = max)) +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 15, vjust = 0.6, hjust = 0.5),
-          text = element_text(size=15),
+    theme(axis.text.x = element_text(angle = 15, vjust = 0.9, hjust = 0.9),
+          text = element_text(size = 20),
           legend.title = element_blank()) +
     scale_fill_manual(values = cbPalette) +
     facet_grid(~stovecat, scales="free", space="free_x") +
