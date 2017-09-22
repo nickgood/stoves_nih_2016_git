@@ -120,7 +120,7 @@ output:
     dplyr::filter(
       grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium|
             |chloride|nitrate|sulfate", pol)) %>%
-    dplyr::group_by(id, qc) %>%
+    dplyr::group_by(id) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
 ```
@@ -133,7 +133,7 @@ output:
     emissions %>% 
     dplyr::filter(grepl("ecoc", inst)) %>%
     dplyr::filter(pol != "tc") %>%
-    dplyr::select(-inst) %>%
+    dplyr::select(-inst, -qc) %>%
     dplyr::bind_rows(ions)
 ```
 
@@ -188,8 +188,8 @@ output:
 ```{r}
   carcinogens <-
     emissions %>%
-    dplyr::filter(grepl("^voc_benzene$|formaldehyde|acetaldehyde", pol)) %>%
-    dplyr::mutate(inst = "carcinogens")
+    dplyr::filter(grepl("^voc_benzene$|formaldehyde|acetaldehyde", pol)) %>% 
+    dplyr::select(-inst)
 ```
 
 # carcinogen bar chart
@@ -199,12 +199,19 @@ output:
 ```{r carcinogens_tidy}
   carcinogens <- 
     carcinogens %>% 
-    dplyr::mutate(pol = forcats::fct_recode(pol, "benzene" = "voc_benzene"))
+    dplyr::mutate(pol = 
+                    pol %>%
+                    forcats::fct_recode("benzene" = "voc_benzene") %>% 
+                    factor(levels = c("benzene",
+                                      "acetaldehyde",
+                                      "formaldehyde"))) %>% 
+    dplyr::select(-qc)
 ```
 
 ## group carcinogenic pollutants by stove type plot
 
 ```{r carcinogens_stoves}
+# test <-
   isee_summarize(carcinogens) %>% 
     isee_bar_charts(y_lab = y_label)
 ```
@@ -221,9 +228,9 @@ output:
                     forcats::fct_recode("elemental carbon" = "ec",
                                         "organic carbon" = "oc",
                                         "ions" = "ions") %>%
-                    forcats::fct_relevel("organic carbon",
+                    factor(levels = c("organic carbon",
                                          "elemental carbon",
-                                         "ions"))
+                                         "ions")))
 ```
 
 ## summarize by stove type
@@ -259,6 +266,7 @@ output:
     gases %>% 
     dplyr::mutate(pol = 
                     pol %>% 
+                    factor %>% 
                     forcats::fct_relevel("carbonyls",
                                          "vocs",
                                          "ch4",
