@@ -12,7 +12,8 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path='figures/', fig.height = 6, fig.width = 8, warning=FALSE, message=FALSE, cache=FALSE)
+  knitr::opts_chunk$set(fig.path='figures/', fig.height = 6, fig.width = 8,
+                        warning=FALSE, message=FALSE, cache=FALSE)
 ```
 
 # tidy data
@@ -30,7 +31,7 @@ output:
   source("../r_scripts/R_plots.R")
 ```
 
-## select metric
+## select metric for plotting
 
 ```{r}
  emissions_metric <- "energy_fuel_ef_comb"
@@ -46,22 +47,28 @@ output:
 
 ## clean up sample info
 
+* format fuel information
+
 ```{r}
-  samples$fuel <- factor(tolower(samples$fuel))
-
-  samples$fuel <- forcats::fct_recode(samples$fuel, lpg = "liquefied petroleum gas")
-
-  samples$fuel <- forcats::fct_relevel(samples$fuel, "oak",
-                                                 "eucalyptus",
-                                                 "douglas fir",
-                                                 "lump hardwood (med.)",
-                                                 "lump hardwood (sm.)",
-                                                 "coconut charcoal",
-                                                 "west slope pellets",
-                                                 "eucalyptus pellets",
-                                                 "lpg",
-                                                 "kerosene")
+  samples <-
+    samples %<>%
+    dplyr::mutate(fuel = factor(tolower(fuel)),
+                  fuel = forcats::fct_recode(fuel,
+                                             "lpg" = "liquefied petroleum gas"),
+                  fuel = forcats::fct_relevel(fuel,
+                                              "oak",
+                                              "eucalyptus",
+                                              "douglas fir",
+                                              "lump hardwood (med.)",
+                                              "lump hardwood (sm.)",
+                                              "coconut charcoal",
+                                              "west slope pellets",
+                                              "eucalyptus pellets",
+                                              "lpg",
+                                              "kerosene"))
 ```
+
+* format stove information
 
 ```{r}
   samples$stove <- factor(tolower(samples$stove))
@@ -90,29 +97,15 @@ output:
 
 ## extract specific emissions data
 
-* pm and co
-
-```{r}
-  pm_co <-
-    emissions %>% 
-    dplyr::filter(grepl("^grav$|^co$", pol)) %>%
-    dplyr::select(-inst, -qc)
-
-  pm_co$pol <- forcats::fct_recode(pm_co$pol, "pm2.5" = "grav")
-
-  pm_co$pol <- forcats::fct_relevel(pm_co$pol, "pm2.5", "co")
-  
-   pm_co <-
-     pm_co %>% tidyr::spread_("pol", emissions_metric)
-```
-
 * ions 
 
 ```{r}
   # sum ion data
   ions <-
     emissions %>% 
-    dplyr::filter(grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium|chloride|nitrate|sulfate", pol)) %>%
+    dplyr::filter(
+      grepl("ammonium|chloride|potassium|sodium|nitrite|calcium|magnesium|
+            |chloride|nitrate|sulfate", pol)) %>%
     dplyr::group_by(id, qc) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "ions")
@@ -136,7 +129,8 @@ output:
   # sum btex data
   btex <-
     emissions %>% 
-    dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|^voc_ethylbenzene$|xylene", pol)) %>%
+    dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
+                        |^voc_ethylbenzene$|xylene", pol)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
     dplyr::mutate(pol = "btex")
@@ -148,11 +142,9 @@ output:
   vocs <-
     emissions %>% 
     dplyr::filter(inst == "voc") %>%
-    dplyr::filter(!grepl("benzene|toluene|ethylbenzene|xylene", pol)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise_if(is.numeric, sum) %>%
-    dplyr::mutate(pol = "vocs (no btex)") %>%
-    dplyr::bind_rows(btex)
+    dplyr::mutate(pol = "vocs")
 ```
 
 * carbonyls 
