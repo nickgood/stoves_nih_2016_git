@@ -34,8 +34,8 @@ output:
 ## select metric for plotting
 
 ```{r}
- emissions_metric <- "energy_fuel_ef_comb"
- y_label <- "mg emitted per MJ of fuel"
+  emissions_metric <- "energy_fuel_ef_comb"
+  y_label <- "mg emitted per MJ of fuel"
 ```
 
 ```{r}
