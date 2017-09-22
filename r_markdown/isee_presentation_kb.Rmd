@@ -29,6 +29,7 @@ output:
 
 ```{r load_functions}
   source("../r_scripts/R_plots.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ## select metric for plotting
@@ -195,35 +196,17 @@ output:
 
 ## tidy carcinogen categories
 
-```{r}
-  carcinogens$pol <- forcats::fct_recode(carcinogens$pol, "benzene" = "voc_benzene")
+```{r carcinogens_tidy}
+  carcinogens <- 
+    carcinogens %>% 
+    dplyr::mutate(pol = forcats::fct_recode(pol, "benzene" = "voc_benzene"))
 ```
 
-## group carcinogenic pollutants by stove type and calculate mean emissions for each stove
-
-```{r}
-  carcinogens_p <-
-    carcinogens %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>% 
-    dplyr::left_join(
-    dplyr::select(samples, id, stove), by = "id")
-```
-
-```{r}
-  carcinogens_p <- 
-    carcinogens_p %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
-    tidyr::gather("pol", "value", 2:4) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
-```
-
-## plot carcinogenic compounds
+## group carcinogenic pollutants by stove type plot
 
 ```{r carcinogens_stoves}
-  # pass string variables
-  isee_bar_charts(carcinogens_p, y_lab = y_label)
+  isee_summarize(carcinogens) %>% 
+    isee_bar_charts(y_lab = y_label)
 ```
 
 # aerosol composition bar charts
@@ -245,110 +228,33 @@ output:
 
 ## summarize by stove type
 
-```{r}
-  # plot ec + oc vs. grav
-  aerosols_p <-
-    aerosols %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>% # only keep test cases with all the the data
-    #dplyr::mutate(unknown = grav - ec - oc) %>%
-    #dplyr::select(-grav) %>%
-    dplyr::left_join(
-    dplyr::select(samples, id, stove), by = "id")
-    #dplyr::mutate_if(is.numeric, funs(. / 1000))
-```
-
-```{r}
-  aerosols_p <- 
-    aerosols_p %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
-    tidyr::gather("pol", "value", 2:4) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove")
-```
-
-```{r aerosols_stoves}
-  isee_bar_charts(aerosols_p, y_lab = y_label)
+```{r aerosols_stove}
+  isee_summarize(aerosols) %>% 
+    isee_bar_charts(y_lab = y_label)
 ```
 
 ## summarize by fuel type
 
-```{r}
-  # plot ec + oc vs. grav
-  aerosols_p <-
-    aerosols %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>% # only keep test cases with all the the data
-    #dplyr::mutate(unknown = grav - ec - oc) %>%
-    #dplyr::select(-grav) %>%
-    dplyr::left_join(
-    dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(fuelcat == "wood")
-    #dplyr::mutate_if(is.numeric, funs(. / 1000))
-```
-
-```{r}
-  aerosols_p %<>%
-    dplyr::group_by(stove, fuel) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 3:5)
-```
-
 ```{r aerosols_wood}
-  isee_bar_charts(aerosols_p, y_lab = y_label, facet_var = "fuel")
-```
-
-```{r}
-  # plot ec + oc vs. grav
-  aerosols_p <-
-    aerosols %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>% # only keep test cases with all the the data
-    #dplyr::select(-grav) %>%
-    dplyr::left_join(
-      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(fuelcat == "charcoal")
-```
-
-```{r}
-  aerosols_p %<>%
-    dplyr::group_by(stove, fuel) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 3:5)
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "wood") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
 
 ```{r aerosols_charcoal}
-  isee_bar_charts(aerosols_p, y_lab = y_label, facet_var = "fuel")
-```
-
-```{r}
-  # plot ec + oc vs. grav
-  aerosols_p <-
-    aerosols %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>% # only keep test cases with all the the data
-    #dplyr::select(-grav) %>%
-    dplyr::left_join(
-      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(grepl("pellets|liquid", fuelcat))
-```
-
-```{r}
-  aerosols_p %<>%
-    dplyr::group_by(stove, fuel) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 3:5)
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "charcoal") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
 
 ```{r aerosols_advanced}
-  isee_bar_charts(aerosols_p, y_lab = y_label, facet_var = "fuel")
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "pellets|liquid") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
 
 # gas composition bar charts
 
 ## tidy gas categories
 
-```{r}
+```{r gases_relevel}
   gases <- 
     gases %>% 
     dplyr::mutate(pol = 
@@ -361,92 +267,26 @@ output:
 
 ## summarize by stove type
 
-```{r}
-  gases_p <-
-    gases %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>%
-    dplyr::left_join(
-    dplyr::select(samples, id, stove), by = "id")
-```
-
-```{r}
-  gases_p %<>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:5) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, stovecat)), by = "stove") %>%
-    dplyr::mutate(pol = as.factor(pol))
-```
-
 ```{r gases_stoves}
-  isee_bar_charts(gases_p, y_lab = y_label)
+  isee_summarize(gases) %>% 
+    isee_bar_charts(y_lab = y_label)
 ```
 
 ## summarize by fuel type
 
-```{r}
-  gases_p <-
-    gases %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>%
-    dplyr::left_join(
-      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(fuelcat == "wood")
-```
-
-```{r}
-  gases_p %<>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:5) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
-```
+## summarize by fuel type
 
 ```{r gases_wood}
-  isee_bar_charts(gases_p, y_lab = y_label, facet_var = "fuel")
-```
-
-```{r}
-  gases_p <-
-    gases %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>%
-    dplyr::left_join(
-      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(fuelcat == "charcoal")
-```
-
-```{r}
-  gases_p %<>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:5) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
+  isee_summarize(gases, group_var = "fuel", cat_filter = "wood") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
 
 ```{r gases_charcoal}
-  isee_bar_charts(gases_p, y_lab = y_label, facet_var = "fuel")
-```
-
-```{r}
-  gases_p <-
-    gases %>%
-    tidyr::spread_("pol", emissions_metric) %>%
-    na.omit %>%
-    dplyr::left_join(
-      dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(grepl("pellets|liquid", fuelcat))
-```
-
-```{r}
-  gases_p %<>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, mean) %>%
-    tidyr::gather("pol", "value", 2:5) %>%
-    dplyr::left_join(dplyr::distinct(dplyr::select(samples, stove, fuel)), by = "stove")
+  isee_summarize(gases, group_var = "fuel", cat_filter = "charcoal") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
 
 ```{r gases_advanced}
-  isee_bar_charts(gases_p, y_lab = y_label, facet_var = "fuel")
+  isee_summarize(gases, group_var = "fuel", cat_filter = "pellets|liquid") %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
