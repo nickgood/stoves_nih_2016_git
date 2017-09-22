@@ -274,8 +274,6 @@ output:
 
 ## summarize by fuel type
 
-## summarize by fuel type
-
 ```{r gases_wood}
   isee_summarize(gases, group_var = "fuel", cat_filter = "wood") %>% 
     isee_bar_charts(y_lab = y_label, facet_var = "fuel")
