@@ -649,16 +649,37 @@ calc_mw <- function(pol_properties){
 #________________________________________________________
 #________________________________________________________
 # summarize data by category
-isee_summarize <- function(data, filter_var, emissions_metric){
-
-  data %>%
-    tidyr::spread_("pol", emissions_metric) %>%
+# default is to group by stove type
+isee_summarize <- function(data,
+                           group_var = "stove",
+                           cat_filter = "",
+                           metric = emissions_metric,
+                           sample_info = samples){
+if(group_var == "stove"){
+  data_p <-
+    data %>%
+    tidyr::spread_("pol", metric) %>%
     na.omit %>%
-    dplyr::left_join(samples %>% 
-                       dplyr::select(id, stove, stovecat), by = "id") %>% 
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::left_join(sample_info %>% 
+                       dplyr::select(id, stove, stovecat, fuel, fuelcat),
+                     by = "id") %>%
+    dplyr::filter(grepl(cat_filter, stovecat)) %>% 
+    dplyr::group_by_("stove", "stovecat") %>%
     dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
-    tidyr::gather("pol", "value", 3:5)
+    tidyr::gather("pol", "value", 3:ncol(.))
+}else{
+  data_p <-
+    data %>%
+    tidyr::spread_("pol", metric) %>%
+    na.omit %>%
+    dplyr::left_join(sample_info %>% 
+                       dplyr::select(id, stove, stovecat, fuel, fuelcat),
+                     by = "id") %>%
+    dplyr::filter(grepl(cat_filter, fuelcat)) %>% 
+    dplyr::group_by_("stove", "fuel", "fuelcat") %>%
+    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    tidyr::gather("pol", "value", 4:ncol(.))
+}
 
 }
 #________________________________________________________
