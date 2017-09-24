@@ -134,7 +134,7 @@ isee_bar_charts <- function(data,
     geom_errorbar(aes(ymin = min, ymax = max), alpha = 0.1) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, vjust = 0.9, hjust = 0.9),
-          text = element_text(size = 20),
+          text = element_text(size = 18),
           legend.title = element_blank(),
           legend.position = "top") +
     scale_fill_manual(values = colors) +
