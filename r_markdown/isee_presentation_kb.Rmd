@@ -104,9 +104,10 @@ output:
                                          "pressurized lpg"),
                   stovecat = 
                     stovecat %>%
-                    forcats::fct_recode("insulated" = "improved",
-                                        "insulated" = "gasifiers",
-                                        "liquid" = "advanced"))
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional [open] stoves" = "traditional"))
 ```
 
 ## extract specific emissions data
@@ -183,6 +184,15 @@ output:
     dplyr::bind_rows(carbs, vocs)
 ```
 
+* all gases
+
+```{r}
+  co <-
+    emissions %>%
+    dplyr::filter(inst == "fivegas", grepl("^co$", pol)) %>%
+    dplyr::select(-inst, -qc)
+```
+
 * carcinogenic compounds
 
 ```{r}
@@ -196,23 +206,19 @@ output:
 
 ## tidy carcinogen categories
 
-```{r carcinogens_tidy}
-  carcinogens <- 
-    carcinogens %>% 
-    dplyr::mutate(pol = 
-                    pol %>%
-                    forcats::fct_recode("benzene" = "voc_benzene") %>% 
-                    factor(levels = c("benzene",
-                                      "acetaldehyde",
-                                      "formaldehyde"))) %>% 
-    dplyr::select(-qc)
-```
-
 ## group carcinogenic pollutants by stove type plot
 
 ```{r carcinogens_stoves}
 # test <-
-  isee_summarize(carcinogens) %>% 
+  carcinogens %>% 
+    dplyr::select(-qc) %>% 
+    isee_summarize(.) %>% 
+    dplyr::mutate(pol =
+                    pol %>%
+                    forcats::fct_recode("benzene" = "voc_benzene") %>% 
+                    ordered(levels = c("formaldehyde",
+                                       "acetaldehyde",
+                                       "benzene"))) %>% 
     isee_bar_charts(y_lab = y_label)
 ```
 
@@ -227,34 +233,43 @@ output:
                     pol %>%
                     forcats::fct_recode("elemental carbon" = "ec",
                                         "organic carbon" = "oc",
-                                        "ions" = "ions") %>%
-                    factor(levels = c("organic carbon",
-                                         "elemental carbon",
-                                         "ions")))
+                                        "ions" = "ions"))
 ```
 
 ## summarize by stove type
 
 ```{r aerosols_stove}
   isee_summarize(aerosols) %>% 
-    isee_bar_charts(y_lab = y_label)
+    dplyr::mutate(pol = ordered(pol, levels = c("ions",
+                                                "elemental carbon",
+                                                "organic carbon"))) %>% 
+    isee_bar_charts(y_lab = y_label, colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 ## summarize by fuel type
 
 ```{r aerosols_wood}
-  isee_summarize(aerosols, group_var = "fuel", cat_filter = "wood") %>% 
-    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "wood") %>%
+    dplyr::mutate(pol = ordered(pol, levels = c("ions",
+                                                "elemental carbon",
+                                                "organic carbon"))) %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 ```{r aerosols_charcoal}
-  isee_summarize(aerosols, group_var = "fuel", cat_filter = "charcoal") %>% 
-    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "charcoal") %>%
+    dplyr::mutate(pol = ordered(pol, levels = c("ions",
+                                                "elemental carbon",
+                                                "organic carbon"))) %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 ```{r aerosols_advanced}
-  isee_summarize(aerosols, group_var = "fuel", cat_filter = "pellets|liquid") %>% 
-    isee_bar_charts(y_lab = y_label, facet_var = "fuel")
+  isee_summarize(aerosols, group_var = "fuel", cat_filter = "pellets|liquid") %>%
+    dplyr::mutate(pol = ordered(pol, levels = c("ions",
+                                                "elemental carbon",
+                                                "organic carbon"))) %>% 
+    isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 # gas composition bar charts
@@ -276,8 +291,8 @@ output:
 ## summarize by stove type
 
 ```{r gases_stoves}
-  isee_summarize(gases) %>% 
-    isee_bar_charts(y_lab = y_label)
+  isee_summarize(co) %>% 
+    isee_bar_charts(y_lab = y_label, color = c("#0072B2"))
 ```
 
 ## summarize by fuel type

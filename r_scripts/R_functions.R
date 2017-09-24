@@ -655,9 +655,10 @@ isee_summarize <- function(data,
                            cat_filter = "",
                            metric = emissions_metric,
                            sample_info = samples){
+
 if(group_var == "stove"){
 
-  range_p <-
+  q1 <-
     data %>%
     #dplyr::select(-qc) %>% 
     tidyr::spread_("pol", metric) %>%
@@ -670,7 +671,22 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, paste0(group_var, "cat"))) %>% 
     dplyr::group_by_(group_var, paste0(group_var, "cat")) %>% 
-    dplyr::summarise_if(is.numeric, funs(min, max), na.rm = TRUE)
+    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+  
+  q3 <-
+    data %>%
+    #dplyr::select(-qc) %>% 
+    tidyr::spread_("pol", metric) %>%
+    na.omit %>%
+    tidyr::gather("pol", "value", 2:ncol(.)) %>% 
+    dplyr::group_by(id) %>% 
+    dplyr::summarise_if(is.numeric, sum, na.rm = TRUE) %>% 
+    dplyr::left_join(sample_info %>% 
+                       dplyr::select(id, stove, stovecat, fuel, fuelcat),
+                     by = "id") %>%
+    dplyr::filter(grepl(cat_filter, paste0(group_var, "cat"))) %>% 
+    dplyr::group_by_(group_var, paste0(group_var, "cat")) %>% 
+    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
 
   data_p <-
     data %>%
@@ -681,13 +697,14 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, paste0(group_var, "cat"))) %>% 
     dplyr::group_by_(group_var, paste0(group_var, "cat")) %>%
-    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    dplyr::summarise_if(is.numeric, median, na.rm = TRUE) %>%
     tidyr::gather("pol", "value", 3:ncol(.)) %>% 
-    dplyr::left_join(range_p, by = c("stove", "stovecat"))
+    dplyr::left_join(q1, by = c("stove", "stovecat")) %>% 
+    dplyr::left_join(q3, by = c("stove", "stovecat")) 
 
 }else{
 
-  range_p <-
+  q1 <-
     data %>%
     #dplyr::select(-qc) %>% 
     tidyr::spread_("pol", metric) %>%
@@ -700,8 +717,23 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, fuelcat)) %>% 
     dplyr::group_by_("stove",group_var, paste0(group_var, "cat")) %>% 
-    dplyr::summarise_if(is.numeric, funs(min, max), na.rm = TRUE)
-  
+    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+
+  q3 <-
+    data %>%
+    #dplyr::select(-qc) %>% 
+    tidyr::spread_("pol", metric) %>%
+    na.omit %>%
+    tidyr::gather("pol", "value", 2:ncol(.)) %>% 
+    dplyr::group_by(id) %>% 
+    dplyr::summarise_if(is.numeric, sum, na.rm = TRUE) %>% 
+    dplyr::left_join(sample_info %>% 
+                       dplyr::select(id, stove, stovecat, fuel, fuelcat),
+                     by = "id") %>%
+    dplyr::filter(grepl(cat_filter, fuelcat)) %>% 
+    dplyr::group_by_("stove",group_var, paste0(group_var, "cat")) %>% 
+    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
+
   data_p <-
     data %>%
     tidyr::spread_("pol", metric) %>%
@@ -711,9 +743,10 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, fuelcat)) %>% 
     dplyr::group_by_("stove", group_var, paste0(group_var, "cat")) %>%
-    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+    dplyr::summarise_if(is.numeric, median, na.rm = TRUE) %>%
     tidyr::gather("pol", "value", 4:ncol(.)) %>% 
-    dplyr::left_join(range_p, by = c("stove", group_var, paste0(group_var, "cat")))
+    dplyr::left_join(q1, by = c("stove", "fuel", "fuelcat")) %>% 
+    dplyr::left_join(q3, by = c("stove", "fuel", "fuelcat"))
 }
 
 }
