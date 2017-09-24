@@ -107,7 +107,7 @@ output:
                     forcats::fct_recode("insulated [improved] stoves" = "improved",
                                         "insulated [improved] stoves" = "gasifiers",
                                         "liquid-fuel stoves" = "advanced",
-                                        "traditional [open] stoves" = "traditional"))
+                                        "traditional stoves" = "traditional"))
 ```
 
 ## extract specific emissions data
