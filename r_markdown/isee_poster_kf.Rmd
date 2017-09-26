@@ -39,7 +39,7 @@ output: html_document
                                      stove, stovecat,
                                      fuel, fuelcat),
                                     by = "id") %>%
-                       dplyr::filter(metric == "energy_ef_comb") %>%
+                       dplyr::filter(metric == "energy_fuel_ef_comb") %>%
                        tidyr::spread(metric, value)
 ```
 
@@ -80,7 +80,7 @@ output: html_document
 ```{r}
  avg <- emissions_factors %>%
         dplyr::group_by(stovecat, fuelcat, pol) %>%
-        dplyr::summarise(mean = round(mean(energy_ef_comb, na.rm = TRUE), 1))
+        dplyr::summarise(mean = round(mean(energy_fuel_ef_comb, na.rm = TRUE), 1))
 ```
 
 
@@ -88,7 +88,7 @@ output: html_document
 ```{r}
   #options(scipen = 999)
 
-  plot_ef <- ggplot(emissions_factors, aes(y = energy_ef_comb, x = stovecat)) +
+  plot_ef <- ggplot(emissions_factors, aes(y = energy_fuel_ef_comb, x = stovecat)) +
          geom_point(position = position_dodge(0.5), size = 2, aes(group = fuel, color = fuel)) +
          geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 4, size = 2, stroke = 2) +
          facet_wrap(~pol, ncol = 2, scales = "free") +
@@ -108,9 +108,9 @@ output: html_document
 ```{r}
  # filter/setup for analysis
   ef_plotdata <- emissions_factors %>%
-                 dplyr::select(id, pol, energy_ef_comb, fuel, fuelcat, stove, stovecat) %>%
+                 dplyr::select(id, pol, energy_fuel_ef_comb, fuel, fuelcat, stove, stovecat) %>%
                  dplyr::distinct() %>%
-                 tidyr::spread(pol, energy_ef_comb)
+                 tidyr::spread(pol, energy_fuel_ef_comb)
 ```
 
 # Plot relationships 
