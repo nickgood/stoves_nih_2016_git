@@ -697,7 +697,7 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, paste0(group_var, "cat"))) %>% 
     dplyr::group_by_(group_var, paste0(group_var, "cat")) %>%
-    dplyr::summarise_if(is.numeric, median, na.rm = TRUE) %>%
+    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
     tidyr::gather("pol", "value", 3:ncol(.)) %>% 
     dplyr::left_join(q1, by = c("stove", "stovecat")) %>% 
     dplyr::left_join(q3, by = c("stove", "stovecat")) 
@@ -743,7 +743,7 @@ if(group_var == "stove"){
                      by = "id") %>%
     dplyr::filter(grepl(cat_filter, fuelcat)) %>% 
     dplyr::group_by_("stove", group_var, paste0(group_var, "cat")) %>%
-    dplyr::summarise_if(is.numeric, median, na.rm = TRUE) %>%
+    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
     tidyr::gather("pol", "value", 4:ncol(.)) %>% 
     dplyr::left_join(q1, by = c("stove", "fuel", "fuelcat")) %>% 
     dplyr::left_join(q3, by = c("stove", "fuel", "fuelcat"))

@@ -131,15 +131,16 @@ isee_bar_charts <- function(data,
   
   ggplot(data, aes_string(x = x_var, y = y_var, fill = fill_var)) +
     geom_bar(stat = "identity") +
-    geom_errorbar(aes(ymin = q1, ymax = q3), alpha = 0.3, width=.2) +
+    geom_errorbar(aes(ymin = q1, ymax = q3), width=.2) +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 20, vjust = 0.9, hjust = 0.9),
+    theme(#axis.text.x = element_text(vjust = 0.9, hjust = 0.9),
           text = element_text(size = 20),
           legend.title = element_blank(),
           legend.text = element_text(size = 24),
-          strip.text.x = element_text(size = 22),
+          strip.text.x = element_text(size = 20),
           axis.title.y = element_text(size = 22),
           legend.position = "top") +
+    guides(fill = guide_legend(title=NULL)) +
     scale_fill_manual(values = colors) +
     facet_grid(~data[[facet_var]], scales = "free", space = "free_x") +
     ylab(y_lab) +

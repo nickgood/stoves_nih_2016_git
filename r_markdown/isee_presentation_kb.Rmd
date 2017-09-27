@@ -12,7 +12,7 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 13,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -91,17 +91,21 @@ output:
                     factor %>% 
                     tolower %>%
                     gsub(" [:(:].*[:):]", "",.) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
+                    forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                    forcats::fct_recode("pressure kerosene" =
+                                          "pressurized kerosene") %>% 
+                    gsub(" ", " \n ",.) %>% 
+                    forcats::fct_relevel("three \n stone \n fire",
+                                         "clay \n ring",
+                                         "ceramic \n charcoal",
+                                         "rocket \n elbow",
+                                         "built-in \n justa",
+                                         "metal \n charcoal",
+                                         "fan \n rocket \n elbow",
                                          "gasifier",
-                                         "wick kerosene",
-                                         "pressurized kerosene",
-                                         "pressurized lpg"),
+                                         "wick \n kerosene",
+                                         "pressure \n kerosene",
+                                         "lpg"),
                   stovecat = 
                     stovecat %>%
                     forcats::fct_recode("insulated [improved] stoves" = "improved",
@@ -202,6 +206,15 @@ output:
     dplyr::select(-inst)
 ```
 
+* all gases
+
+```{r}
+  co_benzene <-
+    emissions %>%
+    dplyr::filter(grepl("^co$|^voc_benzene$", pol)) %>%
+    dplyr::select(-inst, -qc)
+```
+
 # carcinogen bar chart
 
 ## tidy carcinogen categories
@@ -216,10 +229,20 @@ output:
     dplyr::mutate(pol =
                     pol %>%
                     forcats::fct_recode("benzene" = "voc_benzene") %>% 
-                    ordered(levels = c("formaldehyde",
-                                       "acetaldehyde",
-                                       "benzene"))) %>% 
-    isee_bar_charts(y_lab = y_label)
+                    ordered(levels = c("acetaldehyde",
+                                       "formaldehyde",
+                                       "benzene")) %>% 
+                    gsub("$", "  ", .)) %>% 
+    isee_bar_charts(y_lab = y_label, colors = c("#CCC999", "#9999CC", "#66CC99"))
+```
+
+```{r}
+  co_benzene <-
+    co_benzene %>%
+    dplyr::mutate(pol =
+                  pol %>%
+                  forcats::fct_recode("benzene" = "voc_benzene")) %>% 
+    tidyr::spread(pol, emissions_metric)
 ```
 
 # aerosol composition bar charts
@@ -240,9 +263,10 @@ output:
 
 ```{r aerosols_stove}
   isee_summarize(aerosols) %>% 
-    dplyr::mutate(pol = ordered(pol, levels = c("ions",
-                                                "elemental carbon",
-                                                "organic carbon"))) %>% 
+    dplyr::mutate(pol = gsub("$", "  ", pol) %>% 
+                        ordered(., levels = c("ions  ",
+                                                "elemental carbon  ",
+                                                "organic carbon  "))) %>% 
     isee_bar_charts(y_lab = y_label, colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
@@ -250,25 +274,28 @@ output:
 
 ```{r aerosols_wood}
   isee_summarize(aerosols, group_var = "fuel", cat_filter = "wood") %>%
-    dplyr::mutate(pol = ordered(pol, levels = c("ions",
-                                                "elemental carbon",
-                                                "organic carbon"))) %>% 
+    dplyr::mutate(pol = gsub("$", "  ", pol) %>% 
+                        ordered(., levels = c("ions  ",
+                                                "elemental carbon  ",
+                                                "organic carbon  "))) %>% 
     isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 ```{r aerosols_charcoal}
   isee_summarize(aerosols, group_var = "fuel", cat_filter = "charcoal") %>%
-    dplyr::mutate(pol = ordered(pol, levels = c("ions",
-                                                "elemental carbon",
-                                                "organic carbon"))) %>% 
+    dplyr::mutate(pol = gsub("$", "  ", pol) %>% 
+                        ordered(., levels = c("ions  ",
+                                                "elemental carbon  ",
+                                                "organic carbon  "))) %>% 
     isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
 ```{r aerosols_advanced}
   isee_summarize(aerosols, group_var = "fuel", cat_filter = "pellets|liquid") %>%
-    dplyr::mutate(pol = ordered(pol, levels = c("ions",
-                                                "elemental carbon",
-                                                "organic carbon"))) %>% 
+    dplyr::mutate(pol = gsub("$", "  ", pol) %>% 
+                        ordered(., levels = c("ions  ",
+                                                "elemental carbon  ",
+                                                "organic carbon  "))) %>% 
     isee_bar_charts(y_lab = y_label, facet_var = "fuel", colors = c("#E69F00", "#666666", "#56B4E9"))
 ```
 
@@ -292,7 +319,7 @@ output:
 
 ```{r gases_stoves}
   isee_summarize(co) %>% 
-    isee_bar_charts(y_lab = y_label, color = c("#0072B2"))
+    isee_bar_charts(y_lab = y_label, color = c("#009E73"))
 ```
 
 ## summarize by fuel type
