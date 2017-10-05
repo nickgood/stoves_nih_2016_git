@@ -355,28 +355,23 @@ load_ions_file <- function(file, sheet = "ug"){
 
 #________________________________________________________
 # Load pah file
-# file <- "data/pah/20170608_PAH.xlsx"
-# incomplete need project data
+# file <- "data/pah/PAH_20171004.csv"
+# file <- "data/pah/PAH_20171004_BDL.csv"
 load_pah_file <- function(file){
  # read file
-  out <- read_excel(path = file, col_names = TRUE, skip = 3)
+  raw_data <- read_csv(file = file, col_names = TRUE, skip = 1, col_types = cols())
  # rename columns
-  names(out) <- tolower(colnames(out))
-  names(out) <- gsub("\\[", "_", colnames(out))
-  names(out) <- gsub(" ", "_", colnames(out))
-  names(out) <- gsub("\\]", "_", colnames(out))
-  names(out) <- gsub("\\+", "_", colnames(out))
-  names(out) <- gsub("\\(", "_", colnames(out))
-  names(out) <- gsub("\\)", "_", colnames(out))
-  names(out) <- gsub("(_)\\1+", "\\1", colnames(out))
-  names(out)[1] <- "asu_id"
+  names(raw_data) <- tolower(colnames(raw_data))
+  names(raw_data) <- gsub("[^[:alnum:] ]", "_", colnames(raw_data))
+  names(raw_data) <- gsub(" ", "_", colnames(raw_data))
+
 # organize
-  out <- tidyr::gather(out, pol, val, -asu_id) %>%
-         dplyr::filter(!is.na(asu_id)) %>%
-         dplyr::mutate(lod = ifelse(grepl("^<", val), "below", "above"),
-                       val = as.numeric(gsub("<", "", val)),
-                       id = sub("-.*", "", asu_id),
-                       suffix = sub(".*-", "", asu_id))
+  out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
+         tidyr::gather(pol, val, -id_asu) %>%
+         dplyr::filter(!is.na(id_asu)) %>%
+         dplyr::mutate(id = as.factor(sub("-.*$", "", id_asu)),
+                        filter_type = as.factor(tolower(sub("^.*-", "", id_asu))))
+  
  # return 
   return(out)
 }
