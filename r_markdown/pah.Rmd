@@ -89,7 +89,7 @@ Merge pah with filter metadata
          dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
          dplyr::left_join(flows, by = "id")  %>%  
          dplyr::left_join(times, by = "id") %>%  
-         dplyr::rename(pre_flow = pre, post_flow = post)
+         dplyr::rename(pre_flow = pre, post_flow = post) 
 ```
 
 ## Save merged file
