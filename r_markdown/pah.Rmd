@@ -113,7 +113,6 @@ Merge pah with filter metadata
   p
 ```
 
-
 * blanks
 
 ```{r, fig.width=15, fig.height=50}
@@ -128,7 +127,6 @@ Merge pah with filter metadata
         facet_wrap(~pol, ncol = 1)
   p
 ```
-
 
 * lab background
 
