@@ -712,7 +712,13 @@ load_singlefiles <- function(log){
   
  # pahs
   if(log == "pah"){
-    filelist <- list.files("../data/pah", "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_PAH.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/pah", "^PAH_.*[0-9].csv$", full.names = TRUE)
+    out <- load_pah_file(filelist[1])
+  }
+  
+  # pahs
+  if(log == "pah_lod"){
+    filelist <- list.files("../data/pah", "^PAH_.*_BDL.csv$", full.names = TRUE)
     out <- load_pah_file(filelist[1])
   }
   
