@@ -7,12 +7,16 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
-  library(forcats)
+  library(knitr)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r}
   source("../r_scripts/R_load_data.R")
   source("../r_scripts/R_load_metadata.R")
   source("../r_scripts/R_tidy.R")
@@ -25,7 +29,7 @@ output:
 
 Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   co2_lab <- load_multifile(fldr = "../data/co2",
                             pattern = "DILUTION1.csv$", inst = "co2")
 
@@ -46,7 +50,7 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
 
 Loads ecoc data file and resave as .Rda
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   ecoc <- load_multifile(fldr = "../data/ecoc",
                          pattern = "ECOC.csv$",
                          inst = "ecoc")
@@ -58,7 +62,7 @@ Loads ecoc data file and resave as .Rda
 
 The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   fivegas_conc <- load_fivegas(type = "conc")
 
   save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
@@ -77,7 +81,7 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 
 Loads filter weight data and resaves as .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   grav <- load_singlefiles("grav")
 
   save(grav, file = "../r_files/grav.Rda")
@@ -87,7 +91,7 @@ Loads filter weight data and resaves as .Rda.
 
 Loads and resaves data as .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   ions <- load_singlefiles("ions")
 
   save(ions, file = "../r_files/ions.Rda")
@@ -97,7 +101,7 @@ Loads and resaves data as .Rda.
 
 Loads and resaves data as .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}   
+```{r}   
   pah <- load_singlefiles("pah")
   saveRDS(pah, file = "../r_files/pah.RDS")
 
@@ -109,7 +113,7 @@ Loads and resaves data as .Rda.
 
 Loads and resaves data as .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
@@ -120,7 +124,7 @@ Loads and resaves data as .Rda.
 
 Loads and resaves data as .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   scale <- load_multifile(fldr = "../data/scale",
                           pattern = "_SCALE.xlsx$", inst = "scale")
 
@@ -131,7 +135,7 @@ Loads and resaves data as .Rda.
 
 Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   smps <- load_multifile(fldr = "../data/smps",
                          pattern = "_SMPS.csv$", inst = "smps")
 
@@ -142,7 +146,7 @@ Loads and resaves data as an .Rda.
 
 Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   temp <- load_multifile(fldr = "../data/temp",
                          pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
 
@@ -153,7 +157,7 @@ Loads and resaves data as an .Rda.
 
 Loads and resaves data as an .Rda.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   trans <- load_singlefiles("trans")
 
   save(trans, file = "../r_files/trans.Rda")
@@ -163,7 +167,7 @@ Loads and resaves data as an .Rda.
 
 Loads the microgram sheet  and resaves data as an .Rda.
  
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   voc <- load_singlefiles("voc")
 
   save(voc, file = "../r_files/voc.Rda")
@@ -175,13 +179,13 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 Reference for test id, stove and fuel types.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- load_singlefiles("sample")
 ```
 
 * Define stove type levels
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- dplyr::mutate(samples,
                            stove = factor(stove,
                            levels = c("Three Stone Fire (Artisan)",
@@ -201,7 +205,7 @@ Reference for test id, stove and fuel types.
 
 * Define fuel category levels
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- dplyr::mutate(samples,
                            fuel = factor(fuel,
                            levels = c("Douglas Fir",
@@ -218,7 +222,7 @@ Reference for test id, stove and fuel types.
 
 * Create aggregated fuel category
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- dplyr::mutate(samples,
                            fuelcat =
                              forcats::fct_collapse(fuel,
@@ -236,7 +240,7 @@ Reference for test id, stove and fuel types.
 
 * Create aggregated stove catergory
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   samples <- dplyr::mutate(samples,
                            stovecat =
                             forcats::fct_collapse(stove,
@@ -257,7 +261,7 @@ Reference for test id, stove and fuel types.
 
 * Save samples file
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   save(samples, file = "../r_files/samples.Rda")
 ```
 
@@ -268,7 +272,7 @@ Reference for test id, stove and fuel types.
 * lab conditions (T, RH, P)
 * notes
  
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+```{r}  
   batch <- load_singlefiles("batch")
 
   batch <- dplyr::filter(batch, grepl("^[0-9]", id))
@@ -283,7 +287,7 @@ Reference for test id, stove and fuel types.
 * lab conditions (T, RH, P)
 * notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   wood <- load_singlefiles("wood")
 
   wood <- dplyr::filter(wood, grepl("^[0-9]", id))
@@ -296,7 +300,7 @@ Reference for test id, stove and fuel types.
 * fivegas calibration standards
 * fivegas calibration timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   cal_1 <- load_singlefiles("cal_1")
 
   save(cal_1, file = "../r_files/cal_1.Rda")
@@ -307,7 +311,7 @@ Reference for test id, stove and fuel types.
 * co2 calibration information
 * pax and smps flow measurements
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}  
+```{r}  
   cal_2 <- load_singlefiles("cal_2")
 
   save(cal_2, file = "../r_files/cal_2.Rda")
@@ -320,7 +324,7 @@ Reference for test id, stove and fuel types.
 * fivegas background times
 * notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   data_1 <- load_singlefiles("data_1")
 
   save(data_1, file = "../r_files/data_1.Rda")
@@ -331,7 +335,7 @@ Reference for test id, stove and fuel types.
 * carbonyls and isokinetic sampler times and flows
 * smps and pax times (including background)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+```{r} 
   data_2 <- load_singlefiles("data_2")
 
   save(data_2, file = "../r_files/data_2.Rda")
