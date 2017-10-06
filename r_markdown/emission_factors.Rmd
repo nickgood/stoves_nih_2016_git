@@ -20,7 +20,7 @@ output:
   load("../r_files/samples.Rda")
   load("../r_files/fuel_burnt.Rda")
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
-  # load("../r_files/energy.Rda") # not yet created
+  energy <- readRDS("../r_files/energy.RDS")
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -63,32 +63,51 @@ output:
                dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
+# Energy delivered
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  energy %<>% 
+    dplyr::filter(qc != "bad") %>%
+    dplyr::select(-qc)
+              
+```
+
+
 * Filter out bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
   # NG: are these still unrealistic?
-  emission_factors <- dplyr::filter(emissions_long, qc != "bad") %>%
-                      dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE)  # unrealistic values
-               
+  emissions <- dplyr::filter(emissions_long, qc != "bad") %>%
+               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>% # unrealistic values
+               dplyr::filter(value >= 0)  # ignore negatives
 ```
 
 # Calculate emissions factors
- 
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::left_join(emission_factors, 
-                                dplyr::select(mass_fuel, id, mass_fuel_c, 
-                                                         mass_fuel_kg, lhv), by = "id" ) %>%
-               dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
-                             mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg
-                             energy_ef = ((mass_ef * 1e-3) * lhv * 1e-3),
-                             energy_c_ef = ((mass_c_ef * 1e-3) * lhv * 1e-3))  # g / MJ
+  emission_factors <- emissions %>%
+                      dplyr::filter(metric == "mass_emitted") %>%
+                      dplyr::left_join(dplyr::select(mass_fuel, id, mass_fuel_c, 
+                                                     mass_fuel_kg, lhv), by = "id" ) %>%
+                      dplyr::left_join(energy, by = "id") %>%
+                      dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
+                                    mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg carbon
+                                    energy_fuel_ef = ((mass_ef) / (lhv * 1e-3)),  # mg / MJ fuel
+                                    energy_fuel_c_ef = ((mass_c_ef) / (lhv * 1e-3)),
+                                    energy_ef = ((value * 1e-3) / (joules * 1e-6)))  %>% # mg / MJ 
+                      dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef), mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_fuel_ef_comb = ifelse(is.na(energy_fuel_ef), energy_fuel_c_ef, energy_fuel_ef)) %>%
+                      dplyr::select(-metric, -value, -mass_fuel_c, -mass_fuel_kg, -lhv, -joules) %>%
+                      tidyr::gather("metric", "value", 5:11) %>%
+                      dplyr::bind_rows(emissions) %>%
+                      dplyr::distinct()
 ```
 
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   saveRDS(mass_fuel, file = "../r_files/mass_fuel.RDS")
-  saveRDS(emission_factors, file = "../r_files/emission_factors.RDS")
+  saveRDS(emission_factors, file = "../r_files/emissions_factors.RDS")
 ```
 
 # Plots
@@ -128,7 +147,7 @@ output:
 
 ## carbon emitted (bar)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
   ggplot(dplyr::filter(emission_factors, metric == "mass_carbon"),
                        aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+
@@ -141,7 +160,7 @@ output:
 
 ## mass emitted (bar)
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=TRUE, fig.width=10, fig.height=40, eval=TRUE} 
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
   ggplot(dplyr::filter(emission_factors, metric == "mass_emitted"),
         aes(x = id, y = value, fill = inst), na.rm = TRUE) +
     geom_bar(stat = "identity")+

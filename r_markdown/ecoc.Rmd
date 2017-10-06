@@ -91,7 +91,7 @@ output:
 * extract ecoc notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
+  notes <- dplyr::filter(notes, grepl("ecoc|all", inst) == TRUE)
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
@@ -271,7 +271,7 @@ output:
   bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
-        dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
+        dplyr::mutate(conc = (ug_sq_cm * area * 1000) / (flow * dur)) %>%
         dplyr::group_by(pol, id, cassette) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%

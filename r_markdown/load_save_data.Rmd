@@ -47,7 +47,9 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
 Loads ecoc data file and resave as .Rda
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  ecoc <- load_singlefiles("ecoc")
+  ecoc <- load_multifile(fldr = "../data/ecoc",
+                         pattern = "ECOC.csv$",
+                         inst = "ecoc")
 
   save(ecoc, file = "../r_files/ecoc.Rda")
 ```  

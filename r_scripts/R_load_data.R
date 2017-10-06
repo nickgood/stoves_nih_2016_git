@@ -69,6 +69,7 @@ load_co2_file <- function(file){
 
 #________________________________________________________
 # Load ECOC file
+# file <- "../data/ecoc/20170629_ECOC.csv"
 # file <- "../data/ecoc/20170110_ECOC.csv"
 load_ecoc_file <- function(file){
  # classes
@@ -476,7 +477,7 @@ load_voc_file <- function(file, sheet = "Sheet1"){
   names(df)[3] <- "datetime_start"
   names(df)[4] <- "datetime_end"
   
-  df_num <- subset(df, select = c(-id_can, -id_voc, -voc_na)) 
+  df_num <- subset(df, select = c(-id_can, -id_voc))
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(x)))
 
@@ -815,6 +816,11 @@ load_multifile <- function(fldr, pattern, inst){
  # smps
   if(inst == "smps"){
     ifelse(i==1, out <- load_smps_file(filelist[i]), out <- rbind(out, load_smps_file(filelist[i])))
+  }
+  
+  # smps
+  if(inst == "ecoc"){
+    ifelse(i==1, out <- load_ecoc_file(filelist[i]), out <- rbind(out, load_ecoc_file(filelist[i])))
   }
 
  # end for loop
