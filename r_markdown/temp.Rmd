@@ -41,8 +41,8 @@ output:
 # Switch probes
 
 * standard set-up is `t_1 = t_pot` and `t_4 = flue`
-* test `10x, 11x and 12x` have two pots and prob location locies
-* some tests have inconsistant prob locations
+* test `10x, 11x and 12x` have two pots
+* some tests have inconsistant probe locations
 
 * filter out `NAs`
 
@@ -128,8 +128,8 @@ output:
                                   flipped_25bc,
                                   temp_10a, temp_10b, temp_10c,
                                   temp_11a, temp_11b, temp_11c,
-                                  temp_12a, temp_12b, temp_12c)
-
+                                  temp_12a, temp_12b, temp_12c) %>%
+                 dplyr::filter(grepl("^t_", loc) != TRUE)
 ```
 
 # QC
@@ -150,6 +150,8 @@ output:
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
 ```
+
+* couple of tests with 2 file e.g. 1B (merged files)
 
 * merge flags with data
 

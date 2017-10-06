@@ -38,6 +38,7 @@ output:
   load("../r_files/ions_merged.Rda")
   load("../r_files/carbonyls_merged.Rda")
   load("../r_files/voc_merged.Rda")
+  pah_merged <- readRDS("../r_files/pah_merged.RDS")
 ```
 
 * constants
@@ -378,7 +379,42 @@ ___
 
 # pah
 
-* waiting on data
+ * select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
+  pah <- pah_merged %>%
+         dplyr::select(id,
+                       lod,
+                       flow,
+                       start, end,
+                       pol, mass_ug,
+                       conc_bg) %>%
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pah <- pah %>%
+         dplyr::mutate(dur = (end - start) / 60,
+                       conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pah <- pah %>%
+         dplyr::mutate(mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                       mass_carbon = mass_emitted * 0,
+                       inst = "pah")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(pah, 2)
+```
+
 
 # voc
 
@@ -455,6 +491,11 @@ ___
                                                     mass_carbon,
                                                     inst, qc)) %>%
                dplyr::bind_rows(dplyr::select(voc, id, pol,
+                                                   conc, conc_bg,
+                                                   mass_emitted,
+                                                   mass_carbon,
+                                                   inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(pah, id, pol,
                                                    conc, conc_bg,
                                                    mass_emitted,
                                                    mass_carbon,

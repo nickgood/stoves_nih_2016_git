@@ -1,7 +1,7 @@
 ---
 title: "pah"
 author: "Nicholas Good"
-date: "11/20/2016"
+date: "10/05/2017"
 output: html_document
 ---
 
@@ -22,11 +22,8 @@ output: html_document
 ## Load pah data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/pah.Rda")    # pah dataset
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  levels(pah$pol)
+  pah_raw <- readRDS("../r_files/pah.RDS")    # pah dataset
+  pah_lod <- readRDS("../r_files/pah_lod.RDS")    # pah lod dataset
 ```
 
 ## Merge with filter meta data
@@ -84,16 +81,81 @@ Extract pah filter cartridge data
 Merge pah with filter metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #pah_merged <- dplyr::left_join(pah, flows, by = "id")  %>%  
-  #                dplyr::left_join(times, by = "id") %>%  
-   #               dplyr::filter(grepl("^[0-9]", id)==TRUE | grepl("^G[0-9]", id)==TRUE) %>%
-    #              dplyr::rename(pre_flow = pre, post_flow = post)
+  lod <- pah_lod %>%
+         dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
+         dplyr::select(id, lod, filter_type, pol)
 
-  #pah_merged$id <- as.factor(pah_merged$id)
+  pah <- pah_raw %>% 
+         dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
+         dplyr::left_join(flows, by = "id")  %>%
+         dplyr::left_join(times, by = "id") %>%  
+         dplyr::rename(pre_flow = pre, post_flow = post) %>%
+         dplyr::mutate(flow = (pre_flow + post_flow) / 2,
+                       val = as.numeric(val),
+                       val_lod_adj = ifelse(lod == "below", (val^0.5)/2, val))
 ```
+
+
+## Plot
+
+* tests
+
+```{r, fig.width=15, fig.height=50}
+  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^[0-9]", pah$id))
+
+  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
+        geom_point(aes(color = filter_type)) +
+        scale_y_log10() +
+        theme_bw() +
+        theme(legend.position = "top") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
+        facet_wrap(~pol, ncol = 1)
+  p
+```
+
+* blanks
+
+```{r, fig.width=15, fig.height=50}
+  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^B", pah$id))
+
+  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
+        geom_point(aes(color = filter_type)) +
+        scale_y_log10() +
+        theme_bw() +
+        theme(legend.position = "top") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
+        facet_wrap(~pol, ncol = 1)
+  p
+```
+
+* lab background
+
+```{r, fig.width=15, fig.height=50}
+  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^G", pah$id))
+
+  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
+        geom_point(aes(color = filter_type)) +
+        scale_y_log10() +
+        theme_bw() +
+        theme(legend.position = "top") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
+        facet_wrap(~pol, ncol = 1)
+  p
+```
+
+
+# Combine filter stages
+
+```{r}
+   pah_merged <- pah %>%
+                 dplyr::group_by(id, pol, flow, pre_flow, post_flow, start, end) %>%
+                 summarise(sum = sum(val_lod_adj, na.rm = TRUE))
+```
+
+
 
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  #save(pah_merged, file="../r_files/pah_merged.Rda")
+  saveRDS(pah, file = "../r_files/pah_merged.RDS")
 ```

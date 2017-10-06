@@ -356,42 +356,25 @@ load_ions_file <- function(file, sheet = "ug"){
 
 #________________________________________________________
 # Load pah file
-# file <- "data/pah/20160804_PAH.xlsx"
-# set sheet to "ug" or "ug_m3"
-# incomplete need project data
-load_pah_file <- function(file, sheet = "Summary"){
+# file <- "data/pah/PAH_20171004.csv"
+# file <- "data/pah/PAH_20171004_BDL.csv"
+load_pah_file <- function(file){
+ # read file
+  raw_data <- read_csv(file = file, col_names = TRUE, skip = 1, col_types = cols())
+ # rename columns
+  names(raw_data) <- tolower(colnames(raw_data))
+  names(raw_data) <- gsub("[^[:alnum:] ]", "_", colnames(raw_data))
+  names(raw_data) <- gsub(" ", "_", colnames(raw_data))
 
-  df <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 1)
-
-  names(df) <- tolower(colnames(df))
-  names(df) <- gsub("\\[", "_", colnames(df))
-  names(df) <- gsub(" ", "_", colnames(df))
-  names(df) <- gsub("\\]", "_", colnames(df))
-  names(df) <- gsub("\\+", "_", colnames(df))
-  names(df) <- gsub("\\(", "_", colnames(df))
-  names(df) <- gsub("\\)", "_", colnames(df))
-  names(df) <- gsub("(_)\\1+", "\\1", colnames(df))
-  names(df)[1] <- "asu_id"
-
-  out <- tidyr::gather(df, pol, value,  -asu_id, -csu_label)
-
-  out <- dplyr::filter(out, !is.na(out$csu_label))  # filter empty rows
-
-  out$lod <- ifelse(grepl("^<", out$value), as.numeric(sub("^<", "", out$value)), NA)  # add lod
-
-  out$detect <- ifelse(grepl("^<", out$value), as.character("lod"), NA)
-  out$detect <- ifelse(grepl("^ND$", out$value), as.character("nd"), out$detect)
-  out$detect <- ifelse(!is.na(as.numeric(out$value)), as.character("ok"), out$detect)
-  out$detect <- as.factor(out$detect)
+# organize
+  out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
+         tidyr::gather(pol, val, -id_asu) %>%
+         dplyr::filter(!is.na(id_asu)) %>%
+         dplyr::mutate(id = as.factor(sub("-.*$", "", id_asu)),
+                        filter_type = as.factor(tolower(sub("^.*-", "", id_asu))))
   
-  out$value <- as.numeric(out$value)
-
-  out$pol <- as.factor(out$pol)
-
-  out$id <- "tbd"
-
-  # return 
-    return(out)
+ # return 
+  return(out)
 }
 #________________________________________________________
 
@@ -730,7 +713,13 @@ load_singlefiles <- function(log){
   
  # pahs
   if(log == "pah"){
-    filelist <- list.files("../data/pah", "PAH.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/pah", "^PAH_.*[0-9].csv$", full.names = TRUE)
+    out <- load_pah_file(filelist[1])
+  }
+  
+  # pahs
+  if(log == "pah_lod"){
+    filelist <- list.files("../data/pah", "^PAH_.*_BDL.csv$", full.names = TRUE)
     out <- load_pah_file(filelist[1])
   }
   
