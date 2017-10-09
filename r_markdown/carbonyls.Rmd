@@ -153,14 +153,17 @@ Load notes
   bg <- dplyr::select(bg, pol, mean) %>%
         dplyr::rename(conc_bg = mean)
 
+  samples_2 <- dplyr::select(samples, id, type, mc_level)
+
   carbonyls_merged <- dplyr::left_join(carbonyls_merged, bg, by = "pol") %>%
-                      dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg))
+                      dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg)) %>%
+                      dplyr::left_join(samples_2, by = "id")
 ```
 
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
+  saveRDS(carbonyls_merged, file = "../r_files/carbonyls_merged.RDS")
 ```
 
 ## Summary
@@ -172,7 +175,10 @@ Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` exper
 ## mass by pollutant
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(carbonyls_merged, aes(id, mass_ug, group = pol, color = pol)) +
+  
+carbonyls_merged %>%
+  # dplyr::filter(!is.na(mc_level)) %>%
+  ggplot(aes(id, mass_ug, group = pol, color = pol, shape = mc_level)) +
          geom_point() +
          geom_line() +
          scale_y_log10() +
@@ -194,3 +200,17 @@ Carbonyl data was collected during `r length(unique(carbonyls_merged$id))` exper
          theme(legend.position="top") +
          theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+# Exploratory Graphs
+
+```{r}
+carb_summary <- dplyr::group_by(carbonyls_merged, pol, mc_level) %>%
+                dplyr::summarize(pol_level = mean(conc - conc_bg)) %>%
+                dplyr::filter(!is.na(pol_level), !is.na(mc_level))
+
+ggplot(data = carb_summary) +
+  geom_point(aes(x = mc_level, y = pol_level, color = pol, shape = mc_level)) +
+  facet_wrap(~pol)
+
+```
+

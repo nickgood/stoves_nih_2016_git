@@ -144,3 +144,21 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
     xlab("") +
     theme(legend.position = "top")
 ```
+```{r}
+# calculate MCE
+summary <- tidyr::spread(fivegas_merged, pol, ppm)
+           
+
+bg <- dplyr::filter(summary, grepl("^BG[0-9]", id) == TRUE) %>%
+      dplyr::summarise(mean_co_bg = mean(co), mean_co2_bg = mean (co2))
+
+mce <- dplyr::group_by(summary, id) %>%
+           dplyr::summarise(mean_co = mean(co), mean_co2 = mean(co2)) %>%
+           dplyr::mutate(mce = (mean_co2 - bg$mean_co2_bg)/((mean_co2- bg$mean_co2_bg)
+                                                            + (mean_co - bg$mean_co_bg)))
+
+summary2 <- dplyr::filter(mce, grepl("^BG[0-9]", id) == FALSE)
+  ggplot(data = summary2, aes(x = id, y = mce)) +
+  geom_point()
+```
+

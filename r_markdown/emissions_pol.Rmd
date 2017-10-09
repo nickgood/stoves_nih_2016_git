@@ -71,13 +71,16 @@ output:
   smps_ultrafine_bg <- readRDS("../r_files/smps_ultrafine_bg.RDS")
 ```
 
+* carbonyls
+```{r}
+carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
+```
+
+
 * other data (yest to be pre-processed) PULL DATA UP AND OUT AS PROCESSED
 
 ```{r, eval = FALSE}
-  
-  load("../r_files/ions_merged.Rda")
-  load("../r_files/carbonyls_merged.Rda")
-  load("../r_files/voc_merged.Rda")
+  voc <- readRDS("../r_files/voc_merged.RDS")
 ```
 
 * constants
@@ -116,23 +119,16 @@ output:
 ```{r, eval = FALSE}
   carbonyls <- dplyr::select(carbonyls_merged,
                              id, qc,
-                             flow,
+                             flow, dur,
                              start, end,
                              pol, mass_ug,
+                             conc,
                              conc_bg) %>%
                dplyr::left_join(dplyr::select(pol_properties, 
                                               pol, 
                                               mw, 
                                               num_c),
-                                       by = "pol") %>%
-               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
-```
-
-* calculate concentrations
-
-```{r, eval = FALSE}
-  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
-                             conc = (mass_ug * 1000 / (flow * dur)))
+                                       by = "pol")
 ```
 
 * calculate mass emitted
@@ -147,7 +143,7 @@ output:
 * output
 
 ```{r, eval = FALSE}
-  # head(carbonyls, 2)
+  head(carbonyls, 2)
 ```
 
 # ecoc
