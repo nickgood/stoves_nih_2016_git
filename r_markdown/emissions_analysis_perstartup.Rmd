@@ -62,7 +62,10 @@ fuel_sum <- dplyr::filter(ef_su_event, pol == 'grav') %>%
                              n_events_pertest = round(mean(fuel_quant), 2),
                              min_events_pertest = min(fuel_quant),
                              max_events_pertest = max(fuel_quant),
-                             mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 3))
+                             mean_fuelmass_perevent_g = round(mean(mass_avg_startup), 2),
+                             mean_duration_pertest = round((mean(dur)*60), 1),
+                             min_duration_pertest = round((min(dur)*60), 0),
+                             max_duration_pertest = round((max(dur)*60), 0))
 
 knitr::kable(fuel_sum)
 ```
@@ -136,8 +139,8 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           tidyr::spread(pol, masspol_per_startup) 
 
   ggplot(data = pmco, aes(x = grav, y = co)) + 
-    geom_smooth(method = "lm", se= FALSE) +
-    geom_point(size = 2, aes(colour = fuel)) +
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(size = 2, aes(colour = fuel)) +
           ylab("CO EF (mg per startup event)") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -156,8 +159,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmbz, aes(x = grav, y = voc_benzene, colour = fuel), size = 2) +
+  ggplot(data = pmbz, aes(x = grav, y = voc_benzene)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(size = 2, aes(colour = fuel)) +
           ylab("benzene EF (mg per startup event)") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -177,8 +181,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmto, aes(x = grav, y = voc_toluene, colour = fuel), size = 2) +
+  ggplot(data = pmto, aes(x = grav, y = voc_toluene)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("toluene EF (mg per startup event)") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -198,8 +203,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmfd, aes(x = grav, y = formaldehyde, colour = fuel), size = 2) +
+  ggplot(data = pmfd, aes(x = grav, y = formaldehyde)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("formaldehyde EF (mg per startup event) ") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -219,8 +225,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmfd, aes(x = grav, y = acetaldehyde, colour = fuel), size = 2) +
+  ggplot(data = pmfd, aes(x = grav, y = acetaldehyde)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("acetaldehyde EF (mg per startup event) ") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -241,8 +248,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = pmco, aes(x = co, y = grav, colour = fuel), size = 2) +
+  ggplot(data = pmco, aes(x = co, y = grav)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           xlab("CO EF (mg per startup event) ") +
           ylab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -261,8 +269,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = cobz, aes(x = co, y = voc_benzene, colour = fuel), size = 2) +
+  ggplot(data = cobz, aes(x = co, y = voc_benzene)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("benzene EF (mg per startup event) ") +
           xlab("CO EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -282,8 +291,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = coto, aes(x = co, y = voc_toluene, colour = fuel), size = 2) +
+  ggplot(data = coto, aes(x = co, y = voc_toluene)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("toluene EF (mg per startup event)") +
           xlab("CO EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -303,8 +313,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = cofd, aes(x = co, y = formaldehyde, colour = fuel), size = 2) +
+  ggplot(data = cofd, aes(x = co, y = formaldehyde)) +
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("formaldehyde EF (mg per startup event)") +
           xlab("CO EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
@@ -324,8 +335,9 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
-  ggplot() + 
-        geom_point(data = coad, aes(x = co, y = acetaldehyde, colour = fuel), size = 2) +
+  ggplot(data = coad, aes(x = co, y = acetaldehyde)) + 
+        geom_smooth(method = "lm", se= FALSE, color = "black") +
+        geom_point(aes(colour = fuel), size = 2) +
           ylab("acetaldehyde EF (mg per startup event)") +
           xlab("CO EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
