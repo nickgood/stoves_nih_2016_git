@@ -131,16 +131,33 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 ## Correlations
 * all individual data points shown. 
 
-## PM vs others 
-### PM vs. CO
+```{r}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod = function(out = ef_plotdata, fm = "CO ~ PM2.5"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+
+```
+
+### PM vs CO
 ```{r}
   pmco <- dplyr::filter(ef_su_event, grepl('^grav$|^co$', pol)) %>%
           dplyr::select(id, fuel, pol, masspol_per_startup) %>%
           tidyr::spread(pol, masspol_per_startup) 
 
+# r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmco, "co ~ grav")))
+
   ggplot(data = pmco, aes(x = grav, y = co)) + 
         geom_smooth(method = "lm", se= FALSE, color = "black") +
         geom_point(size = 2, aes(colour = fuel)) +
+        geom_text(data = r2_data, aes(x = 2, y = 800, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 6) +
           ylab("CO EF (mg per startup event)") +
           xlab("PM2.5 EF (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
