@@ -490,9 +490,10 @@ plot_cormap <- function(data, cor_method){
   
   ef_corr[lower.tri(ef_corr)] <- NA
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
-  ef_corr_l <- ef_corr_l[!(ef_corr_l$value == 1),]
+  ef_corr_l <- dplyr::filter(ef_corr_l, !is.na(value)) %>%
+               dplyr::filter(value != 1)
   
-  p <- ggplot(data = ef_corr_l, aes(Var2, Var1, fill = value, label = value))+
+  p <- ggplot(data = ef_corr_l, aes(X2, X1, fill = value, label = value))+
        geom_tile(color = "white")+
        geom_text(color = "black", size = 3.5) +
        scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
@@ -508,11 +509,11 @@ plot_cormap <- function(data, cor_method){
              panel.background = element_blank(),
              axis.ticks = element_blank(),
              legend.justification = c(1, 0),
-             legend.position = c(0.4, 0.8),
+             legend.position = c(1.75, 0.5),
              legend.direction = "horizontal", 
              legend.title = element_text(size = 12),
-             legend.text = element_text(size = 16)) +
-       guides(fill = guide_colorbar(barwidth = 10, barheight = 2,
+             legend.text = element_text(size = 10)) +
+       guides(fill = guide_colorbar(barwidth = 10, barheight = 1.5,
                                     title.position = "top", title.hjust = 0.5)) +
        coord_fixed()
   return(p)
@@ -751,3 +752,25 @@ if(group_var == "stove"){
 
 }
 #________________________________________________________
+#_______________________________________________________________________________
+# fit lm to inhaled_number ~ num_conc
+lm_fp = function(data){
+  
+  data <- dplyr::select(data, -stovecat, -stove, -pol)
+  
+  ef_corr <- round(cor(data[-1],
+                       use = "pairwise.complete.obs",
+                       method = "spearman"), 2)
+  
+  ef_corr[lower.tri(ef_corr)] <- NA
+  ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
+  ef_corr_l <- dplyr::filter(ef_corr_l, !is.na(value)) %>%
+  dplyr::filter(value != 1)
+  
+  eq <- substitute(~~"Spearman's rho"~"="~r2, 
+                   list(r2 = format(ef_corr_l$value[1])))
+  
+    as.character(as.expression(eq))
+  
+}
+#_______________________________________________________________________________

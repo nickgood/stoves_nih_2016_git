@@ -188,7 +188,7 @@ output:
     dplyr::bind_rows(carbs, vocs)
 ```
 
-* all gases
+* co
 
 ```{r}
   co <-
@@ -197,13 +197,24 @@ output:
     dplyr::select(-inst, -qc)
 ```
 
+* pm2.5
+
+```{r}
+  pm <-
+    emissions %>%
+    dplyr::filter(inst == "grav", grepl("^grav$", pol)) %>%
+    dplyr::select(-inst, -qc) %>%
+    dplyr::mutate(pol = pol %>%
+                  forcats::fct_recode("pm2.5" = "grav")) 
+```
+
 * carcinogenic compounds
 
 ```{r}
   carcinogens <-
     emissions %>%
-    dplyr::filter(grepl("^voc_benzene$|formaldehyde|acetaldehyde", pol)) %>% 
-    dplyr::select(-inst)
+    dplyr::select(-inst, -qc) %>%
+    dplyr::filter(grepl("^voc_benzene$|formaldehyde|acetaldehyde", pol))
 ```
 
 * all gases
@@ -224,7 +235,6 @@ output:
 ```{r carcinogens_stoves}
 # test <-
   carcinogens %>% 
-    dplyr::select(-qc) %>% 
     isee_summarize(.) %>% 
     dplyr::mutate(pol =
                     pol %>%
@@ -236,13 +246,59 @@ output:
     isee_bar_charts(y_lab = y_label, colors = c("#CCC999", "#9999CC", "#66CC99"))
 ```
 
+
+
 ```{r}
-  co_benzene <-
-    co_benzene %>%
+  corr_map <-
+    co %>%
+    dplyr::bind_rows(carcinogens, pm, aerosols) %>%
     dplyr::mutate(pol =
                   pol %>%
                   forcats::fct_recode("benzene" = "voc_benzene")) %>% 
-    tidyr::spread(pol, emissions_metric)
+    tidyr::spread(pol, emissions_metric) %>%
+    dplyr::select(id, acetaldehyde, benzene, co, ec, formaldehyde, ions, oc, pm2.5)
+```
+
+```{r, fig.height = 5, fig.width = 13}
+  plot_cormap(corr_map, "spearman")
+```
+
+```{r}
+ corr_map <- corr_map %>%
+             dplyr::select(id, pm2.5, acetaldehyde, benzene, formaldehyde, ec) %>%
+             dplyr::left_join(dplyr::select(samples, id, stovecat, stove), by = "id") %>%
+             tidyr::gather("pol", "value", 3:6)
+
+  corr_map <- corr_map[-198,]
+  corr_map <- corr_map[-32,]
+  
+```
+
+```{r}
+# r2 for each stove
+rho <- corr_map %>%
+       dplyr::group_by(pol) %>% 
+       dplyr::do(eqn = unclass(lm_fp(.))) %>% 
+       dplyr::mutate(eqn = unclass(eqn))
+```
+
+
+```{r}
+  colors = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
+
+  ggplot(corr_map, aes(x = pm2.5, y = value, color = stovecat)) +
+    geom_point(size = 4, shape=1, stroke=1.5, alpha=0.75) +
+          theme_bw() + 
+          facet_wrap(~pol, scales = "free") +
+    geom_text(data = rho, aes(x = Inf, y = Inf, label = eqn), 
+              color = 'black',  parse = TRUE,
+              vjust = 1.5, hjust = "inward",
+              size = 5) +
+    theme(text = element_text(size = 20),
+          legend.position = "top",
+          legend.title = element_blank()) +
+    ylab("mg emitted per MJ of fuel") + 
+    xlab("Particulate Matter 2.5 (mg emitted per MJ fuel)")
 ```
 
 # aerosol composition bar charts
@@ -338,3 +394,4 @@ output:
   isee_summarize(gases, group_var = "fuel", cat_filter = "pellets|liquid") %>% 
     isee_bar_charts(y_lab = y_label, facet_var = "fuel")
 ```
+
