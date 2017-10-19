@@ -133,7 +133,6 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 * code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
 ```{r}
 # stacked btex data
-  df <- readRDS("ef_su_event.RDS")
 
   btex <- ef_su_event %>%
           dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
