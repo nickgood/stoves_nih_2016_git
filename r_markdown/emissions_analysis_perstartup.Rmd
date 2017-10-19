@@ -133,26 +133,91 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 * code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
 ```{r}
 # stacked btex data
-  btex <- ef_su_event %>% 
+  df <- readRDS("ef_su_event.RDS")
+
+  btex <- ef_su_event %>%
           dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
-                        |^voc_ethylbenzene$|xylene", pol)) %>% 
-          dplyr::group_by(fuel, pol) %>%
-          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) #this isn't working by group- it's giving the same sum for each pollutant... 
+                        |^voc_ethylbenzene$|xylene", pol)) %>%
+          dplyr::mutate(category = "BTEX") %>%
+          dplyr::group_by(pol, fuel) %>%
+          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>%
+          dplyr::ungroup()
+  btex$pol <- gsub("voc_", "", btex$pol)
 
-btex$pol <- gsub("voc_", "", btex$pol)
-
+  btex <- btex %>% mutate(pol = as.factor(pol))
+ 
   ggplot(btex, aes(fuel, mean_ef)) +
         geom_col(aes(fill = pol), position = "stack") +
         theme_bw() +
-        theme(legend.position = "right",text = element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1)) +
-        scale_color_hue(l=50, c=80) + #this line isn't working... 
-        ylab("mg per startup event") + 
+        theme(legend.position = "right",text = element_text(size=15), 
+              axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_hue(l=50, c=80) + 
+        ylab("mg per startup event") +
         xlab("fuel type") +
-        ggtitle("BTEX compounds emitted per startup event")
+        ggtitle("BTEX compounds emitted per startup event") 
 
 ```
 
+## carbonyls grouped
+* code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
+```{r}
+# stacked carbs data
+  carbs <- ef_su_event %>% 
+          dplyr::filter(grepl("carbs", inst)) %>% 
+          dplyr::group_by(fuel, pol) %>%
+          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>% #this isn't working by group- it's giving the same sum for each pollutant...
+            dplyr::mutate(category = "carbonyls")
 
+  ggplot(carbs, aes(fuel, mean_ef)) +
+        geom_col(aes(fill = pol), position = "stack") +
+        theme_bw() +
+        theme(legend.position = "right",text = element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_hue(l=50, c=80) +
+        ylab("mg per startup event") +
+        xlab("fuel type") +
+        ggtitle("carbonyls emitted per startup event")
+
+```
+
+## Carcinogenic Compounds grouped
+
+* code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
+```{r}
+# stacked btex data
+  cancer <- ef_su_event %>% 
+          dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
+                        |acetaldehyde|formaldehyde", pol)) %>% 
+          dplyr::group_by(fuel, pol) %>%
+          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>%#this isn't working by group- it's giving the same sum for each pollutant...
+          dplyr::mutate(category = "carcinogens")
+
+cancer$pol <- gsub("voc_", "", cancer$pol)
+
+  ggplot(cancer, aes(fuel, mean_ef)) +
+        geom_col(aes(fill = pol), position = "stack") +
+        theme_bw() +
+        theme(legend.position = "right",text = element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_hue(l=50, c=80) + #this line isn't working... 
+        ylab("mg per startup event") + 
+        xlab("fuel type") +
+        ggtitle("Carcinogenic compounds emitted per startup event")
+
+```
+
+## stacked bars, plotted together
+```{r fig.width = 18, fig.height = 10}
+tmp <- bind_rows(cancer, btex, carbs)
+
+  ggplot(tmp, aes(fuel, mean_ef)) +
+        geom_col(aes(fill = pol), position = "stack") +
+        facet_wrap(~category, scales = "free") +
+        theme_bw() +
+        theme(legend.position = "right",text = element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_hue(l=50, c=80) + #this line isn't working... 
+        ylab("mg per startup event") + 
+        xlab("fuel type") 
+
+```
 
 ## Correlations
 * all individual data points shown. 
