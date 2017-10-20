@@ -72,11 +72,11 @@ knitr::kable(fuel_sum)
 
 ## Emissions Per startup Event
 ```{r}
-  ef_sum <- ef_su_event %>% dplyr::group_by(fuel, pol) %>%
+  ef_sum <- ef_su_event %>% dplyr::group_by(inst, fuel, pol) %>%
                             dplyr::summarize(nreps = n(),
-                                     mean_ef = round(mean(masspol_per_startup, na.rm = TRUE), 3),
-                                     min_ef = round(min(masspol_per_startup, na.rm = TRUE), 3),
-                                     max_ef = round(max(masspol_per_startup, na.rm = TRUE), 3))
+                                   mean_ef = round(mean(masspol_per_startup, na.rm = TRUE), 3),
+                                   min_ef = round(min(masspol_per_startup, na.rm = TRUE), 3),
+                                   max_ef = round(max(masspol_per_startup, na.rm = TRUE), 3))
 #mass_ef in units g pol / startup event; one average value per fuel_type.
 
 ef_mean_table <- select(ef_sum, fuel, pol, mean_ef) %>%
@@ -134,13 +134,10 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 ```{r}
 # stacked btex data
 
-  btex <- ef_su_event %>%
+  btex <- ef_sum %>%
           dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
                         |^voc_ethylbenzene$|xylene", pol)) %>%
-          dplyr::mutate(category = "BTEX") %>%
-          dplyr::group_by(pol, fuel) %>%
-          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>%
-          dplyr::ungroup()
+          dplyr::mutate(category = "BTEX") 
   btex$pol <- gsub("voc_", "", btex$pol)
 
   btex <- btex %>% mutate(pol = as.factor(pol))
@@ -161,13 +158,11 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 * code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
 ```{r}
 # stacked carbs data
-  carbs <- ef_su_event %>% 
-          dplyr::ungroup() %>%
-          dplyr::filter(grepl("carbs", inst)) %>% 
-          dplyr::group_by(pol, fuel) %>%
-          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>% #this isn't working by group- it's giving the same sum for each pollutant...
-            dplyr::mutate(category = "carbonyls") %>%
-            dplyr::ungroup()
+  carbs <- ef_sum %>% 
+           dplyr::ungroup() %>%
+           dplyr::filter(grepl("carbs", inst)) %>% 
+           dplyr::mutate(category = "carbonyls") %>%
+           dplyr::ungroup()
 
   ggplot(carbs, aes(fuel, mean_ef)) +
         geom_col(aes(fill = pol), position = "stack") +
@@ -185,12 +180,11 @@ ggplot(ef_su_event, aes(fuel, masspol_per_startup, color = fuel)) +
 * code isn't working right - is averaging all pollutants for the same fuel type, and then just repeating this same average for each pollutant. 
 ```{r}
 # stacked carcinogenic data
-  cancer <- ef_su_event %>% 
+  cancer <- ef_sum %>% 
           dplyr::ungroup() %>%
           dplyr::filter(grepl("^voc_benzene$|^voc_toluene$|
                         |acetaldehyde|formaldehyde", pol)) %>% 
           dplyr::group_by(pol, fuel) %>%
-          dplyr::summarize(mean_ef = mean(mass_avg_startup, na.rm = TRUE)) %>%#this isn't working by group- it's giving the same sum for each pollutant- partially (sometimes its a split between the voc and carbs?)...
           dplyr::mutate(category = "carcinogens") %>%
           dplyr::ungroup()
 
@@ -215,7 +209,7 @@ tmp <- bind_rows(cancer, btex, carbs)
         geom_col(aes(fill = pol), position = "stack") +
         facet_wrap(~category, scales = "free") +
         theme_bw() +
-        theme(legend.position = "right",text = element_text(size=15), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(legend.position = "right",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
         scale_fill_hue(l=50, c=80) + #this line isn't working... 
         ylab("mg per startup event") + 
         xlab("fuel type") 
