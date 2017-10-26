@@ -33,7 +33,7 @@ output: html_document
 # create variable mass (g) pollutant emitted per startup event
 # create variable average mass (g) of startup material per startup event
 # filter out backgrounds and blanks
-  per_startup <- dplyr::mutate(emission_factors, fuel = factor(fuel),
+  per_test <- dplyr::mutate(emission_factors, fuel = factor(fuel),
                                                  qc = factor(qc),
                                                  pol = factor(pol)) %>%
                  dplyr::rename(mass_emitted = value) %>%
@@ -57,7 +57,8 @@ output: html_document
                                                                       "wood shims" = "wood_shims",
                                                                       "food packaging" = "food_packaging"),
                             mass_pol_per_startup = (mass_emitted * 1e-3) / fuel_quant, # mg per startup event
-                            mass_fuel_per_startup = fuelmass_total / fuel_quant) %>%  # g per startup event
+                            mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
+                            mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
               dplyr::filter(!grepl("^B", id_test))
 ```
 
@@ -67,7 +68,7 @@ output: html_document
 * experiment summary
 
 ```{r}
-fuel_sum <- dplyr::filter(per_startup, pol == 'grav') %>% 
+fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
             dplyr::group_by(fuel_names) %>%
             dplyr::summarize(n_tests = n(),
                              n_events_per_test = round(mean(fuel_quant), 2),
@@ -83,7 +84,7 @@ knitr::kable(fuel_sum)
 * emissions per startup event (mg per startup event)
 
 ```{r}
-  mean_per_startup <- per_startup %>%
+  mean_per_startup <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
                                    mean = round(mean(mass_pol_per_startup, na.rm = TRUE), 2),
@@ -95,6 +96,28 @@ knitr::kable(fuel_sum)
                             dplyr::select(fuel_names, pol, mean, inst) %>%
                             tidyr::spread(fuel_names, mean) %>%
                             dplyr::arrange(inst)
+  
+  knitr::kable(mean_per_startup_table)
 ```
 
+## Supplemental Table 1
+
+* emissions per mass fuel (mg per g fuel (same as g/kg))
+
+```{r}
+  per_fuel_mass <- per_test %>%
+                      dplyr::group_by(inst, fuel_names, pol) %>%
+                      dplyr::summarize(nreps = n(),
+                                   mean = round(mean(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
+                                   min = round(min(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
+                                   max = round(max(mass_pol_per_mass_fuel, na.rm = TRUE), 2)) %>%
+                      dplyr::ungroup()
+
+  per_fuel_mass_table <- per_fuel_mass %>%
+                            dplyr::select(fuel_names, pol, mean, inst) %>%
+                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::arrange(inst)
+  
+  knitr::kable(per_fuel_mass_table)
+```
 
