@@ -64,7 +64,7 @@ output: html_document
 
 ## Table 1
 
-
+* experiment summary
 
 ```{r}
 fuel_sum <- dplyr::filter(per_startup, pol == 'grav') %>% 
@@ -73,7 +73,28 @@ fuel_sum <- dplyr::filter(per_startup, pol == 'grav') %>%
                              n_events_per_test = round(mean(fuel_quant), 2),
                              min_events_per_test = min(fuel_quant),
                              max_events_per_test = max(fuel_quant),
-                             mean_fuelmass_per_event_g = round(mean(mass_fuel_per_startup), 2))
+                             mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2))
 
 knitr::kable(fuel_sum)
 ```
+
+## Table 2
+
+* emissions per startup event (mg per startup event)
+
+```{r}
+  mean_per_startup <- per_startup %>%
+                      dplyr::group_by(inst, fuel_names, pol) %>%
+                      dplyr::summarize(nreps = n(),
+                                   mean = round(mean(mass_pol_per_startup, na.rm = TRUE), 2),
+                                   min = round(min(mass_pol_per_startup, na.rm = TRUE), 2),
+                                   max = round(max(mass_pol_per_startup, na.rm = TRUE), 2)) %>%
+                      dplyr::ungroup()
+
+  mean_per_startup_table <- mean_per_startup %>%
+                            dplyr::select(fuel_names, pol, mean, inst) %>%
+                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::arrange(inst)
+```
+
+
