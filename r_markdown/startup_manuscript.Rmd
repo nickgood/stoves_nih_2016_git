@@ -157,3 +157,42 @@ knitr::kable(fuel_sum)
   facet_wrap(~pol, scales = "free")
 ```
 
+
+## Figure 2
+
+* stacked bar charts of health relevent pollutant categories
+
+```{r}
+  pol_cats <- mean_per_startup %>%
+              dplyr::filter(pol == "voc_benzene" |
+                            pol == "voc_toluene" |
+                            pol == "voc_ethylbenzene" |
+                            pol == "voc_m_p_xylene" |
+                            pol == "voc_o_xylene") %>%
+              dplyr::mutate(cat = "BTEX") %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             inst == "carbs") %>%
+                              dplyr::mutate(cat = "Carbonyls")) %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             pol == "voc_benzene" |
+                                             pol == "voc_toluene" |
+                                             pol == "formaldehyde" |
+                                             pol == "acetaldehyde") %>%
+                              dplyr::mutate(cat = "Carcinogens")) %>%
+              dplyr::mutate(pol = sub("^voc_", "", pol),
+                            pol = sub(".*xylene.*", "xylenes", pol)) %>%
+              dplyr::filter(cat != "Carbonyls")
+
+  ggplot(pol_cats, aes(fuel_names, mean)) +
+        geom_col(aes(fill = pol), position = "fill") +
+        facet_wrap(~cat, scales = "free") +
+        theme_bw() +
+        theme(legend.position = "right",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_hue(l=65, c=60) +
+        theme(legend.title=element_blank(),
+              axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+        ylab("mg per startup event") + 
+        xlab("Startup Material") 
+
+```
+```
