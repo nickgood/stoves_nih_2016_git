@@ -121,3 +121,39 @@ knitr::kable(fuel_sum)
   knitr::kable(per_fuel_mass_table)
 ```
 
+## Figure 1
+
+* emissions of key pollutants
+
+```{r}
+  p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
+                dplyr::mutate(pol = sub("^voc_", "", pol),
+                              pol = sub("^grav", "PM2.5", pol)) %>%
+                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                      "formaldehyde", "acetaldehyde",
+                                                      "benzene", "toluene")) %>%
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "kindling",
+                                                          "footwear", "inner tubes", "newspaper",
+                                                          "wood shims", "fabric", 
+                                                          "food packaging", "plastic bags"))
+
+
+  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
+                      dplyr::mutate(pol = sub("^voc_", "", pol),
+                                    pol = sub("^grav", "PM2.5", pol))%>%
+                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                                    "formaldehyde", "acetaldehyde",
+                                                                    "benzene", "toluene"))
+
+  ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup, color = fuel)) +
+  geom_point(size = 5) +
+  geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
+  theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  ylab("mg per startup event") + xlab("fuel type") +
+  facet_wrap(~pol, scales = "free")
+```
+
