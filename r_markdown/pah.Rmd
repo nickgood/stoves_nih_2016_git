@@ -39,6 +39,32 @@ Metadata
   load("../r_files/data_1.Rda")    # metadata
 ```
 
+# Merge raw and LOD data
+
+Extract LOD data
+
+```{r}
+  lod <- pah_lod %>%
+         dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
+         dplyr::select(id, lod, filter_type, pol)
+```
+
+```{r}
+  pah <- pah_raw %>% 
+         dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
+         dplyr::mutate(val = as.numeric(val),
+                       val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+```
+
+# Blank analysis 
+
+Extract blank data
+
+```{r}
+  blanks <- pah %>%
+            dplyr::filter(grepl("^B", id))
+```
+
 # Merge data with metadata
 
 Extract pah filter cartridge data
@@ -84,9 +110,7 @@ Extra time data
 Merge pah with filter metadata
 
 ```{r}
-  lod <- pah_lod %>%
-         dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-         dplyr::select(id, lod, filter_type, pol)
+
 
   pah <- pah_raw %>% 
          dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
@@ -95,7 +119,7 @@ Merge pah with filter metadata
          dplyr::rename(pre_flow = pre, post_flow = post) %>%
          dplyr::mutate(flow = (pre_flow + post_flow) / 2,
                        val = as.numeric(val),
-                       val_lod_adj = ifelse(lod == "below", (val^0.5)/2, val))
+                       val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
 ## Plot
@@ -118,7 +142,7 @@ Merge pah with filter metadata
 * blanks
 
 ```{r, fig.width=15, fig.height=50}
-  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^B", pah$id))
+
 
   p <-  ggplot(p_data, aes(id, val_lod_adj)) +
         geom_point(aes(color = filter_type)) +
