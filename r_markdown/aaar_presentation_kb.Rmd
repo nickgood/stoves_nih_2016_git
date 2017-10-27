@@ -254,9 +254,21 @@ output:
     dplyr::bind_rows(carcinogens, pm, aerosols) %>%
     dplyr::mutate(pol =
                   pol %>%
-                  forcats::fct_recode("benzene" = "voc_benzene")) %>% 
-    tidyr::spread(pol, emissions_metric) %>%
-    dplyr::select(id, acetaldehyde, benzene, co, ec, formaldehyde, ions, oc, pm2.5)
+                  forcats::fct_recode("benzene" = "voc_benzene")) %>%
+    #                                  "organic carbon" = "oc",
+    #                                  "elemental carbon" = "ec",
+    #                                  "carbon monoxide" = "co"
+    #                                  )) %>% 
+    tidyr::spread(pol, energy_fuel_ef_comb) %>%
+    dplyr::select(id,
+                  "acetaldehyde",
+                  "benzene",
+                  "oc",
+                  "ec",
+                  "formaldehyde",
+                  "ions",
+                  "co",
+                  "pm2.5")
 ```
 
 ```{r, fig.height = 5, fig.width = 13}
@@ -265,7 +277,8 @@ output:
 
 ```{r}
  corr_map <- corr_map %>%
-             dplyr::select(id, pm2.5, acetaldehyde, benzene, formaldehyde, ec) %>%
+             dplyr::select(id, co, acetaldehyde, benzene, formaldehyde, ec) %>%
+      dplyr::rename("elemental carbon" = "ec") %>%
              dplyr::left_join(dplyr::select(samples, id, stovecat, stove), by = "id") %>%
              tidyr::gather("pol", "value", 3:6)
 
@@ -283,22 +296,22 @@ rho <- corr_map %>%
 ```
 
 
-```{r}
+```{r, fig.width = 8}
   colors = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")
 
-  ggplot(corr_map, aes(x = pm2.5, y = value, color = stovecat)) +
+  ggplot(corr_map, aes(x = co, y = value, color = stovecat)) +
     geom_point(size = 4, shape=1, stroke=1.5, alpha=0.75) +
           theme_bw() + 
           facet_wrap(~pol, scales = "free") +
     geom_text(data = rho, aes(x = Inf, y = Inf, label = eqn), 
               color = 'black',  parse = TRUE,
-              vjust = 1.5, hjust = "inward",
+              vjust = 1.5, hjust = 1.5,
               size = 5) +
     theme(text = element_text(size = 20),
           legend.position = "top",
           legend.title = element_blank()) +
     ylab("mg emitted per MJ of fuel") + 
-    xlab("Particulate Matter 2.5 (mg emitted per MJ fuel)")
+    xlab("Carbon Monoxide (mg emitted per MJ fuel)")
 ```
 
 # aerosol composition bar charts

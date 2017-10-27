@@ -1,6 +1,7 @@
 #________________________________________________________
 # require libraries
   library(tidyverse)
+  library(reshape2)
 #________________________________________________________
 
 #________________________________________________________
@@ -487,21 +488,39 @@ plot_cormap <- function(data, cor_method){
   ef_corr <- round(cor(data[-1],
                        use = "pairwise.complete.obs",
                        method = cor_method), 2)
+
   
   ef_corr[lower.tri(ef_corr)] <- NA
   ef_corr_l <- melt(ef_corr, na.rm = TRUE)  # fix this function
   ef_corr_l <- dplyr::filter(ef_corr_l, !is.na(value)) %>%
                dplyr::filter(value != 1)
   
-  p <- ggplot(data = ef_corr_l, aes(X2, X1, fill = value, label = value))+
+    ef_corr_l <-
+    ef_corr_l %>%
+    dplyr::mutate(Var1 =
+                  Var1 %>%
+                  forcats::fct_recode("benzene" = "voc_benzene",
+                                      "organic carbon" = "oc",
+                                      "elemental carbon" = "ec",
+                                      "carbon monoxide" = "co"
+                                      )) %>%
+    dplyr::mutate(Var2 =
+                  Var2 %>%
+                  forcats::fct_recode("benzene" = "voc_benzene",
+                                      "organic carbon" = "oc",
+                                      "elemental carbon" = "ec",
+                                      "carbon monoxide" = "co"
+                                      ))
+  
+  p <- ggplot(data = ef_corr_l, aes(Var1, Var2, fill = value, label = value))+
        geom_tile(color = "white")+
-       geom_text(color = "black", size = 3.5) +
+       geom_text(color = "black", size = 4) +
        scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                              midpoint = 0, limit = c(-1,1), space = "Lab", 
                              name="Spearman Correlation") +
        theme_bw() + 
-       theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 14, hjust = 1),
-             axis.text.y = element_text(size = 14),
+       theme(axis.text.x = element_text(angle = 30, vjust = 1, size = 18, hjust = 1),
+             axis.text.y = element_text(size = 18),
              axis.title.x = element_blank(),
              axis.title.y = element_blank(),
              panel.grid.major = element_blank(),
@@ -511,9 +530,9 @@ plot_cormap <- function(data, cor_method){
              legend.justification = c(1, 0),
              legend.position = c(1.75, 0.5),
              legend.direction = "horizontal", 
-             legend.title = element_text(size = 12),
-             legend.text = element_text(size = 10)) +
-       guides(fill = guide_colorbar(barwidth = 10, barheight = 1.5,
+             legend.title = element_text(size = 16),
+             legend.text = element_text(size = 12)) +
+       guides(fill = guide_colorbar(barwidth = 12, barheight = 1.5,
                                     title.position = "top", title.hjust = 0.5)) +
        coord_fixed()
   return(p)
