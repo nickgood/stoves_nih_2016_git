@@ -359,12 +359,21 @@ load_ions_file <- function(file, sheet = "ug"){
 # file <- "data/pah/PAH_20171004.csv"
 # file <- "data/pah/PAH_20171004_BDL.csv"
 load_pah_file <- function(file){
+
  # read file
   raw_data <- read_csv(file = file, col_names = TRUE, skip = 1, col_types = cols())
  # rename columns
   names(raw_data) <- tolower(colnames(raw_data))
   names(raw_data) <- gsub("[^[:alnum:] ]", "_", colnames(raw_data))
   names(raw_data) <- gsub(" ", "_", colnames(raw_data))
+
+  # fix transcription errors
+  raw_data <- raw_data %>%
+              dplyr::mutate(x1 = ifelse(x1 == "28AB", "28A-B", x1),
+                            x1 = ifelse(x1 == "17P", "17-P", x1),
+                            x1 = ifelse(grepl("x", x1), gsub("x", "", x1), x1),
+                            x1 = ifelse(x1 == "68-P", "G8-P", x1),
+                            x1 = ifelse(x1 == "G8-B", "G13-B", x1))
 
 # organize
   out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
