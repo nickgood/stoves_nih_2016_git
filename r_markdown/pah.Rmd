@@ -39,10 +39,6 @@ Metadata
   load("../r_files/data_1.Rda")    # metadata
 ```
 
-# Fix wrong labels
-
-
-
 # Merge data with metadata
 
 Extract pah filter cartridge data
