@@ -121,7 +121,11 @@ knitr::kable(fuel_sum)
   knitr::kable(per_fuel_mass_table)
 ```
 
-## Figure 1
+## Figure 1.
+
+* Experimental setup - created in powerpoint
+
+## Figure 2.
 
 * emissions of key pollutants
 
