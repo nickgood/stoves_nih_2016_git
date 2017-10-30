@@ -88,26 +88,44 @@ Filter out bad tests
 
 ```{r}
   pah_merged <- pah_merged %>% 
-                filter(qc != "bad")
+                dplyr::filter(qc != "bad", !is.na(val_lod_adj))
 ```
 
 # Blank analysis 
 
-Extract blank data
+Extract blank pufs and blank filters
 
 ```{r}
-  blank_filters <- pah_merged %>%
-                   dplyr::filter(grepl("^B", id), !grepl("f|b", filter_type))
-
-  blank_pufs <- pah_merged %>%
-                dplyr::filter(grepl("^B", id), grepl("f|b", filter_type))
+  blanks <- pah_merged %>%
+            dplyr::filter(grepl("^B", id))
 ```
 
-Summarize puf and filter blanks
+Plot blank data
+
+```{r, fig.height = 20}
+  ggplot(blanks, aes_string(x = "id", y = "val_lod_adj", colour = "lod")) +
+    geom_point(size = 2) +
+    theme_bw() +
+    facet_wrap(pol~filter_type, ncol = 3) +
+    ylab("mass (ug)") +
+    xlab("test id")
+```
+
+```{r, fig.height = 20}
+  ggplot(blanks, aes_string("val_lod_adj")) +
+    geom_histogram(binwidth = 0.1) +
+    theme_bw() +
+    facet_wrap(pol~filter_type, ncol = 3)
+```
+
+Summarize blank data
 
 ```{r}
-  blank_filters %<>%
-    summ
+  blanks %<>%
+         dplyr::group_by(id, pol, filter_type) %>%
+         dplyr::summarise(mean = mean(val_lod_adj),
+                          std = sd(val_lod_adj),
+                          median = median(val_lod_adj))
 ```
 
 # Merge data with metadata
@@ -170,58 +188,43 @@ Merge pah with filter metadata
 * tests
 
 ```{r, fig.width=15, fig.height=50}
-  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^[0-9]", pah$id))
-
-  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
-        geom_point(aes(color = filter_type)) +
-        scale_y_log10() +
-        theme_bw() +
-        theme(legend.position = "top") +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
-        facet_wrap(~pol, ncol = 1)
-  p
-```
-
-* blanks
-
-```{r, fig.width=15, fig.height=50}
-
-
-  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
-        geom_point(aes(color = filter_type)) +
-        scale_y_log10() +
-        theme_bw() +
-        theme(legend.position = "top") +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
-        facet_wrap(~pol, ncol = 1)
-  p
+  # p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^[0-9]", pah$id))
+  # 
+  # p <-  ggplot(p_data, aes(id, val_lod_adj)) +
+  #       geom_point(aes(color = filter_type)) +
+  #       scale_y_log10() +
+  #       theme_bw() +
+  #       theme(legend.position = "top") +
+  #       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
+  #       facet_wrap(~pol, ncol = 1)
+  # p
 ```
 
 * lab background
 
 ```{r, fig.width=15, fig.height=50}
-  p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^G", pah$id))
-
-  p <-  ggplot(p_data, aes(id, val_lod_adj)) +
-        geom_point(aes(color = filter_type)) +
-        scale_y_log10() +
-        theme_bw() +
-        theme(legend.position = "top") +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
-        facet_wrap(~pol, ncol = 1)
-  p
+  # p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^G", pah$id))
+  # 
+  # p <-  ggplot(p_data, aes(id, val_lod_adj)) +
+  #       geom_point(aes(color = filter_type)) +
+  #       scale_y_log10() +
+  #       theme_bw() +
+  #       theme(legend.position = "top") +
+  #       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
+  #       facet_wrap(~pol, ncol = 1)
+  # p
 ```
  
 # Combine filter stages
 
 ```{r}
-   pah_merged <- pah %>%
-                 dplyr::group_by(id, pol, flow, pre_flow, post_flow, start, end) %>%
-                 summarise(sum = sum(val_lod_adj, na.rm = TRUE))
+   # pah_merged <- pah %>%
+   #               dplyr::group_by(id, pol, flow, pre_flow, post_flow, start, end) %>%
+   #               summarise(sum = sum(val_lod_adj, na.rm = TRUE))
 ```
 
 ## Save merged file
 
 ```{r}
-  saveRDS(pah, file = "../r_files/pah_merged.RDS")
+  # saveRDS(pah, file = "../r_files/pah_merged.RDS")
 ```
