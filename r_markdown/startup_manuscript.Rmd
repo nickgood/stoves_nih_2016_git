@@ -166,7 +166,7 @@ knitr::kable(fuel_sum)
 ```
 
 
-## Figure 2
+## Figure 3
 
 * stacked bar charts of health relevent pollutant categories
 
@@ -203,27 +203,71 @@ knitr::kable(fuel_sum)
         xlab("Startup Material") 
 
 ```
-```
 
-# Figure 3
-
-```{r}
-
-  pmco <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$', pol)) %>%
-          dplyr::select(id, fuel_names, pol, mean) %>%
-          tidyr::spread(pol, mean) 
+## Figure 4
+* circles = "natural" fuel types (biomass/paper), triangle = "syntehtic" fuel types (kerosene, plastic, rubber-like)
+```{r fig.width = 7}
+  pmco <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
+          dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
+                                          fuel == 'wood_shims' | fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
+          dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
+          tidyr::spread(pol, mass_pol_per_startup)
 
   ggplot(data = pmco, aes(x = grav, y = co)) + 
-        geom_point(size = 2, aes(colour = fuel)) +
-          ylab("CO EF (mg per startup event)") +
-          xlab("PM2.5 EF (mg per startup event)") +
+        geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
+          ylab("CO (mg per startup event)") +
+          xlab("PM2.5 (mg per startup event)") +
           scale_color_hue(l=50, c=80) +
           scale_x_log10() +
           theme_bw() +
           scale_y_log10() +
-          theme(text = element_text(size = 18),
-                legend.position = "top",
+          theme(text = element_text(size = 14),
+                legend.position = "right",
                 legend.key.size = unit(0.1, "cm"),
                 legend.title = element_blank())
 ```
 
+```{r fig.width = 7}
+  carbs <- dplyr::filter(per_test, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
+                                           fuel == 'wood_shims' | 
+                                           fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
+           dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
+           tidyr::spread(pol, mass_pol_per_startup)
+
+  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
+        geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
+          ylab("acetaldehyde (mg per startup event)") +
+          xlab("formaldehyde (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+```{r fig.width = 7}
+  bentol <- dplyr::filter(per_test, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
+                                            fuel == 'wood_shims' | 
+                                            fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
+            dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
+            tidyr::spread(pol, mass_pol_per_startup)
+
+  ggplot(data = bentol, aes(x = voc_benzene, y = voc_toluene)) + 
+        geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
+          ylab("acetaldehyde (mg per startup event)") +
+          xlab("formaldehyde (mg per startup event)") +
+          scale_color_hue(l=50, c=80) +
+          scale_x_log10() +
+          theme_bw() +
+          scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
