@@ -103,13 +103,16 @@ Extract blank pufs and blank filters
 Plot blank data
 
 ```{r blank_data}
-  ggplot(blanks, aes_string(x = "pol", y = "val_lod_adj", colour = "lod")) +
+  ggplot(blanks, aes_string(x = "filter_type", y = "val_lod_adj", colour = "lod")) +
     geom_point(size = 3, shape = 1, stroke = 1) +
+    geom_point(stat = "summary", fun.y = "mean", colour = "black",
+               shape = 4, size = 4, stroke = 2) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
           text = element_text(size = 12)) +
-    facet_wrap(~filter_type, ncol = 1, scales = "free") +
-    ylab("mass (ug)")
+    facet_wrap(~pol, ncol = 4, scales = "free") +
+    ylab("mass (ug)") +
+    xlab("")
 ```
 
 Summarize blank data
