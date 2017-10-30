@@ -34,28 +34,28 @@ output: html_document
 # create variable average mass (g) of startup material per startup event
 # filter out backgrounds and blanks
   per_test <- dplyr::mutate(emission_factors, fuel = factor(fuel),
-                                                 qc = factor(qc),
-                                                 pol = factor(pol)) %>%
-                 dplyr::rename(mass_emitted = value) %>%
-                 dplyr::select(-metric) %>%
-                 dplyr::filter(qc != "bad") %>%
-                 dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background",
-                                                                 "kerosene",
-                                                                 "plastic_bags",
-                                                                 "newspaper",
-                                                                 "leaves_twigs",
-                                                                 "rubber",
-                                                                 "flipflops",
-                                                                 "t_shirts",
-                                                                 "food_packaging",
-                                                                 "wood_shims")) %>%
-                 dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
-                                                                      "kindling" = "leaves_twigs",
-                                                                      "inner tubes" = "rubber",
-                                                                      "footwear" = "flipflops",
-                                                                      "fabric" = "t_shirts",
-                                                                      "wood shims" = "wood_shims",
-                                                                      "food packaging" = "food_packaging"),
+                                              qc = factor(qc),
+                                              pol = factor(pol)) %>%
+              dplyr::rename(mass_emitted = value) %>%
+              dplyr::select(-metric) %>%
+              dplyr::filter(qc != "bad") %>%
+              dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background",
+                                                              "kerosene",
+                                                              "plastic_bags",
+                                                              "newspaper",
+                                                              "leaves_twigs",
+                                                              "rubber",
+                                                              "flipflops",
+                                                              "t_shirts",
+                                                              "food_packaging",
+                                                              "wood_shims")) %>%
+              dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                   "kindling" = "leaves_twigs",
+                                                                   "inner tubes" = "rubber",
+                                                                   "footwear" = "flipflops",
+                                                                   "fabric" = "t_shirts",
+                                                                   "wood shims" = "wood_shims",
+                                                                   "food packaging" = "food_packaging"),
                             mass_pol_per_startup = (mass_emitted * 1e-3) / fuel_quant, # mg per startup event
                             mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
                             mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
