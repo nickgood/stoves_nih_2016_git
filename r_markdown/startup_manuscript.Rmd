@@ -76,7 +76,9 @@ fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>%
                              max_events_per_test = max(fuel_quant),
                              mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
                              min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
-                             max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1))
+                             max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
+                             min_fuelmass_total = min(fuelmass_total),
+                             max_fuelmass_total = max(fuelmass_total))
 
 knitr::kable(fuel_sum)
 ```
@@ -202,3 +204,10 @@ knitr::kable(fuel_sum)
 
 ```
 ```
+
+# Figure 3
+
+```{r}
+
+```
+
