@@ -74,7 +74,9 @@ fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>%
                              n_events_per_test = round(mean(fuel_quant), 2),
                              min_events_per_test = min(fuel_quant),
                              max_events_per_test = max(fuel_quant),
-                             mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2))
+                             mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
+                             min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
+                             max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1))
 
 knitr::kable(fuel_sum)
 ```
@@ -129,7 +131,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants
 
-```{r}
+```{r fig.width = 16, fig.height = 11}
   p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
                 dplyr::mutate(pol = sub("^voc_", "", pol),
                               pol = sub("^grav", "PM2.5", pol)) %>%
@@ -166,7 +168,7 @@ knitr::kable(fuel_sum)
 
 * stacked bar charts of health relevent pollutant categories
 
-```{r}
+```{r fig.width = 12, fig.height = 8}
   pol_cats <- mean_per_startup %>%
               dplyr::filter(pol == "voc_benzene" |
                             pol == "voc_toluene" |
