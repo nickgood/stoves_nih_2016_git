@@ -59,28 +59,36 @@ Extract chemical analysis LOD data
 
 # Merge with qc data
 
-* extract notes for gravimetric data
+Extract notes for pah
 
 ```{r}
   notes <- dplyr::filter(notes, grepl("pah|all", inst) == TRUE)
 ```
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+Apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r}
-  flags <- dplyr::select(notes, id, qc) %>%
+  flags <- notes %>%
+           dplyr::select(id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
 ```
 
-* merge
+Merge data with flags
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   pah_merged <- pah %>%
                 dplyr::left_join(flags, by = "id") %>%
                 dplyr::mutate(id = as.factor(id)) %>%
                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+Filter out bad tests
+
+```{r}
+  pah_merged <- pah_merged %>% 
+                filter(qc != "bad")
 ```
 
 # Blank analysis 
@@ -88,8 +96,18 @@ Extract chemical analysis LOD data
 Extract blank data
 
 ```{r}
-  blanks <- pah %>%
-            dplyr::filter(grepl("^B", id))
+  blank_filters <- pah_merged %>%
+                   dplyr::filter(grepl("^B", id), !grepl("f|b", filter_type))
+
+  blank_pufs <- pah_merged %>%
+                dplyr::filter(grepl("^B", id), grepl("f|b", filter_type))
+```
+
+Summarize puf and filter blanks
+
+```{r}
+  blank_filters %<>%
+    summ
 ```
 
 # Merge data with metadata
@@ -137,8 +155,6 @@ Extra time data
 Merge pah with filter metadata
 
 ```{r}
-
-
   pah <- pah_raw %>% 
          dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
          dplyr::left_join(flows, by = "id") %>%
