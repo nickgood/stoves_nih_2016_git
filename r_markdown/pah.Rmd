@@ -30,7 +30,7 @@ PAH data
 
 ```{r load_data}
   pah_raw <- readRDS("../r_files/pah.RDS")    # pah dataset
-  pah_lod <- readRDS("../r_files/pah_lod.RDS")    # pah lod dataset
+  pah_lod_1 <- readRDS("../r_files/pah_lod_1.RDS")    # pah lod_1 dataset
 ```
 
 Metadata
@@ -42,25 +42,25 @@ Metadata
 
 # Tidy data
 
-## Merge raw and LOD data
+## Merge raw and lod_1 data
 
-Extract chemical analysis LOD data
+Extract chemical analysis lod_1 data
 
 ```{r}
-  lod <-
-    pah_lod %>%
-    dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-    dplyr::select(id, lod, filter_type, pol)
+  lod_1 <-
+    pah_lod_1 %>%
+    dplyr::mutate(lod_1 = ifelse(val == "BDL", "below", "above")) %>%
+    dplyr::select(id, lod_1, filter_type, pol)
 ```
 
-Calculate new value if measurement below LOD
+Calculate new value if measurement below lod_1
 
 ```{r}
   pah <- 
     pah_raw %>% 
-    dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
+    dplyr::left_join(lod_1, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val = as.numeric(val),
-                  val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+                  val_lod_1_adj = ifelse(lod_1 == "below", val / sqrt(2), val))
 ```
 
 ## Merge data with qc info
@@ -114,7 +114,7 @@ Extract blank pufs and blank filters
 
 Plot blank mass in ug:
 
-* color indicates if sample was above or below instrument lod
+* color indicates if sample was above or below instrument lod (lod_1)
 * mean shown with an x
 * median shown with a square
 
@@ -127,7 +127,7 @@ Plot blank mass in ug:
                     forcats::fct_recode("puf" = "b",
                                         "puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "filter_type", y = "val_lod_adj", colour = "lod")) +
+    ggplot(aes_string(x = "filter_type", y = "val_lod_1_adj", colour = "lod_1")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
@@ -142,22 +142,21 @@ Plot blank mass in ug:
       xlab("")
 ```
 
-Fraction of blanks below LOD for chemical analysis: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`
+Fraction of blanks below lod_1: `r round(nrow(filter(blanks, lod_1 == "below")) / nrow(blanks), 2)`
 
 Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`
 
-Fraction of blanks either below LOD or NA value: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`
+Fraction of blanks either below lod_1 or NA value: `r round((nrow(filter(blanks, lod_1 == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`
 
 Summarize blank data (ignore NAs)
 
 ```{r}
-  blanks %<>%
+  signal <-
+    blanks %>%
     dplyr::group_by(pol, filter_type) %>%
-    dplyr::summarise(mean = mean(val_lod_adj, na.rm = TRUE),
-                     median = median(val_lod_adj, na.rm = TRUE),
-                     sd = sd(val_lod_adj, na.rm = TRUE),
-                     lod = 3 * sd,
-                     loq = 10 * sd)
+    dplyr::summarise(mean = mean(val_lod_1_adj, na.rm = TRUE),
+                     lod_2 = 3 * sd(val_lod_1_adj, na.rm = TRUE),
+                     loq_2 = 10 * sd(val_lod_1_adj, na.rm = TRUE))
 ```
 
 # Calculate concentrations
@@ -222,7 +221,7 @@ Calculate concentrations
   pah_merged <-
     pah_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val_lod_adj * 1000 / (flow * dur))
+                  conc = val_lod_1_adj * 1000 / (flow * dur))
 ```
 
 # Background analysis
@@ -235,44 +234,49 @@ Extract background pufs (front and back) and background filters
     dplyr::filter(grepl("^G", id))
 ```
 
+Find which variables are below blank lod (lod_2) and loq
+
+```{r}
+
+```
+
 Plot background concentrations in ug per meter cubed:
 
-* color indicates if sample was above or below LOD calculated from lab blanks
+* color indicates if sample was above or below lod_1 calculated from lab blanks
 * mean shown with an x
 * median shown with a square
 
 ```{r pah_bg_plot, echo=FALSE, fig.height = 15}
-  bg <-
-    bg %>%
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     as.factor %>%
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
-                                        "filter" = "p"))
-
-  ggplot(bg, aes_string(x = "filter_type", y = "conc", colour = "lod")) +
-    geom_point(size = 3, shape = 1, stroke = 1) +
-    geom_point(stat = "summary", fun.y = "mean", colour = "black",
-               shape = 4, size = 4, stroke = 2) +
-    geom_point(stat = "summary", fun.y = "median", colour = "black",
-               shape = 0, size = 4, stroke = 2) +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-          text = element_text(size = 18),
-          strip.text.x = element_text(size = 12)) +
-    facet_wrap(~pol, ncol = 4, scales = "free") +
-    ylab("mass (ug)") +
-    xlab("")
+                                        "filter" = "p")) %>%
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod_1")) +
+      geom_point(size = 3, shape = 1, stroke = 1) +
+      geom_point(stat = "summary", fun.y = "mean", colour = "black",
+                 shape = 4, size = 4, stroke = 2) +
+      geom_point(stat = "summary", fun.y = "median", colour = "black",
+                 shape = 0, size = 4, stroke = 2) +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            text = element_text(size = 18),
+            strip.text.x = element_text(size = 12)) +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("mass (ug)") +
+      xlab("")
 ```
 
 Summarize background data
 
-Fraction of backgrounds below LOD for chemical analysis
+Fraction of backgrounds below lod_1 for chemical analysis
 
 Fraction of backgrounds with NA values
 
-Fraction of backgrounds below LOD and LOQ calculated from lab blanks
+Fraction of backgrounds below lod_1 and LOQ calculated from lab blanks
 
 Fraction of backgrounds with NA values
 
@@ -295,9 +299,9 @@ Plot ratio of front to back filter
 
 Plot histogram of background and sample data
 
-Fraction of samples below LOD for chemical analysis
+Fraction of samples below lod_1 for chemical analysis
 
-Fraction of samples below LOD and LOQ calculated from lab blanks
+Fraction of samples below lod_1 and LOQ calculated from lab blanks
 
 Fraction of samples with NA values
 
