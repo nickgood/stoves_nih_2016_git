@@ -149,9 +149,14 @@ Summarize blank data
   blanks %<>%
     dplyr::group_by(id, pol, filter_type) %>%
     dplyr::summarise(mean = mean(val_lod_adj),
-                     std = sd(val_lod_adj),
                      median = median(val_lod_adj))
 ```
+
+Fraction of blanks below LOD for chemical analysis
+
+Fraction of blanks with NA values
+
+Calculate blank LOD and LOQ (ignores NA values)
 
 # Calculate concentrations
 
@@ -209,7 +214,52 @@ Merge pah with filter metadata
     dplyr::mutate(flow = (pre_flow + post_flow) / 2)
 ```
 
+# Background analysis
 
+Extract background pufs (front and back) and background filters
+
+Plot background concentrations in ug per meter cubed:
+
+* color indicates if sample was above or below LOD calculated from lab blanks
+* mean shown with an x
+* median shown with a square
+
+Summarize background data
+
+Fraction of backgrounds below LOD for chemical analysis
+
+Fraction of backgrounds with NA values
+
+Fraction of backgrounds below LOD and LOQ calculated from lab blanks
+
+Fraction of backgrounds with NA values
+
+# Sample analysis
+
+Extract sample pufs (front and back) and sample filters
+
+Plot sample concentrations in ug per meter cubed:
+
+* group by stove type and fuel type
+* negative values indicate the sample was below the background
+* mean shown with an x
+* median shown with a square
+
+Plot sigma
+
+Plot phi
+
+Plot ratio of front to back filter
+
+Plot histogram of background and sample data
+
+Fraction of samples below LOD for chemical analysis
+
+Fraction of samples below LOD and LOQ calculated from lab blanks
+
+Fraction of samples with NA values
+
+Fraction of samples below the background
 
 # Save merged file
 
