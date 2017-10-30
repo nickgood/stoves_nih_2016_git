@@ -60,27 +60,55 @@ output: html_document
                             mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
                             mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
               dplyr::filter(!grepl("^B", id_test))
+
+  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
+              dplyr::group_by(fuel_names) %>%
+              dplyr::summarize(n_tests = n(),
+                               n_events_per_test = round(mean(fuel_quant), 2),
+                               min_events_per_test = min(fuel_quant),
+                               max_events_per_test = max(fuel_quant),
+                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
+                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
+                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
+                               min_fuelmass_total = min(fuelmass_total),
+                               max_fuelmass_total = max(fuelmass_total))
+
+  per_test_std <- per_test %>% left_join(select(fuel_sum, fuel_names, mean_fuel_mass_per_event_g), 
+                                         by = "fuel_names") %>%
+                               dplyr::mutate(mass_pol_per_startup_std = (mass_emitted * 1e-3) / 
+                                                                       (fuelmass_total/mean_fuel_mass_per_event_g))
+
 ```
 
+* QC comparison - standardized "startup event" vs. per-test average startup event
+```{r fig.width = 15, fig.height = 18}
+ggplot(per_test_std) +
+geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
+  geom_point(aes(x=id, y=mass_pol_per_startup_std), size = 2, color = 'black') +
+    facet_wrap(~pol, scales = "free", ncol = 3) +
+  theme_bw() +
+  theme(legend.position = "top")
+
+```
 
 ## Table 1
 
 * experiment summary
 
 ```{r}
-fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
-            dplyr::group_by(fuel_names) %>%
-            dplyr::summarize(n_tests = n(),
-                             n_events_per_test = round(mean(fuel_quant), 2),
-                             min_events_per_test = min(fuel_quant),
-                             max_events_per_test = max(fuel_quant),
-                             mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
-                             min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
-                             max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
-                             min_fuelmass_total = min(fuelmass_total),
-                             max_fuelmass_total = max(fuelmass_total))
+  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
+              dplyr::group_by(fuel_names) %>%
+              dplyr::summarize(n_tests = n(),
+                               n_events_per_test = round(mean(fuel_quant), 2),
+                               min_events_per_test = min(fuel_quant),
+                               max_events_per_test = max(fuel_quant),
+                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
+                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
+                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
+                               min_fuelmass_total = min(fuelmass_total),
+                               max_fuelmass_total = max(fuelmass_total))
 
-knitr::kable(fuel_sum)
+  knitr::kable(fuel_sum)
 ```
 
 ## Table 2
@@ -131,7 +159,7 @@ knitr::kable(fuel_sum)
 
 ## Figure 2.
 
-* emissions of key pollutants
+* emissions of key pollutants (regular calc)
 
 ```{r fig.width = 16, fig.height = 11}
   p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
@@ -166,6 +194,40 @@ knitr::kable(fuel_sum)
 ```
 
 
+* emissions of key pollutants (standardized calc)
+
+```{r fig.width = 16, fig.height = 11}
+  p_data_key <- dplyr::filter(per_test_std, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
+                dplyr::mutate(pol = sub("^voc_", "", pol),
+                              pol = sub("^grav", "PM2.5", pol)) %>%
+                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                      "formaldehyde", "acetaldehyde",
+                                                      "benzene", "toluene")) %>%
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "kindling",
+                                                          "footwear", "inner tubes", "newspaper",
+                                                          "wood shims", "fabric", 
+                                                          "food packaging", "plastic bags"))
+
+
+  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
+                      dplyr::mutate(pol = sub("^voc_", "", pol),
+                                    pol = sub("^grav", "PM2.5", pol))%>%
+                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                                    "formaldehyde", "acetaldehyde",
+                                                                    "benzene", "toluene"))
+
+  ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup_std, color = fuel)) +
+  geom_point(size = 5) +
+  #geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
+  theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  ylab("mg per startup event") + xlab("fuel type") +
+  facet_wrap(~pol, scales = "free")
+```
+
 ## Figure 3
 
 * stacked bar charts of health relevent pollutant categories
@@ -189,7 +251,7 @@ knitr::kable(fuel_sum)
                               dplyr::mutate(cat = "Carcinogens")) %>%
               dplyr::mutate(pol = sub("^voc_", "", pol),
                             pol = sub(".*xylene.*", "xylenes", pol)) %>%
-              dplyr::filter(cat != "Carbonyls")
+              dplyr::filter(cat != "Carbonyls") 
 
   ggplot(pol_cats, aes(fuel_names, mean)) +
         geom_col(aes(fill = pol), position = "fill") +
