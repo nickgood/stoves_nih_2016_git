@@ -214,9 +214,24 @@ Merge pah with filter metadata
     dplyr::mutate(flow = (pre_flow + post_flow) / 2)
 ```
 
+Calculate concentrations
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(dur = (end - start) / 60,
+                  conc = val_lod_adj * 1000 / (flow * dur))
+```
+
 # Background analysis
 
 Extract background pufs (front and back) and background filters
+
+```{r}
+  bkgd <-
+    pah_merged %>%
+    dplyr::filter(grepl("^G", id))
+```
 
 Plot background concentrations in ug per meter cubed:
 
