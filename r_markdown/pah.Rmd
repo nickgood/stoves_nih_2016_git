@@ -30,7 +30,7 @@ PAH data
 
 ```{r load_data}
   pah_raw <- readRDS("../r_files/pah.RDS")    # pah dataset
-  pah_lod_1 <- readRDS("../r_files/pah_lod_1.RDS")    # pah lod_1 dataset
+  pah_lod <- readRDS("../r_files/pah_lod.RDS")    # pah lod dataset
 ```
 
 Metadata
