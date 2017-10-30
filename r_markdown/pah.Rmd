@@ -102,20 +102,14 @@ Extract blank pufs and blank filters
 
 Plot blank data
 
-```{r, fig.height = 20}
-  ggplot(blanks, aes_string(x = "id", y = "val_lod_adj", colour = "lod")) +
-    geom_point(size = 2) +
+```{r blank_data}
+  ggplot(blanks, aes_string(x = "pol", y = "val_lod_adj", colour = "lod")) +
+    geom_point(size = 3, shape = 1, stroke = 1) +
     theme_bw() +
-    facet_wrap(pol~filter_type, ncol = 3) +
-    ylab("mass (ug)") +
-    xlab("test id")
-```
-
-```{r, fig.height = 20}
-  ggplot(blanks, aes_string("val_lod_adj")) +
-    geom_histogram(binwidth = 0.1) +
-    theme_bw() +
-    facet_wrap(pol~filter_type, ncol = 3)
+    theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+          text = element_text(size = 12)) +
+    facet_wrap(~filter_type, ncol = 1, scales = "free") +
+    ylab("mass (ug)")
 ```
 
 Summarize blank data
