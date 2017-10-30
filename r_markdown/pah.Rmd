@@ -37,11 +37,12 @@ Metadata
 
 ```{r load_metadata}
   load("../r_files/data_1.Rda")    # metadata
+  load("../r_files/notes.Rda")    # metadata
 ```
 
 # Merge raw and LOD data
 
-Extract LOD data
+Extract chemical analysis LOD data
 
 ```{r}
   lod <- pah_lod %>%
@@ -54,6 +55,32 @@ Extract LOD data
          dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
          dplyr::mutate(val = as.numeric(val),
                        val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+```
+
+# Merge with qc data
+
+* extract notes for gravimetric data
+
+```{r}
+  notes <- dplyr::filter(notes, grepl("pah|all", inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r}
+  flags <- dplyr::select(notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* merge
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pah_merged <- pah %>%
+                dplyr::left_join(flags, by = "id") %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 # Blank analysis 
