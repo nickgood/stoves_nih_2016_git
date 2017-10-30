@@ -215,8 +215,8 @@ knitr::kable(fuel_sum)
 
   ggplot(data = pmco, aes(x = grav, y = co)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
-          ylab("CO (mg per startup event)") +
-          xlab("PM2.5 (mg per startup event)") +
+          ylab("CO") +
+          xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
           scale_x_log10() +
           theme_bw() +
@@ -237,8 +237,8 @@ knitr::kable(fuel_sum)
 
   ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
-          ylab("acetaldehyde (mg per startup event)") +
-          xlab("formaldehyde (mg per startup event)") +
+          ylab("acetaldehyde") +
+          xlab("formaldehyde") +
           scale_color_hue(l=50, c=80) +
           scale_x_log10() +
           theme_bw() +
@@ -260,8 +260,8 @@ knitr::kable(fuel_sum)
 
   ggplot(data = bentol, aes(x = voc_benzene, y = voc_toluene)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
-          ylab("acetaldehyde (mg per startup event)") +
-          xlab("formaldehyde (mg per startup event)") +
+          ylab("toluene") +
+          xlab("benzene") +
           scale_color_hue(l=50, c=80) +
           scale_x_log10() +
           theme_bw() +
