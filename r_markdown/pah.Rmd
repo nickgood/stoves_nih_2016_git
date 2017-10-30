@@ -11,8 +11,8 @@ output:
   library(knitr)
 ```
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 13,
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -40,55 +40,66 @@ Metadata
   load("../r_files/notes.Rda")    # metadata
 ```
 
-# Merge raw and LOD data
+# Tidy data
+
+## Merge raw and LOD data
 
 Extract chemical analysis LOD data
 
 ```{r}
-  lod <- pah_lod %>%
-         dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-         dplyr::select(id, lod, filter_type, pol)
+  lod <-
+    pah_lod %>%
+    dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
+    dplyr::select(id, lod, filter_type, pol)
 ```
+
+Calculate new value if measurement below LOD
 
 ```{r}
-  pah <- pah_raw %>% 
-         dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
-         dplyr::mutate(val = as.numeric(val),
-                       val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+  pah <- 
+    pah_raw %>% 
+    dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
+    dplyr::mutate(val = as.numeric(val),
+                  val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
-# Merge with qc data
+## Merge data with qc info
 
 Extract notes for pah
 
 ```{r}
-  notes <- dplyr::filter(notes, grepl("pah|all", inst) == TRUE)
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("pah|all", inst) == TRUE)
 ```
 
-Apply flags: `bad` preceeds `maybe` preceeds `good`
+Apply flags: bad preceeds maybe preceeds good
 
 ```{r}
-  flags <- notes %>%
-           dplyr::select(id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
 ```
 
 Merge data with flags
 
 ```{r}
-  pah_merged <- pah %>%
-                dplyr::left_join(flags, by = "id") %>%
-                dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+  pah_merged <-
+    pah %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
 Filter out bad tests
 
 ```{r}
-  pah_merged <- pah_merged %>% 
-                dplyr::filter(qc != "bad", !is.na(val_lod_adj))
+  pah_merged <-
+    pah_merged %>% 
+    dplyr::filter(qc != "bad", !is.na(val_lod_adj))
 ```
 
 # Blank analysis 
@@ -96,20 +107,37 @@ Filter out bad tests
 Extract blank pufs and blank filters
 
 ```{r}
-  blanks <- pah_merged %>%
-            dplyr::filter(grepl("^B", id))
+  blanks <-
+    pah_merged %>%
+    dplyr::filter(grepl("^B", id))
 ```
 
-Plot blank data
+Plot blank mass in ug:
 
-```{r blank_data}
+* color indicates if sample was above or below instrument lod
+* mean shown with an x
+* median shown with a square
+
+```{r pah_blank_plot, echo=FALSE, fig.height = 15}
+  blanks <-
+    blanks %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    as.factor %>%
+                    forcats::fct_recode("puf" = "b",
+                                        "puf" = "f",
+                                        "filter" = "ba"))
+
   ggplot(blanks, aes_string(x = "filter_type", y = "val_lod_adj", colour = "lod")) +
     geom_point(size = 3, shape = 1, stroke = 1) +
     geom_point(stat = "summary", fun.y = "mean", colour = "black",
                shape = 4, size = 4, stroke = 2) +
+    geom_point(stat = "summary", fun.y = "median", colour = "black",
+               shape = 0, size = 4, stroke = 2) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-          text = element_text(size = 12)) +
+          text = element_text(size = 18),
+          strip.text.x = element_text(size = 12)) +
     facet_wrap(~pol, ncol = 4, scales = "free") +
     ylab("mass (ug)") +
     xlab("")
@@ -119,108 +147,71 @@ Summarize blank data
 
 ```{r}
   blanks %<>%
-         dplyr::group_by(id, pol, filter_type) %>%
-         dplyr::summarise(mean = mean(val_lod_adj),
-                          std = sd(val_lod_adj),
-                          median = median(val_lod_adj))
+    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::summarise(mean = mean(val_lod_adj),
+                     std = sd(val_lod_adj),
+                     median = median(val_lod_adj))
 ```
 
-# Merge data with metadata
+# Calculate concentrations
 
 Extract pah filter cartridge data
 
 ```{r extract_cartridge_data}
-  meta <- data_1 %>%
-          dplyr::select(matches("_red|^id$|^date$"))
+  meta <-
+    data_1 %>%
+    dplyr::select(matches("_red|^id$|^date$"))
 ```
 
 Extra flow rate data
 
 ```{r extract_flows}
-  flows <- meta %>%
-           dplyr::select(matches("flow_|^id$|^date$")) %>%
-           tidyr::gather("var", "value", -id, -date) %>%
-           dplyr::filter(grepl("_avg$", var)==FALSE) %>%
-           dplyr::mutate(type = sub("flow.*", "", var),
-                         rep = as.factor(gsub("[^0-9]", "", var))) %>%
-           dplyr::select(-var)  %>%
-           dplyr::filter(!is.na(id)) %>%
-           dplyr::group_by(rep, id, type) %>%
-           dplyr::mutate(mean = mean(value, na.rm = TRUE))  %>%
-           dplyr::ungroup() %>%
-           dplyr::filter(rep == 1) %>%
-           dplyr::select(-value, -rep, -date)  %>%
-           tidyr::spread(type, mean)
+  flows <-
+    meta %>%
+    dplyr::select(matches("flow_|^id$|^date$")) %>%
+    tidyr::gather("var", "value", -id, -date) %>%
+    dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+    dplyr::mutate(type = sub("flow.*", "", var),
+                  rep = as.factor(gsub("[^0-9]", "", var))) %>%
+    dplyr::select(-var)  %>%
+    dplyr::filter(!is.na(id)) %>%
+    dplyr::group_by(rep, id, type) %>%
+    dplyr::mutate(mean = mean(value, na.rm = TRUE))  %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(rep == 1) %>%
+    dplyr::select(-value, -rep, -date)  %>%
+    tidyr::spread(type, mean)
 ```
 
 Extra time data
 
 ```{r extract_times}
-  times <- meta %>% 
-           dplyr::select(matches("^time_|^id$|^date$")) %>%
-           tidyr::gather("var", "value", -id, -date) %>%
-           dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
-                         type = ifelse(grepl("_end_", var), "end", type)) %>%
-           dplyr::arrange(id) %>%
-           dplyr::filter(!is.na(id)) %>%  
-           dplyr::select(-var, -date) %>%  
-           tidyr::spread(type, value)
+  times <-
+    meta %>% 
+    dplyr::select(matches("^time_|^id$|^date$")) %>%
+    tidyr::gather("var", "value", -id, -date) %>%
+    dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                  type = ifelse(grepl("_end_", var), "end", type)) %>%
+    dplyr::arrange(id) %>%
+    dplyr::filter(!is.na(id)) %>%  
+    dplyr::select(-var, -date) %>%  
+    tidyr::spread(type, value)
 ```
 
 Merge pah with filter metadata
 
 ```{r}
-  pah <- pah_raw %>% 
-         dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
-         dplyr::left_join(flows, by = "id") %>%
-         dplyr::left_join(times, by = "id") %>%  
-         dplyr::rename(pre_flow = pre, post_flow = post) %>%
-         dplyr::mutate(flow = (pre_flow + post_flow) / 2,
-                       val = as.numeric(val),
-                       val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+  pah_merged %<>%
+    dplyr::filter(!grepl("^B", id)) %>%
+    dplyr::left_join(flows, by = "id") %>%
+    dplyr::left_join(times, by = "id") %>%
+    dplyr::rename(pre_flow = pre, post_flow = post) %>%
+    dplyr::mutate(flow = (pre_flow + post_flow) / 2)
 ```
 
-## Plot
 
-* tests
 
-```{r, fig.width=15, fig.height=50}
-  # p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^[0-9]", pah$id))
-  # 
-  # p <-  ggplot(p_data, aes(id, val_lod_adj)) +
-  #       geom_point(aes(color = filter_type)) +
-  #       scale_y_log10() +
-  #       theme_bw() +
-  #       theme(legend.position = "top") +
-  #       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
-  #       facet_wrap(~pol, ncol = 1)
-  # p
-```
-
-* lab background
-
-```{r, fig.width=15, fig.height=50}
-  # p_data <- filter(pah, filter_type == "p" | filter_type == "b" | filter_type == "f", grepl("^G", pah$id))
-  # 
-  # p <-  ggplot(p_data, aes(id, val_lod_adj)) +
-  #       geom_point(aes(color = filter_type)) +
-  #       scale_y_log10() +
-  #       theme_bw() +
-  #       theme(legend.position = "top") +
-  #       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) +
-  #       facet_wrap(~pol, ncol = 1)
-  # p
-```
- 
-# Combine filter stages
-
-```{r}
-   # pah_merged <- pah %>%
-   #               dplyr::group_by(id, pol, flow, pre_flow, post_flow, start, end) %>%
-   #               summarise(sum = sum(val_lod_adj, na.rm = TRUE))
-```
-
-## Save merged file
+# Save merged file
 
 ```{r}
   # saveRDS(pah, file = "../r_files/pah_merged.RDS")
