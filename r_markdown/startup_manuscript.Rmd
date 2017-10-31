@@ -168,10 +168,9 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
                                                       "formaldehyde", "acetaldehyde",
                                                       "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "kindling",
-                                                          "footwear", "inner tubes", "newspaper",
-                                                          "wood shims", "fabric", 
-                                                          "food packaging", "plastic bags"))
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling","newspaper",
+                                                          "footwear", "inner tubes", "fabric", 
+                                                          "food packaging", "plastic bags", "kerosene"))
 
 
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
@@ -185,6 +184,7 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
   geom_point(size = 5) +
   geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
   theme_bw() +
+    geom_vline(xintercept = 3.5, col='black', lwd=1) +
   theme(legend.position = "none",
         text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1),
@@ -203,10 +203,10 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
                                                       "formaldehyde", "acetaldehyde",
                                                       "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "kindling",
-                                                          "footwear", "inner tubes", "newspaper",
-                                                          "wood shims", "fabric", 
-                                                          "food packaging", "plastic bags"))
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling","newspaper",
+                                                          "footwear", "inner tubes", 
+                                                          "fabric", 
+                                                          "food packaging", "plastic bags", "kerosene"))
 
 
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
@@ -219,7 +219,8 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
   ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup_std, color = fuel)) +
   geom_point(size = 5) +
   #geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
-  theme_bw() +
+  geom_vline(xintercept = 3.5, col='black', lwd=1) +
+    theme_bw() +
   theme(legend.position = "none",
         text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1),
@@ -232,7 +233,7 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
 
 * stacked bar charts of health relevent pollutant categories
 
-```{r fig.width = 12, fig.height = 7}
+```{r fig.width = 10, fig.height = 7}
   pol_cats <- mean_per_startup %>%
               dplyr::filter(pol == "voc_benzene" |
                             pol == "voc_toluene" |
@@ -267,14 +268,29 @@ palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
         geom_vline(xintercept = 3.5, col='black', lwd=1) +
         facet_wrap(~cat, scales = "free") +
         theme_bw() +
-        theme(legend.position = "right",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(legend.position = "bottom",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
+        scale_fill_manual(values = palette) +
+        theme(legend.title=element_blank(),
+              axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+        ylab("proportion of category total") + 
+        xlab("Startup Material") 
+
+```
+
+```{r fig.width = 10, fig.height = 7}
+  ggplot(pol_cats, aes(fuel_names, mean)) +
+        geom_col(aes(fill = pol), position = "stack") +
+        geom_vline(xintercept = 3.5, col='black', lwd=1) +
+        facet_wrap(~cat, scales = "free") +
+        theme_bw() +
+        theme(legend.position = "bottom",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
         scale_fill_manual(values = palette) +
         theme(legend.title=element_blank(),
               axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
         ylab("mg per startup event") + 
         xlab("Startup Material") 
-
 ```
+
 
 ## Figure 4
 * circles = "natural" fuel types (biomass/paper), triangle = "syntehtic" fuel types (kerosene, plastic, rubber-like)
