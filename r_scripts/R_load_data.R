@@ -371,7 +371,6 @@ load_pah_file <- function(file){
   raw_data <- raw_data %>%
               dplyr::mutate(x1 = ifelse(x1 == "28AB", "28A-B", x1),
                             x1 = ifelse(x1 == "17P", "17-P", x1),
-                            x1 = ifelse(grepl("x", x1), gsub("x", "", x1), x1),
                             x1 = ifelse(x1 == "68-P", "G8-P", x1),
                             x1 = ifelse(x1 == "G8-B", "G13-B", x1))
 
@@ -380,7 +379,8 @@ load_pah_file <- function(file){
          tidyr::gather(pol, val, -id_asu) %>%
          dplyr::filter(!is.na(id_asu)) %>%
          dplyr::mutate(id = as.factor(sub("-.*$", "", id_asu)),
-                        filter_type = as.factor(tolower(sub("^.*-", "", id_asu))))
+                       id = ifelse(grepl("x", id), gsub("x", "", id), id),
+                       filter_type = as.factor(tolower(sub("^.*-", "", id_asu))))
   
  # return 
   return(out)
