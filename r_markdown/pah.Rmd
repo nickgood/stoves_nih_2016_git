@@ -136,9 +136,10 @@ Plot blank mass in ug:
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             text = element_text(size = 18),
-            strip.text.x = element_text(size = 12)) +
+            strip.text.x = element_text(size = 12),
+            legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("mass (ug)") +
+      ylab("") +
       xlab("")
 ```
 
@@ -189,8 +190,10 @@ Find which backgrounds are below blank lod and loq
     dplyr::mutate(val_bk_adj = val_lod_adj - bk_mean,
                   bk_lod = ifelse(val_bk_adj <= 3 * bk_sd, "below", "above"),
                   bk_loq = ifelse(val_bk_adj <= 10 * bk_sd, "below", "above"),
-                  val_bk_adj = ifelse(bk_lod == "below" & bk_lod == "below", (3 * bk_sd) / sqrt(2), val_bk_adj),
-                  val_bk_adj = ifelse(bk_lod == "above" & bk_loq == "below", (10 * bk_sd) / sqrt(2), val_bk_adj))
+                  val_bk_adj = ifelse(bk_lod == "below" & bk_lod == "below",
+                                      (3 * bk_sd) / sqrt(2), val_bk_adj),
+                  val_bk_adj = ifelse(bk_lod == "above" & bk_loq == "below",
+                                      (10 * bk_sd) / sqrt(2), val_bk_adj))
 ```
 
 # Calculate concentrations
@@ -292,9 +295,10 @@ Plot background concentrations in ug per meter cubed:
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             text = element_text(size = 18),
-            strip.text.x = element_text(size = 12)) +
+            strip.text.x = element_text(size = 12),
+            legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("mass (ug per meter cubed)") +
+      ylab("") +
       xlab("")
 ```
 
@@ -353,7 +357,7 @@ Subtract background concentrations
     dplyr::mutate(conc = conc - bg_mean)
 ```
 
-Plot all sample concentrations in ug per meter cubed:
+Concentrations from burns in ug per meter cubed:
 
 * negative values indicate the sample was below the background
 * mean shown with an x
@@ -377,59 +381,138 @@ Plot all sample concentrations in ug per meter cubed:
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             text = element_text(size = 18),
-            strip.text.x = element_text(size = 12)) +
+            strip.text.x = element_text(size = 12),
+            legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("mass (ug per meter cubed)") +
       xlab("")
 ```
 
-Plot all sample concentrations (grouped by stove type and colored by fuel type) in ug per meter cubed:
+Summed particle and gas phase pah concentrations in ug per meter cubed:
 
+* grouped by stove type and colored by fuel type
 * negative values indicate the sample was below the background
 * mean shown with an x
 * median shown with a square
 
-```{r, echo=FALSE, fig.height = 20}
+```{r, echo=FALSE, fig.height = 60, fig.width = 14}
   pah_merged %>%
-    dplyr::filter(!is.na(conc)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::mutate(fuel =
-                    fuel %>% 
-                    factor %>%
-                    tolower %>% 
-                    forcats::fct_recode("lpg" = "liquefied petroleum gas"),
-                  filter_type = 
-                    filter_type %>% 
-                    as.factor %>%
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p"),
-                  stove = 
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
+    
+    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::summarise(conc = sum(conc)) %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel,
+                                   stovecat, fuelcat), by = "id") %>%
+    dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
                     tolower %>%
                     gsub(" [:(:].*[:):]", "",.) %>%
                     forcats::fct_recode("lpg" = "pressurized lpg") %>%
                     forcats::fct_recode("pressure kerosene" =
-                                          "pressurized kerosene")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "fuel")) +
-      geom_point(size = 3, shape = 1, stroke = 1) +
+                                          "pressurized kerosene") %>% 
+                    gsub(" ", " \n ",.) %>% 
+                    forcats::fct_relevel("three \n stone \n fire",
+                                         "clay \n ring",
+                                         "ceramic \n charcoal",
+                                         "rocket \n elbow",
+                                         "built-in \n justa",
+                                         "metal \n charcoal",
+                                         "fan \n rocket \n elbow",
+                                         "gasifier",
+                                         "wick \n kerosene",
+                                         "pressure \n kerosene",
+                                         "lpg"),
+                  fuelcat =
+                    fuelcat %>% 
+                    factor %>%
+                    tolower,
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional stoves" = "traditional")) %>%
+    ggplot(aes_string(x = "stove", y = "conc", colour = "fuelcat")) +
+      geom_point(size = 3, shape = 1, stroke = 2) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
       geom_point(stat = "summary", fun.y = "median", colour = "black",
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 18),
-            strip.text.x = element_text(size = 12)) +
-      facet_wrap(stove~pol, ncol = 4, scales = "free") +
-      ylab("mass (ug per meter cubed)") +
+      theme(text = element_text(size = 18),
+            legend.position = "top") +
+      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      ylab("") +
       xlab("")
 ```
 
-Plot sigma
+Ratio of particle phase pahs to summed gas and particle phase pahs:
 
-Plot phi
+* grouped by stove type and colored by fuel type
+* negative values indicate the sample was below the background
+* mean shown with an x
+* median shown with a square
+
+```{r, echo=FALSE, fig.height = 60, fig.width = 14}
+  pah_merged %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>%
+                    forcats::fct_recode("gas" = "b",
+                                        "gas" = "f",
+                                        "particle" = "p")) %>%
+    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::summarise(conc = sum(conc)) %>%
+    tidyr::spread(filter_type, conc) %>%
+    dplyr::mutate(sigma = particle / (particle + gas)) %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel,
+                                   stovecat, fuelcat), by = "id") %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "",.) %>%
+                    forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                    forcats::fct_recode("pressure kerosene" =
+                                          "pressurized kerosene") %>% 
+                    gsub(" ", " \n ",.) %>% 
+                    forcats::fct_relevel("three \n stone \n fire",
+                                         "clay \n ring",
+                                         "ceramic \n charcoal",
+                                         "rocket \n elbow",
+                                         "built-in \n justa",
+                                         "metal \n charcoal",
+                                         "fan \n rocket \n elbow",
+                                         "gasifier",
+                                         "wick \n kerosene",
+                                         "pressure \n kerosene",
+                                         "lpg"),
+                  fuelcat =
+                    fuelcat %>% 
+                    factor %>%
+                    tolower,
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional stoves" = "traditional")) %>%
+    ggplot(aes_string(x = "stove", y = "sigma", colour = "fuelcat")) +
+      geom_point(size = 3, shape = 1, stroke = 2) +
+      geom_point(stat = "summary", fun.y = "mean", colour = "black",
+                 shape = 4, size = 4, stroke = 2) +
+      geom_point(stat = "summary", fun.y = "median", colour = "black",
+                 shape = 0, size = 4, stroke = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 18),
+            legend.position = "top") +
+      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      ylab("") +
+      xlab("")
+```
 
 Plot ratio of front to back filter
 
