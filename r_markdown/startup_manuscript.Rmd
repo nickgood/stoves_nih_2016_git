@@ -96,18 +96,6 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
 * experiment summary
 
 ```{r}
-  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
-              dplyr::group_by(fuel_names) %>%
-              dplyr::summarize(n_tests = n(),
-                               n_events_per_test = round(mean(fuel_quant), 2),
-                               min_events_per_test = min(fuel_quant),
-                               max_events_per_test = max(fuel_quant),
-                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
-                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
-                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
-                               min_fuelmass_total = min(fuelmass_total),
-                               max_fuelmass_total = max(fuelmass_total))
-
   knitr::kable(fuel_sum)
 ```
 
@@ -168,9 +156,10 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
                                                       "formaldehyde", "acetaldehyde",
                                                       "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling","newspaper",
-                                                          "footwear", "inner tubes", "fabric", 
-                                                          "food packaging", "plastic bags", "kerosene"))
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear", "kerosene"))
 
 
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
@@ -203,10 +192,10 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
                                                       "formaldehyde", "acetaldehyde",
                                                       "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling","newspaper",
-                                                          "footwear", "inner tubes", 
-                                                          "fabric", 
-                                                          "food packaging", "plastic bags", "kerosene"))
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear", "kerosene"))
 
 
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
