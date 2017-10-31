@@ -88,7 +88,7 @@ Apply flags: bad preceeds maybe preceeds good
 Merge data with flags
 
 ```{r}
-  pah_merged <-
+  pah <-
     pah %>%
     dplyr::left_join(flags, by = "id") %>%
     dplyr::mutate(id = as.factor(id)) %>%
@@ -98,8 +98,8 @@ Merge data with flags
 Filter out bad tests
 
 ```{r}
-  pah_merged <-
-    pah_merged %>% 
+  pah <-
+    pah %>% 
     dplyr::filter(qc != "bad")
 ```
 
@@ -109,7 +109,7 @@ Extract blank pufs and blank filters
 
 ```{r}
   blanks <-
-    pah_merged %>%
+    pah %>%
     dplyr::filter(grepl("^B", id))
 ```
 
@@ -143,11 +143,9 @@ Plot blank mass in ug:
       xlab("")
 ```
 
-Fraction of blanks below lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`
-
-Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`
-
-Fraction of blanks either below lod or NA value: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`
+* Fraction of blanks below lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`.
+* Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`.
+* Fraction of 'bad' background values: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`.
 
 Summarize blank data (ignore NAs)
 
@@ -183,8 +181,8 @@ Find which backgrounds are below blank lod and loq
 * replace values below loq and above lod with loq/sqrt(2)
 
 ```{r}
-  pah_merged <-
-    pah_merged %>%
+  pah <-
+    pah %>%
     dplyr::filter(!grepl("^B", id)) %>%  # remove blanks
     dplyr::left_join(blanks, by = c("pol", "filter_type")) %>%
     dplyr::mutate(val_bk_adj = val_lod_adj - bk_mean,
@@ -302,18 +300,11 @@ Plot background concentrations in ug per meter cubed:
       xlab("")
 ```
 
-Fraction of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2)`.
-
-Fraction of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2)`.
-
-Fraction of backgrounds either below lod for chemical analysis or NA value: `r round((nrow(filter(bg, lod == "below")) + sum(is.na(bg$val))) / nrow(bg), 2)`.
-
-Fraction of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2)`.
-
-Fraction of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2)`.
-
-Fraction of 'bad' background values: `r 1 - round(nrow(filter(bg, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj))) / nrow(bg), 2)`.
-
+* Fraction of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2)`.
+* Fraction of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2)`.
+* Fraction of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2)`.
+* Fraction of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2)`.
+* Fraction of 'bad' background values: `r 1 - round(nrow(filter(bg, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj))) / nrow(bg), 2)`.
 
 Summarize background data (ignore NAs)
 
@@ -343,7 +334,7 @@ Summarize background data (ignore NAs)
 Extract sample pufs (front and back) and sample filters
 
 ```{r}
-  pah_merged <-
+  pah_samples <-
     pah_merged %>%
     dplyr::filter(!grepl("^G|^B", id))
 ```
@@ -351,8 +342,8 @@ Extract sample pufs (front and back) and sample filters
 Subtract background concentrations
 
 ```{r}
-  pah_merged <-
-    pah_merged %>%
+  pah_samples <-
+    pah_samples %>%
     dplyr::left_join(bg, by = c("pol", "filter_type")) %>%
     dplyr::mutate(conc = conc - bg_mean)
 ```
@@ -364,7 +355,7 @@ Concentrations from burns in ug per meter cubed:
 * median shown with a square
 
 ```{r, echo=FALSE, fig.height = 15}
-  pah_merged %>%
+  pah_samples %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -396,9 +387,8 @@ Summed particle and gas phase pah concentrations in ug per meter cubed:
 * median shown with a square
 
 ```{r, echo=FALSE, fig.height = 60, fig.width = 14}
-  pah_merged %>%
+  pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-    
     dplyr::group_by(id, pol, filter_type) %>%
     dplyr::summarise(conc = sum(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id,
@@ -456,7 +446,7 @@ Ratio of particle phase pahs to summed gas and particle phase pahs:
 * median shown with a square
 
 ```{r, echo=FALSE, fig.height = 60, fig.width = 14}
-  pah_merged %>%
+  pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>%
@@ -514,20 +504,35 @@ Ratio of particle phase pahs to summed gas and particle phase pahs:
       xlab("")
 ```
 
+* Fraction of samples below lod for chemical analysis:`r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2)`.
+* Fraction of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2)`.
+* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0) / nrow(pah_merged), 2)`.
+* Fraction of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2)`.
+* Fraction of backgrounds below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2)`.
+* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc <= 0)) / nrow(pah_merged), 2)`.
+
+# Additional QA/QC analysis
+
 Plot ratio of front to back filter
+
+```{r, echo=FALSE, fig.height = 60, fig.width = 14}
+  pah_merged %>%
+    dplyr::filter(filter_type != "p") %>%
+    tidyr::spread(filter_type, val_bk_adj) %>%
+    dplyr::mutate(ratio = f / b) %>%
+    ggplot(aes_string(x = "pol", y = "ratio")) +
+      geom_point(size = 3, shape = 1, stroke = 2)
+      theme_bw() +
+      theme(text = element_text(size = 18)) +
+      ylab("") +
+      xlab("")
+```
 
 Plot histogram of background and sample data
 
-Fraction of samples below lod for chemical analysis
-
-Fraction of samples below lod and LOQ calculated from lab blanks
-
-Fraction of samples with NA values
-
-Fraction of samples below the background
-
-# Save merged file
+# Save merged files
 
 ```{r}
-  # saveRDS(pah, file = "../r_files/pah_merged.RDS")
+  # saveRDS(pah_merged, file = "../r_files/pah_merged.RDS")
+  # saveRDS(bg, file = "../r_files/pah_bg.RDS")
 ```
