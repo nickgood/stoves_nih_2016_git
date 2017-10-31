@@ -38,29 +38,30 @@ Metadata
 ```{r load_metadata}
   load("../r_files/data_1.Rda")    # metadata
   load("../r_files/notes.Rda")    # metadata
+  load("../r_files/samples.Rda")
 ```
 
 # Tidy data
 
-## Merge raw and lod_1 data
+## Merge raw and lod data
 
-Extract chemical analysis lod_1 data
+Extract chemical analysis lod data
 
 ```{r}
-  lod_1 <-
-    pah_lod_1 %>%
-    dplyr::mutate(lod_1 = ifelse(val == "BDL", "below", "above")) %>%
-    dplyr::select(id, lod_1, filter_type, pol)
+  lod <-
+    pah_lod %>%
+    dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
+    dplyr::select(id, lod, filter_type, pol)
 ```
 
-Calculate new value if measurement below lod_1
+Calculate new value if measurement below lod
 
 ```{r}
   pah <- 
     pah_raw %>% 
-    dplyr::left_join(lod_1, by = c("id", "filter_type", "pol")) %>%
+    dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val = as.numeric(val),
-                  val_lod_1_adj = ifelse(lod_1 == "below", val / sqrt(2), val))
+                  val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
 ## Merge data with qc info
@@ -114,7 +115,7 @@ Extract blank pufs and blank filters
 
 Plot blank mass in ug:
 
-* color indicates if sample was above or below instrument lod (lod_1)
+* color indicates if sample was above or below instrument lod (lod)
 * mean shown with an x
 * median shown with a square
 
@@ -123,11 +124,10 @@ Plot blank mass in ug:
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
-                    as.factor %>%
-                    forcats::fct_recode("puf" = "b",
-                                        "puf" = "f",
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "filter_type", y = "val_lod_1_adj", colour = "lod_1")) +
+    ggplot(aes_string(x = "filter_type", y = "val_lod_adj", colour = "lod")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
@@ -142,21 +142,55 @@ Plot blank mass in ug:
       xlab("")
 ```
 
-Fraction of blanks below lod_1: `r round(nrow(filter(blanks, lod_1 == "below")) / nrow(blanks), 2)`
+Fraction of blanks below lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`
 
 Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`
 
-Fraction of blanks either below lod_1 or NA value: `r round((nrow(filter(blanks, lod_1 == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`
+Fraction of blanks either below lod or NA value: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`
 
 Summarize blank data (ignore NAs)
 
 ```{r}
-  signal <-
+  blanks <-
     blanks %>%
     dplyr::group_by(pol, filter_type) %>%
-    dplyr::summarise(mean = mean(val_lod_1_adj, na.rm = TRUE),
-                     lod_2 = 3 * sd(val_lod_1_adj, na.rm = TRUE),
-                     loq_2 = 10 * sd(val_lod_1_adj, na.rm = TRUE))
+    dplyr::summarise(bk_mean = mean(val_lod_adj, na.rm = TRUE),
+                     bk_median = median(val_lod_adj, na.rm = TRUE),
+                     bk_sd = sd(val_lod_adj, na.rm = TRUE)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("p" = "ba"))
+```
+
+```{r, echo=FALSE}
+   blanks %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p")) %>%
+    knitr::kable("markdown", digits = 2, align = 'c',
+                 caption = "summary statistics of lab blanks (units in ug)",
+                 col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
+```
+
+# Lab blank correction 
+
+Find which backgrounds are below blank lod and loq
+
+* replace values below the lod and loq with lod/sqrt(2)
+* replace values below loq and above lod with loq/sqrt(2)
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(!grepl("^B", id)) %>%  # remove blanks
+    dplyr::left_join(blanks, by = c("pol", "filter_type")) %>%
+    dplyr::mutate(val_bk_adj = val_lod_adj - bk_mean,
+                  bk_lod = ifelse(val_bk_adj <= 3 * bk_sd, "below", "above"),
+                  bk_loq = ifelse(val_bk_adj <= 10 * bk_sd, "below", "above"),
+                  val_bk_adj = ifelse(bk_lod == "below" & bk_lod == "below", (3 * bk_sd) / sqrt(2), val_bk_adj),
+                  val_bk_adj = ifelse(bk_lod == "above" & bk_loq == "below", (10 * bk_sd) / sqrt(2), val_bk_adj))
 ```
 
 # Calculate concentrations
@@ -221,7 +255,7 @@ Calculate concentrations
   pah_merged <-
     pah_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val_lod_1_adj * 1000 / (flow * dur))
+                  conc = val_bk_adj * 1000 / (flow * dur))
 ```
 
 # Background analysis
@@ -234,28 +268,22 @@ Extract background pufs (front and back) and background filters
     dplyr::filter(grepl("^G", id))
 ```
 
-Find which variables are below blank lod (lod_2) and loq
-
-```{r}
-
-```
-
 Plot background concentrations in ug per meter cubed:
 
-* color indicates if sample was above or below lod_1 calculated from lab blanks
+* color indicates if sample was above or below lod calculated from lab blanks
 * mean shown with an x
 * median shown with a square
 
 ```{r pah_bg_plot, echo=FALSE, fig.height = 15}
   bg %>%
-    dplyr::filter(!is.na(val)) %>%
+    dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     as.factor %>%
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod_1")) +
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
@@ -266,30 +294,150 @@ Plot background concentrations in ug per meter cubed:
             text = element_text(size = 18),
             strip.text.x = element_text(size = 12)) +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("mass (ug)") +
+      ylab("mass (ug per meter cubed)") +
       xlab("")
 ```
 
-Summarize background data
+Fraction of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2)`.
 
-Fraction of backgrounds below lod_1 for chemical analysis
+Fraction of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2)`.
 
-Fraction of backgrounds with NA values
+Fraction of backgrounds either below lod for chemical analysis or NA value: `r round((nrow(filter(bg, lod == "below")) + sum(is.na(bg$val))) / nrow(bg), 2)`.
 
-Fraction of backgrounds below lod_1 and LOQ calculated from lab blanks
+Fraction of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2)`.
 
-Fraction of backgrounds with NA values
+Fraction of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2)`.
+
+Fraction of 'bad' background values: `r 1 - round(nrow(filter(bg, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj))) / nrow(bg), 2)`.
+
+
+Summarize background data (ignore NAs)
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::summarise(bg_mean = mean(conc, na.rm = TRUE),
+                     bg_median = median(conc, na.rm = TRUE),
+                     bg_sd = sd(conc, na.rm = TRUE))
+```
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "p")) %>%
+    knitr::kable("markdown", digits = 2, align = 'c',
+                 caption = "summary statistics of lab backgrounds (units in ug per meter cubed)",
+                 col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
+```
 
 # Sample analysis
 
 Extract sample pufs (front and back) and sample filters
 
-Plot sample concentrations in ug per meter cubed:
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(!grepl("^G|^B", id))
+```
 
-* group by stove type and fuel type
+Subtract background concentrations
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::left_join(bg, by = c("pol", "filter_type")) %>%
+    dplyr::mutate(conc = conc - bg_mean)
+```
+
+Plot all sample concentrations in ug per meter cubed:
+
 * negative values indicate the sample was below the background
 * mean shown with an x
 * median shown with a square
+
+```{r, echo=FALSE, fig.height = 15}
+  pah_merged %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    as.factor %>%
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p")) %>%
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod")) +
+      geom_point(size = 3, shape = 1, stroke = 1) +
+      geom_point(stat = "summary", fun.y = "mean", colour = "black",
+                 shape = 4, size = 4, stroke = 2) +
+      geom_point(stat = "summary", fun.y = "median", colour = "black",
+                 shape = 0, size = 4, stroke = 2) +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            text = element_text(size = 18),
+            strip.text.x = element_text(size = 12)) +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("mass (ug per meter cubed)") +
+      xlab("")
+```
+
+Plot all sample concentrations (grouped by stove type and colored by fuel type) in ug per meter cubed:
+
+* negative values indicate the sample was below the background
+* mean shown with an x
+* median shown with a square
+
+```{r, echo=FALSE, fig.height = 15}
+  pah_merged %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::left_join(samples, stove, fuel, by = "id") %>%
+    dplyr::mutate(fuel =
+                    fuel %>% 
+                    factor %>%
+                    tolower %>% 
+                    forcats::fct_recode("lpg" = "liquefied petroleum gas"),
+                  filter_type = 
+                    filter_type %>% 
+                    as.factor %>%
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p"),
+                  stove = 
+                    stove %>% 
+                    factor %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "",.) %>%
+                    forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                    forcats::fct_recode("pressure kerosene" =
+                                          "pressurized kerosene") %>% 
+                    gsub(" ", " \n ",.) %>% 
+                    forcats::fct_relevel("three \n stone \n fire",
+                                         "clay \n ring",
+                                         "ceramic \n charcoal",
+                                         "rocket \n elbow",
+                                         "built-in \n justa",
+                                         "metal \n charcoal",
+                                         "fan \n rocket \n elbow",
+                                         "gasifier",
+                                         "wick \n kerosene",
+                                         "pressure \n kerosene",
+                                         "lpg")) %>%
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "fuel")) +
+      geom_point(size = 3, shape = 1, stroke = 1) +
+      geom_point(stat = "summary", fun.y = "mean", colour = "black",
+                 shape = 4, size = 4, stroke = 2) +
+      geom_point(stat = "summary", fun.y = "median", colour = "black",
+                 shape = 0, size = 4, stroke = 2) +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            text = element_text(size = 18),
+            strip.text.x = element_text(size = 12)) +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("mass (ug per meter cubed)") +
+      xlab("")
+```
 
 Plot sigma
 
@@ -299,9 +447,9 @@ Plot ratio of front to back filter
 
 Plot histogram of background and sample data
 
-Fraction of samples below lod_1 for chemical analysis
+Fraction of samples below lod for chemical analysis
 
-Fraction of samples below lod_1 and LOQ calculated from lab blanks
+Fraction of samples below lod and LOQ calculated from lab blanks
 
 Fraction of samples with NA values
 
