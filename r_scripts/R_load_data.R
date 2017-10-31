@@ -379,8 +379,8 @@ load_pah_file <- function(file){
          tidyr::gather(pol, val, -id_asu) %>%
          dplyr::filter(!is.na(id_asu)) %>%
          dplyr::mutate(id = as.factor(sub("-.*$", "", id_asu)),
-                       id = ifelse(grepl("x", id), gsub("x", "", id), id),
-                       filter_type = as.factor(tolower(sub("^.*-", "", id_asu))))
+                       filter_type = as.factor(tolower(sub("^.*-", "", id_asu))),
+                       filter_type = ifelse(grepl("x", filter_type), gsub("x", "", filter_type), filter_type))
   
  # return 
   return(out)
