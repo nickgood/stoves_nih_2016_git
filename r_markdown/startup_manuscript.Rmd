@@ -232,7 +232,7 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
 
 * stacked bar charts of health relevent pollutant categories
 
-```{r fig.width = 12, fig.height = 8}
+```{r fig.width = 12, fig.height = 7}
   pol_cats <- mean_per_startup %>%
               dplyr::filter(pol == "voc_benzene" |
                             pol == "voc_toluene" |
@@ -252,17 +252,23 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
               dplyr::mutate(pol = sub("^voc_", "", pol),
                             pol = sub(".*xylene.*", "xylenes", pol)) %>%
               dplyr::filter(cat != "Carbonyls") %>%
-              dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", "benzene", "toluene", "ethylbenzene", "xylenes")))
+              dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
+                                                         "benzene", "toluene", 
+                                                         "ethylbenzene", "xylenes"))) %>%
+              dplyr::mutate(fuel_names = factor(fuel_names, levels = c("wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear", "kerosene")))
 
-cbPalette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
 
   ggplot(pol_cats, aes(fuel_names, mean)) +
         geom_col(aes(fill = pol), position = "fill") +
+        geom_vline(xintercept = 3.5, col='black', lwd=1) +
         facet_wrap(~cat, scales = "free") +
         theme_bw() +
         theme(legend.position = "right",text = element_text(size=25), axis.text.x = element_text(angle = 45, hjust = 1)) +
-        scale_fill_manual(values=cbPalette) +
-        #scale_fill_hue(l=50, c=55) +
+        scale_fill_manual(values = palette) +
         theme(legend.title=element_blank(),
               axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
         ylab("mg per startup event") + 
