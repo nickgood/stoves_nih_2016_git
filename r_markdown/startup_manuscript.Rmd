@@ -39,7 +39,8 @@ output: html_document
                    dplyr::summarise(mean_dm = mean(dm),
                                     min_dm = min(dm),
                                     max_dm = max(dm),
-                                    num_test = n()) %>%
+                                    total_dm = sum(dm),
+                                    num_reps = n()) %>%
                    dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
                                                               "leaves_twigs", "flipflops",
                                                               "rubber", "newspaper",
@@ -91,7 +92,8 @@ output: html_document
               dplyr::filter(!grepl("^B", id_test)) %>%
               dplyr::left_join(dplyr::select(fuel_consumed, fuel_names, mean_dm),
                                by = "fuel_names") %>%
-              dplyr::mutate(mass_pol_per_startup_std = (mass_emitted * 1e-3) / (fuelmass_total / mean_dm))
+              dplyr::mutate(fuel_quant_std = fuelmass_total / mean_dm,
+                            mass_pol_per_startup_std = (mass_emitted * 1e-3) / fuel_quant_std)
 
 ```
 
@@ -117,11 +119,13 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                                n_events_per_test = round(mean(fuel_quant), 2),
                                min_events_per_test = min(fuel_quant),
                                max_events_per_test = max(fuel_quant),
-                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
-                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
-                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
-                               min_fuelmass_total = min(fuelmass_total),
-                               max_fuelmass_total = max(fuelmass_total))
+                               n_events_per_test_std = round(mean(fuel_quant_std), 2),
+                               min_events_per_test_std = round(min(fuel_quant_std), 2),
+                               max_events_per_test_std = round(max(fuel_quant_std), 2)) %>%
+             dplyr::left_join(select(fuel_consumed, -fuel, -num_reps), by = "fuel_names") %>%
+             dplyr::mutate(mean_dm = round(mean_dm, 2),
+                           max_dm = round(max_dm, 2),
+                           total_dm = round(total_dm, 2))
 
 knitr::kable(fuel_sum)
 ```
@@ -177,7 +181,7 @@ knitr::kable(fuel_sum)
 * emissions of key pollutants (standardized calc)
 
 ```{r fig.width = 16, fig.height = 11}
-  p_data_key <- dplyr::filter(per_test_std, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
+  p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
                 dplyr::mutate(pol = sub("^voc_", "", pol),
                               pol = sub("^grav", "PM2.5", pol)) %>%
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
