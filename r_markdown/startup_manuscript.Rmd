@@ -188,7 +188,6 @@ knitr::kable(fuel_sum)
                                                                        "plastic bags", "food packaging", 
                                                                        "inner tubes", "footwear", "kerosene"))
 
-
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
                       dplyr::mutate(pol = sub("^voc_", "", pol),
                                     pol = sub("^grav", "PM2.5", pol))%>%
