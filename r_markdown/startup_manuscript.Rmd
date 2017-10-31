@@ -39,7 +39,20 @@ output: html_document
                    dplyr::summarise(mean_dm = mean(dm),
                                     min_dm = min(dm),
                                     max_dm = max(dm),
-                                    num_test = n())
+                                    num_test = n()) %>%
+                   dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                              "leaves_twigs", "flipflops",
+                                                              "rubber", "newspaper",
+                                                              "wood_shims", "t_shirts",
+                                                              "food_packaging", "plastic_bags")) %>%
+                   dplyr::mutate(fuel = forcats::fct_drop(fuel, "blank")) %>%
+                   dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                   "kindling" = "leaves_twigs",
+                                                                   "inner tubes" = "rubber",
+                                                                   "footwear" = "flipflops",
+                                                                   "fabric" = "t_shirts",
+                                                                   "wood shims" = "wood_shims",
+                                                                   "food packaging" = "food_packaging"))
 
   kable(fuel_consumed, digits = 3)
 ```
@@ -75,30 +88,16 @@ output: html_document
                             mass_pol_per_startup = (mass_emitted * 1e-3) / fuel_quant, # mg per startup event
                             mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
                             mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
-              dplyr::filter(!grepl("^B", id_test))
-
-  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
-              dplyr::group_by(fuel_names) %>%
-              dplyr::summarize(n_tests = n(),
-                               n_events_per_test = round(mean(fuel_quant), 2),
-                               min_events_per_test = min(fuel_quant),
-                               max_events_per_test = max(fuel_quant),
-                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
-                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
-                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
-                               min_fuelmass_total = min(fuelmass_total),
-                               max_fuelmass_total = max(fuelmass_total))
-
-  per_test_std <- per_test %>% left_join(select(fuel_sum, fuel_names, mean_fuel_mass_per_event_g), 
-                                         by = "fuel_names") %>%
-                               dplyr::mutate(mass_pol_per_startup_std = (mass_emitted * 1e-3) / 
-                                                                       (fuelmass_total/mean_fuel_mass_per_event_g))
+              dplyr::filter(!grepl("^B", id_test)) %>%
+              dplyr::left_join(dplyr::select(fuel_consumed, fuel_names, mean_dm),
+                               by = "fuel_names") %>%
+              dplyr::mutate(mass_pol_per_startup_std = (mass_emitted * 1e-3) / (fuelmass_total / mean_dm))
 
 ```
 
 * QC comparison - standardized "startup event" vs. per-test average startup event
 ```{r fig.width = 15, fig.height = 18}
-ggplot(per_test_std) +
+ggplot(per_test) +
 geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
   geom_point(aes(x=id, y=mass_pol_per_startup_std), size = 2, color = 'black') +
     facet_wrap(~pol, scales = "free", ncol = 3) +
@@ -112,7 +111,19 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
 * experiment summary
 
 ```{r}
-  knitr::kable(fuel_sum)
+  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
+              dplyr::group_by(fuel_names) %>%
+              dplyr::summarize(n_tests = n(),
+                               n_events_per_test = round(mean(fuel_quant), 2),
+                               min_events_per_test = min(fuel_quant),
+                               max_events_per_test = max(fuel_quant),
+                               mean_fuel_mass_per_event_g = round(mean(mass_fuel_per_startup), 2),
+                               min_fuel_mass_per_event_g = round(min(mass_fuel_per_startup), 1),
+                               max_fuel_mass_per_event_g = round(max(mass_fuel_per_startup), 1),
+                               min_fuelmass_total = min(fuelmass_total),
+                               max_fuelmass_total = max(fuelmass_total))
+
+knitr::kable(fuel_sum)
 ```
 
 ## Table 2
@@ -123,9 +134,9 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
   mean_per_startup <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
-                                   mean = round(mean(mass_pol_per_startup, na.rm = TRUE), 2),
-                                   min = round(min(mass_pol_per_startup, na.rm = TRUE), 2),
-                                   max = round(max(mass_pol_per_startup, na.rm = TRUE), 2)) %>%
+                                   mean = round(mean(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   min = round(min(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2)) %>%
                       dplyr::ungroup()
 
   mean_per_startup_table <- mean_per_startup %>%
@@ -162,42 +173,6 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
 * Experimental setup - created in powerpoint
 
 ## Figure 2.
-
-* emissions of key pollutants (regular calc)
-
-```{r fig.width = 16, fig.height = 11}
-  p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
-                dplyr::mutate(pol = sub("^voc_", "", pol),
-                              pol = sub("^grav", "PM2.5", pol)) %>%
-                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
-                                                      "formaldehyde", "acetaldehyde",
-                                                      "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "wood shims", "kindling", 
-                                                                       "newspaper", "fabric", 
-                                                                       "plastic bags", "food packaging", 
-                                                                       "inner tubes", "footwear", "kerosene"))
-
-
-  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
-                      dplyr::mutate(pol = sub("^voc_", "", pol),
-                                    pol = sub("^grav", "PM2.5", pol))%>%
-                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
-                                                                    "formaldehyde", "acetaldehyde",
-                                                                    "benzene", "toluene"))
-
-  ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup, color = fuel)) +
-  geom_point(size = 5) +
-  geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
-  theme_bw() +
-    geom_vline(xintercept = 3.5, col='black', lwd=1) +
-  theme(legend.position = "none",
-        text = element_text(size=25),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
-  ylab("mg per startup event") + xlab("fuel type") +
-  facet_wrap(~pol, scales = "free")
-```
-
 
 * emissions of key pollutants (standardized calc)
 
@@ -303,8 +278,8 @@ palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
   pmco <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
           dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
                                           fuel == 'wood_shims' | fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
-          dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
-          tidyr::spread(pol, mass_pol_per_startup)
+          dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup_std) %>%
+          tidyr::spread(pol, mass_pol_per_startup_std)
 
   ggplot(data = pmco, aes(x = grav, y = co)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
@@ -325,8 +300,8 @@ palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
            dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
                                            fuel == 'wood_shims' | 
                                            fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
-           dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
-           tidyr::spread(pol, mass_pol_per_startup)
+           dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup_std) %>%
+           tidyr::spread(pol, mass_pol_per_startup_std)
 
   ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
@@ -348,8 +323,8 @@ palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
             dplyr::mutate(fuel_cat = ifelse(fuel == 'newspaper' | 
                                             fuel == 'wood_shims' | 
                                             fuel == 'leaves_twigs', 'natural', 'synthetic')) %>%
-            dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup) %>%
-            tidyr::spread(pol, mass_pol_per_startup)
+            dplyr::select(id, fuel_names, fuel_cat, pol, mass_pol_per_startup_std) %>%
+            tidyr::spread(pol, mass_pol_per_startup_std)
 
   ggplot(data = bentol, aes(x = voc_benzene, y = voc_toluene)) + 
         geom_point(size = 3, aes(colour = fuel_names, shape = fuel_cat)) +
