@@ -389,10 +389,10 @@ Plot all sample concentrations (grouped by stove type and colored by fuel type) 
 * mean shown with an x
 * median shown with a square
 
-```{r, echo=FALSE, fig.height = 15}
+```{r, echo=FALSE, fig.height = 20}
   pah_merged %>%
     dplyr::filter(!is.na(conc)) %>%
-    dplyr::left_join(samples, stove, fuel, by = "id") %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     dplyr::mutate(fuel =
                     fuel %>% 
                     factor %>%
@@ -411,19 +411,7 @@ Plot all sample concentrations (grouped by stove type and colored by fuel type) 
                     gsub(" [:(:].*[:):]", "",.) %>%
                     forcats::fct_recode("lpg" = "pressurized lpg") %>%
                     forcats::fct_recode("pressure kerosene" =
-                                          "pressurized kerosene") %>% 
-                    gsub(" ", " \n ",.) %>% 
-                    forcats::fct_relevel("three \n stone \n fire",
-                                         "clay \n ring",
-                                         "ceramic \n charcoal",
-                                         "rocket \n elbow",
-                                         "built-in \n justa",
-                                         "metal \n charcoal",
-                                         "fan \n rocket \n elbow",
-                                         "gasifier",
-                                         "wick \n kerosene",
-                                         "pressure \n kerosene",
-                                         "lpg")) %>%
+                                          "pressurized kerosene")) %>%
     ggplot(aes_string(x = "filter_type", y = "conc", colour = "fuel")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
@@ -434,7 +422,7 @@ Plot all sample concentrations (grouped by stove type and colored by fuel type) 
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             text = element_text(size = 18),
             strip.text.x = element_text(size = 12)) +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      facet_wrap(stove~pol, ncol = 4, scales = "free") +
       ylab("mass (ug per meter cubed)") +
       xlab("")
 ```
