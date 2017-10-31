@@ -283,7 +283,7 @@ Plot background concentrations in ug per meter cubed:
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod")) +
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "bk_lod")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
