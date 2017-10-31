@@ -39,16 +39,11 @@ output: html_document
               dplyr::rename(mass_emitted = value) %>%
               dplyr::select(-metric) %>%
               dplyr::filter(qc != "bad") %>%
-              dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background",
-                                                              "kerosene",
-                                                              "plastic_bags",
-                                                              "newspaper",
-                                                              "leaves_twigs",
-                                                              "rubber",
-                                                              "flipflops",
-                                                              "t_shirts",
-                                                              "food_packaging",
-                                                              "wood_shims")) %>%
+              dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                              "leaves_twigs", "flipflops",
+                                                              "rubber", "newspaper",
+                                                              "wood_shims", "t_shirts",
+                                                              "food_packaging", "plastic_bags")) %>%
               dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
                                                                    "kindling" = "leaves_twigs",
                                                                    "inner tubes" = "rubber",
