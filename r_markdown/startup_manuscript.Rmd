@@ -19,12 +19,33 @@ output: html_document
 
 ```{r, include=FALSE}
   emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
+  fuel_burnt_reps <- readRDS(file = "../r_files/fuel_burnt_reps.RDS")
+  qc <- readRDS(file = "../r_files/qc.RDS")
 ```
 
 
 # Results
 
 ## Prepare data
+
+* calculate mean fuel consumed per fuel type
+
+```{r}
+  fuel_consumed <- fuel_burnt_reps %>%
+                   dplyr::left_join(dplyr::select(qc, id, qc),
+                                                  by = "id") %>%
+                   dplyr::filter(!is.na(dm), qc != "bad") %>%
+                   dplyr::group_by(fuel) %>%
+                   dplyr::summarise(mean_dm = mean(dm),
+                                    min_dm = min(dm),
+                                    max_dm = max(dm),
+                                    num_test = n())
+
+  kable(fuel_consumed, digits = 3)
+```
+
+
+* calculate emissions metrics
 
 ```{r include = FALSE}
 # set variable types from character -> factor
