@@ -54,7 +54,9 @@ Extract chemical analysis lod data
     dplyr::select(id, lod, filter_type, pol)
 ```
 
-Calculate new value if measurement below lod
+Calculate new value if measurement below instrument lod
+
+* replace values below the lod and loq with lod/sqrt(2)
 
 ```{r}
   pah <- 
@@ -126,7 +128,7 @@ Extract blank pufs and blank filters
 
 Plot blank mass in ug:
 
-* color indicates if sample was above or below instrument lod (lod)
+* color indicates if sample was above or below instrument lod
 * mean shown with an x
 * median shown with a square
 
@@ -146,9 +148,10 @@ Plot blank mass in ug:
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 18),
+            text = element_text(size = 20),
             strip.text.x = element_text(size = 12),
             legend.position = "top") +
+      labs(colour = "chemical analysis lod") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("") +
       xlab("")
@@ -156,7 +159,7 @@ Plot blank mass in ug:
 
 * Fraction of blanks below lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`.
 * Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`.
-* Fraction of 'bad' background values: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`.
+* Fraction of 'bad' blank values: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`.
 
 Summarize blank data (ignore NAs)
 
@@ -186,7 +189,7 @@ Summarize blank data (ignore NAs)
 
 # Lab blank correction 
 
-Find which backgrounds are below blank lod and loq
+Calculate new value if measurement below cookstove lab lod or loq:
 
 * replace values below the lod and loq with lod/sqrt(2)
 * replace values below loq and above lod with loq/sqrt(2)
@@ -304,9 +307,10 @@ Plot background concentrations in ug per meter cubed:
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 18),
+            text = element_text(size = 20),
             strip.text.x = element_text(size = 12),
             legend.position = "top") +
+      labs(colour = "cookstove lab blank lod") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("") +
       xlab("")
@@ -375,7 +379,7 @@ Concentrations from burns in ug per meter cubed:
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "lod")) +
+    ggplot(aes_string(x = "filter_type", y = "conc", colour = "bk_lod")) +
       geom_point(size = 3, shape = 1, stroke = 1) +
       geom_point(stat = "summary", fun.y = "mean", colour = "black",
                  shape = 4, size = 4, stroke = 2) +
@@ -383,17 +387,17 @@ Concentrations from burns in ug per meter cubed:
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 18),
+            text = element_text(size = 20),
             strip.text.x = element_text(size = 12),
             legend.position = "top") +
+      labs("lab blank lod") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("mass (ug per meter cubed)") +
       xlab("")
 ```
 
 Summed particle and gas phase pah concentrations in ug per meter cubed:
 
-* grouped by stove type and colored by fuel type
+* grouped by stove type and colored by fuel category
 * negative values indicate the sample was below the background
 * mean shown with an x
 * median shown with a square
@@ -443,8 +447,9 @@ Summed particle and gas phase pah concentrations in ug per meter cubed:
       geom_point(stat = "summary", fun.y = "median", colour = "black",
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
-      theme(text = element_text(size = 18),
+      theme(text = element_text(size = 22),
             legend.position = "top") +
+      labs(colour = "fuel category") +
       facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
       ylab("") +
       xlab("")
@@ -452,8 +457,7 @@ Summed particle and gas phase pah concentrations in ug per meter cubed:
 
 Ratio of particle phase pahs to summed gas and particle phase pahs:
 
-* grouped by stove type and colored by fuel type
-* negative values indicate the sample was below the background
+* grouped by stove type and colored by fuel category
 * mean shown with an x
 * median shown with a square
 
@@ -509,43 +513,46 @@ Ratio of particle phase pahs to summed gas and particle phase pahs:
       geom_point(stat = "summary", fun.y = "median", colour = "black",
                  shape = 0, size = 4, stroke = 2) +
       theme_bw() +
-      theme(text = element_text(size = 18),
+      theme(text = element_text(size = 22),
             legend.position = "top") +
+      labs(colour = "fuel category") +
       facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
       ylab("") +
       xlab("")
 ```
 
-* Fraction of samples below lod for chemical analysis:`r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2)`.
+* Fraction of samples below lod for chemical analysis: `r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2)`.
 * Fraction of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2)`.
-* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0) / nrow(pah_merged), 2)`.
+* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 2)`.
 * Fraction of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2)`.
 * Fraction of backgrounds below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2)`.
-* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc <= 0)) / nrow(pah_merged), 2)`.
+* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc > 0)) / nrow(pah_merged), 2)`.
 
-# Additional QA/QC analysis
+# Additional analysis
 
 Plot ratio of front to back filter
 
 * any values less than one could indicate break through
 * not sure how to deal with cases of repeat measurements (could be causing some of these problems)
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height = 8}
   pah_merged %>%
     dplyr::mutate(complete.cases(.)) %>%
     dplyr::filter(filter_type != "p") %>%
-    dplyr::group_by(id, filter_type, pol) %>%
+    dplyr::group_by(id, filter_type, pol, test_type) %>%
     dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::select(id, filter_type, pol, conc) %>%
+    dplyr::select(id, filter_type, pol, conc, test_type) %>%
     tidyr::spread(filter_type, conc) %>%
     dplyr::mutate(ratio = f / b) %>%
-    ggplot(aes_string(x = "pol", y = "ratio")) +
+    ggplot(aes_string(x = "pol", y = "ratio", colour = "test_type")) +
       geom_point(size = 3, shape = 1, stroke = 2) +
       scale_y_log10() +
       theme_bw() +
-      theme(text = element_text(size = 18),
-            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+      theme(text = element_text(size = 20),
+            legend.position = "top",
+            axis.text.x = element_text(size = 16, angle = 45, hjust = 1, vjust = 1)) +
+      labs(colour = "test type") +
       ylab("") +
       xlab("")
 ```
@@ -554,7 +561,7 @@ Histogram of blank test and background data
 
 * mass on filter given on x-axis in ug
 
-```{r}
+```{r, echo=FALSE, fig.height = 8}
   pah %>%
     dplyr::filter(!is.na(val_lod_adj)) %>%
     dplyr::mutate(filter_type = 
@@ -571,6 +578,9 @@ Histogram of blank test and background data
       scale_x_log10() +
       ylab("") +
       xlab("") + 
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      labs(fill = "test type") +
       facet_wrap(~filter_type, ncol = 1, scales = "free")
 ```
 
