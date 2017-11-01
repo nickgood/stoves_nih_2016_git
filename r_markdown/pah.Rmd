@@ -59,9 +59,7 @@ Calculate new value if measurement below lod
 ```{r}
   pah <- 
     pah_raw %>% 
-    dplyr::group_by(id, filter_type, pol) %>%
     dplyr::mutate(val = as.numeric(val)) %>%
-    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
@@ -106,6 +104,16 @@ Filter out bad tests
     dplyr::filter(qc != "bad")
 ```
 
+Define new variable called test type
+
+```{r}
+  pah <- 
+    pah %>%
+    dplyr::mutate(test_type = ifelse(!grepl("^B|^G", id), "test", "bg"),
+                  test_type = ifelse(grepl("^B", id), "blank", test_type))
+```
+
+
 # Blank analysis 
 
 Extract blank pufs and blank filters
@@ -113,7 +121,7 @@ Extract blank pufs and blank filters
 ```{r}
   blanks <-
     pah %>%
-    dplyr::filter(grepl("^B", id))
+    dplyr::filter(test_type == "blank")
 ```
 
 Plot blank mass in ug:
@@ -184,9 +192,9 @@ Find which backgrounds are below blank lod and loq
 * replace values below loq and above lod with loq/sqrt(2)
 
 ```{r}
-  pah <-
+  pah_merged <-
     pah %>%
-    dplyr::filter(!grepl("^B", id)) %>%  # remove blanks
+    dplyr::filter(test_type != "blank") %>%  # remove blanks
     dplyr::left_join(blanks, by = c("pol", "filter_type")) %>%
     dplyr::mutate(val_bk_adj = val_lod_adj - bk_mean,
                   bk_lod = ifelse(val_bk_adj <= 3 * bk_sd, "below", "above"),
@@ -246,8 +254,8 @@ Merge pah with filter metadata
 
 ```{r}
   pah_merged <-
-    pah %>%
-    dplyr::filter(!grepl("^B", id)) %>%
+    pah_merged %>%
+    dplyr::filter(test_type != "blank") %>%
     dplyr::left_join(flows, by = "id") %>%
     dplyr::left_join(times, by = "id") %>%
     dplyr::rename(pre_flow = pre, post_flow = post) %>%
@@ -270,7 +278,7 @@ Extract background pufs (front and back) and background filters
 ```{r}
   bg <-
     pah_merged %>%
-    dplyr::filter(grepl("^G", id))
+    dplyr::filter(test_type == "bg")
 ```
 
 Plot background concentrations in ug per meter cubed:
@@ -340,7 +348,7 @@ Extract sample pufs (front and back) and sample filters
 ```{r}
   pah_samples <-
     pah_merged %>%
-    dplyr::filter(!grepl("^G|^B", id))
+    dplyr::filter(test_type == "test")
 ```
 
 Subtract background concentrations
@@ -519,20 +527,53 @@ Ratio of particle phase pahs to summed gas and particle phase pahs:
 
 Plot ratio of front to back filter
 
-```{r, echo=FALSE, fig.height = 60, fig.width = 14}
+* any values less than one could indicate break through
+* not sure how to deal with cases of repeat measurements (could be causing some of these problems)
+
+```{r, echo=FALSE}
   pah_merged %>%
+    dplyr::mutate(complete.cases(.)) %>%
     dplyr::filter(filter_type != "p") %>%
+    dplyr::group_by(id, filter_type, pol) %>%
+    dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, filter_type, pol, conc) %>%
     tidyr::spread(filter_type, conc) %>%
     dplyr::mutate(ratio = f / b) %>%
     ggplot(aes_string(x = "pol", y = "ratio")) +
-      geom_point(size = 3, shape = 1, stroke = 2)
+      geom_point(size = 3, shape = 1, stroke = 2) +
+      scale_y_log10() +
       theme_bw() +
-      theme(text = element_text(size = 18)) +
+      theme(text = element_text(size = 18),
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
       ylab("") +
       xlab("")
 ```
 
-Plot histogram of background and sample data
+Histogram of blank test and background data
+
+* mass on filter given on x-axis in ug
+
+```{r}
+  pah %>%
+    dplyr::filter(!is.na(val_lod_adj)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    as.factor %>%
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p",
+                                        "filter" = "ba")) %>%
+    ggplot(aes_string("val_lod_adj", fill = "test_type")) +
+      geom_histogram(bins = 25, stroke = 0,
+                     position = "dodge") + 
+      theme_bw() +
+      scale_x_log10() +
+      ylab("") +
+      xlab("") + 
+      facet_wrap(~filter_type, ncol = 1, scales = "free")
+```
+
 
 # Save merged files
 
