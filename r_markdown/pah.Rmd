@@ -59,9 +59,12 @@ Calculate new value if measurement below lod
 ```{r}
   pah <- 
     pah_raw %>% 
+    dplyr::group_by(id, filter_type, pol) %>%
+    dplyr::mutate(val = as.numeric(val)) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
-    dplyr::mutate(val = as.numeric(val),
-                  val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+    dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
 ## Merge data with qc info
@@ -242,7 +245,8 @@ Extra time data
 Merge pah with filter metadata
 
 ```{r}
-  pah_merged %<>%
+  pah_merged <-
+    pah %>%
     dplyr::filter(!grepl("^B", id)) %>%
     dplyr::left_join(flows, by = "id") %>%
     dplyr::left_join(times, by = "id") %>%
@@ -518,7 +522,7 @@ Plot ratio of front to back filter
 ```{r, echo=FALSE, fig.height = 60, fig.width = 14}
   pah_merged %>%
     dplyr::filter(filter_type != "p") %>%
-    tidyr::spread(filter_type, val_bk_adj) %>%
+    tidyr::spread(filter_type, conc) %>%
     dplyr::mutate(ratio = f / b) %>%
     ggplot(aes_string(x = "pol", y = "ratio")) +
       geom_point(size = 3, shape = 1, stroke = 2)

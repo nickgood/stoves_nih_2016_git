@@ -100,7 +100,7 @@ Loads and resaves data as .Rda.
 
 Loads and resaves data as .Rda.
 
-```{r}   
+```{r}
   pah <- load_singlefiles("pah")
   saveRDS(pah, file = "../r_files/pah.RDS")
 
