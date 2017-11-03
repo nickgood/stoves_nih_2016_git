@@ -9,11 +9,14 @@ output:
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
   library(knitr)
+  library(kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
   knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
                         warning = FALSE, message = FALSE, cache = FALSE)
+  #options(knitr.table.format = "markdown")
 ```
 
 # Load files
@@ -64,8 +67,10 @@ Calculate new value if measurement below instrument lod
     dplyr::mutate(val = as.numeric(val)) %>%
     dplyr::group_by(id, pol, filter_type) %>%
     dplyr::summarise(val = last(val)) %>%
+    dplyr::ungroup() %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
-    dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
+    dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val)) %>%
+    dplyr::mutate(pol = gsub("_", "[", pol))
 ```
 
 ## Merge data with qc info
@@ -158,9 +163,41 @@ Plot blank mass in ug:
       xlab("")
 ```
 
-* Fraction of blanks below lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2)`.
-* Fraction of blanks with NA values: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2)`.
-* Fraction of 'bad' blank values: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2)`.
+```{r}
+  blanks %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.) * 100, 2)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of blanks below lod for chemical analysis")
+```
+
+* Total percent of blanks below chemical analysis lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2) * 100`.
+
+```{r}
+  blanks %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab blanks with NA values",
+               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+```
+
+* Total percent of blanks with NA measurements: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2) * 100`.
+* Total percent of 'bad' blank measurements: `r round((nrow(filter(blanks, lod == "below")) + sum(is.na(blanks$val))) / nrow(blanks), 2) * 100`.
 
 Summarize blank data (ignore NAs)
 
@@ -183,8 +220,8 @@ Summarize blank data (ignore NAs)
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    knitr::kable("markdown", digits = 2, align = 'c',
-                 caption = "summary statistics of lab blanks (units in ug)",
+    knitr::kable(digits = 2, align = 'c',
+                 caption = "Summary statistics of lab blanks (units in ug)",
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
@@ -317,11 +354,74 @@ Plot background concentrations in ug per meter cubed:
       xlab("")
 ```
 
-* Fraction of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2)`.
-* Fraction of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2)`.
-* Fraction of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2)`.
-* Fraction of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2)`.
-* Fraction of 'bad' background values: `r 1 - round(nrow(filter(bg, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj))) / nrow(bg), 2)`.
+```{r}
+  bg %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., lod == "below"))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab backgrounds below chemical analysis lod",
+               col.names = c("type of pah", "filter type", "percent below lod (%)"))
+```
+
+* Total percent of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2) * 100`.
+
+```{r}
+  bg %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab backgrounds with NA",
+               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+```
+
+* Total percent of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2) * 100`.
+
+```{r}
+  bg %>%
+  dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "p")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.), 2) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  knitr::kable(digits = 1, align = 'c',
+               caption = "Summary of lab backgrounds below lab blank lod")
+```
+
+* Total percent of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2) * 100`.
+
+```{r}
+  bg %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., bk_loq == "below"))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab backgrounds below lab blank loq",
+               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+```
+
+* Total percent of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2) * 100`.
+* Total percent of 'bad' background values: `r 1 - round(nrow(filter(bg, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj))) / nrow(bg), 2) * 100`.
 
 Summarize background data (ignore NAs)
 
@@ -341,8 +441,8 @@ Summarize background data (ignore NAs)
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
                                       "filter" = "p")) %>%
-    knitr::kable("markdown", digits = 2, align = 'c',
-                 caption = "summary statistics of lab backgrounds (units in ug per meter cubed)",
+    knitr::kable(digits = 2, align = 'c',
+                 caption = "Summary statistics of lab backgrounds (units in ug per meter cubed)",
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
@@ -522,12 +622,91 @@ Ratio of particle phase pahs to total pahs (particle + gas):
       xlab("")
 ```
 
-* Fraction of samples below lod for chemical analysis: `r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2)`.
-* Fraction of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2)`.
-* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3)`.
-* Fraction of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2)`.
-* Fraction of backgrounds below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2)`.
-* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc > 0)) / nrow(pah_merged), 2)`.
+```{r}
+  pah_samples %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., lod == "below"))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab backgrounds below chemical analysis lod",
+               col.names = c("type of pah", "filter type", "percent below lod (%)"))
+```
+
+* Fraction of samples below lod for chemical analysis: `r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2) * 100`.
+
+```{r}
+  pah_samples %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of lab backgrounds with NA",
+               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+```
+
+* Fraction of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2) * 100`.
+
+```{r}
+  pah_samples %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., conc <= 0))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of samples that are negative after background correction",
+               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+```
+
+* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3) * 100`.
+
+```{r}
+  pah_samples %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., bk_lod == "below"))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of burn samples below lab blank lod",
+               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+```
+
+* Fraction of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2) * 100`.
+
+```{r}
+  pah_samples %>%
+  dplyr::mutate(filter_type = 
+                  filter_type %>% 
+                  forcats::fct_recode("back puf" = "b",
+                                      "front puf" = "f",
+                                      "filter" = "ba")) %>%
+  dplyr::group_by(filter_type, pol) %>%
+  dplyr::do(val = nrow(filter(., bk_loq == "below"))/nrow(.) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  knitr::kable(digits = 2, align = 'c',
+               caption = "Summary of burn samples below lab blank loq",
+               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+```
+
+* Fraction of samples below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2) * 100`.
+* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc > 0)) / nrow(pah_merged), 2) * 100`.
 
 # Additional analysis
 
@@ -537,25 +716,25 @@ Plot ratio of front to back filter
 * not sure how to deal with cases of repeat measurements (could be causing some of these problems)
 
 ```{r, echo=FALSE, fig.height = 8}
-  pah_merged %>%
-    dplyr::mutate(complete.cases(.)) %>%
-    dplyr::filter(filter_type != "p") %>%
-    #dplyr::group_by(id, filter_type, pol, test_type) %>%
-    #dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
-    #dplyr::ungroup() %>%
-    dplyr::select(id, filter_type, pol, conc, test_type) %>%
-    tidyr::spread(filter_type, conc) %>%
-    dplyr::mutate(ratio = f / b) %>%
-    ggplot(aes_string(x = "pol", y = "ratio", colour = "test_type")) +
-      geom_point(size = 3, shape = 1, stroke = 2) +
-      scale_y_log10() +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            legend.position = "top",
-            axis.text.x = element_text(size = 12, angle = 45, hjust = 1, vjust = 1)) +
-      labs(colour = "test type") +
-      ylab("") +
-      xlab("")
+  # pah_merged %>%
+  #   dplyr::mutate(complete.cases(.)) %>%
+  #   dplyr::filter(filter_type != "p") %>%
+  #   #dplyr::group_by(id, filter_type, pol, test_type) %>%
+  #   #dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
+  #   #dplyr::ungroup() %>%
+  #   dplyr::select(id, filter_type, pol, conc, test_type) %>%
+  #   tidyr::spread(filter_type, conc) %>%
+  #   dplyr::mutate(ratio = f / b) %>%
+  #   ggplot(aes_string(x = "pol", y = "ratio", colour = "test_type")) +
+  #     geom_point(size = 3, shape = 1, stroke = 2) +
+  #     scale_y_log10() +
+  #     theme_bw() +
+  #     theme(text = element_text(size = 20),
+  #           legend.position = "top",
+  #           axis.text.x = element_text(size = 12, angle = 45, hjust = 1, vjust = 1)) +
+  #     labs(colour = "test type") +
+  #     ylab("") +
+  #     xlab("")
 ```
 
 Histogram of blank test and background data
@@ -567,12 +746,12 @@ Histogram of blank test and background data
   pah %>%
     dplyr::filter(!is.na(val_lod_adj)) %>%
     dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    as.factor %>%
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p",
-                                        "filter" = "ba")) %>%
+                   filter_type %>% 
+                   as.factor %>%
+                   forcats::fct_recode("back puf" = "b",
+                                       "front puf" = "f",
+                                       "filter" = "p",
+                                       "filter" = "ba")) %>%
     ggplot(aes_string("val_lod_adj", fill = "test_type")) +
       geom_histogram(bins = 25, stroke = 0,
                      position = "dodge") + 
