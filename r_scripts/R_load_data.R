@@ -364,8 +364,8 @@ load_pah_file <- function(file){
   raw_data <- read_csv(file = file, col_names = TRUE, skip = 1, col_types = cols())
  # rename columns
   names(raw_data) <- tolower(colnames(raw_data))
-  names(raw_data) <- gsub("[^[:alnum:] ]", "_", colnames(raw_data))
-  names(raw_data) <- gsub(" ", "_", colnames(raw_data))
+  #names(raw_data) <- gsub("[^[:alnum:] ]", "_", colnames(raw_data))
+  #names(raw_data) <- gsub(" ", "_", colnames(raw_data))
 
   # fix transcription errors
   raw_data <- raw_data %>%

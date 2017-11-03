@@ -69,8 +69,7 @@ Calculate new value if measurement below instrument lod
     dplyr::summarise(val = last(val)) %>%
     dplyr::ungroup() %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
-    dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val)) %>%
-    dplyr::mutate(pol = gsub("_", "[", pol))
+    dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
 ## Merge data with qc info
@@ -171,12 +170,12 @@ Plot blank mass in ug:
                                       "front puf" = "f",
                                       "filter" = "ba")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.) * 100, 2)) %>%
+  dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.) * 100, 0)) %>%
   dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
   tidyr::spread(filter_type, val) %>%
   dplyr::rename("pah type" = "pol") %>%
   knitr::kable("markdown", align = 'c',
-               caption = "Percent of blanks below lod for chemical analysis")
+               caption = "Percent of lab blanks below lod for chemical analysis (%)")
 ```
 
 * Total percent of blanks below chemical analysis lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2) * 100`.
@@ -189,11 +188,12 @@ Plot blank mass in ug:
                                       "front puf" = "f",
                                       "filter" = "ba")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab blanks with NA values",
-               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+  dplyr::do(val = round(nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of lab blanks with NA values (%)")
 ```
 
 * Total percent of blanks with NA measurements: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2) * 100`.
@@ -360,13 +360,14 @@ Plot background concentrations in ug per meter cubed:
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., lod == "below"))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab backgrounds below chemical analysis lod",
-               col.names = c("type of pah", "filter type", "percent below lod (%)"))
+  dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of backgrounds below the lod of chemical analysis (%)")
 ```
 
 * Total percent of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2) * 100`.
@@ -377,13 +378,14 @@ Plot background concentrations in ug per meter cubed:
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab backgrounds with NA",
-               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+  dplyr::do(val = round(nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of backgrounds with NA values (%)")
 ```
 
 * Total percent of backgrounds with NA values: `r round(sum(is.na(bg$val)) / nrow(bg), 2) * 100`.
@@ -396,11 +398,12 @@ Plot background concentrations in ug per meter cubed:
                                       "front puf" = "f",
                                       "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.), 2) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
+  dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.), 0) * 100) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
   tidyr::spread(filter_type, val) %>%
-  knitr::kable(digits = 1, align = 'c',
-               caption = "Summary of lab backgrounds below lab blank lod")
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of backgrounds below lab blank lod (%)")
 ```
 
 * Total percent of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2) * 100`.
@@ -413,11 +416,12 @@ Plot background concentrations in ug per meter cubed:
                                       "front puf" = "f",
                                       "filter" = "ba")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., bk_loq == "below"))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab backgrounds below lab blank loq",
-               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+  dplyr::do(val = round(nrow(filter(., bk_loq == "below"))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of backgrounds below lab blank loq (%)")
 ```
 
 * Total percent of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2) * 100`.
@@ -628,16 +632,17 @@ Ratio of particle phase pahs to total pahs (particle + gas):
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., lod == "below"))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab backgrounds below chemical analysis lod",
-               col.names = c("type of pah", "filter type", "percent below lod (%)"))
+  dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of burn samples below the lod of chemical analysis (%)")
 ```
 
-* Fraction of samples below lod for chemical analysis: `r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2) * 100`.
+* Total percent of samples below lod for chemical analysis: `r round(nrow(filter(pah_merged, lod == "below")) / nrow(pah_merged), 2) * 100`.
 
 ```{r}
   pah_samples %>%
@@ -645,16 +650,17 @@ Ratio of particle phase pahs to total pahs (particle + gas):
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of lab backgrounds with NA",
-               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+  dplyr::do(val = round(nrow(filter(., is.na(val_lod_adj) == TRUE))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of burn samples with NA values (%)")
 ```
 
-* Fraction of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2) * 100`.
+* Total percent of samples with NA values: `r round(sum(is.na(pah_merged$conc)) / nrow(pah_merged), 2) * 100`.
 
 ```{r}
   pah_samples %>%
@@ -662,16 +668,17 @@ Ratio of particle phase pahs to total pahs (particle + gas):
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., conc <= 0))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of samples that are negative after background correction",
-               col.names = c("type of pah", "filter type", "percent with NA (%)"))
+  dplyr::do(val = round(nrow(filter(., conc <= 0))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of burn samples below the background (%)")
 ```
 
-* Fraction of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3) * 100`.
+* Total percent of samples that are negative after background correction: `r round(sum(pah_merged$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3) * 100`.
 
 ```{r}
   pah_samples %>%
@@ -679,16 +686,17 @@ Ratio of particle phase pahs to total pahs (particle + gas):
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., bk_lod == "below"))/nrow(.) * 100) %>%
-  dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of burn samples below lab blank lod",
-               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+  dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.) * 100, 0)) %>%
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of burn samples below the lab blank lod (%)")
 ```
 
-* Fraction of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2) * 100`.
+* Total percent of samples below blank lod: `r round(nrow(filter(pah_merged, bk_lod == "below")) / nrow(pah_merged), 2) * 100`.
 
 ```{r}
   pah_samples %>%
@@ -696,17 +704,19 @@ Ratio of particle phase pahs to total pahs (particle + gas):
                   filter_type %>% 
                   forcats::fct_recode("back puf" = "b",
                                       "front puf" = "f",
-                                      "filter" = "ba")) %>%
+                                      "filter" = "p")) %>%
   dplyr::group_by(filter_type, pol) %>%
-  dplyr::do(val = nrow(filter(., bk_loq == "below"))/nrow(.) * 100) %>%
+  dplyr::do(val = round(nrow(filter(., bk_loq == "below"))/nrow(.) * 100, 0)) %>%
   dplyr::mutate(val = cell_spec(val, color = ifelse(val > 10, "red", "blue"))) %>%
-  knitr::kable(digits = 2, align = 'c',
-               caption = "Summary of burn samples below lab blank loq",
-               col.names = c("type of pah", "filter type", "percent below loq (%)"))
+  dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+  tidyr::spread(filter_type, val) %>%
+  dplyr::rename("pah type" = "pol") %>%
+  knitr::kable("markdown", align = 'c',
+               caption = "Percent of burn samples below lab blank loq (%)")
 ```
 
-* Fraction of samples below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2) * 100`.
-* Fraction of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc > 0)) / nrow(pah_merged), 2) * 100`.
+* Total percent of samples below blank loq: `r round(nrow(filter(pah_merged, bk_loq == "below")) / nrow(pah_merged), 2) * 100`.
+* Total percent of 'bad' sample values: `r 1 - round(nrow(filter(pah_merged, lod != "below", bk_lod != "below", bk_loq != "below", !is.na(val_bk_adj), pah_merged$conc > 0)) / nrow(pah_merged), 2) * 100`.
 
 # Additional analysis
 
