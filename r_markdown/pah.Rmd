@@ -63,7 +63,7 @@ Calculate new value if measurement below instrument lod
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
     dplyr::group_by(id, pol, filter_type) %>%
-    dplyr::summarise(val = first(val)) %>%
+    dplyr::summarise(val = last(val)) %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
@@ -176,7 +176,7 @@ Summarize blank data (ignore NAs)
                     forcats::fct_recode("p" = "ba"))
 ```
 
-```{r, echo=FALSE}
+```{r, include=FALSE}
    blanks %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -334,7 +334,7 @@ Summarize background data (ignore NAs)
                      bg_sd = sd(conc, na.rm = TRUE))
 ```
 
-```{r, echo=FALSE}
+```{r, include=FALSE}
   bg %>%
     dplyr::mutate(filter_type = 
                   filter_type %>% 
