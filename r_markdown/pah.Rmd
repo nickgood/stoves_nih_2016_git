@@ -62,7 +62,8 @@ Calculate new value if measurement below instrument lod
   pah <- 
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
-    dplyr::ungroup() %>%
+    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::summarise(val = first(val)) %>%
     dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
@@ -539,9 +540,9 @@ Plot ratio of front to back filter
   pah_merged %>%
     dplyr::mutate(complete.cases(.)) %>%
     dplyr::filter(filter_type != "p") %>%
-    dplyr::group_by(id, filter_type, pol, test_type) %>%
-    dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
+    #dplyr::group_by(id, filter_type, pol, test_type) %>%
+    #dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
+    #dplyr::ungroup() %>%
     dplyr::select(id, filter_type, pol, conc, test_type) %>%
     tidyr::spread(filter_type, conc) %>%
     dplyr::mutate(ratio = f / b) %>%
