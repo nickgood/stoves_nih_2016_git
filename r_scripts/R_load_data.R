@@ -372,7 +372,7 @@ load_pah_file <- function(file){
               dplyr::mutate(x1 = ifelse(x1 == "28AB", "28A-B", x1),
                             x1 = ifelse(x1 == "17P", "17-P", x1),
                             x1 = ifelse(x1 == "68-P", "G8-P", x1),
-                            x1 = ifelse(x1 == "G8-B", "G13-B", x1))
+                            x1 = ifelse(x1 == "GB-B", "G13-B", x1))
 
 # organize
   out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
