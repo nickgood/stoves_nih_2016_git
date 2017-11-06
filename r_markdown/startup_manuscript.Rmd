@@ -40,6 +40,9 @@ output: html_document
                                     min_dm = min(dm),
                                     max_dm = max(dm),
                                     total_dm = sum(dm),
+                                    mean_burn_time = round(mean(dur)*60, 1), #in minutes per startup
+                                    min_burn_time = round(min(dur)*60, 1),
+                                    max_burn_time = round(max(dur)*60, 1),
                                     num_reps = n()) %>%
                    dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
                                                               "leaves_twigs", "flipflops",
@@ -57,7 +60,6 @@ output: html_document
 
   kable(fuel_consumed, digits = 3)
 ```
-
 
 * calculate emissions metrics
 
