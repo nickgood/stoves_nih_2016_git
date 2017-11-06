@@ -143,6 +143,8 @@ knitr::kable(fuel_sum)
                                    mean = round(mean(mass_pol_per_startup_std, na.rm = TRUE), 2),
                                    min = round(min(mass_pol_per_startup_std, na.rm = TRUE), 2),
                                    max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   stdev = round(sd(mass_pol_per_startup_std, na.rm = TRUE), 2), 
+                                   cov = round(((stdev/mean) * 100), 2),
                                    variation_pct = round(((max - min) / max)*100, 0),
                                    variation_act = round((max - min), 2)) %>%
                       dplyr::ungroup()
@@ -216,28 +218,27 @@ knitr::kable(fuel_sum)
   facet_wrap(~pol, scales = "free")
 ```
 
-
-* variation in emissions per test for key pollutants - as a percentage
+* variation in emissions per test for key pollutants - coefficient of variation (COV)
 
 ```{r}
-var_per_fuel_pct <- mean_per_startup %>%
+var_per_fuel_cov <- mean_per_startup %>%
                             dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                                      "newspaper", "fabric", 
                                                                                      "plastic bags", "food packaging", 
                                                                                      "inner tubes", "footwear"))) %>%
-                            dplyr::select(fuel_names, pol, variation_pct) %>%
-                            tidyr::spread(fuel_names, variation_pct) %>%
+                            dplyr::select(fuel_names, pol, cov) %>%
+                            tidyr::spread(fuel_names, cov) %>%
                             dplyr::arrange(pol)
 
-  knitr::kable(var_per_fuel_pct)
+  knitr::kable(var_per_fuel_cov)
 ```
 
-* variation in emissions per test for key pollutants - as g/startup actual value
+* variation in emissions per test for key pollutants - actual value variation min to max (g/startup). 
 
 ```{r}
 var_per_fuel_act <- mean_per_startup %>%
-                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                                      "newspaper", "fabric", 
                                                                                      "plastic bags", "food packaging", 
@@ -247,6 +248,22 @@ var_per_fuel_act <- mean_per_startup %>%
                             dplyr::arrange(pol)
 
   knitr::kable(var_per_fuel_act)
+```
+
+* variation in emissions per test for key pollutants - - percent variation min to max 
+
+```{r}
+var_per_fuel_apct <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
+                            dplyr::select(fuel_names, pol, variation_pct) %>%
+                            tidyr::spread(fuel_names, variation_pct) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_pct)
 ```
 
 ## Figure 3
