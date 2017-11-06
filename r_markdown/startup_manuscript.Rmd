@@ -142,7 +142,9 @@ knitr::kable(fuel_sum)
                       dplyr::summarize(nreps = n(),
                                    mean = round(mean(mass_pol_per_startup_std, na.rm = TRUE), 2),
                                    min = round(min(mass_pol_per_startup_std, na.rm = TRUE), 2),
-                                   max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2)) %>%
+                                   max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   variation_pct = round(((max - min) / max)*100, 0),
+                                   variation_act = round((max - min), 2)) %>%
                       dplyr::ungroup()
 
   mean_per_startup_table <- mean_per_startup %>%
@@ -212,6 +214,31 @@ knitr::kable(fuel_sum)
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   ylab("mg per startup event") + xlab("fuel type") +
   facet_wrap(~pol, scales = "free")
+```
+
+
+* variation in emissions per test for key pollutants - as a percentage
+
+```{r}
+var_per_fuel_pct <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data)
+                            dplyr::select(fuel_names, pol, variation_pct) %>%
+                            tidyr::spread(fuel_names, variation_pct) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_pct)
+```
+
+* variation in emissions per test for key pollutants - as g/startup actual value
+
+```{r}
+var_per_fuel_act <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data)
+                            dplyr::select(fuel_names, pol, variation_act) %>%
+                            tidyr::spread(fuel_names, variation_act) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_act)
 ```
 
 ## Figure 3
