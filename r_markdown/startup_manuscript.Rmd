@@ -221,7 +221,11 @@ knitr::kable(fuel_sum)
 
 ```{r}
 var_per_fuel_pct <- mean_per_startup %>%
-                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data)
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
                             dplyr::select(fuel_names, pol, variation_pct) %>%
                             tidyr::spread(fuel_names, variation_pct) %>%
                             dplyr::arrange(pol)
@@ -233,7 +237,11 @@ var_per_fuel_pct <- mean_per_startup %>%
 
 ```{r}
 var_per_fuel_act <- mean_per_startup %>%
-                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data)
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
                             dplyr::select(fuel_names, pol, variation_act) %>%
                             tidyr::spread(fuel_names, variation_act) %>%
                             dplyr::arrange(pol)
