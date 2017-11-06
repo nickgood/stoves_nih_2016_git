@@ -253,7 +253,7 @@ var_per_fuel_act <- mean_per_startup %>%
 * variation in emissions per test for key pollutants - - percent variation min to max 
 
 ```{r}
-var_per_fuel_apct <- mean_per_startup %>%
+var_per_fuel_pct <- mean_per_startup %>%
                             dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                                      "newspaper", "fabric", 
