@@ -218,6 +218,52 @@ knitr::kable(fuel_sum)
   facet_wrap(~pol, scales = "free")
 ```
 
+## pairwise comparisons of key pollutants (for text)
+
+* PM2.5
+
+```{r}
+grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
+pairwise.t.test(grav_means$mass_pol_per_startup_std, grav_means$fuel_names, p.adjust.method = "none")
+```
+
+* CO
+
+```{r}
+co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
+pairwise.t.test(co_means$mass_pol_per_startup_std, co_means$fuel_names, p.adjust.method = "none")
+```
+
+* formaldehyde
+
+```{r}
+for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
+pairwise.t.test(for_means$mass_pol_per_startup_std, for_means$fuel_names, p.adjust.method = "none")
+```
+
+* acetaldehyde
+
+```{r}
+acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
+pairwise.t.test(acet_means$mass_pol_per_startup_std, acet_means$fuel_names, p.adjust.method = "none")
+```
+
+* benzene
+
+```{r}
+bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
+pairwise.t.test(bz_means$mass_pol_per_startup_std, bz_means$fuel_names, p.adjust.method = "none")
+```
+
+* toluene
+
+```{r}
+tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
+pairwise.t.test(tol_means$mass_pol_per_startup_std, tol_means$fuel_names, p.adjust.method = "none")
+```
+
+# variations in emissions for key pollutants (for text) 
+
 * variation in emissions per test for key pollutants - coefficient of variation (COV)
 
 ```{r}
