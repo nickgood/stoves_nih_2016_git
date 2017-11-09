@@ -371,6 +371,7 @@ load_pah_file <- function(file){
   raw_data <- raw_data %>%
               dplyr::mutate(x1 = ifelse(x1 == "28AB", "28A-B", x1),
                             x1 = ifelse(x1 == "17P", "17A-P", x1),
+                            x1 = ifelse(x1 == "D2-B", "2D-B", x1),
                             x1 = ifelse(x1 == "68-P", "G8-P", x1),
                             x1 = ifelse(x1 == "GB-B", "G13-B", x1))
 
