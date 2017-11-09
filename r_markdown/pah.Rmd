@@ -212,9 +212,7 @@ Lab blanks with NA values (%):
 ```
 
 ```{r}
-  # Lab blank correction 
-  # replace values below the lod and loq with lod/sqrt(2)
-  # replace values below loq and above lod with loq/sqrt(2)
+  # remove lab blanks from pah_merged file
   pah_merged <-
     pah %>%
     dplyr::filter(test_type != "blank") # remove blanks
@@ -254,6 +252,7 @@ Lab blanks with NA values (%):
     dplyr::filter(filter_type != "b") %>%
     dplyr::select(id)
 
+  # remove all data from tests that are missing a filter or front puf
   pah_merged <-
     dplyr::anti_join(pah_merged, pah_missing, by = "id")
 ```
