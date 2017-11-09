@@ -43,7 +43,7 @@ output:
   lod <-
     pah_lod %>%
     dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-    dplyr::select(id, lod, filter_type, pol)
+    dplyr::select(-val)
 ```
 
 ```{r}
@@ -52,10 +52,10 @@ output:
   pah <- 
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
+    dplyr::left_join(lod, by = c("id_asu", "id", "filter_type", "pol")) %>%
     dplyr::group_by(id, pol, filter_type) %>%
-    dplyr::summarise(val = last(val)) %>%
+    dplyr::summarise(val = last(val), lod = last(lod)) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
     dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
@@ -217,15 +217,45 @@ Lab blanks with NA values (%):
   # replace values below loq and above lod with loq/sqrt(2)
   pah_merged <-
     pah %>%
-    dplyr::filter(test_type != "blank") %>%  # remove blanks
-    dplyr::left_join(blanks, by = c("pol", "filter_type")) %>%
-    dplyr::mutate(val_bk_adj = val_lod_adj - bk_mean,
-                  bk_lod = ifelse(val_bk_adj <= 3 * bk_sd, "below", "above"),
-                  bk_loq = ifelse(val_bk_adj <= 10 * bk_sd, "below", "above"),
-                  val_bk_adj = ifelse(bk_lod == "below" & bk_lod == "below",
-                                      (3 * bk_sd) / sqrt(2), val_bk_adj),
-                  val_bk_adj = ifelse(bk_lod == "above" & bk_loq == "below",
-                                      (10 * bk_sd) / sqrt(2), val_bk_adj))
+    dplyr::filter(test_type != "blank") # remove blanks
+```
+
+# Missing filter measurements
+
+```{r}
+  # check for missing data
+  pah_missing <-
+    pah_merged %>%
+    dplyr::select(id, pol, filter_type) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(id, filter_type) %>%
+    dplyr::summarise(n = n()) %>%
+    tidyr::spread(filter_type, n) %>%
+    dplyr::filter(!grepl("10D|8E|D2", id)) %>%
+    tidyr::gather("filter_type", "n", 2:4) %>%
+    dplyr::filter(is.na(n)) %>%
+    dplyr::select(-n)
+
+  pah_missing %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p")) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+* We have measurements for 10D-B and 8E-B, which weren't tests that were run. Could either of these fit one of our missing filters?
+* Any tests that are missing a filter or front puf are removed from the analysis
+
+```{r}
+  pah_missing <-
+    pah_missing %>%
+    dplyr::filter(filter_type != "b") %>%
+    dplyr::select(id)
+
+  pah_merged <-
+    dplyr::anti_join(pah_merged, pah_missing, by = "id")
 ```
 
 ```{r extract_cartridge_data}
