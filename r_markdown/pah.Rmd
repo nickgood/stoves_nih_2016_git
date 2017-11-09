@@ -109,16 +109,15 @@ output:
     dplyr::filter(test_type == "blank")
 ```
 
-## Plot: Lab blanks
+## Plot 1: Lab blanks
 
 Lab blanks (ug):
 
-* plotted by pollutant and filter type
-* color indicates if sample was above or below instrument lod
-* mean shown with an x
-* median shown with a square
+* grouped by pollutant
+* plotted and colored by filter type
+* shape indicates if sample was above or below instrument lod
 
-```{r pah_blank_plot, echo=FALSE, fig.height = 15}
+```{r pah_blank_plot, echo=FALSE, fig.height = 20}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(filter_type = 
@@ -126,24 +125,22 @@ Lab blanks (ug):
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "filter_type", y = "val_lod_adj", colour = "lod")) +
-      geom_point(size = 3, shape = 1, stroke = 1) +
-      geom_point(stat = "summary", fun.y = "mean", colour = "black",
-                 shape = 4, size = 4, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "median", colour = "black",
-                 shape = 0, size = 4, stroke = 2) +
+    ggplot(aes_string(x = "filter_type", y = "val_lod_adj")) +
+      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
+      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 20),
-            strip.text.x = element_text(size = 12),
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
             legend.position = "top") +
-      labs(colour = "chemical analysis lod") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(~pol, ncol = 3, scales = "free") +
       ylab("") +
       xlab("")
 ```
 
-## Table: Lab blanks below lod for chemical analysis
+## Table 1: Lab blanks below lod for chemical analysis
 
 Lab blanks below lod for chemical analysis (%):
 
@@ -166,7 +163,7 @@ Lab blanks below lod for chemical analysis (%):
 
 * Total percent of blanks below chemical analysis lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2) * 100`%.
 
-## Table: Lab blanks with NA values
+## Table 2: Lab blanks with NA values
 
 Lab blanks with NA values (%):
 
@@ -299,16 +296,16 @@ Lab blanks with NA values (%):
     dplyr::filter(test_type == "bg")
 ```
 
-## Plot: Lab backgrounds
+## Plot 2: Lab backgrounds
 
 Background concentrations (ug per meter cubed):
 
-* values given by pollutant and filter type
-* color indicates if sample was above or below lod calculated from lab blanks
-* mean shown with an x
-* median shown with a square
+* grouped by pollutant
+* plotted and colored by filter type
+* shape indicates if sample was above or below lod calculated from lab blanks
 
-```{r pah_bg_plot, echo=FALSE, fig.height = 15}
+
+```{r pah_bg_plot, echo=FALSE, fig.height = 20}
   bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
@@ -317,24 +314,22 @@ Background concentrations (ug per meter cubed):
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "bk_lod")) +
-      geom_point(size = 3, shape = 1, stroke = 1) +
-      geom_point(stat = "summary", fun.y = "mean", colour = "black",
-                 shape = 4, size = 4, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "median", colour = "black",
-                 shape = 0, size = 4, stroke = 2) +
+    ggplot(aes_string(x = "filter_type", y = "conc")) +
+      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
+      geom_jitter(aes(shape = factor(bk_lod)), size = 4,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 20),
-            strip.text.x = element_text(size = 12),
+      scale_y_log10() + 
+      theme(text = element_text(size = 20),
             legend.position = "top") +
-      labs(colour = "cookstove lab blank lod") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      labs(shape = "cookstove lab blank lod") +
+      facet_wrap(~pol, ncol = 3, scales = "free") +
       ylab("") +
       xlab("")
 ```
 
-## Table: Lab backgrounds below lod for chemical analysis
+## Table 3: Lab backgrounds below lod for chemical analysis
 
 Lab backgrounds below the lod of chemical analysis (%):
 
@@ -357,7 +352,7 @@ Lab backgrounds below the lod of chemical analysis (%):
 
 * Total percent of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2) * 100`%.
 
-## Table: Lab backgrounds with NA values
+## Table 4: Lab backgrounds with NA values
 
 Lab backgrounds with NA values (%):
 
@@ -378,9 +373,9 @@ Lab backgrounds with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-* Total percent of backgrounds with NA values: `r round(nrow(filter(bg, is.na(val_lod_adj) == TRUE))/nrow(bg), 2) * 100)`%.
+* Total percent of backgrounds with NA values: `r round(nrow(filter(bg, is.na(val_lod_adj) == TRUE))/nrow(bg), 2) * 100`%.
 
-## Table: Lab backgrounds below lab blank lod
+## Table 5: Lab backgrounds below lab blank lod
 
 Backgrounds below lab blank lod (%):
 
@@ -403,7 +398,7 @@ Backgrounds below lab blank lod (%):
 
 * Total percent of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2) * 100`%.
 
-## Table: Lab backgrounds below lab blank loq
+## Table 6: Lab backgrounds below lab blank loq
 
 Backgrounds below lab blank loq (%):
 
@@ -465,16 +460,14 @@ Backgrounds below lab blank loq (%):
     dplyr::mutate(conc = conc - bg_mean)
 ```
 
-## Plot: Lab burns
+## Plot 3: Lab burns
 
 Burn concentrations (ug per meter cubed):
 
-* values given by pollutant and filter type
-* negative values indicate the sample was below the background
-* mean shown with an x
-* median shown with a square
+* grouped by pollutant
+* plotted and colored by filter type
 
-```{r, echo=FALSE, fig.height = 15}
+```{r, echo=FALSE, fig.height = 20}
   pah_samples %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
@@ -483,40 +476,33 @@ Burn concentrations (ug per meter cubed):
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc", colour = "bk_lod")) +
-      geom_point(size = 3, shape = 1, stroke = 1) +
-      geom_point(stat = "summary", fun.y = "mean", colour = "black",
-                 shape = 4, size = 4, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "median", colour = "black",
-                 shape = 0, size = 4, stroke = 2) +
+    ggplot(aes_string(x = "filter_type", y = "conc")) +
+      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
+      geom_jitter(aes(shape = factor(bk_lod)), size = 4,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            text = element_text(size = 20),
-            strip.text.x = element_text(size = 12),
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
             legend.position = "top") +
-      labs(colour = "lab blank lod") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      labs(shape = "lab blank lod") +
+      facet_wrap(~pol, ncol = 3, scales = "free") +
       xlab("") +
       ylab("")
 ```
 
-## Plot: Summed gas and particle phase concentrations
+## Plot 4: Summed gas and particle phase concentrations
 
 Total particle and gas phase pah concentrations (ug per meter cubed):
 
-* grouped by stove type and colored by fuel category
-* negative values indicate the sample was below the background
-* mean shown with an x
-* median shown with a square
+* plotted (and colored) by stove type
 
-```{r, echo=FALSE, fig.height = 60, fig.width = 16}
+```{r, echo=FALSE, fig.height = 65}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
     dplyr::group_by(id, pol, filter_type) %>%
     dplyr::summarise(conc = sum(conc)) %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel,
-                                   stovecat, fuelcat), by = "id") %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
     dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
@@ -524,113 +510,125 @@ Total particle and gas phase pah concentrations (ug per meter cubed):
                     gsub(" [:(:].*[:):]", "",.) %>%
                     forcats::fct_recode("lpg" = "pressurized lpg") %>%
                     forcats::fct_recode("pressure kerosene" =
-                                          "pressurized kerosene") %>% 
-                    gsub(" ", " \n ",.) %>% 
-                    forcats::fct_relevel("three \n stone \n fire",
-                                         "clay \n ring",
-                                         "ceramic \n charcoal",
-                                         "rocket \n elbow",
-                                         "built-in \n justa",
-                                         "metal \n charcoal",
-                                         "fan \n rocket \n elbow",
-                                         "gasifier",
-                                         "wick \n kerosene",
-                                         "pressure \n kerosene",
-                                         "lpg"),
-                  fuelcat =
-                    fuelcat %>% 
-                    factor %>%
-                    tolower,
-                  stovecat = 
-                    stovecat %>%
-                    forcats::fct_recode("insulated [improved] stoves" = "improved",
-                                        "insulated [improved] stoves" = "gasifiers",
-                                        "liquid-fuel stoves" = "advanced",
-                                        "traditional stoves" = "traditional")) %>%
-    ggplot(aes_string(x = "stove", y = "conc", colour = "fuelcat")) +
-      geom_point(size = 3, shape = 1, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "mean", colour = "black",
-                 shape = 4, size = 4, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "median", colour = "black",
-                 shape = 0, size = 4, stroke = 2) +
+                                          "pressurized kerosene")) %>% 
+    ggplot(aes_string(x = "stove", y = "conc")) +
+      geom_boxplot(aes(fill = stove), outlier.colour = NA) +
+      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
       theme_bw() +
-      theme(text = element_text(size = 22),
-            legend.position = "top") +
-      labs(colour = "fuel category") +
-      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "none") +
+      facet_wrap(~pol, ncol = 1, scales = "free") +
       ylab("") +
       xlab("")
 ```
 
-## Plot: Ratio of particle phase pahs to total pahs
+## Plot 5: Summed gas and particle phase concentrations
 
-Ratio of particle phase pahs to total pahs (particle + gas):
+Total particle and gas phase pah concentrations (ug per meter cubed):
 
-* grouped by stove type and colored by fuel category
-* mean shown with an x
-* median shown with a square
+* plotted (and colored) by fuel type
 
-```{r, echo=FALSE, fig.height = 60, fig.width = 16}
+```{r, echo=FALSE, fig.height = 65}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>%
-                    forcats::fct_recode("gas" = "b",
-                                        "gas" = "f",
-                                        "particle" = "p")) %>%
     dplyr::group_by(id, pol, filter_type) %>%
     dplyr::summarise(conc = sum(conc)) %>%
-    tidyr::spread(filter_type, conc) %>%
-    dplyr::mutate(sigma = particle / (particle + gas)) %>%
     dplyr::left_join(dplyr::select(samples, id,
                                    stove, fuel,
                                    stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
+    dplyr::mutate(fuel = 
+                    fuel %>% 
                     factor %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "",.) %>%
-                    forcats::fct_recode("lpg" = "pressurized lpg") %>%
-                    forcats::fct_recode("pressure kerosene" =
-                                          "pressurized kerosene") %>% 
-                    gsub(" ", " \n ",.) %>% 
-                    forcats::fct_relevel("three \n stone \n fire",
-                                         "clay \n ring",
-                                         "ceramic \n charcoal",
-                                         "rocket \n elbow",
-                                         "built-in \n justa",
-                                         "metal \n charcoal",
-                                         "fan \n rocket \n elbow",
-                                         "gasifier",
-                                         "wick \n kerosene",
-                                         "pressure \n kerosene",
-                                         "lpg"),
-                  fuelcat =
-                    fuelcat %>% 
-                    factor %>%
-                    tolower,
-                  stovecat = 
-                    stovecat %>%
-                    forcats::fct_recode("insulated [improved] stoves" = "improved",
-                                        "insulated [improved] stoves" = "gasifiers",
-                                        "liquid-fuel stoves" = "advanced",
-                                        "traditional stoves" = "traditional")) %>%
-    ggplot(aes_string(x = "stove", y = "sigma", colour = "fuelcat")) +
-      geom_point(size = 3, shape = 1, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "mean", colour = "black",
-                 shape = 4, size = 4, stroke = 2) +
-      geom_point(stat = "summary", fun.y = "median", colour = "black",
-                 shape = 0, size = 4, stroke = 2) +
+                    tolower) %>%
+    ggplot(aes_string(x = "fuel", y = "conc")) +
+      geom_boxplot(aes(fill = fuel), outlier.colour = NA) +
+      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
       theme_bw() +
-      theme(text = element_text(size = 22),
-            legend.position = "top") +
-      labs(colour = "fuel category") +
-      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "none") +
+      facet_wrap(~pol, ncol = 1, scales = "free") +
       ylab("") +
       xlab("")
 ```
 
-## Table: Burn samples below lod for chemical analysis
+```{r, echo=FALSE, fig.height = 60, include=FALSE}
+## Plot 5: Ratio of particle phase pahs to total pahs
+
+#Ratio of particle phase pahs to total pahs (particle + gas):
+
+#* grouped by stove type and colored by fuel category
+#* mean shown with an x
+#* median shown with a square
+# 
+#   pah_samples %>%
+#     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
+#     dplyr::mutate(filter_type = 
+#                     filter_type %>%
+#                     forcats::fct_recode("gas" = "b",
+#                                         "gas" = "f",
+#                                         "particle" = "p")) %>%
+#     dplyr::group_by(id, pol, filter_type) %>%
+#     dplyr::summarise(conc = sum(conc)) %>%
+#     tidyr::spread(filter_type, conc) %>%
+#     dplyr::mutate(sigma = particle / (particle + gas)) %>%
+#     dplyr::left_join(dplyr::select(samples, id,
+#                                    stove, fuel,
+#                                    stovecat, fuelcat), by = "id") %>%
+#     dplyr::mutate(stove = 
+#                     stove %>% 
+#                     factor %>% 
+#                     tolower %>%
+#                     gsub(" [:(:].*[:):]", "",.) %>%
+#                     forcats::fct_recode("lpg" = "pressurized lpg") %>%
+#                     forcats::fct_recode("pressure kerosene" =
+#                                           "pressurized kerosene") %>% 
+#                     gsub(" ", " \n ",.) %>% 
+#                     forcats::fct_relevel("three \n stone \n fire",
+#                                          "clay \n ring",
+#                                          "ceramic \n charcoal",
+#                                          "rocket \n elbow",
+#                                          "built-in \n justa",
+#                                          "metal \n charcoal",
+#                                          "fan \n rocket \n elbow",
+#                                          "gasifier",
+#                                          "wick \n kerosene",
+#                                          "pressure \n kerosene",
+#                                          "lpg"),
+#                   fuelcat =
+#                     fuelcat %>% 
+#                     factor %>%
+#                     tolower,
+#                   stovecat = 
+#                     stovecat %>%
+#                     forcats::fct_recode("insulated [improved] stoves" = "improved",
+#                                         "insulated [improved] stoves" = "gasifiers",
+#                                         "liquid-fuel stoves" = "advanced",
+#                                         "traditional stoves" = "traditional")) %>%
+#     ggplot(aes_string(x = "stove", y = "sigma")) +
+#       geom_boxplot(fill = stove) +
+#       geom_point(size = 4) +
+#       #geom_point(size = 3, shape = 1, stroke = 2) +
+#       #geom_point(stat = "summary", fun.y = "mean", colour = "black",
+#       #           shape = 4, size = 4, stroke = 2) +
+#       #geom_point(stat = "summary", fun.y = "median", colour = "black",
+#       #           shape = 0, size = 4, stroke = 2) +
+#       theme_bw() +
+#       theme(text = element_text(size = 20),
+#             legend.position = "none") +
+#       facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
+#       ylab("") +
+#       xlab("")
+```
+
+## Table 7: Burn samples below lod for chemical analysis
 
 Burn samples below the lod of chemical analysis (%):
 
@@ -653,7 +651,7 @@ Burn samples below the lod of chemical analysis (%):
 
 * Total percent of samples below lod for chemical analysis: `r round(nrow(filter(pah_samples, lod == "below")) / nrow(pah_merged), 2) * 100`%.
 
-## Table: Burn samples with NA values
+## Table 8: Burn samples with NA values
 
 Burn samples with NA values (%):
 
@@ -676,7 +674,7 @@ Burn samples with NA values (%):
 
 * Total percent of samples with NA values: `r round(sum(is.na(pah_samples$conc)) / nrow(pah_merged), 2) * 100`%.
 
-## Table: Burn samples below background
+## Table 9: Burn samples below background
 
 Burn samples below the background (%):
 
@@ -699,7 +697,7 @@ Burn samples below the background (%):
 
 * Total percent of samples that are negative after background correction: `r round(sum(pah_samples$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3) * 100`%.
 
-## Table: Burn samples below lab blank lod
+## Table 10: Burn samples below lab blank lod
 
 Burn samples below the lab blank lod (%):
 
@@ -722,7 +720,7 @@ Burn samples below the lab blank lod (%):
 
 * Total percent of samples below blank lod: `r round(nrow(filter(pah_samples, bk_lod == "below")) / nrow(pah_merged), 2) * 100`%.
 
-## Table: Burn samples below lab blank loq
+## Table 11: Burn samples below lab blank loq
 
 Burn samples below lab blank loq (%):
 
@@ -746,42 +744,14 @@ Burn samples below lab blank loq (%):
 * Total percent of samples below blank loq: `r round(nrow(filter(pah_samples, bk_loq == "below")) / nrow(pah_merged), 2) * 100`%.
 * Total percent of 'bad' sample values: `r (1 - round(nrow(filter(pah_samples, lod == "above", bk_lod == "above", bk_loq == "above", is.na(conc) == FALSE, conc > 0)) / nrow(pah_merged), 2)) * 100`%.
 
-# Additional analysis
+# Summary analysis
 
-## Ratio of front to back filter
-
-Ratio of front to back filter:
-
-* any values less than one could indicate break through
-* not sure how to deal with cases of repeat measurements (could be causing some of these problems)
-
-```{r, echo=FALSE, fig.height = 8}
-  # pah_merged %>%
-  #   dplyr::mutate(complete.cases(.)) %>%
-  #   dplyr::filter(filter_type != "p") %>%
-  #   #dplyr::group_by(id, filter_type, pol, test_type) %>%
-  #   #dplyr::summarise(conc = mean(conc, na.rm = TRUE)) %>%
-  #   #dplyr::ungroup() %>%
-  #   dplyr::select(id, filter_type, pol, conc, test_type) %>%
-  #   tidyr::spread(filter_type, conc) %>%
-  #   dplyr::mutate(ratio = f / b) %>%
-  #   ggplot(aes_string(x = "pol", y = "ratio", colour = "test_type")) +
-  #     geom_point(size = 3, shape = 1, stroke = 2) +
-  #     scale_y_log10() +
-  #     theme_bw() +
-  #     theme(text = element_text(size = 20),
-  #           legend.position = "top",
-  #           axis.text.x = element_text(size = 12, angle = 45, hjust = 1, vjust = 1)) +
-  #     labs(colour = "test type") +
-  #     ylab("") +
-  #     xlab("")
-```
-
-## Histogram of all data by pollutant and filter type
+## Plot 6: Boxplots of all data by pollutant and test type
 
 Blank, test, and background data (ug):
 
-* x-axis on a log base 10 scale
+* plotted and colored by test type
+* y-axis on a log base 10 scale
 
 ```{r, echo=FALSE, fig.height = 60}
   pah %>%
@@ -793,17 +763,46 @@ Blank, test, and background data (ug):
                                        "front puf" = "f",
                                        "filter" = "p",
                                        "filter" = "ba")) %>%
-    ggplot(aes_string("val_lod_adj", fill = "test_type")) +
-      geom_histogram(bins = 25, stroke = 0,
-                     position = "dodge") + 
+    ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      scale_shape(solid = FALSE) +
       theme_bw() +
-      scale_x_log10() +
+      scale_y_log10() +
       ylab("") +
       xlab("") + 
       theme(text = element_text(size = 20),
-            legend.position = "top") +
-      labs(fill = "test type") +
+            legend.position = "none") +
       facet_wrap(pol~filter_type, ncol = 3, scales = "free")
+```
+
+## Plot 7: Boxplots of all data by pollutant and filter type
+
+Blank, test, and background data (ug):
+
+* plotted and colored by filter type
+* y-axis on a log base 10 scale
+
+```{r, echo=FALSE, fig.height = 60}
+  pah %>%
+    dplyr::filter(!is.na(val_lod_adj)) %>%
+    dplyr::mutate(filter_type = 
+                   filter_type %>% 
+                   as.factor %>%
+                   forcats::fct_recode("back puf" = "b",
+                                       "front puf" = "f",
+                                       "filter" = "p",
+                                       "filter" = "ba")) %>%
+    ggplot(aes_string(y = "val_lod_adj", x = "filter_type", fill = "filter_type")) +
+      geom_boxplot(outlier.colour = NA) + 
+      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      theme_bw() +
+      scale_y_log10() +
+      ylab("") +
+      xlab("") + 
+      theme(text = element_text(size = 20),
+            legend.position = "none") +
+      facet_wrap(pol~test_type, ncol = 3, scales = "free")
 ```
 
 ```{r}
