@@ -239,7 +239,7 @@ Lab blanks with NA values (%):
 
 ## Table 3: Missing measurements
 
-```{r, include=FALSE}
+```{r}
   pah_missing %>%
     dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
                   filter_type = ifelse(filter_type == "f", "front puf", filter_type),
