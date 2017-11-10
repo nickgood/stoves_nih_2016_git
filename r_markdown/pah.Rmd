@@ -235,19 +235,21 @@ Lab blanks with NA values (%):
     dplyr::select(-n)
 ```
 
-# Table 3: Missing filter measurements
+# Missing data
+
+## Table 3: Missing measurements
 
 ```{r}
   pah_missing %>%
     dplyr::mutate(filter_type = 
-                    filter_type %>% 
+                    filter_type %>%
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
-* We have measurements for 10D-B and 8E-B, which weren't tests that were run. Could either of these fit one of our missing filters?
+* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing filters?
 * Any tests that are missing a filter or front puf are removed from the analysis
 
 ```{r}
@@ -258,7 +260,8 @@ Lab blanks with NA values (%):
 
   # remove all data from tests that are missing a filter or front puf
   pah_merged <-
-    dplyr::anti_join(pah_merged, pah_missing, by = "id")
+    dplyr::anti_join(pah_merged, pah_missing, by = "id") %>%
+    dplyr::filter(!grepl("10D|8E", id))
 ```
 
 ```{r extract_cartridge_data}
@@ -317,7 +320,7 @@ Lab blanks with NA values (%):
   pah_merged <-
     pah_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val_bk_adj * 1000 / (flow * dur))
+                  conc = val_lod_adj * 1000 / (flow * dur))
 ```
 
 # Background analysis
@@ -349,7 +352,7 @@ Background concentrations (ug per meter cubed):
                                         "filter" = "p")) %>%
     ggplot(aes_string(x = "filter_type", y = "conc")) +
       geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
-      geom_jitter(aes(shape = factor(bk_lod)), size = 4,  width = 0.2) + 
+      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
@@ -362,7 +365,7 @@ Background concentrations (ug per meter cubed):
       xlab("")
 ```
 
-## Table 3: Lab backgrounds below lod for chemical analysis
+## Table 4: Lab backgrounds below lod for chemical analysis
 
 Lab backgrounds below the lod of chemical analysis (%):
 
@@ -385,7 +388,7 @@ Lab backgrounds below the lod of chemical analysis (%):
 
 * Total percent of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2) * 100`%.
 
-## Table 4: Lab backgrounds with NA values
+## Table 5: Lab backgrounds with NA values
 
 Lab backgrounds with NA values (%):
 
@@ -407,53 +410,6 @@ Lab backgrounds with NA values (%):
 ```
 
 * Total percent of backgrounds with NA values: `r round(nrow(filter(bg, is.na(val_lod_adj) == TRUE))/nrow(bg), 2) * 100`%.
-
-## Table 5: Lab backgrounds below lab blank lod
-
-Backgrounds below lab blank lod (%):
-
-* values given by pollutant and filter type
-
-```{r}
-  bg %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p")) %>%
-    dplyr::group_by(filter_type, pol) %>%
-    dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("pah type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* Total percent of backgrounds below blank lod: `r round(nrow(filter(bg, bk_lod == "below")) / nrow(bg), 2) * 100`%.
-
-## Table 6: Lab backgrounds below lab blank loq
-
-Backgrounds below lab blank loq (%):
-
-* values given by pollutant and filter type
-
-```{r}
-  bg %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "ba")) %>%
-    dplyr::group_by(filter_type, pol) %>%
-    dplyr::do(val = round(nrow(filter(., bk_loq == "below"))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("pah type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* Total percent of backgrounds below blank loq: `r round(nrow(filter(bg, bk_loq == "below")) / nrow(bg), 2) * 100`%.
-* Total percent of 'bad' background values: `r (1 - round(nrow(filter(bg, lod == "above", bk_lod == "above", bk_loq == "above", is.na(val_lod_adj) == FALSE)) / nrow(bg), 2)) * 100`%.
 
 ```{r}
   bg <-
@@ -489,14 +445,56 @@ Backgrounds below lab blank loq (%):
   # Subtract background concentrations
   pah_samples <-
     pah_samples %>%
-    dplyr::left_join(bg, by = c("pol", "filter_type")) %>%
+    dplyr::left_join(bg, by = c("pol", "filter_type"))
+```
+
+## Plot 3: Comparing burns to backgrounds
+
+```{r, echo=FALSE, fig.height = 60}
+  pah_samples %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
+    dplyr::mutate(fraction = (bg_mean / conc) * 100)  %>%
+    dplyr::filter(!is.na(fraction)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    as.factor %>%
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p")) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "",.),
+                  fuel = 
+                    fuel %>% 
+                    tolower) %>%
+    ggplot(aes_string(x = "stove", y = "fraction")) +
+      geom_jitter(aes(shape = factor(filter_type)), size = 4,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      labs(shape = "filter type") +
+      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      xlab("") +
+      ylab("")
+```
+
+```{r}
+  pah_samples <-
+    pah_samples %>%
     dplyr::mutate(conc = conc - bg_mean)
 ```
 
-## Plot 3: Lab burns
+## Plot 4: Lab burns
 
 Burn concentrations (ug per meter cubed):
 
+* background subtracted data
 * grouped by pollutant
 * plotted and colored by filter type
 
@@ -511,7 +509,7 @@ Burn concentrations (ug per meter cubed):
                                         "filter" = "p")) %>%
     ggplot(aes_string(x = "filter_type", y = "conc")) +
       geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
-      geom_jitter(aes(shape = factor(bk_lod)), size = 4,  width = 0.2) + 
+      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
@@ -524,141 +522,78 @@ Burn concentrations (ug per meter cubed):
       ylab("")
 ```
 
-## Plot 4: Summed gas and particle phase concentrations
+## Plot 5: PAH concentrations by stove type
 
-Total particle and gas phase pah concentrations (ug per meter cubed):
+Summed particle and gas phase pah concentrations (ug per meter cubed):
 
-* plotted (and colored) by stove type
+* plotted by stove type
+* colored by fuel type
 
 ```{r, echo=FALSE, fig.height = 65}
   pah_samples %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
+    dplyr::group_by(id, pol) %>%
     dplyr::summarise(conc = sum(conc)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     dplyr::mutate(stove = 
                     stove %>% 
-                    factor %>% 
                     tolower %>%
-                    gsub(" [:(:].*[:):]", "",.) %>%
-                    forcats::fct_recode("lpg" = "pressurized lpg") %>%
-                    forcats::fct_recode("pressure kerosene" =
-                                          "pressurized kerosene")) %>% 
+                    gsub(" [:(:].*[:):]", "",.),
+                  fuel = 
+                    fuel %>% 
+                    tolower) %>% 
     ggplot(aes_string(x = "stove", y = "conc")) +
-      geom_boxplot(aes(fill = stove), outlier.colour = NA) +
-      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = factor(fuel)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
       scale_y_log10() +
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "none") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      labs(color = "fuel type") +
       ylab("") +
       xlab("")
 ```
 
-## Plot 5: Summed gas and particle phase concentrations
+## Plot 6: PAH concentrations by fuel type
 
-Total particle and gas phase pah concentrations (ug per meter cubed):
+Summed particle and gas phase pah concentrations (ug per meter cubed):
 
-* plotted (and colored) by fuel type
+* plotted by fuel type
+* colored by stove type
 
 ```{r, echo=FALSE, fig.height = 65}
   pah_samples %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-    dplyr::group_by(id, pol, filter_type) %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
+    dplyr::group_by(id, pol) %>%
     dplyr::summarise(conc = sum(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id,
                                    stove, fuel,
                                    stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(fuel = 
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "",.),
+                  fuel = 
                     fuel %>% 
-                    factor %>% 
-                    tolower) %>%
+                    tolower) %>% 
     ggplot(aes_string(x = "fuel", y = "conc")) +
-      geom_boxplot(aes(fill = fuel), outlier.colour = NA) +
-      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = factor(stove)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
       scale_y_log10() +
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "none") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      labs(color = "stove type") +
       ylab("") +
       xlab("")
-```
-
-```{r, echo=FALSE, fig.height = 60, include=FALSE}
-## Plot 5: Ratio of particle phase pahs to total pahs
-
-#Ratio of particle phase pahs to total pahs (particle + gas):
-
-#* grouped by stove type and colored by fuel category
-#* mean shown with an x
-#* median shown with a square
-# 
-#   pah_samples %>%
-#     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
-#     dplyr::mutate(filter_type = 
-#                     filter_type %>%
-#                     forcats::fct_recode("gas" = "b",
-#                                         "gas" = "f",
-#                                         "particle" = "p")) %>%
-#     dplyr::group_by(id, pol, filter_type) %>%
-#     dplyr::summarise(conc = sum(conc)) %>%
-#     tidyr::spread(filter_type, conc) %>%
-#     dplyr::mutate(sigma = particle / (particle + gas)) %>%
-#     dplyr::left_join(dplyr::select(samples, id,
-#                                    stove, fuel,
-#                                    stovecat, fuelcat), by = "id") %>%
-#     dplyr::mutate(stove = 
-#                     stove %>% 
-#                     factor %>% 
-#                     tolower %>%
-#                     gsub(" [:(:].*[:):]", "",.) %>%
-#                     forcats::fct_recode("lpg" = "pressurized lpg") %>%
-#                     forcats::fct_recode("pressure kerosene" =
-#                                           "pressurized kerosene") %>% 
-#                     gsub(" ", " \n ",.) %>% 
-#                     forcats::fct_relevel("three \n stone \n fire",
-#                                          "clay \n ring",
-#                                          "ceramic \n charcoal",
-#                                          "rocket \n elbow",
-#                                          "built-in \n justa",
-#                                          "metal \n charcoal",
-#                                          "fan \n rocket \n elbow",
-#                                          "gasifier",
-#                                          "wick \n kerosene",
-#                                          "pressure \n kerosene",
-#                                          "lpg"),
-#                   fuelcat =
-#                     fuelcat %>% 
-#                     factor %>%
-#                     tolower,
-#                   stovecat = 
-#                     stovecat %>%
-#                     forcats::fct_recode("insulated [improved] stoves" = "improved",
-#                                         "insulated [improved] stoves" = "gasifiers",
-#                                         "liquid-fuel stoves" = "advanced",
-#                                         "traditional stoves" = "traditional")) %>%
-#     ggplot(aes_string(x = "stove", y = "sigma")) +
-#       geom_boxplot(fill = stove) +
-#       geom_point(size = 4) +
-#       #geom_point(size = 3, shape = 1, stroke = 2) +
-#       #geom_point(stat = "summary", fun.y = "mean", colour = "black",
-#       #           shape = 4, size = 4, stroke = 2) +
-#       #geom_point(stat = "summary", fun.y = "median", colour = "black",
-#       #           shape = 0, size = 4, stroke = 2) +
-#       theme_bw() +
-#       theme(text = element_text(size = 20),
-#             legend.position = "none") +
-#       facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
-#       ylab("") +
-#       xlab("")
 ```
 
 ## Table 7: Burn samples below lod for chemical analysis
@@ -707,79 +642,9 @@ Burn samples with NA values (%):
 
 * Total percent of samples with NA values: `r round(sum(is.na(pah_samples$conc)) / nrow(pah_merged), 2) * 100`%.
 
-## Table 9: Burn samples below background
-
-Burn samples below the background (%):
-
-* values given by pollutant and filter type
-
-```{r}
-  pah_samples %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p")) %>%
-    dplyr::group_by(filter_type, pol) %>%
-    dplyr::do(val = round(nrow(filter(., conc <= 0))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("pah type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* Total percent of samples that are negative after background correction: `r round(sum(pah_samples$conc <= 0, na.rm = TRUE) / nrow(pah_merged), 3) * 100`%.
-
-## Table 10: Burn samples below lab blank lod
-
-Burn samples below the lab blank lod (%):
-
-* values given by pollutant and filter type
-
-```{r}
-  pah_samples %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p")) %>%
-    dplyr::group_by(filter_type, pol) %>%
-    dplyr::do(val = round(nrow(filter(., bk_lod == "below"))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("pah type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* Total percent of samples below blank lod: `r round(nrow(filter(pah_samples, bk_lod == "below")) / nrow(pah_merged), 2) * 100`%.
-
-## Table 11: Burn samples below lab blank loq
-
-Burn samples below lab blank loq (%):
-
-* values given by pollutant and filter type
-
-```{r}
-  pah_samples %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    forcats::fct_recode("back puf" = "b",
-                                       "front puf" = "f",
-                                        "filter" = "p")) %>%
-    dplyr::group_by(filter_type, pol) %>%
-    dplyr::do(val = round(nrow(filter(., bk_loq == "below"))/nrow(.), 2) * 100) %>%
-    plyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("pah type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* Total percent of samples below blank loq: `r round(nrow(filter(pah_samples, bk_loq == "below")) / nrow(pah_merged), 2) * 100`%.
-* Total percent of 'bad' sample values: `r (1 - round(nrow(filter(pah_samples, lod == "above", bk_lod == "above", bk_loq == "above", is.na(conc) == FALSE, conc > 0)) / nrow(pah_merged), 2)) * 100`%.
-
 # Summary analysis
 
-## Plot 6: Boxplots of all data by pollutant and test type
+## Plot 7: Boxplots of all data by pollutant and test type
 
 Blank, test, and background data (ug):
 
@@ -809,7 +674,7 @@ Blank, test, and background data (ug):
       facet_wrap(pol~filter_type, ncol = 3, scales = "free")
 ```
 
-## Plot 7: Boxplots of all data by pollutant and filter type
+## Plot 8: Boxplots of all data by pollutant and filter type
 
 Blank, test, and background data (ug):
 
