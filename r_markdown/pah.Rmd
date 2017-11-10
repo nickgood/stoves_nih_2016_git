@@ -239,13 +239,11 @@ Lab blanks with NA values (%):
 
 ## Table 3: Missing measurements
 
-```{r}
+```{r, include=FALSE}
   pah_missing %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>%
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p")) %>%
+    dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
+                  filter_type = ifelse(filter_type == "f", "front puf", filter_type),
+                  filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -450,10 +448,13 @@ Lab backgrounds with NA values (%):
 
 ## Plot 3: Comparing burns to backgrounds
 
+* ratio of background median concentration    to burn concentration
+* plotted as a percent
+
 ```{r, echo=FALSE, fig.height = 60}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
-    dplyr::mutate(fraction = (bg_mean / conc) * 100)  %>%
+    dplyr::mutate(fraction = (bg_median / conc) * 100)  %>%
     dplyr::filter(!is.na(fraction)) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -469,8 +470,8 @@ Lab backgrounds with NA values (%):
                   fuel = 
                     fuel %>% 
                     tolower) %>%
-    ggplot(aes_string(x = "stove", y = "fraction")) +
-      geom_jitter(aes(shape = factor(filter_type)), size = 4,  width = 0.2) + 
+    ggplot(aes_string(x = "stove", y = "fraction", color = "filter_type")) +
+      geom_jitter(shape = 1, size = 4,  width = 0.2, stroke = 2) + 
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
@@ -478,8 +479,8 @@ Lab backgrounds with NA values (%):
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      labs(shape = "filter type") +
-      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      labs(color = "filter type") +
+      facet_wrap(~pol, ncol = 1, scales = "free") +
       xlab("") +
       ylab("")
 ```
@@ -552,7 +553,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      facet_wrap(~pol, ncol = 1, scales = "free") +
       labs(color = "fuel type") +
       ylab("") +
       xlab("")
@@ -590,7 +591,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free_y") +
+      facet_wrap(~pol, ncol = 1, scales = "free") +
       labs(color = "stove type") +
       ylab("") +
       xlab("")
@@ -641,6 +642,13 @@ Burn samples with NA values (%):
 ```
 
 * Total percent of samples with NA values: `r round(sum(is.na(pah_samples$conc)) / nrow(pah_merged), 2) * 100`%.
+
+We are missing data for the following tests:
+
+```{r}
+  setdiff(filter(select(samples, id), !grepl("^G", id)), select(pah_samples, id)) %>%
+    knitr::kable("markdown", align = 'c')
+```
 
 # Summary analysis
 
