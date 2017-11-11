@@ -30,7 +30,7 @@ output: html_document
 
 * calculate mean fuel consumed per fuel type
 
-```{r}
+```{r, include = FALSE}
   fuel_consumed <- fuel_burnt_reps %>%
                    dplyr::left_join(dplyr::select(qc, id, qc),
                                                   by = "id") %>%
@@ -63,7 +63,7 @@ output: html_document
 
 * calculate emissions metrics
 
-```{r include = FALSE}
+```{r, echo = FALSE}
 # set variable types from character -> factor
 # filter out bad QC data
 # set fuel type order by survey result "commonality" of use. 
@@ -100,21 +100,20 @@ output: html_document
 ```
 
 * QC comparison - standardized "startup event" vs. per-test average startup event
-```{r fig.width = 15, fig.height = 18}
+```{r, include = FALSE, fig.width = 15, fig.height = 18, eval = FALSE}
 ggplot(per_test) +
 geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
   geom_point(aes(x=id, y=mass_pol_per_startup_std), size = 2, color = 'black') +
     facet_wrap(~pol, scales = "free", ncol = 3) +
   theme_bw() +
   theme(legend.position = "top")
-
 ```
 
 ## Table 1
 
 * experiment summary
 
-```{r}
+```{r, echo = FALSE}
   fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
               dplyr::group_by(fuel_names) %>%
               dplyr::summarize(n_tests = n(),
@@ -136,7 +135,7 @@ knitr::kable(fuel_sum)
 
 * emissions per startup event (mg per startup event)
 
-```{r}
+```{r, echo = FALSE}
   mean_per_startup <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
@@ -161,7 +160,7 @@ knitr::kable(fuel_sum)
 
 * emissions per mass fuel (mg per g fuel (same as g/kg))
 
-```{r}
+```{r, echo = FALSE}
   per_fuel_mass <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
@@ -186,7 +185,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants (standardized calc)
 
-```{r fig.width = 16, fig.height = 11}
+```{r, echo = FALSE, fig.width = 16, fig.height = 11}
   p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
                 dplyr::mutate(pol = sub("^voc_", "", pol),
                               pol = sub("^grav", "PM2.5", pol)) %>%
@@ -266,7 +265,7 @@ pairwise.t.test(tol_means$mass_pol_per_startup_std, tol_means$fuel_names, p.adju
 
 * variation in emissions per test for key pollutants - coefficient of variation (COV)
 
-```{r}
+```{r, echo = FALSE}
 var_per_fuel_cov <- mean_per_startup %>%
                             dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
@@ -282,7 +281,7 @@ var_per_fuel_cov <- mean_per_startup %>%
 
 * variation in emissions per test for key pollutants - actual value variation min to max (g/startup). 
 
-```{r}
+```{r, echo = FALSE}
 var_per_fuel_act <- mean_per_startup %>%
                             dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
@@ -298,7 +297,7 @@ var_per_fuel_act <- mean_per_startup %>%
 
 * variation in emissions per test for key pollutants - - percent variation min to max 
 
-```{r}
+```{r, echo = FALSE}
 var_per_fuel_pct <- mean_per_startup %>%
                             dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
@@ -316,7 +315,7 @@ var_per_fuel_pct <- mean_per_startup %>%
 
 * stacked bar charts of health relevent pollutant categories
 
-```{r fig.width = 6, fig.height = 4}
+```{r, echo = FALSE, fig.width = 6, fig.height = 4}
   pol_cats <- mean_per_startup %>%
               dplyr::filter(pol == "voc_benzene" |
                             pol == "voc_toluene" |
