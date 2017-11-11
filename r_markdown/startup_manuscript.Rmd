@@ -133,7 +133,7 @@ knitr::kable(fuel_sum)
 
 ## Table 2
 
-* emissions per startup event (mg per startup event)
+* emissions per startup event (mg per startup event), average per test
 
 ```{r, echo = FALSE}
   mean_per_startup <- per_test %>%
