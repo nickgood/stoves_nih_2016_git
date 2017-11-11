@@ -205,15 +205,15 @@ knitr::kable(fuel_sum)
                                                                     "benzene", "toluene"))
 
   ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup_std, color = fuel)) +
-  geom_point(size = 5) +
-  geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 6, shape = 8, stroke = 1.5) + 
-  geom_vline(xintercept = 4.5, col='black', lwd=1) +
+  geom_point(size = 5, shape = 1, stroke = 2) +
+  #geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 10, shape = 95, stroke = 2) + 
+  #geom_vline(xintercept = 4.5, col='black', lwd=1) +
     theme_bw() +
   theme(legend.position = "none",
         text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1),
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
-  ylab("mg per startup event") + xlab("fuel type") +
+  ylab("Emissions Factor (mg per startup event) per Test") + xlab("Fuel Type") +
   facet_wrap(~pol, scales = "free")
 ```
 
