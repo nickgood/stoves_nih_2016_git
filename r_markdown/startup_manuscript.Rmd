@@ -377,3 +377,600 @@ filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
 ```{r fig.width = 6, fig.height = 9}
 gridExtra::grid.arrange(stacked_plot, filled_plot)
 ```
+
+
+## Figure 4
+
+* correlations 
+
+### PM vs CO
+
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = pmco, fm = "co ~ grav"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  pmco <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$', pol)) %>%
+          dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                          fuel_names == 'kerosene' |
+                                          fuel_names == 'wood shims' | 
+                                          fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmco, "co ~ grav")))
+# r2 for each fuel cat
+  eqns <- by(pmco, pmco$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = pmco, aes(x = grav, y = co)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 200, y = 500, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 100, y = 700, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 100, y = 100, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("CO") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### formaldehyde vs acetaldehyde
+
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = carbs, fm = "formaldehyde ~ acetaldehyde"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  carbs <- dplyr::filter(mean_per_startup, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(carbs, "formaldehyde ~ acetaldehyde")))
+# r2 for each fuel cat
+  eqns <- by(carbs, carbs$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 20, y = 15, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 25, y = 10, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 2.5, y = 4, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("formaldehyde") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### benzene vs toluene
+
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = voc, fm = "voc_benzene ~ voc_toluene"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  voc <- dplyr::filter(mean_per_startup, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
+         dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                         fuel_names == 'kerosene' |
+                                         fuel_names == 'wood shims' | 
+                                         fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(voc, "voc_benzene ~ voc_toluene")))
+# r2 for each fuel cat
+  eqns <- by(voc, voc$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+
+  ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 15, y = 2.5, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 5, y = 2.5, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 4, y = 0.5, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("benzene") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs formaldehyde
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = pmfor, fm = "grav ~ formaldehyde"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  pmfor <- dplyr::filter(mean_per_startup, grepl('^grav$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmfor, "grav ~ formaldehyde")))
+ # r2 for each fuel cat
+  eqns <- by(pmfor, pmfor$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+
+  ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 380, y = 10, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 250, y = 16, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 3, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("formaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs acetaldehyde
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = pmacet, fm = "grav ~ acetaldehyde"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  pmacet <- dplyr::filter(mean_per_startup, grepl('^grav$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmacet, "grav ~ acetaldehyde")))
+   # r2 for each fuel cat
+  eqns <- by(pmacet, pmacet$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+
+  ggplot(data = pmacet, aes(x = grav, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 400, y = 10, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 250, y = 8, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 2, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs benzene
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = pmbenz, fm = "grav ~ voc_benzene"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  pmbenz <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmbenz, "grav ~ voc_benzene")))
+   # r2 for each fuel cat
+  eqns <- by(pmbenz, pmbenz$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = pmbenz, aes(x = grav, y =voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 300, y = 13, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 200, y = 10, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 2, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs toluene
+
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = lpmt, fm = "grav ~ voc_toluene"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  pmtol <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(pmtol, "grav ~ voc_toluene")))
+   # r2 for each fuel cat
+  eqns <- by(pmtol, pmtol$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = pmtol, aes(x = grav, y =voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 350, y = 1.5, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 200, y = 2.8, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 0.7, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### CO vs formaldehyde
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = cofor, fm = "co ~ formaldehyde"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  cofor <- dplyr::filter(mean_per_startup, grepl('^co$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(cofor, "co ~ formaldehyde")))
+   # r2 for each fuel cat
+  eqns <- by(cofor, cofor$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = cofor, aes(x = co, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 380, y = 15, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+          ylab("formaldehyde") +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 750, y = 13, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 2, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs acetaldehyde
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = coacet, fm = "co ~ acetaldehyde"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  coacet <- dplyr::filter(mean_per_startup, grepl('^co$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(coacet, "co ~ acetaldehyde")))
+   # r2 for each fuel cat
+  eqns <- by(coacet, coacet$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  
+  ggplot(data = coacet, aes(x = co, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 600, y = 10, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 675, y = 5, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 250, y = 1.25, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs benzene
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = cobenz, fm = "co ~ voc_benzene"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  cobenz <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(cobenz, "co ~ voc_benzene")))
+   # r2 for each fuel cat
+  eqns <- by(cobenz, cobenz$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  ggplot(data = cobenz, aes(x = co, y = voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 450, y = 7.5, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 600, y = 11, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 200, y = 1.25, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs toluene
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod <- function(out = cotol, fm = "co ~ voc_toluene"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+```
+
+```{r, echo=FALSE}
+  cotol <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(cotol, "co ~ voc_toluene")))
+   # r2 for each fuel cat
+  eqns <- by(cotol, cotol$fuel_cat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  
+  
+  ggplot(data = cotol, aes(x = co, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = r2_data, aes(x = 500, y = 1.5, label = eq),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = r2_each, aes(x = 750, y = 3, label = eq[1]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = r2_each, aes(x = 225, y = 0.5, label = eq[2]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
