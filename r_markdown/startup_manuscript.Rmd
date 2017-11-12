@@ -217,6 +217,23 @@ knitr::kable(fuel_sum)
   facet_wrap(~pol, scales = "free")
 ```
 
+## Supplemental Figure 1.
+
+* emissions of key pollutants (mass per mass fuel basis)
+
+```{r, echo = FALSE, fig.width = 16, fig.height = 11}
+  ggplot(p_data_key, aes(fuel_names, mass_pol_per_mass_fuel, color = fuel)) +
+  geom_point(size = 5, shape = 1, stroke = 2) +
+    theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  ylab("Emissions Factor (g/kg) per Test") + xlab("Fuel Type") +
+  facet_wrap(~pol, scales = "free")
+```
+
+
 ## pairwise comparisons of key pollutants (for text)
 
 * PM2.5
@@ -311,9 +328,75 @@ var_per_fuel_pct <- mean_per_startup %>%
   knitr::kable(var_per_fuel_pct)
 ```
 
-## Figure 3
+## Figure 3.
 
 * stacked bar charts of health relevent pollutant categories
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 4}
+  pol_cats <- mean_per_startup %>%
+              dplyr::filter(pol == "voc_benzene" |
+                            pol == "voc_toluene" |
+                            pol == "voc_ethylbenzene" |
+                            pol == "voc_m_p_xylene" |
+                            pol == "voc_o_xylene") %>%
+              dplyr::mutate(cat = "BTEX") %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             inst == "carbs") %>%
+                              dplyr::mutate(cat = "Carbonyls")) %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             pol == "voc_benzene" |
+                                             pol == "voc_toluene" |
+                                             pol == "formaldehyde" |
+                                             pol == "acetaldehyde") %>%
+                              dplyr::mutate(cat = "Carcinogens")) %>%
+              dplyr::mutate(pol = sub("^voc_", "", pol),
+                            pol = sub(".*xylene.*", "xylenes", pol)) %>%
+              dplyr::filter(cat != "Carbonyls") %>%
+              dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
+                                                         "benzene", "toluene", 
+                                                         "ethylbenzene", "xylenes"))) %>%
+              dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear")))
+
+palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+
+stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
+                geom_col(aes(fill = pol), position = "stack") +
+                geom_vline(xintercept = 4.5, col='black', lwd=1) +
+                facet_wrap(~cat) +
+                theme_bw() +
+                theme(legend.position = "top",text = element_text(size=15), 
+                      axis.text.x = element_blank(),
+                      axis.title.x=element_blank()) +
+                scale_fill_manual(values = palette) +
+                theme(legend.title=element_blank(),
+                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
+                scale_y_continuous(limits = c(0, 60)) + 
+                ylab("mg per startup event") 
+
+filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
+              geom_col(aes(fill = pol), position = "fill") +
+              geom_vline(xintercept = 4.5, col='black', lwd=1) +
+              facet_wrap(~cat) +
+              theme_bw() +
+              theme(legend.position = "none",text = element_text(size=15), 
+                    axis.text.x = element_text(angle = 45, hjust = 1)) +
+              scale_fill_manual(values = palette) +
+              theme(legend.title=element_blank(),
+                    axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
+              ylab("fraction of total") + 
+              xlab("Startup Material") 
+```
+
+```{r fig.width = 6, fig.height = 9}
+gridExtra::grid.arrange(stacked_plot, filled_plot)
+```
+
+## Supplemental Figure 2. NOT DONE YET!!!!!!!!!!!!!!!
+
+* stacked bar charts of health relevent pollutant categories - 
 
 ```{r, echo = FALSE, fig.width = 6, fig.height = 4}
   pol_cats <- mean_per_startup %>%
