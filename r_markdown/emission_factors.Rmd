@@ -200,7 +200,7 @@ output:
 
 ## ecoc
 
-```{r}
+```{r fig.width = 12, fig.height = 5}
   ecoc <- emissions_long %>%
           dplyr::filter(pol == "ec" | pol == "oc", metric == "conc") %>%
           dplyr::select(-inst) %>%
@@ -213,13 +213,13 @@ output:
                                                                   "high"),
                         test_fuel_type = paste(type, mc_level, sep = "_"))
 
-  ggplot(ecoc, aes(mc_level, ratio)) +
-  geom_boxplot(outlier.size = NA) +
+  ggplot(ecoc, aes(mc_level, ratio, fill = mc_level), color = "black") +
+  geom_boxplot(outlier.size = NA, size = 1) +
   geom_point() +
   theme_bw() +
-  theme(legend.position = "none") +
-  ylab("g pol / kg fuel") + xlab("moisture content") +
-  ggtitle("ec : oc ratio")
+  theme(legend.position = "none", text = element_text(size = 20)) +
+  ylab("EC/OC Ratio") + xlab("Moisture Content Level")
+  #ggtitle("EC ratio")
 
   ecoc_summary <- ecoc %>%
                   dplyr::group_by(mc_level) %>%
@@ -233,9 +233,9 @@ output:
 
 ## Plot emissions by moisture content
 
-```{r, fig.width = 12, fig.height = 4}
+```{r, fig.width = 12, fig.height = 7.8}
   p_data_ <- dplyr::filter(p_data, grepl("co2|co|ch4",pol)) # comment this out since p_data redefined here
-  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, color = pol)) +
+  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, fill = pol), color = "black") +
   geom_boxplot(outlier.size = NA) +
   geom_point() +
   theme_bw() +
@@ -246,13 +246,28 @@ output:
 
 ## Plot emissions by moisture content and fuel type
 
-```{r, fig.width = 12, fig.height = 8}
-  p_data_ <- dplyr::filter(p_data, !grepl("tc",pol))
-  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, color = type)) +
-  geom_boxplot(outlier.size = NA, mapping = aes(color = type)) +
+```{r, fig.width = 14, fig.height = 10}
+library(forcats) 
+ 
+p_data_ <- dplyr::filter(p_data, !grepl("tc",pol)) %>%
+             dplyr::mutate(pol = factor(pol)) %>%
+             dplyr::mutate(pol = forcats::fct_recode(pol, "Carbon Monoxide" = "co",
+                                                     "Carbon Dioxide" = "co2",
+                                                     "Elemental Carbon" = "ec",
+                                                     "Organic Carbon" = "oc",
+                                                     "Methane" = "ch4",
+                                                     "EC/OC Ratio" = "ec/oc",
+                                                     "PM 2.5" = "grav")) %>%
+             dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
+                                                      "Milled" = "lab")) %>%
+             dplyr::rename(Fuel_Shape = type)
+
+  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel), color = "black") +
+  geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
   theme_bw() +
-  theme(legend.position = "top") +
-  ylab("g pol / kg fuel") + xlab("moisture content") +
+  # theme(legend.position = "side") +
+  ylab("Emissions Factors [g pol / kg fuel]") + xlab(" Fuel Moisture Content Level") +
+  theme(text = element_text(size=20)) +
   facet_wrap(~pol, scales = "free")
 ```
 

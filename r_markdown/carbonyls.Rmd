@@ -203,14 +203,26 @@ carbonyls_merged %>%
 
 # Exploratory Graphs
 
-```{r}
-carb_summary <- dplyr::group_by(carbonyls_merged, pol, mc_level) %>%
-                dplyr::summarize(pol_level = mean(conc - conc_bg)) %>%
-                dplyr::filter(!is.na(pol_level), !is.na(mc_level))
+```{r fig.width = 10, fig.height = 10}
+library(forcats)
+
+carb_summary <- dplyr::mutate(carbonyls_merged, mc_level = forcats::fct_relevel(mc_level, "low", "med", "high")) %>%
+                dplyr::filter(type != "bg", id != "FH2", id != "LM4") %>%
+                dplyr::filter(grepl("^acetaldehyde|formaldehyde", pol) == TRUE) %>% # remove this to plot all carboyls
+                dplyr::mutate(pol = forcats::fct_recode(pol, "Acetaldehyde" = "acetaldehyde",
+                                                        "Formaldehyde" = "formaldehyde")) %>%
+                dplyr::group_by(pol, mc_level) %>%
+                dplyr::mutate(pol_level = conc - conc_bg) %>%
+                # dplyr::summarize(pol_level = mean(conc - conc_bg)) %>%
+                dplyr::filter(!is.na(pol_level), !is.na(mc_level)) %>%
+                dplyr::rename(Pollutant = pol)
 
 ggplot(data = carb_summary) +
-  geom_point(aes(x = mc_level, y = pol_level, color = pol, shape = mc_level)) +
-  facet_wrap(~pol)
+  geom_boxplot(aes(x = mc_level, y = pol_level, fill = mc_level), color = "black") +
+  facet_wrap(~Pollutant, scale = "free") +
+  labs(x = "Fuel Moisture Content Level", y = "Concentration [ug/m^3]") +
+  theme_bw() +
+  theme(legend.position = "none", text = element_text(size = 20))
 
 ```
 
