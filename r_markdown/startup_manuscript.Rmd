@@ -365,7 +365,7 @@ palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
 
 stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                 geom_col(aes(fill = pol), position = "stack") +
-                geom_vline(xintercept = 4.5, col='black', lwd=1) +
+                #geom_vline(xintercept = 4.5, col='black', lwd=1) +
                 facet_wrap(~cat) +
                 theme_bw() +
                 theme(legend.position = "top",text = element_text(size=15), 
@@ -378,17 +378,17 @@ stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                 ylab("mg per startup event") 
 
 filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
-              geom_col(aes(fill = pol), position = "fill") +
-              geom_vline(xintercept = 4.5, col='black', lwd=1) +
-              facet_wrap(~cat) +
-              theme_bw() +
-              theme(legend.position = "none",text = element_text(size=15), 
-                    axis.text.x = element_text(angle = 45, hjust = 1)) +
-              scale_fill_manual(values = palette) +
-              theme(legend.title=element_blank(),
-                    axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
-              ylab("fraction of total") + 
-              xlab("Startup Material") 
+               geom_col(aes(fill = pol), position = "fill") +
+               #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+               facet_wrap(~cat) +
+               theme_bw() +
+               theme(legend.position = "none",text = element_text(size=15), 
+                     axis.text.x = element_text(angle = 45, hjust = 1)) +
+               scale_fill_manual(values = palette) +
+               theme(legend.title=element_blank(),
+                     axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
+               ylab("fraction of total") + 
+               xlab("Startup Material") 
 ```
 
 ```{r fig.width = 6, fig.height = 9}
