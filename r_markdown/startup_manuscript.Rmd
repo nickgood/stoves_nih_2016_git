@@ -469,7 +469,7 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 corr <- cor.test(x=cars$speed, y=cars$dist, method = 'spearman')
 corr$estimate gives you rho
 
-geom_smooth method= loess ? 
+geom_smooth method= loess ? or other way to visualize spearman correlation rather than linear pearson
 
 
 ### PM vs CO
