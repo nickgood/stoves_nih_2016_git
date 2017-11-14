@@ -475,17 +475,6 @@ geom_smooth method= loess ? or other way to visualize spearman correlation rathe
 ### PM vs CO
 
 ```{r, echo=FALSE}
- # function for calculating  r2 value to add to plots
- # fit lm to formula
-  lm_mod <- function(out = pmco, fm = "co ~ grav"){
-    m = lm(fm, out)
-    eq <- substitute(~~R^2~"="~r2, 
-                     list(r2 = format(summary(m)$r.squared, digits = 2)))
-    as.character(as.expression(eq))
-  }
-```
-
-```{r, echo=FALSE}
   pmco <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$', pol)) %>%
           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                           fuel_names == 'kerosene' |
@@ -496,22 +485,25 @@ geom_smooth method= loess ? or other way to visualize spearman correlation rathe
           tidyr::spread(pol, mean)
 
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(pmco, "co ~ grav")))
+  rho_all <- cor(pmco$grav, pmco$co, method = "spearman")
 # r2 for each fuel cat
-  eqns <- by(pmco, pmco$fuel_cat, lm_mod)
-  r2_each <- data.frame(eq = unclass(eqns), fuel_cat = as.factor(names(eqns)))
+  r_conv <- cor(pmco$grav[pmco$fuel_cat == "conventional"], pmco$co[pmco$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmco$grav[pmco$fuel_cat == "nonconventional"], pmco$co[pmco$fuel_cat == "nonconventional"], method = "spearman")
   
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+
   ggplot(data = pmco, aes(x = grav, y = co)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = r2_data, aes(x = 200, y = 500, label = eq),
+        geom_text(data = rhos, aes(x = 200, y = 500, label = val[1]), #all
                       color = 'black',  parse = TRUE,
                       size = 5) +
         geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = r2_each, aes(x = 100, y = 700, label = eq[1]),
+        geom_text(data = rhos, aes(x = 100, y = 700, label = val[2]), #conventional
                        color = 'red',  parse = TRUE,
                        size = 4) +
-        geom_text(data = r2_each, aes(x = 100, y = 100, label = eq[2]),
+        geom_text(data = rhos, aes(x = 100, y = 100, label = val[3]), #nonconv
                        color = 'purple',  parse = TRUE,
                        size = 4) +
           ylab("CO") +
