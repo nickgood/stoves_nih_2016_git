@@ -14,10 +14,12 @@ output: html_document
 ```{r setup, include=FALSE}
   library(tidyverse)
   library(knitr)
+  library(dunn.test)
+  library(lsmeans)
   source("../r_scripts/R_functions.R")
 ```
 
-```{r, include=FALSE}
+```{r read data, include=FALSE}
   emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
   fuel_burnt_reps <- readRDS(file = "../r_files/fuel_burnt_reps.RDS")
   qc <- readRDS(file = "../r_files/qc.RDS")
@@ -237,46 +239,84 @@ knitr::kable(fuel_sum)
 
 ## pairwise comparisons of key pollutants (for text)
 
-* PM2.5
+### PM2.5
 
+* pairwise t test (standard ANOVA)
 ```{r}
-grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
-pairwise.t.test(grav_means$mass_pol_per_startup_std, grav_means$fuel_names, p.adjust.method = "none")
+  grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
 ```
 
-* CO
-
+* Kruskal-Wallis rank sum test (non-parametric alternative)
 ```{r}
-co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
-pairwise.t.test(co_means$mass_pol_per_startup_std, co_means$fuel_names, p.adjust.method = "none")
+  dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
 ```
 
-* formaldehyde
+### CO
 
+* pairwise t test (standard ANOVA)
 ```{r}
-for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
-pairwise.t.test(for_means$mass_pol_per_startup_std, for_means$fuel_names, p.adjust.method = "none")
+  co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
 ```
 
-* acetaldehyde
-
+* Kruskal-Wallis rank sum test (non-parametric alternative)
 ```{r}
-acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
-pairwise.t.test(acet_means$mass_pol_per_startup_std, acet_means$fuel_names, p.adjust.method = "none")
+  dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
 ```
 
-* benzene
-
+### formaldehyde
+* pairwise t test (standard ANOVA)
 ```{r}
-bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
-pairwise.t.test(bz_means$mass_pol_per_startup_std, bz_means$fuel_names, p.adjust.method = "none")
+  for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
 ```
 
-* toluene
-
+* Kruskal-Wallis rank sum test (non-parametric alternative)
 ```{r}
-tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
-pairwise.t.test(tol_means$mass_pol_per_startup_std, tol_means$fuel_names, p.adjust.method = "none")
+  dunn.test(x = for_means$mass_pol_per_startup_std, g = for_means$fuel_names, method = "none")
+```
+
+### acetaldehyde
+* pairwise t test (standard ANOVA)
+```{r}
+  acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative)
+```{r}
+  dunn.test(x = acet_means$mass_pol_per_startup_std, g = acet_means$fuel_names, method = "none")
+```
+
+### benzene
+* pairwise t test (standard ANOVA)
+```{r}
+  bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative)
+```{r}
+  dunn.test(x = bz_means$mass_pol_per_startup_std, g = bz_means$fuel_names, method = "none")
+```
+
+### toluene
+* pairwise t test (standard ANOVA)
+```{r}
+  tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
+
+  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative)
+```{r}
+  dunn.test(x = tol_means$mass_pol_per_startup_std, g = tol_means$fuel_names, method = "none")
 ```
 
 # variations in emissions for key pollutants (for text) 
