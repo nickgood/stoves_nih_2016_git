@@ -16,6 +16,7 @@ output: html_document
   library(knitr)
   library(dunn.test)
   library(lsmeans)
+  library(pairwiseCI)
   source("../r_scripts/R_functions.R")
 ```
 
@@ -245,7 +246,39 @@ knitr::kable(fuel_sum)
 ```{r}
   grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
 
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
+  pm_cont <- lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
+
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = grav_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+write_csv(df, "pm25_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
 ```
