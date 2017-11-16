@@ -246,9 +246,11 @@ knitr::kable(fuel_sum)
   grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
 ```
@@ -260,9 +262,11 @@ knitr::kable(fuel_sum)
   co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
+
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = co_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
 ```
@@ -273,9 +277,11 @@ knitr::kable(fuel_sum)
   for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = for_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = for_means$mass_pol_per_startup_std, g = for_means$fuel_names, method = "none")
 ```
@@ -286,9 +292,11 @@ knitr::kable(fuel_sum)
   acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = acet_means$mass_pol_per_startup_std, g = acet_means$fuel_names, method = "none")
 ```
@@ -299,9 +307,11 @@ knitr::kable(fuel_sum)
   bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = bz_means$mass_pol_per_startup_std, g = bz_means$fuel_names, method = "none")
 ```
@@ -312,9 +322,11 @@ knitr::kable(fuel_sum)
   tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
 
   lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means))) #small p-value indicates non-normal data.
 ```
 
-* Kruskal-Wallis rank sum test (non-parametric alternative)
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
 ```{r}
   dunn.test(x = tol_means$mass_pol_per_startup_std, g = tol_means$fuel_names, method = "none")
 ```
