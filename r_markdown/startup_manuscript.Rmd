@@ -246,9 +246,102 @@ knitr::kable(fuel_sum)
 ```{r}
   grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
 
-  pm_cont <- lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
+  #pm_cont <- lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
 
   out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = grav_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 0), " (", round(lower, 0), ", ", round(upper, 0), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "pm25_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r}
+  dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
+```
+
+### CO
+
+* pairwise t test (standard ANOVA)
+```{r}
+  co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = co_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 0), " (", round(lower, 0), ", ", round(upper, 0), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "co_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = co_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r}
+  dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
+```
+
+### formaldehyde
+* pairwise t test (standard ANOVA)
+```{r}
+  for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = for_means)
   
   df <- as_data_frame(out) %>%
         mutate(estimate = estimate * -1,
@@ -278,38 +371,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-write_csv(df, "pm25_contrasts.csv")
-  
-  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
-```
-
-* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
-  dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
-```
-
-### CO
-
-* pairwise t test (standard ANOVA)
-```{r}
-  co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
-
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
-
-  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = co_means))) #small p-value indicates non-normal data.
-```
-
-* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
-  dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
-```
-
-### formaldehyde
-* pairwise t test (standard ANOVA)
-```{r}
-  for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
-
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
+  write_csv(df, "formaldehyde_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = for_means))) #small p-value indicates non-normal data.
 ```
@@ -324,7 +386,38 @@ write_csv(df, "pm25_contrasts.csv")
 ```{r}
   acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
 
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = acet_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "acetaldehyde_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means))) #small p-value indicates non-normal data.
 ```
@@ -339,7 +432,38 @@ write_csv(df, "pm25_contrasts.csv")
 ```{r}
   bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
 
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = bz_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "benzene_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means))) #small p-value indicates non-normal data.
 ```
@@ -354,7 +478,38 @@ write_csv(df, "pm25_contrasts.csv")
 ```{r}
   tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
 
-  lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = tol_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "toluene_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means))) #small p-value indicates non-normal data.
 ```
