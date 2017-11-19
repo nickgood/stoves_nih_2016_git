@@ -243,7 +243,7 @@ knitr::kable(fuel_sum)
 ### PM2.5
 
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
 
   #pm_cont <- lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
@@ -284,14 +284,14 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
 ```
 
 ### CO
 
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
@@ -331,13 +331,13 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
 ```
 
 ### formaldehyde
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
@@ -377,13 +377,13 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = for_means$mass_pol_per_startup_std, g = for_means$fuel_names, method = "none")
 ```
 
 ### acetaldehyde
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
@@ -423,13 +423,13 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = acet_means$mass_pol_per_startup_std, g = acet_means$fuel_names, method = "none")
 ```
 
 ### benzene
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
@@ -469,13 +469,13 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = bz_means$mass_pol_per_startup_std, g = bz_means$fuel_names, method = "none")
 ```
 
 ### toluene
 * pairwise t test (standard ANOVA)
-```{r}
+```{r, echo = FALSE}
   tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
@@ -515,7 +515,7 @@ knitr::kable(fuel_sum)
 ```
 
 * Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
-```{r}
+```{r, echo = FALSE}
   dunn.test(x = tol_means$mass_pol_per_startup_std, g = tol_means$fuel_names, method = "none")
 ```
 
@@ -631,7 +631,7 @@ filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                xlab("Startup Material") 
 ```
 
-```{r echo = FALSE, fig.width = 6, fig.height = 9}
+```{r, echo = FALSE, fig.width = 6, fig.height = 9}
 gridExtra::grid.arrange(stacked_plot, filled_plot)
 ```
 
@@ -698,19 +698,14 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                   xlab("Startup Material") 
 ```
 
-```{r echo = FALSE, fig.width = 6, fig.height = 9}
+```{r, echo = FALSE, fig.width = 6, fig.height = 9}
 gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```
 
 
 ## Figure 4
 
-* correlations - change to spearman's rho 
-corr <- cor.test(x=cars$speed, y=cars$dist, method = 'spearman')
-corr$estimate gives you rho
-
 geom_smooth method= loess ? or other way to visualize spearman correlation rather than linear pearson
-
 
 ### PM vs CO
 
