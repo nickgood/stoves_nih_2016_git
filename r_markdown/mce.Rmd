@@ -1,0 +1,108 @@
+---
+title: "Modified Combustion Efficiency"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE)
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+```
+
+---
+
+# Load data
+
+```{r}
+  fivegas <- readRDS("../r_files/fivegas_byrep.RDS")
+  bg <- readRDS("../r_files/fivegas_background_mean.RDS")
+```
+
+---
+
+# Organize data
+
+```{r}
+  bg <- bg %>%
+        filter(pol == "co2" | pol == "co") %>%
+        select(id, pol, bg_ppm)
+
+  bg_mean <- bg %>%
+             group_by(pol) %>%
+             summarise(mean = mean(bg_ppm, na.rm = TRUE)) %>%
+             ungroup()
+
+  mce <- fivegas %>%
+         filter(pol == "co2" | pol == "co") %>%
+         distinct() %>%
+         left_join(bg, by = c("id", "pol")) %>%
+         mutate(bg_ppm = ifelse(pol == "co2" & is.na(bg_ppm), bg_mean$mean[2], bg_ppm),
+                bg_ppm = ifelse(pol == "co" & is.na(bg_ppm), bg_mean$mean[1], bg_ppm),
+                val_bg_adj = val - bg_ppm) %>%
+         select(-val, -bg_ppm) %>%
+         spread(pol, val_bg_adj) %>%
+         mutate(mce = co2 / (co2 + co)) %>%
+         filter(mce < 1 & mce > 0)
+```
+
+# Plot
+
+```{r, fig.width = 12, fig.height = 40}
+  ggplot(mce, aes(datetime, mce, color = rep)) + 
+    geom_point() +
+    facet_wrap(~id, ncol = 3, scale = "free") +
+    theme_minimal() +
+    xlab("") +
+    theme(legend.position = "top")
+```
+
+
+# Summarise MCE
+
+```{r}
+  mce_summary_by_rep <- mce %>%
+                        group_by(id, rep, fuel) %>%
+                        summarise(mean = mean(mce, na.rm = TRUE),
+                                  median = median(mce, na.rm = TRUE),
+                                  q_05 = quantile(mce, 0.05, na.rm = TRUE),
+                                  q_95 = quantile(mce, 0.95, na.rm = TRUE)) %>%
+                         ungroup()
+
+   mce_summary <- mce_summary_by_rep %>%
+                  select(-id, -rep) %>%
+                  group_by(fuel) %>%
+                  summarise_all(mean) %>%
+                  mutate_at(c("mean", "median", "q_05", "q_95"), .funs = funs(round(. * 100, 0))) %>%
+                  ungroup()
+```
+
+# Save data
+
+```{r}
+  write_csv(mce_summary, "mce_summary.csv")
+```
+
+
+
+# Plot Summary
+
+```{r}
+  p_data_summary <- mce_summary %>%
+                    gather("metric", "value", 2:5)
+
+ ggplot(p_data_summary, aes(fuel, value, colour = metric)) +
+   geom_point() +
+   ylab("MCE") +
+   theme_bw() +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+   
+```
+
