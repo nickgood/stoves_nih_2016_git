@@ -54,7 +54,9 @@ output:
   p_data <- mutate(mass_carbon, fuelmass_total = fuelmass_total * 1e6,
                                 frac = mass_carbon / fuelmass_total)
   
-  ggplot(p_data, aes(id, frac)) + geom_point(color = "blue")
+  ggplot(p_data, aes(id, frac)) +
+  geom_point(color = "blue") +
+  theme_minimal()
           
 ```
 
