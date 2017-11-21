@@ -45,7 +45,7 @@ output:
          select(-val, -bg_ppm) %>%
          spread(pol, val_bg_adj) %>%
          mutate(mce = co2 / (co2 + co)) %>%
-         filter(mce < 1 & mce > 0.5)
+         filter(mce < 1 & mce > 0)
 ```
 
 # Plot
@@ -75,8 +75,17 @@ output:
                   select(-id, -rep) %>%
                   group_by(fuel) %>%
                   summarise_all(mean) %>%
+                  mutate_at(c("mean", "median", "q_05", "q_95"), .funs = funs(round(. * 100, 0))) %>%
                   ungroup()
 ```
+
+# Save data
+
+```{r}
+  write_csv(mce_summary, "mce_summary.csv")
+```
+
+
 
 # Plot Summary
 
