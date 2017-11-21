@@ -87,6 +87,8 @@ output:
  ggplot(p_data_summary, aes(fuel, value, colour = metric)) +
    geom_point() +
    ylab("MCE") +
-   theme_bw()
+   theme_bw() +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+   
 ```
 
