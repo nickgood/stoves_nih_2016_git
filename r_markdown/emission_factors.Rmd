@@ -91,17 +91,7 @@ output:
   emission_factors <- emissions_long %>%
                       dplyr::filter(metric == "mass_emitted") %>%
                       dplyr::left_join(fuel_burnt_test, "id") %>%
-                      dplyr::mutate(mass_per_mass_fuel = (value * 1e-6) / (fuelmass_total * (1e-3))) %>%
                       dplyr::left_join(select(test_info, id, fuel), by = c("id", "fuel"))
-```
-
-
-```{r, fig.width = 25, fig.height = 40}
-  ggplot(dplyr::filter(emission_factors, fuel != "background"), aes(fuel, mass_per_mass_fuel, colour = fuel)) + 
-  geom_point() +
-  facet_wrap(~pol, scales = "free", ncol = 2) +
-  theme_minimal() +
-  theme(legend.position = "top")
 ```
 
 # Save

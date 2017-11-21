@@ -1,0 +1,1724 @@
+---
+title: "Startup Manuscript"
+output: html_document
+---
+
+```{r global_options, include = FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/',
+                        warning = FALSE,
+                        message = FALSE,
+                        fig.width = 10, fig.height = 4,
+                        cache = FALSE)
+```
+
+```{r setup, include=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(dunn.test)
+  library(lsmeans)
+  library(pairwiseCI)
+  source("../r_scripts/R_functions.R")
+```
+
+```{r read data, include=FALSE}
+  emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
+  fuel_burnt_reps <- readRDS(file = "../r_files/fuel_burnt_reps.RDS")
+  qc <- readRDS(file = "../r_files/qc.RDS")
+```
+
+
+# Results
+
+## Prepare data
+
+* calculate mean fuel consumed per fuel type
+
+```{r, include = FALSE}
+  fuel_consumed <- fuel_burnt_reps %>%
+                   dplyr::left_join(dplyr::select(qc, id, qc),
+                                                  by = "id") %>%
+                   dplyr::filter(!is.na(dm), qc != "bad") %>%
+                   dplyr::group_by(fuel) %>%
+                   dplyr::summarise(mean_dm = mean(dm),
+                                    min_dm = min(dm),
+                                    max_dm = max(dm),
+                                    total_dm = sum(dm),
+                                    mean_burn_time = round(mean(dur)*60, 1), #in minutes per startup
+                                    min_burn_time = round(min(dur)*60, 1),
+                                    max_burn_time = round(max(dur)*60, 1),
+                                    num_reps = n()) %>%
+                   dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                              "leaves_twigs", "flipflops",
+                                                              "rubber", "newspaper",
+                                                              "wood_shims", "t_shirts",
+                                                              "food_packaging", "plastic_bags")) %>%
+                   dplyr::mutate(fuel = forcats::fct_drop(fuel, "blank")) %>%
+                   dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                   "kindling" = "leaves_twigs",
+                                                                   "inner tubes" = "rubber",
+                                                                   "footwear" = "flipflops",
+                                                                   "fabric" = "t_shirts",
+                                                                   "wood shims" = "wood_shims",
+                                                                   "food packaging" = "food_packaging"))
+
+  kable(fuel_consumed, digits = 3)
+```
+
+* calculate emissions metrics
+
+```{r, echo = FALSE}
+# set variable types from character -> factor
+# filter out bad QC data
+# set fuel type order by survey result "commonality" of use. 
+# create variable mass (g) pollutant emitted per startup event
+# create variable average mass (g) of startup material per startup event
+# filter out backgrounds and blanks
+  per_test <- dplyr::mutate(emission_factors, fuel = factor(fuel),
+                                              qc = factor(qc),
+                                              pol = factor(pol)) %>%
+              dplyr::rename(mass_emitted = value) %>%
+              dplyr::select(-metric) %>%
+              dplyr::filter(qc != "bad") %>%
+              dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
+                                                              "leaves_twigs", "flipflops",
+                                                              "rubber", "newspaper",
+                                                              "wood_shims", "t_shirts",
+                                                              "food_packaging", "plastic_bags")) %>%
+              dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                   "kindling" = "leaves_twigs",
+                                                                   "inner tubes" = "rubber",
+                                                                   "footwear" = "flipflops",
+                                                                   "fabric" = "t_shirts",
+                                                                   "wood shims" = "wood_shims",
+                                                                   "food packaging" = "food_packaging"),
+                            mass_pol_per_startup = (mass_emitted * 1e-3) / fuel_quant, # mg per startup event
+                            mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
+                            mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
+              dplyr::filter(!grepl("^B", id_test)) %>%
+              dplyr::left_join(dplyr::select(fuel_consumed, fuel_names, mean_dm),
+                               by = "fuel_names") %>%
+              dplyr::mutate(fuel_quant_std = fuelmass_total / mean_dm,
+                            mass_pol_per_startup_std = (mass_emitted * 1e-3) / fuel_quant_std)
+
+```
+
+* QC comparison - standardized "startup event" vs. per-test average startup event
+```{r, include = FALSE, fig.width = 15, fig.height = 18, eval = FALSE}
+ggplot(per_test) +
+geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
+  geom_point(aes(x=id, y=mass_pol_per_startup_std), size = 2, color = 'black') +
+    facet_wrap(~pol, scales = "free", ncol = 3) +
+  theme_bw() +
+  theme(legend.position = "top")
+```
+
+## Table 1
+
+* experiment summary
+
+```{r, echo = FALSE}
+  fuel_sum <- dplyr::filter(per_test, pol == 'grav') %>% 
+              dplyr::group_by(fuel_names) %>%
+              dplyr::summarize(n_tests = n(),
+                               n_events_per_test = round(mean(fuel_quant), 2),
+                               min_events_per_test = min(fuel_quant),
+                               max_events_per_test = max(fuel_quant),
+                               n_events_per_test_std = round(mean(fuel_quant_std), 2),
+                               min_events_per_test_std = round(min(fuel_quant_std), 2),
+                               max_events_per_test_std = round(max(fuel_quant_std), 2)) %>%
+             dplyr::left_join(select(fuel_consumed, -fuel, -num_reps), by = "fuel_names") %>%
+             dplyr::mutate(mean_dm = round(mean_dm, 2),
+                           max_dm = round(max_dm, 2),
+                           total_dm = round(total_dm, 2))
+
+knitr::kable(fuel_sum)
+```
+
+## Table 2
+
+* emissions per startup event (mg per startup event), average per test
+
+```{r, echo = FALSE}
+  mean_per_startup <- per_test %>%
+                      dplyr::group_by(inst, fuel_names, pol) %>%
+                      dplyr::summarize(nreps = n(),
+                                   mean = round(mean(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   min = round(min(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2),
+                                   stdev = round(sd(mass_pol_per_startup_std, na.rm = TRUE), 2), 
+                                   cov = round(((stdev/mean) * 100), 2),
+                                   variation_pct = round(((max - min) / max)*100, 0),
+                                   variation_act = round((max - min), 2)) %>%
+                      dplyr::ungroup()
+
+  mean_per_startup_table <- mean_per_startup %>%
+                            dplyr::select(fuel_names, pol, mean, inst) %>%
+                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::arrange(inst)
+  
+  knitr::kable(mean_per_startup_table)
+```
+
+## Supplemental Table 1
+
+* emissions per mass fuel (mg per g fuel (same as g/kg))
+
+```{r, echo = FALSE}
+  per_fuel_mass <- per_test %>%
+                      dplyr::group_by(inst, fuel_names, pol) %>%
+                      dplyr::summarize(nreps = n(),
+                                   mean = round(mean(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
+                                   min = round(min(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
+                                   max = round(max(mass_pol_per_mass_fuel, na.rm = TRUE), 2)) %>%
+                      dplyr::ungroup()
+
+  per_fuel_mass_table <- per_fuel_mass %>%
+                            dplyr::select(fuel_names, pol, mean, inst) %>%
+                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::arrange(inst)
+  
+  knitr::kable(per_fuel_mass_table)
+```
+
+## Figure 1.
+
+* Experimental setup - created in powerpoint
+
+## Figure 2.
+
+* emissions of key pollutants (standardized calc)
+
+```{r, echo = FALSE, fig.width = 16, fig.height = 11}
+  p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC when have data
+                dplyr::mutate(pol = sub("^voc_", "", pol),
+                              pol = sub("^grav", "PM2.5", pol)) %>%
+                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                      "formaldehyde", "acetaldehyde",
+                                                      "benzene", "toluene")) %>%
+                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear"))
+
+  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
+                      dplyr::mutate(pol = sub("^voc_", "", pol),
+                                    pol = sub("^grav", "PM2.5", pol))%>%
+                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                                                                    "formaldehyde", "acetaldehyde",
+                                                                    "benzene", "toluene"))
+
+  ggplot(p_data_key, aes(fuel_names, mass_pol_per_startup_std, color = fuel)) +
+  geom_point(size = 5, shape = 1, stroke = 2) +
+  #geom_point(data = p_data_key_means, aes(x = fuel_names, y = mean), colour = 'black', size = 10, shape = 95, stroke = 2) + 
+  #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+    theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  scale_y_log10(breaks = c(0, 0.1, 0.5, 1, 3, 10, 25, 100, 500, 1000)) + 
+  ylab("Emissions Factor (mg per startup event) per Test") + xlab("Fuel Type") +
+  facet_wrap(~pol, scales = "free")
+```
+
+## Supplemental Figure 1.
+
+* emissions of key pollutants (mass per mass fuel basis)
+
+```{r, echo = FALSE, fig.width = 16, fig.height = 11}
+  ggplot(p_data_key, aes(fuel_names, mass_pol_per_mass_fuel, color = fuel)) +
+  geom_point(size = 5, shape = 1, stroke = 2) +
+    theme_bw() +
+  theme(legend.position = "none",
+        text = element_text(size=25),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  ylab("Emissions Factor (g/kg) per Test") + xlab("Fuel Type") +
+  facet_wrap(~pol, scales = "free")
+```
+
+
+## pairwise comparisons of key pollutants (for text)
+
+### PM2.5
+
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  grav_means <- dplyr::filter(p_data_key, grepl('^PM2.5$', pol))
+
+  #pm_cont <- lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means)), pairwise ~ fuel_names, adjust = "none")
+
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = grav_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 0), " (", round(lower, 0), ", ", round(upper, 0), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "pm25_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = grav_means$mass_pol_per_startup_std, g = grav_means$fuel_names, method = "none")
+```
+
+### CO
+
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = co_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 0), " (", round(lower, 0), ", ", round(upper, 0), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "co_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = co_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = co_means$mass_pol_per_startup_std, g = co_means$fuel_names, method = "none")
+```
+
+### formaldehyde
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  for_means <- dplyr::filter(p_data_key, grepl('^formaldehyde$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = for_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = for_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "formaldehyde_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = for_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = for_means$mass_pol_per_startup_std, g = for_means$fuel_names, method = "none")
+```
+
+### acetaldehyde
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  acet_means <- dplyr::filter(p_data_key, grepl('^acetaldehyde$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = acet_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "acetaldehyde_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = acet_means$mass_pol_per_startup_std, g = acet_means$fuel_names, method = "none")
+```
+
+### benzene
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  bz_means <- dplyr::filter(p_data_key, grepl('^benzene$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = bz_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "benzene_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = bz_means$mass_pol_per_startup_std, g = bz_means$fuel_names, method = "none")
+```
+
+### toluene
+* pairwise t test (standard ANOVA)
+```{r, echo = FALSE}
+  tol_means <- dplyr::filter(p_data_key, grepl('^toluene$', pol))
+
+  #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means)), pairwise ~ fuel_names, adjust = "none")
+  out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = tol_means)
+  
+  df <- as_data_frame(out) %>%
+        mutate(estimate = estimate * -1,
+               lower = lower * -1,
+               upper = upper * -1,
+               result = paste0(round(estimate, 2), " (", round(lower, 2), ", ", round(upper, 2), ")"),
+               comparison = paste0(sub(".*-", "", comparison), "-", sub("-.*", "", comparison)),
+               comp_a = as.factor(sub("-.*", "", comparison)),
+               comp_b = as.factor(sub(".*-", "", comparison)),
+               comp_a = forcats::fct_relevel(comp_a, "kerosene",
+                                                     "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes"),
+               comp_b = forcats::fct_relevel(comp_b, "wood shims",
+                                                     "kindling",
+                                                     "newspaper",
+                                                     "fabric",
+                                                     "plastic bags",
+                                                     "food packaging",
+                                                     "inner tubes",
+                                                     "footwear")) %>%
+               select(result, comp_a, comp_b) %>%
+               spread(comp_a, result) %>%
+               arrange(comp_b)
+  
+  write_csv(df, "toluene_contrasts.csv")
+  
+  shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means))) #small p-value indicates non-normal data.
+```
+
+* Kruskal-Wallis rank sum test (non-parametric alternative for non-normally distributed data)
+```{r, echo = FALSE}
+  dunn.test(x = tol_means$mass_pol_per_startup_std, g = tol_means$fuel_names, method = "none")
+```
+
+# variations in emissions for key pollutants (for text) 
+
+* variation in emissions per test for key pollutants - coefficient of variation (COV)
+
+```{r, echo = FALSE}
+var_per_fuel_cov <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
+                            dplyr::select(fuel_names, pol, cov) %>%
+                            tidyr::spread(fuel_names, cov) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_cov)
+```
+
+* variation in emissions per test for key pollutants - actual value variation min to max (g/startup). 
+
+```{r, echo = FALSE}
+var_per_fuel_act <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
+                            dplyr::select(fuel_names, pol, variation_act) %>%
+                            tidyr::spread(fuel_names, variation_act) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_act)
+```
+
+* variation in emissions per test for key pollutants - - percent variation min to max 
+
+```{r, echo = FALSE}
+var_per_fuel_pct <- mean_per_startup %>%
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
+                            dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                                     "newspaper", "fabric", 
+                                                                                     "plastic bags", "food packaging", 
+                                                                                     "inner tubes", "footwear"))) %>%
+                            dplyr::select(fuel_names, pol, variation_pct) %>%
+                            tidyr::spread(fuel_names, variation_pct) %>%
+                            dplyr::arrange(pol)
+
+  knitr::kable(var_per_fuel_pct)
+```
+
+## Figure 3.
+
+* stacked bar charts of health relevent pollutant categories
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 4}
+  pol_cats <- mean_per_startup %>%
+              dplyr::filter(pol == "voc_benzene" |
+                            pol == "voc_toluene" |
+                            pol == "voc_ethylbenzene" |
+                            pol == "voc_m_p_xylene" |
+                            pol == "voc_o_xylene") %>%
+              dplyr::mutate(cat = "BTEX") %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             inst == "carbs") %>%
+                              dplyr::mutate(cat = "Carbonyls")) %>%
+              dplyr::bind_rows(dplyr::filter(mean_per_startup,
+                                             pol == "voc_benzene" |
+                                             pol == "voc_toluene" |
+                                             pol == "formaldehyde" |
+                                             pol == "acetaldehyde") %>%
+                              dplyr::mutate(cat = "Carcinogens")) %>%
+              dplyr::mutate(pol = sub("^voc_", "", pol),
+                            pol = sub(".*xylene.*", "xylenes", pol)) %>%
+              dplyr::filter(cat != "Carbonyls") %>%
+              dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
+                                                         "benzene", "toluene", 
+                                                         "ethylbenzene", "xylenes"))) %>%
+              dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear")))
+
+palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+
+stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
+                geom_col(aes(fill = pol), position = "stack") +
+                #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+                facet_wrap(~cat) +
+                theme_bw() +
+                theme(legend.position = "top",text = element_text(size=15), 
+                      axis.text.x = element_blank(),
+                      axis.title.x=element_blank()) +
+                scale_fill_manual(values = palette) +
+                theme(legend.title=element_blank(),
+                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
+                scale_y_continuous(limits = c(0, 60)) + 
+                ylab("mg per startup event") 
+
+filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
+               geom_col(aes(fill = pol), position = "fill") +
+               #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+               facet_wrap(~cat) +
+               theme_bw() +
+               theme(legend.position = "none",text = element_text(size=15), 
+                     axis.text.x = element_text(angle = 45, hjust = 1)) +
+               scale_fill_manual(values = palette) +
+               theme(legend.title=element_blank(),
+                     axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
+               ylab("fraction of total") + 
+               xlab("Startup Material") 
+```
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 9}
+gridExtra::grid.arrange(stacked_plot, filled_plot)
+```
+
+## Supplemental Figure 2. 
+
+* stacked bar charts of health relevent pollutant categories - 
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 4}
+
+  pol_cats2 <- per_fuel_mass %>%
+               dplyr::filter(pol == "voc_benzene" |
+                             pol == "voc_toluene" |
+                             pol == "voc_ethylbenzene" |
+                             pol == "voc_m_p_xylene" |
+                             pol == "voc_o_xylene") %>%
+               dplyr::mutate(cat = "BTEX") %>%
+               dplyr::bind_rows(dplyr::filter(per_fuel_mass,
+                                              inst == "carbs") %>%
+                               dplyr::mutate(cat = "Carbonyls")) %>%
+               dplyr::bind_rows(dplyr::filter(per_fuel_mass,
+                                              pol == "voc_benzene" |
+                                              pol == "voc_toluene" |
+                                              pol == "formaldehyde" |
+                                              pol == "acetaldehyde") %>%
+                               dplyr::mutate(cat = "Carcinogens")) %>%
+               dplyr::mutate(pol = sub("^voc_", "", pol),
+                             pol = sub(".*xylene.*", "xylenes", pol)) %>%
+               dplyr::filter(cat != "Carbonyls") %>%
+               dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
+                                                          "benzene", "toluene", 
+                                                          "ethylbenzene", "xylenes"))) %>%
+               dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                        "newspaper", "fabric", 
+                                                                        "plastic bags", "food packaging", 
+                                                                        "inner tubes", "footwear")))
+
+  palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+
+  stacked_plot2 <- ggplot(pol_cats2, aes(fuel_names, mean)) +
+                   geom_col(aes(fill = pol), position = "stack") +
+                   #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+                   facet_wrap(~cat) +
+                   theme_bw() +
+                   theme(legend.position = "top",text = element_text(size=15), 
+                         axis.text.x = element_blank(),
+                         axis.title.x=element_blank()) +
+                   scale_fill_manual(values = palette) +
+                   theme(legend.title=element_blank(),
+                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
+                   scale_y_continuous() + #limits = c(0, 60)) + 
+                   ylab("g per kg") 
+
+  filled_plot2 <- ggplot(pol_cats, aes(fuel_names, mean)) +
+                  geom_col(aes(fill = pol), position = "fill") +
+                  #geom_vline(xintercept = 4.5, col='black', lwd=1) +
+                  facet_wrap(~cat) +
+                  theme_bw() +
+                  theme(legend.position = "none",text = element_text(size=15), 
+                        axis.text.x = element_text(angle = 45, hjust = 1)) +
+                  scale_fill_manual(values = palette) +
+                  theme(legend.title=element_blank(),
+                        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
+                  ylab("fraction of total") + 
+                  xlab("Startup Material") 
+```
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 9}
+gridExtra::grid.arrange(stacked_plot2, filled_plot2)
+```
+
+
+## Figure 4
+
+geom_smooth method= loess or other way to visualize spearman correlation rather than linear pearson? 
+
+### PM vs CO
+
+* mg/startup
+```{r, echo=FALSE}
+  pmco <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$', pol)) %>%
+          dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                          fuel_names == 'kerosene' |
+                                          fuel_names == 'wood shims' | 
+                                          fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmco$grav, pmco$co, method = "spearman")
+  r_conv <- cor(pmco$grav[pmco$fuel_cat == "conventional"], pmco$co[pmco$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmco$grav[pmco$fuel_cat == "nonconventional"], pmco$co[pmco$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmco, aes(x = grav, y = co)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 200, y = 500, label = val[1]), #all
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 100, y = 700, label = val[2]), #conventional
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 100, y = 100, label = val[3]), #nonconv
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("CO") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+```{r, echo=FALSE}
+  pmco <- dplyr::filter(per_fuel_mass, grepl('^grav$|^co$', pol)) %>%
+          dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                          fuel_names == 'kerosene' |
+                                          fuel_names == 'wood shims' | 
+                                          fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmco$grav, pmco$co, method = "spearman")
+  r_conv <- cor(pmco$grav[pmco$fuel_cat == "conventional"], pmco$co[pmco$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmco$grav[pmco$fuel_cat == "nonconventional"], pmco$co[pmco$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmco, aes(x = grav, y = co)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 10000, y = 30000, label = val[1]), #all
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 10000, y = 40000, label = val[2]), #conventional
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 10000, y = 20000, label = val[3]), #nonconv
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("CO") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### formaldehyde vs acetaldehyde
+
+* mg/startup
+```{r, echo=FALSE}
+  carbs <- dplyr::filter(mean_per_startup, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
+  r_conv <- cor(carbs$formaldehyde[carbs$fuel_cat == "conventional"], carbs$acetaldehyde[carbs$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(carbs$formaldehyde[carbs$fuel_cat == "nonconventional"], carbs$acetaldehyde[carbs$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 20, y = 15, label = val[1]), #all
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 25, y = 10, label = val[2]), #conv
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 2.5, y = 4, label = val[3]), #nonconv
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("formaldehyde") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+```{r, echo=FALSE}
+  carbs <- dplyr::filter(per_fuel_mass, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
+  r_conv <- cor(carbs$formaldehyde[carbs$fuel_cat == "conventional"], carbs$acetaldehyde[carbs$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(carbs$formaldehyde[carbs$fuel_cat == "nonconventional"], carbs$acetaldehyde[carbs$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 1000, y = 650, label = val[1]), #all
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 1050, y = 500, label = val[2]), #conv
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 250, y = 250, label = val[3]), #nonconv
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("formaldehyde") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### benzene vs toluene
+
+* mg/startup
+
+```{r, echo=FALSE}
+  voc <- dplyr::filter(mean_per_startup, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
+         dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                         fuel_names == 'kerosene' |
+                                         fuel_names == 'wood shims' | 
+                                         fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+
+ # spearman's rho calculations
+  rho_all <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
+  r_conv <- cor(voc$voc_benzene[voc$fuel_cat == "conventional"], voc$voc_toluene[voc$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[pmco$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+
+  ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 15, y = 2.5, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 5, y = 2.5, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 4, y = 0.5, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("benzene") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  voc <- dplyr::filter(per_fuel_mass, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
+         dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                         fuel_names == 'kerosene' |
+                                         fuel_names == 'wood shims' | 
+                                         fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+
+ # spearman's rho calculations
+  rho_all <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
+  r_conv <- cor(voc$voc_benzene[voc$fuel_cat == "conventional"], voc$voc_toluene[voc$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[pmco$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+
+  ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 900, y = 175, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 700, y = 180, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 300, y = 60, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("benzene") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs formaldehyde
+
+*mg/startup
+
+```{r, echo=FALSE}
+  pmfor <- dplyr::filter(mean_per_startup, grepl('^grav$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
+  r_conv <- cor(pmfor$grav[pmfor$fuel_cat == "conventional"], pmfor$formaldehyde[pmfor$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmfor$grav[pmfor$fuel_cat == "nonconventional"], pmfor$formaldehyde[pmfor$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 380, y = 10, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 250, y = 16, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 3, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("formaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  pmfor <- dplyr::filter(per_fuel_mass, grepl('^grav$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
+  r_conv <- cor(pmfor$grav[pmfor$fuel_cat == "conventional"], pmfor$formaldehyde[pmfor$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmfor$grav[pmfor$fuel_cat == "nonconventional"], pmfor$formaldehyde[pmfor$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 15000, y = 650, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 15000, y = 800, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 15000, y = 500, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("formaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs acetaldehyde
+
+* mg/startup
+
+```{r, echo=FALSE}
+  pmacet <- dplyr::filter(mean_per_startup, grepl('^grav$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmacet$grav, pmacet$acetaldehyde, method = "spearman")
+  r_conv <- cor(pmacet$grav[pmacet$fuel_cat == "conventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmacet$grav[pmacet$fuel_cat == "nonconventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmacet, aes(x = grav, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 400, y = 10, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 250, y = 8, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
+                       color = 'purple', parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  pmacet <- dplyr::filter(per_fuel_mass, grepl('^grav$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmacet$grav, pmacet$acetaldehyde, method = "spearman")
+  r_conv <- cor(pmacet$grav[pmacet$fuel_cat == "conventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmacet$grav[pmacet$fuel_cat == "nonconventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+
+  ggplot(data = pmacet, aes(x = grav, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 20000, y = 320, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 20000, y = 400, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 20000, y = 200, label = val[3]),
+                       color = 'purple', parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs benzene
+
+* mg/ startup
+
+```{r, echo=FALSE}
+  pmbenz <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmbenz$grav, pmbenz$voc_benzene, method = "spearman")
+  r_conv <- cor(pmbenz$grav[pmbenz$fuel_cat == "conventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmbenz$grav[pmbenz$fuel_cat == "nonconventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = pmbenz, aes(x = grav, y =voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 400, y = 10, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 250, y = 10, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  pmbenz <- dplyr::filter(per_fuel_mass, grepl('^grav$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmbenz$grav, pmbenz$voc_benzene, method = "spearman")
+  r_conv <- cor(pmbenz$grav[pmbenz$fuel_cat == "conventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmbenz$grav[pmbenz$fuel_cat == "nonconventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = pmbenz, aes(x = grav, y =voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 20000, y = 600, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 20000, y = 760, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 20000, y = 290, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### PM vs toluene
+
+* mg/startup
+
+```{r, echo=FALSE}
+  pmtol <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmtol$grav, pmtol$voc_toluene, method = "spearman")
+  r_conv <- cor(pmtol$grav[pmtol$fuel_cat == "conventional"], pmtol$voc_toluene[pmtol$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmtol$grav[pmtol$fuel_cat == "nonconventional"], pmtol$voc_toluene[pmtol$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = pmtol, aes(x = grav, y =voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 350, y = 2.25, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 200, y = 2.8, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 0.7, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  pmtol <-  dplyr::filter(per_fuel_mass, grepl('^grav$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(pmtol$grav, pmtol$voc_toluene, method = "spearman")
+  r_conv <- cor(pmtol$grav[pmtol$fuel_cat == "conventional"], pmtol$voc_toluene[pmtol$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(pmtol$grav[pmtol$fuel_cat == "nonconventional"], pmtol$voc_toluene[pmtol$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = pmtol, aes(x = grav, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 20000, y = 130, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 20000, y = 190, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 20000, y = 85, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+
+### CO vs formaldehyde
+
+* mg/startup
+
+```{r, echo=FALSE}
+  cofor <- dplyr::filter(mean_per_startup, grepl('^co$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cofor$co, cofor$formaldehyde, method = "spearman")
+  r_conv <- cor(cofor$co[cofor$fuel_cat == "conventional"], cofor$formaldehyde[cofor$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cofor$co[cofor$fuel_cat == "nonconventional"], cofor$formaldehyde[cofor$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = cofor, aes(x = co, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 500, y = 15, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+          ylab("formaldehyde") +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 750, y = 13, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  cofor <- dplyr::filter(per_fuel_mass, grepl('^co$|^formaldehyde$', pol)) %>%
+           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                           fuel_names == 'kerosene' |
+                                           fuel_names == 'wood shims' | 
+                                           fuel_names == 'kindling', 
+                                          'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cofor$co, cofor$formaldehyde, method = "spearman")
+  r_conv <- cor(cofor$co[cofor$fuel_cat == "conventional"], cofor$formaldehyde[cofor$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cofor$co[cofor$fuel_cat == "nonconventional"], cofor$formaldehyde[cofor$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = cofor, aes(x = co, y = formaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 35000, y = 850, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+          ylab("formaldehyde") +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 10000, y = 400, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs acetaldehyde
+
+*mg/startup
+
+```{r, echo=FALSE}
+  coacet <- dplyr::filter(mean_per_startup, grepl('^co$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(coacet$co, coacet$acetaldehyde, method = "spearman")
+  r_conv <- cor(coacet$co[coacet$fuel_cat == "conventional"], coacet$acetaldehyde[coacet$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(coacet$co[coacet$fuel_cat == "nonconventional"], coacet$acetaldehyde[coacet$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = coacet, aes(x = co, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 600, y = 10, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 750, y = 5, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 250, y = 1.25, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  coacet <- dplyr::filter(per_fuel_mass, grepl('^co$|^acetaldehyde$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(coacet$co, coacet$acetaldehyde, method = "spearman")
+  r_conv <- cor(coacet$co[coacet$fuel_cat == "conventional"], coacet$acetaldehyde[coacet$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(coacet$co[coacet$fuel_cat == "nonconventional"], coacet$acetaldehyde[coacet$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = coacet, aes(x = co, y = acetaldehyde)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 35000, y = 425, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 40000, y = 390, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 10000, y = 260, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("acetaldehyde") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs benzene
+
+*mg/startup
+
+```{r, echo=FALSE}
+  cobenz <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cobenz$co, cobenz$voc_benzene, method = "spearman")
+  r_conv <- cor(cobenz$co[cobenz$fuel_cat == "conventional"], cobenz$voc_benzene[cobenz$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cobenz$co[cobenz$fuel_cat == "nonconventional"], cobenz$voc_benzene[cobenz$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = cobenz, aes(x = co, y = voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 450, y = 7.5, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 600, y = 11, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 200, y = 1.25, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  cobenz <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_benzene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cobenz$co, cobenz$voc_benzene, method = "spearman")
+  r_conv <- cor(cobenz$co[cobenz$fuel_cat == "conventional"], cobenz$voc_benzene[cobenz$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cobenz$co[cobenz$fuel_cat == "nonconventional"], cobenz$voc_benzene[cobenz$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  ggplot(data = cobenz, aes(x = co, y = voc_benzene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 30000, y = 350, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 10000, y = 50, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("benzene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+### CO vs toluene
+
+* mg/startup
+
+```{r, echo=FALSE}
+  cotol <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cotol$co, cotol$voc_toluene, method = "spearman")
+  r_conv <- cor(cotol$co[cotol$fuel_cat == "conventional"], cotol$voc_toluene[cotol$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cotol$co[cotol$fuel_cat == "nonconventional"], cotol$voc_toluene[cotol$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  
+  ggplot(data = cotol, aes(x = co, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 500, y = 1.5, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 750, y = 3, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 225, y = 0.5, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
+* g/kg
+
+```{r, echo=FALSE}
+  cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
+            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                            fuel_names == 'kerosene' |
+                                            fuel_names == 'wood shims' | 
+                                            fuel_names == 'kindling', 
+                                           'conventional', 'nonconventional')) %>%
+           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+           tidyr::spread(pol, mean)
+
+ # spearman's rho calculations
+  rho_all <- cor(cotol$co, cotol$voc_toluene, method = "spearman")
+  r_conv <- cor(cotol$co[cotol$fuel_cat == "conventional"], cotol$voc_toluene[cotol$fuel_cat == "conventional"], method = "spearman")
+  r_noncon <- cor(cotol$co[cotol$fuel_cat == "nonconventional"], cotol$voc_toluene[cotol$fuel_cat == "nonconventional"], method = "spearman")
+  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  colnames(rhos) <- "val"
+  rhos$val <- round(rhos$val, 2)
+  
+  
+  ggplot(data = cotol, aes(x = co, y = voc_toluene)) + 
+        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
+        geom_smooth(method = "lm", se = FALSE, color = "black") +
+        geom_text(data = rhos, aes(x = 30000, y = 110, label = val[1]),
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        geom_text(data = rhos, aes(x = 30000, y = 140, label = val[2]),
+                       color = 'red',  parse = TRUE,
+                       size = 4) +
+        geom_text(data = rhos, aes(x = 10000, y = 75, label = val[3]),
+                       color = 'purple',  parse = TRUE,
+                       size = 4) +
+          ylab("toluene") +
+          xlab("CO") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          #scale_x_log10() +
+          #scale_y_log10() +
+          theme(text = element_text(size = 14),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.title = element_blank())
+```
+
