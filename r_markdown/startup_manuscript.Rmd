@@ -709,51 +709,8 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 
 ### PM vs CO
 
-* mg/startup
-```{r, echo=FALSE}
-  pmco <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$', pol)) %>%
-          dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                          fuel_names == 'kerosene' |
-                                          fuel_names == 'wood shims' | 
-                                          fuel_names == 'kindling', 
-                                          'conventional', 'nonconventional')) %>%
-          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-          tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(pmco$grav, pmco$co, method = "spearman")
-  r_conv <- cor(pmco$grav[pmco$fuel_cat == "conventional"], pmco$co[pmco$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmco$grav[pmco$fuel_cat == "nonconventional"], pmco$co[pmco$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-
-  ggplot(data = pmco, aes(x = grav, y = co)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 200, y = 500, label = val[1]), #all
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 100, y = 700, label = val[2]), #conventional
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 100, y = 100, label = val[3]), #nonconv
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("CO") +
-          xlab("PM2.5") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
-
 * g/kg
+
 ```{r, echo=FALSE}
   pmco <- dplyr::filter(per_fuel_mass, grepl('^grav$|^co$', pol)) %>%
           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
@@ -778,13 +735,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 10000, y = 30000, label = val[1]), #all
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 10000, y = 40000, label = val[2]), #conventional
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 10000, y = 20000, label = val[3]), #nonconv
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 10000, y = 40000, label = val[2]), #conventional
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 10000, y = 20000, label = val[3]), #nonconv
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("CO") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
@@ -799,51 +756,8 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 
 ### formaldehyde vs acetaldehyde
 
-* mg/startup
-```{r, echo=FALSE}
-  carbs <- dplyr::filter(mean_per_startup, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
-           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                           fuel_names == 'kerosene' |
-                                           fuel_names == 'wood shims' | 
-                                           fuel_names == 'kindling', 
-                                          'conventional', 'nonconventional')) %>%
-          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-          tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
-  r_conv <- cor(carbs$formaldehyde[carbs$fuel_cat == "conventional"], carbs$acetaldehyde[carbs$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(carbs$formaldehyde[carbs$fuel_cat == "nonconventional"], carbs$acetaldehyde[carbs$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 20, y = 15, label = val[1]), #all
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 25, y = 10, label = val[2]), #conv
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 2.5, y = 4, label = val[3]), #nonconv
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("acetaldehyde") +
-          xlab("formaldehyde") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
-
 * g/kg
+
 ```{r, echo=FALSE}
   carbs <- dplyr::filter(per_fuel_mass, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
@@ -869,12 +783,12 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
                       color = 'black',  parse = TRUE,
                       size = 5) +
         geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 1050, y = 500, label = val[2]), #conv
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 250, y = 250, label = val[3]), #nonconv
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_text(data = rhos, aes(x = 1050, y = 500, label = val[2]), #conv
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 250, y = 250, label = val[3]), #nonconv
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("acetaldehyde") +
           xlab("formaldehyde") +
           scale_color_hue(l=50, c=80) +
@@ -888,53 +802,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### benzene vs toluene
-
-* mg/startup
-
-```{r, echo=FALSE}
-  voc <- dplyr::filter(mean_per_startup, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
-         dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                         fuel_names == 'kerosene' |
-                                         fuel_names == 'wood shims' | 
-                                         fuel_names == 'kindling', 
-                                          'conventional', 'nonconventional')) %>%
-          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-          tidyr::spread(pol, mean)
-
-
- # spearman's rho calculations
-  rho_all <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
-  r_conv <- cor(voc$voc_benzene[voc$fuel_cat == "conventional"], voc$voc_toluene[voc$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[pmco$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-
-  ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 15, y = 2.5, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 5, y = 2.5, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 4, y = 0.5, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("toluene") +
-          xlab("benzene") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -964,13 +831,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 900, y = 175, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 700, y = 180, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 300, y = 60, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 700, y = 180, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 300, y = 60, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("toluene") +
           xlab("benzene") +
           scale_color_hue(l=50, c=80) +
@@ -984,51 +851,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### PM vs formaldehyde
-
-*mg/startup
-
-```{r, echo=FALSE}
-  pmfor <- dplyr::filter(mean_per_startup, grepl('^grav$|^formaldehyde$', pol)) %>%
-           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                           fuel_names == 'kerosene' |
-                                           fuel_names == 'wood shims' | 
-                                           fuel_names == 'kindling', 
-                                          'conventional', 'nonconventional')) %>%
-          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-          tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
-  r_conv <- cor(pmfor$grav[pmfor$fuel_cat == "conventional"], pmfor$formaldehyde[pmfor$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmfor$grav[pmfor$fuel_cat == "nonconventional"], pmfor$formaldehyde[pmfor$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-
-  ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 380, y = 10, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 250, y = 16, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 3, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("formaldehyde") +
-          xlab("PM2.5") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1056,13 +878,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 15000, y = 650, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 15000, y = 800, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 15000, y = 500, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 15000, y = 800, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 15000, y = 500, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("formaldehyde") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
@@ -1076,51 +898,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### PM vs acetaldehyde
-
-* mg/startup
-
-```{r, echo=FALSE}
-  pmacet <- dplyr::filter(mean_per_startup, grepl('^grav$|^acetaldehyde$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(pmacet$grav, pmacet$acetaldehyde, method = "spearman")
-  r_conv <- cor(pmacet$grav[pmacet$fuel_cat == "conventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmacet$grav[pmacet$fuel_cat == "nonconventional"], pmacet$acetaldehyde[pmacet$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-
-  ggplot(data = pmacet, aes(x = grav, y = acetaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 400, y = 10, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 250, y = 8, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
-                       color = 'purple', parse = TRUE,
-                       size = 4) +
-          ylab("acetaldehyde") +
-          xlab("PM2.5") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1148,13 +925,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 20000, y = 320, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 20000, y = 400, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 20000, y = 200, label = val[3]),
-                       color = 'purple', parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 20000, y = 400, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 20000, y = 200, label = val[3]),
+                       #color = 'purple', parse = TRUE,
+                       #size = 4) +
           ylab("acetaldehyde") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
@@ -1168,51 +945,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### PM vs benzene
-
-* mg/ startup
-
-```{r, echo=FALSE}
-  pmbenz <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_benzene$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(pmbenz$grav, pmbenz$voc_benzene, method = "spearman")
-  r_conv <- cor(pmbenz$grav[pmbenz$fuel_cat == "conventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmbenz$grav[pmbenz$fuel_cat == "nonconventional"], pmbenz$voc_benzene[pmbenz$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = pmbenz, aes(x = grav, y =voc_benzene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 400, y = 10, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 250, y = 10, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("benzene") +
-          xlab("PM2.5") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1240,13 +972,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 20000, y = 600, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 20000, y = 760, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 20000, y = 290, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 20000, y = 760, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 20000, y = 290, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("benzene") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
@@ -1260,51 +992,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### PM vs toluene
-
-* mg/startup
-
-```{r, echo=FALSE}
-  pmtol <- dplyr::filter(mean_per_startup, grepl('^grav$|^voc_toluene$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(pmtol$grav, pmtol$voc_toluene, method = "spearman")
-  r_conv <- cor(pmtol$grav[pmtol$fuel_cat == "conventional"], pmtol$voc_toluene[pmtol$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmtol$grav[pmtol$fuel_cat == "nonconventional"], pmtol$voc_toluene[pmtol$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = pmtol, aes(x = grav, y =voc_toluene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 350, y = 2.25, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 200, y = 2.8, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 0.7, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("toluene") +
-          xlab("PM2.5") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1333,12 +1020,12 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
                       color = 'black',  parse = TRUE,
                       size = 5) +
         geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 20000, y = 190, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 20000, y = 85, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_text(data = rhos, aes(x = 20000, y = 190, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 20000, y = 85, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("toluene") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
@@ -1353,51 +1040,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 
 
 ### CO vs formaldehyde
-
-* mg/startup
-
-```{r, echo=FALSE}
-  cofor <- dplyr::filter(mean_per_startup, grepl('^co$|^formaldehyde$', pol)) %>%
-           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                           fuel_names == 'kerosene' |
-                                           fuel_names == 'wood shims' | 
-                                           fuel_names == 'kindling', 
-                                          'conventional', 'nonconventional')) %>%
-          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-          tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(cofor$co, cofor$formaldehyde, method = "spearman")
-  r_conv <- cor(cofor$co[cofor$fuel_cat == "conventional"], cofor$formaldehyde[cofor$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(cofor$co[cofor$fuel_cat == "nonconventional"], cofor$formaldehyde[cofor$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = cofor, aes(x = co, y = formaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 500, y = 15, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-          ylab("formaldehyde") +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 750, y = 13, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 2, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          xlab("CO") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1425,14 +1067,14 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 35000, y = 850, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-          ylab("formaldehyde") +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 10000, y = 400, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        ylab("formaldehyde") +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 10000, y = 400, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           xlab("CO") +
           scale_color_hue(l=50, c=80) +
           theme_bw() +
@@ -1445,51 +1087,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### CO vs acetaldehyde
-
-*mg/startup
-
-```{r, echo=FALSE}
-  coacet <- dplyr::filter(mean_per_startup, grepl('^co$|^acetaldehyde$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(coacet$co, coacet$acetaldehyde, method = "spearman")
-  r_conv <- cor(coacet$co[coacet$fuel_cat == "conventional"], coacet$acetaldehyde[coacet$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(coacet$co[coacet$fuel_cat == "nonconventional"], coacet$acetaldehyde[coacet$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = coacet, aes(x = co, y = acetaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 600, y = 10, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 750, y = 5, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 250, y = 1.25, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("acetaldehyde") +
-          xlab("CO") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1517,13 +1114,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 35000, y = 425, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 40000, y = 390, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 10000, y = 260, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 40000, y = 390, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 10000, y = 260, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("acetaldehyde") +
           xlab("CO") +
           scale_color_hue(l=50, c=80) +
@@ -1537,51 +1134,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### CO vs benzene
-
-*mg/startup
-
-```{r, echo=FALSE}
-  cobenz <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_benzene$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(cobenz$co, cobenz$voc_benzene, method = "spearman")
-  r_conv <- cor(cobenz$co[cobenz$fuel_cat == "conventional"], cobenz$voc_benzene[cobenz$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(cobenz$co[cobenz$fuel_cat == "nonconventional"], cobenz$voc_benzene[cobenz$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  ggplot(data = cobenz, aes(x = co, y = voc_benzene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 450, y = 7.5, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 600, y = 11, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 200, y = 1.25, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("benzene") +
-          xlab("CO") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1609,13 +1161,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 30000, y = 350, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 10000, y = 50, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 35000, y = 600, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 10000, y = 50, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("benzene") +
           xlab("CO") +
           scale_color_hue(l=50, c=80) +
@@ -1629,52 +1181,6 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
 ```
 
 ### CO vs toluene
-
-* mg/startup
-
-```{r, echo=FALSE}
-  cotol <- dplyr::filter(mean_per_startup, grepl('^co$|^voc_toluene$', pol)) %>%
-            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
-                                            fuel_names == 'kerosene' |
-                                            fuel_names == 'wood shims' | 
-                                            fuel_names == 'kindling', 
-                                           'conventional', 'nonconventional')) %>%
-           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
-           tidyr::spread(pol, mean)
-
- # spearman's rho calculations
-  rho_all <- cor(cotol$co, cotol$voc_toluene, method = "spearman")
-  r_conv <- cor(cotol$co[cotol$fuel_cat == "conventional"], cotol$voc_toluene[cotol$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(cotol$co[cotol$fuel_cat == "nonconventional"], cotol$voc_toluene[cotol$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
-  
-  
-  ggplot(data = cotol, aes(x = co, y = voc_toluene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 500, y = 1.5, label = val[1]),
-                      color = 'black',  parse = TRUE,
-                      size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 750, y = 3, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 225, y = 0.5, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
-          ylab("toluene") +
-          xlab("CO") +
-          scale_color_hue(l=50, c=80) +
-          theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
-          theme(text = element_text(size = 14),
-                legend.position = "right",
-                legend.key.size = unit(0.1, "cm"),
-                legend.title = element_blank())
-```
 
 * g/kg
 
@@ -1703,13 +1209,13 @@ geom_smooth method= loess or other way to visualize spearman correlation rather 
         geom_text(data = rhos, aes(x = 30000, y = 110, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
-        geom_text(data = rhos, aes(x = 30000, y = 140, label = val[2]),
-                       color = 'red',  parse = TRUE,
-                       size = 4) +
-        geom_text(data = rhos, aes(x = 10000, y = 75, label = val[3]),
-                       color = 'purple',  parse = TRUE,
-                       size = 4) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_text(data = rhos, aes(x = 30000, y = 140, label = val[2]),
+                       #color = 'red',  parse = TRUE,
+                       #size = 4) +
+        #geom_text(data = rhos, aes(x = 10000, y = 75, label = val[3]),
+                       #color = 'purple',  parse = TRUE,
+                       #size = 4) +
           ylab("toluene") +
           xlab("CO") +
           scale_color_hue(l=50, c=80) +
