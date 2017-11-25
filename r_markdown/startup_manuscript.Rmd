@@ -712,7 +712,6 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
               dplyr::mutate(mean = as.numeric(mean)) %>%
               tidyr::spread(pol, mean) %>%
               dplyr::select(-fuel_names)
-             
 
   cor(cor_data, method = "spearman")
 ```
