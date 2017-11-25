@@ -704,7 +704,7 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 
 # Correlations 
 
-```{r}
+```{r, echo =FALSE, eval=FALSE}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
               tidyr::spread(pol, mean) %>%
@@ -1029,7 +1029,7 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
         geom_text(data = rhos, aes(x = 20000, y = 130, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
-        geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
+        #geom_smooth(method = "lm", se = FALSE, aes(group = fuel_cat, color = fuel_cat)) +
         #geom_text(data = rhos, aes(x = 20000, y = 190, label = val[2]),
                        #color = 'red',  parse = TRUE,
                        #size = 4) +
