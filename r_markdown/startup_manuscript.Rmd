@@ -702,10 +702,20 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```
 
+# Correlations 
+
+```{r}
+  cor_data <- per_fuel_mass %>%
+              dplyr::select(-inst, -nreps, -min, -max) %>%
+              tidyr::spread(pol, mean) %>%
+              dplyr::mutate(mean = as.numeric(mean))
+
+  cor(cor_data, method = "spearman")
+```
 
 ## Figure 4
 
-geom_smooth method= loess or other way to visualize spearman correlation rather than linear pearson? 
+*note lines are linear but R values are Spearman's rank correlation. 
 
 ### PM vs CO
 
