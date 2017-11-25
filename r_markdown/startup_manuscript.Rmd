@@ -17,6 +17,7 @@ output: html_document
   library(dunn.test)
   library(lsmeans)
   library(pairwiseCI)
+  library(corrplot)
   source("../r_scripts/R_functions.R")
 ```
 
@@ -711,9 +712,11 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
               dplyr::select(-inst, -nreps, -min, -max) %>%
               dplyr::mutate(mean = as.numeric(mean)) %>%
               tidyr::spread(pol, mean) %>%
-              dplyr::select(-fuel_names)
+              dplyr::select(-fuel_names, -m_p_tolualdehyde) 
 
-  cor(cor_data, method = "spearman")
+  cors <- round(cor(na.omit(cor_data), method = "spearman"), 2)
+  corrplot(cors, method = "circle")
+
 ```
 
 ## Figure 4
