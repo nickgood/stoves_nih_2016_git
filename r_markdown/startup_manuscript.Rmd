@@ -38,20 +38,22 @@ output: html_document
                    dplyr::left_join(dplyr::select(qc, id, qc),
                                                   by = "id") %>%
                    dplyr::filter(!is.na(dm), qc != "bad") %>%
-                   dplyr::group_by(fuel) %>%
+                   dplyr::mutate(dur = (off - on) / 60) %>%
+                   dplyr::group_by(fuel_type) %>%
                    dplyr::summarise(mean_dm = mean(dm),
                                     min_dm = min(dm),
                                     max_dm = max(dm),
                                     total_dm = sum(dm),
-                                    mean_burn_time = round(mean(dur)*60, 1), #in minutes per startup
-                                    min_burn_time = round(min(dur)*60, 1),
-                                    max_burn_time = round(max(dur)*60, 1),
+                                    mean_burn_time = round(mean(dur), 1), #in minutes per startup
+                                    min_burn_time = round(min(dur), 1),
+                                    max_burn_time = round(max(dur), 1),
                                     num_reps = n()) %>%
-                   dplyr::mutate(fuel = forcats::fct_relevel(fuel, "background", "kerosene",
-                                                              "leaves_twigs", "flipflops",
-                                                              "rubber", "newspaper",
-                                                              "wood_shims", "t_shirts",
-                                                              "food_packaging", "plastic_bags")) %>%
+                   dplyr::mutate(fuel = forcats::fct_relevel(fuel_type,
+                                                             "background", "kerosene",
+                                                             "leaves_twigs", "flipflops",
+                                                             "rubber", "newspaper",
+                                                             "wood_shims", "t_shirts",
+                                                             "food_packaging", "plastic_bags")) %>%
                    dplyr::mutate(fuel = forcats::fct_drop(fuel, "blank")) %>%
                    dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
                                                                    "kindling" = "leaves_twigs",
@@ -707,8 +709,10 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```{r, echo =FALSE, eval=FALSE}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
+              dplyr::mutate(mean = as.numeric(mean)) %>%
               tidyr::spread(pol, mean) %>%
-              dplyr::mutate(mean = as.numeric(mean))
+              dplyr::select(-fuel_names)
+             
 
   cor(cor_data, method = "spearman")
 ```
