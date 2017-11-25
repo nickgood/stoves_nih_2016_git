@@ -39,7 +39,7 @@ output: html_document
                                                   by = "id") %>%
                    dplyr::filter(!is.na(dm), qc != "bad") %>%
                    dplyr::mutate(dur = (off - on) / 60) %>%
-                   dplyr::group_by(fuel_type) %>%
+                   dplyr::group_by(fuel) %>%
                    dplyr::summarise(mean_dm = mean(dm),
                                     min_dm = min(dm),
                                     max_dm = max(dm),
@@ -48,7 +48,7 @@ output: html_document
                                     min_burn_time = round(min(dur), 1),
                                     max_burn_time = round(max(dur), 1),
                                     num_reps = n()) %>%
-                   dplyr::mutate(fuel = forcats::fct_relevel(fuel_type,
+                   dplyr::mutate(fuel = forcats::fct_relevel(fuel,
                                                              "background", "kerosene",
                                                              "leaves_twigs", "flipflops",
                                                              "rubber", "newspaper",
@@ -706,7 +706,7 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 
 # Correlations 
 
-```{r, echo =FALSE, eval=FALSE}
+```{r, echo =FALSE}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
               dplyr::mutate(mean = as.numeric(mean)) %>%
