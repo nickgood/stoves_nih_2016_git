@@ -707,8 +707,8 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```{r, echo =FALSE, eval=FALSE}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
-              tidyr::spread(pol, mean) %>%
-              dplyr::mutate(mean = as.numeric(mean))
+              dplyr::mutate(mean = as.numeric(mean)) %>%
+              tidyr::spread(pol, mean)
 
   cor(cor_data, method = "spearman")
 ```
