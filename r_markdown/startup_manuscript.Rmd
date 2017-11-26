@@ -703,7 +703,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 ```
 
 ```{r, echo = FALSE, fig.width = 6, fig.height = 9}
-gridExtra::grid.arrange(stacked_plot2, filled_plot2)
+  gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```
 
 # Correlations 
