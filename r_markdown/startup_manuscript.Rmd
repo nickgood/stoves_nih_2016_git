@@ -574,7 +574,8 @@ var_per_fuel_pct <- mean_per_startup %>%
 
 ## Figure 3.
 
-* stacked bar charts of health relevent pollutant categories
+* stacked bar charts of health relevent pollutant categories.
+* change carcinogens to ECOC once have data
 
 ```{r, echo = FALSE, fig.width = 6, fig.height = 4}
   pol_cats <- mean_per_startup %>%
@@ -707,15 +708,15 @@ gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 
 # Correlations 
 
-```{r, echo =FALSE}
+```{r, echo =FALSE, fig.width = 15, fig.height = 15}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
               dplyr::mutate(mean = as.numeric(mean)) %>%
               tidyr::spread(pol, mean) %>%
-              dplyr::select(-fuel_names, -m_p_tolualdehyde) 
+              dplyr::select(-fuel_names, -m_p_tolualdehyde)
 
   cors <- round(cor(na.omit(cor_data), method = "spearman"), 2)
-  corrplot(cors, method = "circle")
+  corrplot.mixed(cors, lower.col = "black", upper = "color", number.cex = 1, tl.pos = "lt", diag = "l")
 
 ```
 
