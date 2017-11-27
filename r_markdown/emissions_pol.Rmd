@@ -10,6 +10,7 @@ output:
 ```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(knitr)
+  library(lubridate)
 ```
 
 ```{r global_options, include=FALSE}
@@ -387,21 +388,22 @@ Concentration is corrected for background by removing background test average co
 ```{r, eval = FALSE}
   voc <- dplyr::select(voc_merged,
                        id,
-                     start, end,
-                        pol, ppb,
-                      ppb_bg, qc) %>%
+                     start_time, stop_time,
+                        pol, ppb) %>%
+                      #ppb_bg, qc) %>%
          dplyr::left_join(dplyr::select(pol_properties,
                                         pol,
                                         mw,
                                         num_c),
-                                        by = "pol") %>% 
-         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+                                        by = "pol") %>%
+         dplyr::mutate(start_time = hms(start_time), stop_time = hms(stop_time))
+        # dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
 
 ```{r, eval = FALSE}
-  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+  voc <- dplyr::mutate(voc, dur = (stop_time) - start_time) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
                             conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))

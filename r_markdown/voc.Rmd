@@ -22,17 +22,17 @@ output:
  * voc (ppbv)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/voc.Rda")
+  voc <- readRDS("../r_files/voc.RDS")
 ```
 
 * metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")     # load sample meta data
-  load("../r_files/fuel_burnt.Rda")  # fuel use meta data
-  load("../r_files/emissions.Rda")   # load pollutant emissions data
-  load("../r_files/data_1.Rda")
-  load("../r_files/notes.Rda")
+  samples <- readRDS("../r_files/samples.RDS")     # load sample meta data
+  fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")  # fuel use meta data
+  emissions <- readRDS("../r_files/emissions_long.RDS")   # load pollutant emissions data
+  data_1 <- readRDS("../r_files/data_tester_one.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ``` 
 
 * The columns `stove` and `fuel` contain the exact stove and fuel type (e.g., "Ceramic Charcoal (Artisan), Coconut Charcoal") that corresponds with the number of the `id` (3 replicates per id number, specified by A, B, and C (sometimes additional replicates, [i.e. D or E], is also included). The columns `stovecat` and `fuelcat` contain broader categories of stoves and fuels (e.g., "improved, charcoal").
@@ -40,7 +40,7 @@ output:
 # Organize
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
+  # voc_merged <- dplyr::filter(voc, grepl("^[0-9]|^G[0-9]", id) == TRUE)
 ```
 
 ## longer format
@@ -48,7 +48,9 @@ output:
 * make longer and remove `NA`.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  voc_merged <- tidyr::gather(voc_merged, "pol", "ppb", starts_with("voc_")) %>%
+  voc_merged <- tidyr::gather(voc, "pol", "ppb", - c(id, date, start_time, stop_time,
+                                                     start_reading, stop_reading,
+                                                     flow_rate_cc_per_min)) %>%
                 dplyr::filter(!is.na(id) & id != "NA")
 ```
 
