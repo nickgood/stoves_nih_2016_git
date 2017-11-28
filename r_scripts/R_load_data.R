@@ -39,15 +39,15 @@ load_ecoc_file <- function(file){
                         ecoc_id = Sample.ID) %>%
           dplyr::mutate(date = as.Date(date, "%m/%d/%Y"),
                                datetime = as.POSIXct(as.character(date)))
-
- # determine type (test, pilot or NA)
+  
+# determine cassette (artifact, sample, or blank)
   ecoc <- dplyr::mutate(ecoc,
                         type = as.character(ecoc_id),
                         type = ifelse(grepl(".*-A.*|.*A$", type), "artifact", type),
                         type = ifelse(grepl(".*-P.*|.*P$|.*-D.*", type), "sample", type),
                         type = ifelse(grepl(".*Blank.*|.*blank.*", type), "blank", type))
 
- # determine cassette (a, e or NA)
+
   ecoc <- dplyr::mutate(ecoc,
                         cassette = as.character(ecoc_id),
                         cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
