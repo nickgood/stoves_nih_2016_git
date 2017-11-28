@@ -47,16 +47,6 @@ load_ecoc_file <- function(file){
                         type = ifelse(grepl(".*-P.*|.*P$|.*-D.*", type), "sample", type),
                         type = ifelse(grepl(".*Blank.*|.*blank.*", type), "blank", type))
 
-
-  ecoc <- dplyr::mutate(ecoc,
-                        cassette = as.character(ecoc_id),
-                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$",
-                                   NA, cassette),
-                        cassette = sub("^30A-3$", "e", cassette),
-                        cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
-                        cassette = sub(".*-E.*|.*[0-9]E$", "e", cassette),
-                        cassette = sub(".*bq.*|.*blank.*", NA, cassette, ignore.case = TRUE))
-
  # extract ids
   ecoc <- dplyr::mutate(ecoc,
                          id = as.character(ecoc_id),
