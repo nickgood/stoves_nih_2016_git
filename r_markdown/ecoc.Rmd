@@ -142,7 +142,13 @@ output:
                                            "oc", pol),
                               pol = ifelse(pol == "tc_ug_sq_cm",
                                            "tc", pol)) %>%
-                dplyr::mutate()
+                dplyr::mutate(test_type = ifelse(grepl("^BG", id_test), "background", "test"))
+```
+
+# Account for artifact
+
+```{r}
+
 ```
 
 
@@ -152,23 +158,21 @@ output:
   area <- 11.79  # filter area (cm^2)
 ```
 
-* extract "ok" background data
+* extract "good" background data
 * remove missing data
 * calculate average concentration emitted ( and other stats)
-* average any repeat measurements (non in G8-G14)
-* note G12 missing measurement data
 * calculate averge background by pollutant / type
 * the filter areas is `r area ` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(ecoc_long, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(ecoc_long, test_type == "background", qc != "bad") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
-        dplyr::group_by(pol, id, cassette) %>%
+        dplyr::group_by(pol, id, type) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
-        dplyr::group_by(pol, cassette) %>%
+        dplyr::group_by(pol, type) %>%
         dplyr::summarise(mean = mean(rep_mean),
                          sd = sd(rep_mean),
                          min = min(rep_mean),
@@ -179,9 +183,9 @@ output:
 * account for artifact
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, cassette, mean) %>%
-        tidyr::spread(cassette, mean) %>%
-        dplyr::mutate(conc_bg = e - a)
+  bg <- dplyr::select(bg, pol, type, mean) %>%
+        tidyr::spread(type, mean) %>%
+        dplyr::mutate(background = sample - artifact)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -211,25 +215,4 @@ output:
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## values below lod
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
-                                       qc == "ok" &
-                                       type == "test" &
-                                       grepl("^[0-9]", id) &
-                                       cassette == "e")
-
-  ggplot(test_data, aes(id, ug_sq_cm, colour = lod)) +
-    geom_point() +
-    theme_minimal() +
-    theme(legend.position = "top") +
-    scale_y_log10() +
-    scale_colour_manual(values = c("ok" = "mediumorchid",
-                                   "maybe" = "mediumaquamarine",
-                                   "bad" = "mistyrose4")) +
-    facet_wrap(~pol, ncol = 1, scales = "free") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 
