@@ -65,8 +65,7 @@ load_ecoc_file <- function(file){
   ecoc <- dplyr::mutate(ecoc,
                         ecod_id = as.factor(ecoc_id),
                         id = as.factor(id),
-                        type = as.factor(type),
-                        cassette = as.factor(cassette))
+                        type = as.factor(type))
 
  # return
   return(ecoc)
