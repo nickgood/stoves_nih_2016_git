@@ -26,7 +26,7 @@ output:
 Loads ecoc data file and resave as .RDS
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # ecoc <- load_singlefiles("ecoc")
+  ecoc <- load_singlefiles("ecoc")
   # saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```
 
