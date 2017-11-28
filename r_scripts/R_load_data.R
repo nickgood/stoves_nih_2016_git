@@ -7,7 +7,7 @@
 
 #________________________________________________________
 # Load ECOC file
-# file <- "../data/ecoc/20170110_ECOC.csv"
+# file <- "../data/ecoc/startup_filters_ECOC.csv"
 load_ecoc_file <- function(file){
  # classes
   classes <- c("character",
@@ -43,16 +43,9 @@ load_ecoc_file <- function(file){
  # determine type (test, pilot or NA)
   ecoc <- dplyr::mutate(ecoc,
                         type = as.character(ecoc_id),
-                        type = sub(".*india.*", NA, type, ignore.case = TRUE),
-                        type = sub("^C11-.*", "test", type),
-                        type = sub(".*blank.*|.*start.*", "test", type, ignore.case = TRUE),
-                        type = sub(".*BK.*|.*BG.*|^JAV.*", "pilot", type, ignore.case = TRUE),
-                        type = sub("^BA.*|.*BA$", "test", type, ignore.case = TRUE),
-                        type = sub("^B[0-9].*", "test", type, ignore.case = TRUE),
-                        type = sub("^B63A$|^B63E$", "pilot", type),
-                        type = sub("^P.*", "pilot", type),
-                        type = sub("^[A-Z]-[0-9].*|^[A-Z] [0-9].*|^[0-9][A-Z]-.*|^[0-9][0-9][A-Z]-.*", "test", type),
-                        type = sub("^G.*", "bg", type))
+                        type = ifelse(grepl(".*-A.*|.*A$", type), "artifact", type),
+                        type = ifelse(grepl(".*-P.*|.*P$|.*-D.*", type), "sample", type),
+                        type = ifelse(grepl(".*Blank.*|.*blank.*", type), "blank", type))
 
  # determine cassette (a, e or NA)
   ecoc <- dplyr::mutate(ecoc,
