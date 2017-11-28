@@ -48,8 +48,6 @@ output:
                            by = "id_test")
 ```
 
-
-
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -66,9 +64,9 @@ output:
 * match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_ <- ecoc %>%
-           dplyr::left_join(dplyr::select(times_test, id_test, start, end),
-                            by = c("id" = "id_test"))
+  ecoc <- ecoc %>%
+          dplyr::left_join(dplyr::select(times_test, id, start, end),
+                           by = "id")
 ```
 
 * merge ecoc with metadata
