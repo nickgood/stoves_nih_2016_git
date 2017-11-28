@@ -98,9 +98,6 @@ output:
 ## additional bad tests
 
 * tests where fid2 is out of range
-* first 6D measurement, that produced very high value (repeated)
-* 8D, very high value
-* 9B, artifact gives very high values.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc <- dplyr::mutate(ecoc, qc = ifelse(grepl("ok", fid2),
@@ -108,9 +105,9 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
+  bad <- dplyr::filter(ecoc, qc == "bad") %>% dplyr::select(id)
 
-  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
+  maybe <- dplyr::filter(ecoc, qc == "maybe") %>% dplyr::select(id)
 ```
 
 ## bad tests
@@ -125,26 +122,26 @@ output:
 * longer format with columns: `pol = ec, oc or tc` containing the pollutant name and `ug_sq_cm` containing the measured value
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::select(ecoc_merged,
-                               id, 
-                               oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
-                               datetime, date, time,
-                               flow,
-                               start, end,
-                               qc,
-                               type, cassette,
-                               punch_area,
-                               analyst) %>%
-                  tidyr::gather("pol", "ug_sq_cm",
-                                ec_ug_sq_cm,
-                                oc_ug_sq_cm,
-                                tc_ug_sq_cm) %>%
-                  dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm",
-                                             "ec", pol),
-                                pol = ifelse(pol == "oc_ug_sq_cm",
-                                             "oc", pol),
-                                pol = ifelse(pol == "tc_ug_sq_cm",
-                                             "tc", pol))
+  ecoc_long <- dplyr::select(ecoc,
+                             id, 
+                             oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
+                             datetime, date, time,
+                             flow,
+                             start, end,
+                             qc,
+                             type,
+                             punch_area,
+                             analyst) %>%
+                tidyr::gather("pol", "ug_sq_cm",
+                              ec_ug_sq_cm,
+                              oc_ug_sq_cm,
+                              tc_ug_sq_cm) %>%
+                dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm",
+                                           "ec", pol),
+                              pol = ifelse(pol == "oc_ug_sq_cm",
+                                           "oc", pol),
+                              pol = ifelse(pol == "tc_ug_sq_cm",
+                                           "tc", pol))
 ```
 
 # LOD / LOQ
