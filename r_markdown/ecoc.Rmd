@@ -195,14 +195,14 @@ output:
 ## Remove background from data
 
 ```{r}
-
+ ecoc_merged <- 
 ```
 
 
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
+  saveRDS(ecoc_merged, file ="../r_files/ecoc_merged.RDS")
 ```
 
 # Plots
