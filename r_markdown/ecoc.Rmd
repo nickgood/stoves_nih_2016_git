@@ -74,12 +74,6 @@ output:
                            by = "id")
 ```
 
-* merge ecoc with metadata
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  
-```
-
 # QC
 
 ## flags from notes
