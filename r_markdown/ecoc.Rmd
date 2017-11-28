@@ -123,7 +123,7 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   ecoc_long <- dplyr::select(ecoc,
-                             id, 
+                             id, id_test, 
                              oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
                              datetime, date, time,
                              flow,
@@ -141,87 +141,15 @@ output:
                               pol = ifelse(pol == "oc_ug_sq_cm",
                                            "oc", pol),
                               pol = ifelse(pol == "tc_ug_sq_cm",
-                                           "tc", pol))
+                                           "tc", pol)) %>%
+                dplyr::mutate()
 ```
 
-# LOD / LOQ
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <- dplyr::filter(ecoc_merged, id == "lab_blank") %>%
-            dplyr::group_by(pol) %>%
-            dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
-                             loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_ec <- dplyr::filter(blanks, pol == "ec")$lod[1]
-  lod_oc <- dplyr::filter(blanks, pol == "oc")$lod[1]
-  loq_ec <- dplyr::filter(blanks, pol == "ec")$loq[1]
-  loq_oc <- dplyr::filter(blanks, pol == "oc")$loq[1]
-```
-
-* the EC limit of detection is `r round(lod_ec, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_ec, 3)` ($\mu g/cm^2$).
-
-* the OC limit of detection is `r round(lod_oc, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_oc, 3)` ($\mu g/cm^2$).
-
-* add ec lod and loq flags
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged,
-                                loq = NA,
-                                lod = NA) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "above",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "below",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "above",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "below",
-                                            loq))
-```
-
-* add oc lod and loq flags
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_oc,
-                                            "above",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_oc,
-                                            "below",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= loq_oc,
-                                            "above",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < loq_oc,
-                                            "below",
-                                            loq))
-```
 
 # Background analysis
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- area <- 11.79  # filter area (cm^2)
+  area <- 11.79  # filter area (cm^2)
 ```
 
 * extract "ok" background data
@@ -233,7 +161,7 @@ output:
 * the filter areas is `r area ` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(ecoc_long, type == "bg", qc == "ok") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
         dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
