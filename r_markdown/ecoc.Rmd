@@ -38,29 +38,37 @@ output:
 
 # Meta data
 
+* match id to test id
+
+```{r}
+  ecoc <- ecoc %>%
+          dplyr::mutate(id_test = as.character(id_test)) %>%
+          dplyr::left_join(dplyr::select(test_info, id, id_test) %>%
+                           dplyr::mutate(id_test = as.character(id_test)),
+                           by = "id_test")
+```
+
+
+
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows <- flow %>% 
-          dplyr::select(-date) %>%
-          dplyr::filter(inst == "white" | inst == "red") %>%
-          dplyr::mutate(inst = factor(inst)) %>%
-          dplyr::mutate(type = 
+  flows <- flow %>% 
+           dplyr::select(-date) %>%
+           dplyr::filter(inst == "white" | inst == "red") %>%
+           dplyr::mutate(inst = factor(inst)) %>%
+           dplyr::mutate(type = 
                          forcats::fct_recode(inst, "artifact" = "white",
                                                    "sample" = "red")) %>%
-          dplyr::select(-inst)
+           dplyr::select(-inst)
 ```
 
 * match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- times <- dplyr::select(filter_times, -date) %>%
-           dplyr::filter(color == "white" | color == "orange") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::mutate(cassette = 
-                         forcats::fct_recode(color, "a" = "white",
-                                                     "e" = "orange")) %>%
-           dplyr::select(-color)
+  ecoc_ <- ecoc %>%
+           dplyr::left_join(dplyr::select(times_test, id_test, start, end),
+                            by = c("id" = "id_test"))
 ```
 
 * merge ecoc with metadata
