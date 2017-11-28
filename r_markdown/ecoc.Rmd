@@ -36,16 +36,6 @@ output:
   notes <- readRDS("../r_files/qc.RDS")
 ```
 
-# Filter data
-
-* retain test and background data (blanks fall under test category)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::filter(ecoc, type == "test" | type == "bg") %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
-```
-
 # Meta data
 
 * match cassette flows to id
