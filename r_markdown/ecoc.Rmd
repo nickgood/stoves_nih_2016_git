@@ -58,7 +58,12 @@ output:
            dplyr::mutate(type = 
                          forcats::fct_recode(inst, "artifact" = "white",
                                                    "sample" = "red")) %>%
-           dplyr::select(-inst)
+           dplyr::select(-inst) %>%
+           dplyr::rename(flow = "mean")
+
+  ecoc <- ecoc %>%
+          dplyr::left_join(dplyr::select(flows, id, flow, type),
+                           by = c("id", "type"))
 ```
 
 * match cassette timestamps to id
@@ -72,11 +77,7 @@ output:
 * merge ecoc with metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged,
-                                  flows,
-                                  by = c("id", "cassette")) %>%
-                 dplyr::left_join(times,
-                                  by = c("id", "cassette"))
+  
 ```
 
 # QC
