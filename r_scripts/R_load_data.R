@@ -49,12 +49,13 @@ load_ecoc_file <- function(file){
 
  # extract ids
   ecoc <- ecoc %>%
-          dplyr::mutate(id = as.character(ecoc_id),
-                        id = sub(".*( .*-[A|P|D])", "\\1", id),
-                        id = sub("-[[:alpha:]]", "", id),
-                        id = ifelse(grepl(".*Blank.*", id), "blank", id),
-                        id = ifelse(grepl("1/9/2017 D L11 A", id), "???", id),
-                        id = sub("(^[[:alpha:]])I.*", "\\11", id))
+          dplyr::mutate(id_test = as.character(ecoc_id),
+                        id_test = sub(".*( .*-[A|P|D])", "\\1", id_test),
+                        id_test = sub("-[[:alpha:]]", "", id_test),
+                        id_test = ifelse(grepl(".*Blank.*", id_test), "blank", id_test),
+                        id_test = ifelse(grepl("1/9/2017 D L11 A", id_test), "???", id_test),
+                        id_test = sub("(^[[:alpha:]])I.*", "\\11", id_test),
+                        id_test = gsub(" ", "", id_test))
 
  # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
@@ -64,7 +65,7 @@ load_ecoc_file <- function(file){
  # set classes
   ecoc <- dplyr::mutate(ecoc,
                         ecod_id = as.factor(ecoc_id),
-                        id = as.factor(id),
+                        id_test = as.factor(id_test),
                         type = as.factor(type))
 
  # return
