@@ -28,10 +28,12 @@ output:
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/filter_times.Rda")
-  load(file = "../r_files/filter_flows.Rda")
-  load(file = "../r_files/notes.Rda")
-  load(file = "../r_files/samples.Rda")
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Filter data
