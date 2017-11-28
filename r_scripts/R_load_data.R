@@ -48,26 +48,13 @@ load_ecoc_file <- function(file){
                         type = ifelse(grepl(".*Blank.*|.*blank.*", type), "blank", type))
 
  # extract ids
-  ecoc <- dplyr::mutate(ecoc,
-                         id = as.character(ecoc_id),
-                         id = sub("^B63A$|^B63E$", "lab_blank", id),
-                         id = sub("5L-[A-Z]$", "5C", id),
-                         id = sub("^G7E$", "G7", id),
-                         id = sub("-[A-Z] repeat$", "", id),
-                         id = sub(".*P5-A$", "5", id),
-                         id = sub(".*india.*", NA, id, ignore.case = TRUE),
-                         id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
-                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
-                         id = gsub("^P.*", NA, id),
-                         id = sub("-[0-9]$", "", id),
-                         id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
-                         id = gsub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9] |-[A-Z]$", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
+  ecoc <- ecoc %>%
+          dplyr::mutate(id = as.character(ecoc_id),
+                        id = sub(".*( .*-[A|P|D])", "\\1", id),
+                        id = sub("-[[:alpha:]]", "", id),
+                        id = ifelse(grepl(".*Blank.*", id), "blank", id),
+                        id = ifelse(grepl("1/9/2017 D L11 A", id), "???", id),
+                        id = sub("(^[[:alpha:]])I.*", "\\11", id))
 
  # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
