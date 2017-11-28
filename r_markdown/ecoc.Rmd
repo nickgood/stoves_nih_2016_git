@@ -41,17 +41,14 @@ output:
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows <- dplyr::select(filter_flows, -date) %>%
-           dplyr::filter(colour == "white" | colour == "orange") %>%
-           dplyr::group_by(id, type, colour) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id, colour) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-           dplyr::mutate(colour = factor(colour)) %>%
-           dplyr::mutate(cassette = 
-                         forcats::fct_recode(colour, "a" = "white",
-                                                     "e" = "orange")) %>%
-           dplyr::select(-colour)
+ flows <- flow %>% 
+          dplyr::select(-date) %>%
+          dplyr::filter(inst == "white" | inst == "red") %>%
+          dplyr::mutate(inst = factor(inst)) %>%
+          dplyr::mutate(type = 
+                         forcats::fct_recode(inst, "artifact" = "white",
+                                                   "sample" = "red")) %>%
+          dplyr::select(-inst)
 ```
 
 * match cassette timestamps to id
