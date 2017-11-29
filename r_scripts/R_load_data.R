@@ -53,7 +53,7 @@ load_ecoc_file <- function(file){
                         id_test = sub(".*( .*-[A|P|D])", "\\1", id_test),
                         id_test = sub("-[[:alpha:]]", "", id_test),
                         id_test = ifelse(grepl(".*Blank.*", id_test), "blank", id_test),
-                        id_test = ifelse(grepl("1/9/2017 D L11 A", id_test), "???", id_test),
+                        id_test = sub("1/9/2017 D L11 A", "L1.1", id_test),
                         id_test = sub("(^[[:alpha:]])I.*", "\\11", id_test),
                         id_test = gsub(" ", "", id_test),
                         id_test = gsub("-", ".", id_test),
