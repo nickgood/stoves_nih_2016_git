@@ -36,6 +36,19 @@ output:
   notes <- readRDS("../r_files/qc.RDS")
 ```
 
+# Remove samples
+
+* F1 and F3 had bad (zero) calibration area
+* L1.1 and L2 were analysed twice with and with He step, He step method retained.
+
+```{r}
+  ecoc <- ecoc %>%
+          dplyr::filter((ecoc_id != "1/9/2017 B F1-A" | date != "0017-06-07") &
+                        (ecoc_id != "1/9/2017 D F3-A" | date != "0017-06-07") &
+                         ecoc_id != "L1.1-P" &
+                         ecoc_id != "L2-P")
+```
+
 # Meta data
 
 * match id to test id
