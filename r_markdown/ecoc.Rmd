@@ -59,7 +59,9 @@ output:
                          forcats::fct_recode(inst, "artifact" = "white",
                                                    "sample" = "red")) %>%
            dplyr::select(-inst) %>%
-           dplyr::rename(flow = "mean")
+           dplyr::rename(flow = "mean") %>%
+           dplyr::mutate(flow = ifelse(is.na(flow), pre, flow),
+                         flow = ifelse(is.na(flow), post, flow))
 
   ecoc <- ecoc %>%
           dplyr::left_join(dplyr::select(flows, id, flow, type),
@@ -195,16 +197,17 @@ output:
                  dplyr::mutate(conc = ug_sq_cm * area * 1000 *60 / (flow * dur)) %>% # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm.
                  dplyr::select(id, id_test, conc, type, pol) %>%
                  tidyr::spread(type, conc) %>%
-                 dplyr::mutate(value = sample - artifact,
+                 dplyr::mutate(value_raw = sample - artifact,
                                units = "ug/m3")
 ```
-
-
 
 ## Remove background from data
 
 ```{r}
- ecoc_merged <- 
+ ecoc_merged_ <- ecoc_merged %>%
+                dplyr::left_join(dplyr::select(bg, pol, background),
+                                 by = "pol") %>%
+                 dplyr::mutate(value = value_raw - background)
 ```
 
 
