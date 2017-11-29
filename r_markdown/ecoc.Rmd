@@ -145,12 +145,6 @@ output:
                 dplyr::mutate(test_type = ifelse(grepl("^BG", id_test), "background", "test"))
 ```
 
-# Account for artifact
-
-```{r}
-
-```
-
 
 # Background analysis
 
@@ -168,7 +162,7 @@ output:
   bg <- dplyr::filter(ecoc_long, test_type == "background", qc != "bad") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
-        dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
+        dplyr::mutate(conc = ug_sq_cm * area * 1000 * 60 / (flow * dur)) %>%
         dplyr::group_by(pol, id, type) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
@@ -191,6 +185,21 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
+
+# Account for artifact
+
+```{r}
+  ecoc_merged <- ecoc_long %>%
+                 dplyr::filter(type != "blank", !is.na(id)) %>%
+                 dplyr::mutate(dur = end - start) %>%
+                 dplyr::mutate(conc = ug_sq_cm * area * 1000 *60 / (flow * dur)) %>% # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm.
+                 dplyr::select(id, id_test, conc, type, pol) %>%
+                 tidyr::spread(type, conc) %>%
+                 dplyr::mutate(value = sample - artifact,
+                               units = "ug/m3")
+```
+
+
 
 ## Remove background from data
 
