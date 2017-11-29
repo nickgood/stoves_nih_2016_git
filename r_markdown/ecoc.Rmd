@@ -22,66 +22,58 @@ output:
 * ecoc
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc.Rda")
+  ecoc <- readRDS("../r_files/ecoc.RDS")
 ```
 
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/filter_times.Rda")
-  load(file = "../r_files/filter_flows.Rda")
-  load(file = "../r_files/notes.Rda")
-  load(file = "../r_files/samples.Rda")
-```
-
-# Filter data
-
-* retain test and background data (blanks fall under test category)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::filter(ecoc, type == "test" | type == "bg") %>%
-                 dplyr::arrange(id) %>%
-                 dplyr::mutate(id = as.factor(id))
+  test_info <- readRDS("../r_files/test_info.RDS")
+  times_fuel <- readRDS("../r_files/times_fuel.RDS")
+  times_bg <- readRDS("../r_files/times_bg.RDS")
+  times_test <- readRDS("../r_files/times_test.RDS")
+  flow <- readRDS("../r_files/flows.RDS")
+  notes <- readRDS("../r_files/qc.RDS")
 ```
 
 # Meta data
 
+* match id to test id
+
+```{r}
+  ecoc <- ecoc %>%
+          dplyr::mutate(id_test = as.character(id_test)) %>%
+          dplyr::left_join(dplyr::select(test_info, id, id_test) %>%
+                           dplyr::mutate(id_test = as.character(id_test)),
+                           by = "id_test")
+```
+
 * match cassette flows to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows <- dplyr::select(filter_flows, -date) %>%
-           dplyr::filter(colour == "white" | colour == "orange") %>%
-           dplyr::group_by(id, type, colour) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id, colour) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-           dplyr::mutate(colour = factor(colour)) %>%
-           dplyr::mutate(cassette = 
-                         forcats::fct_recode(colour, "a" = "white",
-                                                     "e" = "orange")) %>%
-           dplyr::select(-colour)
+  flows <- flow %>% 
+           dplyr::select(-date) %>%
+           dplyr::filter(inst == "white" | inst == "red") %>%
+           dplyr::mutate(inst = factor(inst)) %>%
+           dplyr::mutate(type = 
+                         forcats::fct_recode(inst, "artifact" = "white",
+                                                   "sample" = "red")) %>%
+           dplyr::select(-inst) %>%
+           dplyr::rename(flow = "mean") %>%
+           dplyr::mutate(flow = ifelse(is.na(flow), pre, flow),
+                         flow = ifelse(is.na(flow), post, flow))
+
+  ecoc <- ecoc %>%
+          dplyr::left_join(dplyr::select(flows, id, flow, type),
+                           by = c("id", "type"))
 ```
 
 * match cassette timestamps to id
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- times <- dplyr::select(filter_times, -date) %>%
-           dplyr::filter(color == "white" | color == "orange") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::mutate(cassette = 
-                         forcats::fct_recode(color, "a" = "white",
-                                                     "e" = "orange")) %>%
-           dplyr::select(-color)
-```
-
-* merge ecoc with metadata
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged,
-                                  flows,
-                                  by = c("id", "cassette")) %>%
-                 dplyr::left_join(times,
-                                  by = c("id", "cassette"))
+  ecoc <- ecoc %>%
+          dplyr::left_join(dplyr::select(times_test, id, start, end),
+                           by = "id")
 ```
 
 # QC
@@ -91,58 +83,33 @@ output:
 * extract ecoc notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("ecoc|all", notes$inst) == TRUE)
-```
+  notes <- dplyr::filter(notes, grepl("ecoc|all", inst) == TRUE)
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+           dplyr::summarise(qc = first(qc)) %>%
+           dplyr::right_join(dplyr::select(test_info, id), by = "id") %>%
+           dplyr::mutate(qc = ifelse(is.na(qc), "good", as.character(qc)))
+  
+  ecoc <- ecoc %>%
+          dplyr::left_join(flags, by = "id")
 ```
 
-* merge flags with data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, flags,
-                                  by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = ifelse(is.na(qc),
-                                    "ok", as.character(qc))) %>%
-                 dplyr::mutate(qc = as.factor(qc))
-```
 
 ## additional bad tests
 
 * tests where fid2 is out of range
-* first 6D measurement, that produced very high value (repeated)
-* 8D, very high value
-* 9B, artifact gives very high values.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged, qc = ifelse(grepl("ok", fid2),
-                                                 as.character(qc), "bad")) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
-                                            time == 42234 &
-                                            id == "6D", 
-                                            "bad",
-                                            as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(date == as.Date("2016-06-20") &
-                                            time == 53318 &
-                                            id == "8D",
-                                            "bad",
-                                             as.character(qc))) %>%
-                  dplyr::mutate(qc = ifelse(id == "9B",
-                                            "bad",
-                                            as.character(qc)))
+  ecoc <- dplyr::mutate(ecoc, qc = ifelse(grepl("ok", fid2),
+                                                 as.character(qc), "bad")) 
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bad <- dplyr::filter(ecoc_merged, qc == "bad") %>% dplyr::select(id)
+  bad <- dplyr::filter(ecoc, qc == "bad") %>% dplyr::select(id)
 
-  maybe <- dplyr::filter(ecoc_merged, qc == "maybe") %>% dplyr::select(id)
+  maybe <- dplyr::filter(ecoc, qc == "maybe") %>% dplyr::select(id)
 ```
 
 ## bad tests
@@ -157,125 +124,51 @@ output:
 * longer format with columns: `pol = ec, oc or tc` containing the pollutant name and `ug_sq_cm` containing the measured value
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::select(ecoc_merged,
-                               id, 
-                               oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
-                               datetime, date, time,
-                               flow,
-                               start, end,
-                               qc,
-                               type, cassette,
-                               punch_area,
-                               analyst) %>%
-                  tidyr::gather("pol", "ug_sq_cm",
-                                ec_ug_sq_cm,
-                                oc_ug_sq_cm,
-                                tc_ug_sq_cm) %>%
-                  dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm",
-                                             "ec", pol),
-                                pol = ifelse(pol == "oc_ug_sq_cm",
-                                             "oc", pol),
-                                pol = ifelse(pol == "tc_ug_sq_cm",
-                                             "tc", pol))
+  ecoc_long <- dplyr::select(ecoc,
+                             id, id_test, 
+                             oc_ug_sq_cm, ec_ug_sq_cm, tc_ug_sq_cm,
+                             datetime, date, time,
+                             flow,
+                             start, end,
+                             qc,
+                             type,
+                             punch_area,
+                             analyst) %>%
+                tidyr::gather("pol", "ug_sq_cm",
+                              ec_ug_sq_cm,
+                              oc_ug_sq_cm,
+                              tc_ug_sq_cm) %>%
+                dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm",
+                                           "ec", pol),
+                              pol = ifelse(pol == "oc_ug_sq_cm",
+                                           "oc", pol),
+                              pol = ifelse(pol == "tc_ug_sq_cm",
+                                           "tc", pol)) %>%
+                dplyr::mutate(test_type = ifelse(grepl("^BG", id_test), "background", "test"))
 ```
 
-# LOD / LOQ
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  blanks <- dplyr::filter(ecoc_merged, id == "lab_blank") %>%
-            dplyr::group_by(pol) %>%
-            dplyr::summarise(lod = sd(ug_sq_cm) * 3 + mean(ug_sq_cm),
-                             loq = sd(ug_sq_cm) * 10 + mean(ug_sq_cm))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_ec <- dplyr::filter(blanks, pol == "ec")$lod[1]
-  lod_oc <- dplyr::filter(blanks, pol == "oc")$lod[1]
-  loq_ec <- dplyr::filter(blanks, pol == "ec")$loq[1]
-  loq_oc <- dplyr::filter(blanks, pol == "oc")$loq[1]
-```
-
-* the EC limit of detection is `r round(lod_ec, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_ec, 3)` ($\mu g/cm^2$).
-
-* the OC limit of detection is `r round(lod_oc, 3)` ($\mu g/cm^2$) and limit of quantification is `r round(loq_oc, 3)` ($\mu g/cm^2$).
-
-* add ec lod and loq flags
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::mutate(ecoc_merged,
-                                loq = NA,
-                                lod = NA) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "above",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "below",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_ec,
-                                            "above",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "ec" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_ec,
-                                            "below",
-                                            loq))
-```
-
-* add oc lod and loq flags
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  ecoc_merged <- dplyr::mutate(ecoc_merged, lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= lod_oc,
-                                            "above",
-                                            lod)) %>%
-                  dplyr::mutate(lod = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < lod_oc,
-                                            "below",
-                                            lod)) %>%
-	                dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm >= loq_oc,
-                                            "above",
-                                            loq)) %>%
-                  dplyr::mutate(loq = ifelse(pol == "oc" &
-                                            (type == "test" | type == "bg") &
-                                            ug_sq_cm < loq_oc,
-                                            "below",
-                                            loq))
-```
 
 # Background analysis
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- area <- 11.79  # filter area (cm^2)
+  area <- 11.79  # filter area (cm^2)
 ```
 
-* extract "ok" background data
+* extract "good" background data
 * remove missing data
 * calculate average concentration emitted ( and other stats)
-* average any repeat measurements (non in G8-G14)
-* note G12 missing measurement data
 * calculate averge background by pollutant / type
 * the filter areas is `r area ` cm^2.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(ecoc_merged, type == "bg", qc == "ok") %>%
+  bg <- dplyr::filter(ecoc_long, test_type == "background", qc != "bad") %>%
         na.omit() %>%
         dplyr::mutate(dur = end - start) %>%
-        dplyr::mutate(conc = ug_sq_cm * area * 1000 / (flow * dur)) %>%
-        dplyr::group_by(pol, id, cassette) %>%
+        dplyr::mutate(conc = ug_sq_cm * area * 1000 * 60 / (flow * dur)) %>%
+        dplyr::group_by(pol, id, type) %>%
         dplyr::summarise(rep_mean = mean(conc)) %>%
         dplyr::ungroup() %>%
-        dplyr::group_by(pol, cassette) %>%
+        dplyr::group_by(pol, type) %>%
         dplyr::summarise(mean = mean(rep_mean),
                          sd = sd(rep_mean),
                          min = min(rep_mean),
@@ -286,27 +179,43 @@ output:
 * account for artifact
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, cassette, mean) %>%
-        tidyr::spread(cassette, mean) %>%
-        dplyr::mutate(conc_bg = e - a)
+  bg <- dplyr::select(bg, pol, type, mean) %>%
+        tidyr::spread(type, mean) %>%
+        dplyr::mutate(background = sample - artifact)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(bg, "markdown", digits = 2)
 ```
 
-* merge with test data
+# Account for artifact
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc_merged <- dplyr::left_join(ecoc_merged, 
-                                  dplyr::select(bg, pol, conc_bg),
-                                                by = "pol")
+```{r}
+  ecoc_merged <- ecoc_long %>%
+                 dplyr::filter(type != "blank", !is.na(id)) %>%
+                 dplyr::mutate(dur = end - start) %>%
+                 dplyr::mutate(conc = ug_sq_cm * area * 1000 * 60 / (flow * dur)) %>% # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm.
+                 dplyr::select(id, id_test, conc, type, pol) %>%
+                 tidyr::spread(type, conc) %>%
+                 dplyr::mutate(artifact = ifelse(is.na(artifact), 0, artifact),
+                               value_raw = sample - artifact,
+                               units = "ug/m3")
 ```
+
+## Remove background from data
+
+```{r}
+  ecoc_merged <- ecoc_merged %>%
+                 dplyr::left_join(dplyr::select(bg, pol, background),
+                                  by = "pol") %>%
+                 dplyr::mutate(value = value_raw - background)
+```
+
 
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ecoc_merged, file ="../r_files/ecoc_merged.Rda")
+  saveRDS(ecoc_merged, file ="../r_files/ecoc_merged.RDS")
 ```
 
 # Plots
@@ -318,25 +227,4 @@ output:
                  dplyr::mutate(id= as.factor(id))
 ```
 
-## values below lod
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  test_data <- dplyr::filter(ecoc_merged, pol != "tc" &
-                                       qc == "ok" &
-                                       type == "test" &
-                                       grepl("^[0-9]", id) &
-                                       cassette == "e")
-
-  ggplot(test_data, aes(id, ug_sq_cm, colour = lod)) +
-    geom_point() +
-    theme_minimal() +
-    theme(legend.position = "top") +
-    scale_y_log10() +
-    scale_colour_manual(values = c("ok" = "mediumorchid",
-                                   "maybe" = "mediumaquamarine",
-                                   "bad" = "mistyrose4")) +
-    facet_wrap(~pol, ncol = 1, scales = "free") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 
