@@ -39,7 +39,7 @@ output:
 # Remove samples
 
 * F1 and F3 had bad (zero) calibration area
-* L1.1 and L2 were analysed twice with and with He step, He step method retained.
+* L1.1 and L2 were analysed twice with and without He step, He step method retained.
 
 ```{r}
   ecoc <- ecoc %>%
