@@ -267,21 +267,6 @@ Lab blanks with NA values (%):
     dplyr::select(-n)
 ```
 
-# Missing data
-
-## Table 3: Missing measurements
-
-```{r}
-  pah_missing %>%
-    dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
-                  filter_type = ifelse(filter_type == "f", "front puf", filter_type),
-                  filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing filters?
-* Any tests that are missing a filter or front puf are removed from the analysis
-
 ```{r}
   pah_missing <-
     pah_missing %>%
@@ -729,12 +714,21 @@ Burn samples with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-We are missing data for the following tests:
+# Missing data
+
+## Table 3: Missing measurements
 
 ```{r}
-  setdiff(filter(select(samples, id), !grepl("^G", id)), select(pah_samples, id)) %>%
+  pah_missing %>%
+    dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
+                  filter_type = ifelse(filter_type == "f", "front puf", filter_type),
+                  filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
     knitr::kable("markdown", align = 'c')
 ```
+
+* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing filters?
+* Any tests that are missing a filter or front puf are removed from the analysis
+
 
 ```{r}
   # Save merged files
