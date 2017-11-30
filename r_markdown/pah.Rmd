@@ -491,6 +491,37 @@ Lab backgrounds with NA values (%):
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
+# Comparing measurement types
+
+## Plot 7: Boxplots of all data by pollutant and test type
+
+Blank, test, and background data (ug):
+
+* plotted and colored by test type
+* y-axis on a log base 10 scale
+
+```{r, echo=FALSE, fig.height = 20}
+  pah %>%
+    dplyr::filter(!is.na(val_lod_adj)) %>%
+    dplyr::mutate(filter_type = 
+                   filter_type %>% 
+                   as.factor %>%
+                   forcats::fct_recode("back puf" = "b",
+                                       "front puf" = "f",
+                                       "filter" = "p",
+                                       "filter" = "ba")) %>%
+    ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
+      scale_shape(solid = FALSE) +
+      theme_bw() +
+      ylab("") +
+      xlab("") + 
+      theme(text = element_text(size = 20),
+            legend.position = "none") +
+      facet_wrap(pol~filter_type, ncol = 2, scales = "free")
+```
+
 # Sample analysis
 
 ```{r}
@@ -679,8 +710,6 @@ Burn samples below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-* Total percent of samples below lod for chemical analysis: `r round(nrow(filter(pah_samples, lod == "below")) / nrow(pah_merged), 2) * 100`%.
-
 ## Table 8: Burn samples with NA values
 
 Burn samples with NA values (%):
@@ -702,74 +731,11 @@ Burn samples with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-* Total percent of samples with NA values: `r round(sum(is.na(pah_samples$conc)) / nrow(pah_merged), 2) * 100`%.
-
 We are missing data for the following tests:
 
 ```{r}
   setdiff(filter(select(samples, id), !grepl("^G", id)), select(pah_samples, id)) %>%
     knitr::kable("markdown", align = 'c')
-```
-
-# Summary analysis
-
-## Plot 7: Boxplots of all data by pollutant and test type
-
-Blank, test, and background data (ug):
-
-* plotted and colored by test type
-* y-axis on a log base 10 scale
-
-```{r, echo=FALSE, fig.height = 20}
-  pah %>%
-    dplyr::filter(!is.na(val_lod_adj)) %>%
-    dplyr::mutate(filter_type = 
-                   filter_type %>% 
-                   as.factor %>%
-                   forcats::fct_recode("back puf" = "b",
-                                       "front puf" = "f",
-                                       "filter" = "p",
-                                       "filter" = "ba")) %>%
-    ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
-      scale_shape(solid = FALSE) +
-      theme_bw() +
-      scale_y_log10() +
-      ylab("") +
-      xlab("") + 
-      theme(text = element_text(size = 20),
-            legend.position = "none") +
-      facet_wrap(pol~filter_type, ncol = 2, scales = "free")
-```
-
-## Plot 8: Boxplots of all data by pollutant and filter type
-
-Blank, test, and background data (ug):
-
-* plotted and colored by filter type
-* y-axis on a log base 10 scale
-
-```{r, echo=FALSE, fig.height = 20}
-  pah %>%
-    dplyr::filter(!is.na(val_lod_adj)) %>%
-    dplyr::mutate(filter_type = 
-                   filter_type %>% 
-                   as.factor %>%
-                   forcats::fct_recode("back puf" = "b",
-                                       "front puf" = "f",
-                                       "filter" = "p",
-                                       "filter" = "ba")) %>%
-    ggplot(aes_string(y = "val_lod_adj", x = "filter_type", fill = "filter_type")) +
-      geom_boxplot(outlier.colour = NA) + 
-      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
-      theme_bw() +
-      scale_y_log10() +
-      ylab("") +
-      xlab("") + 
-      theme(text = element_text(size = 20),
-            legend.position = "none") +
-      facet_wrap(pol~test_type, ncol = 2, scales = "free")
 ```
 
 ```{r}
