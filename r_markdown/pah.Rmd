@@ -100,13 +100,23 @@ output:
                   test_type = ifelse(grepl("^B", id), "blank", test_type))
 ```
 
+```{r}
+  # Extract four pollutants to represent all pahs
+  pah <-
+    pah %>%
+    dplyr::filter(grepl("^pyrene$|a]pyrene|fluorene|^anthracene$", pol))
+```
+
 # Blank analysis 
 
 ```{r}
   # Extract blank pufs and blank filters
   blanks <-
     pah %>%
-    dplyr::filter(test_type == "blank")
+    dplyr::filter(test_type == "blank") %>%
+    dplyr::mutate(id = gsub("B", "", id),
+                  id = as.numeric(id)) %>%
+    dplyr::arrange(id)
 ```
 
 ## Plot 1: Lab blanks
@@ -117,7 +127,7 @@ Lab blanks (ug):
 * plotted and colored by filter type
 * shape indicates if sample was above or below instrument lod
 
-```{r pah_blank_plot, echo=FALSE, fig.height = 20}
+```{r, echo=FALSE, fig.height = 8}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(filter_type = 
@@ -131,11 +141,40 @@ Lab blanks (ug):
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      scale_y_log10() +
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
-      facet_wrap(~pol, ncol = 3, scales = "free") +
+      facet_wrap(~pol, ncol = 2, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+## Plot 2: Time series of lab blank measurements
+
+Lab blanks (ug):
+
+* grouped by pollutant and filter type
+* plotted in time
+* shape indicates if sample was above or below instrument lod
+
+```{r, echo=FALSE, fig.height = 16}
+ blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "ba")) %>%
+    ggplot(aes_string(x = "id", y = "val_lod_adj")) +
+      geom_point(aes(shape = lod), size = 4) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(filter_type~pol, ncol = 2, scales = "free") +
       ylab("") +
       xlab("")
 ```
@@ -161,8 +200,6 @@ Lab blanks below lod for chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-* Total percent of blanks below chemical analysis lod: `r round(nrow(filter(blanks, lod == "below")) / nrow(blanks), 2) * 100`%.
-
 ## Table 2: Lab blanks with NA values
 
 Lab blanks with NA values (%):
@@ -183,9 +220,6 @@ Lab blanks with NA values (%):
     dplyr::rename("pah type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
-
-* Total percent of blanks with NA measurements: `r round(sum(is.na(blanks$val)) / nrow(blanks), 2) * 100`%.
-* Total percent of 'bad' blank measurements: `r round(nrow(filter(blanks, lod == "below", is.na(val))) / nrow(blanks), 2) * 100`%.
 
 ```{r}
   blanks <-
@@ -327,10 +361,13 @@ Lab blanks with NA values (%):
   # Extract background pufs (front and back) and background filters
   bg <-
     pah_merged %>%
-    dplyr::filter(test_type == "bg")
+    dplyr::filter(test_type == "bg") %>%
+    dplyr::mutate(id = gsub("G", "", id),
+                  id = as.numeric(id)) %>%
+    dplyr::arrange(id)
 ```
 
-## Plot 2: Lab backgrounds
+## Plot 3: Lab backgrounds
 
 Background concentrations (ug per meter cubed):
 
@@ -339,7 +376,7 @@ Background concentrations (ug per meter cubed):
 * shape indicates if sample was above or below lod calculated from lab blanks
 
 
-```{r pah_bg_plot, echo=FALSE, fig.height = 20}
+```{r pah_bg_plot, echo=FALSE, fig.height = 8}
   bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
@@ -354,11 +391,39 @@ Background concentrations (ug per meter cubed):
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      scale_y_log10() + 
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "cookstove lab blank lod") +
-      facet_wrap(~pol, ncol = 3, scales = "free") +
+      facet_wrap(~pol, ncol = 2, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+## Plot 4: Time series of lab background measurements
+
+Background concentrations (ug per meter cubed):
+
+* grouped by pollutant and filter type
+* plotted in time
+* shape indicates if sample was above or below instrument lod
+
+```{r, echo=FALSE, fig.height = 16}
+ bg %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "p")) %>%
+    ggplot(aes_string(x = "id", y = "conc")) +
+      geom_point(aes(shape = lod, size = 4)) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(filter_type~pol, ncol = 2, scales = "free") +
       ylab("") +
       xlab("")
 ```
@@ -384,8 +449,6 @@ Lab backgrounds below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-* Total percent of backgrounds below lod for chemical analysis: `r round(nrow(filter(bg, lod == "below")) / nrow(bg), 2) * 100`%.
-
 ## Table 5: Lab backgrounds with NA values
 
 Lab backgrounds with NA values (%):
@@ -406,8 +469,6 @@ Lab backgrounds with NA values (%):
     dplyr::rename("pah type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
-
-* Total percent of backgrounds with NA values: `r round(nrow(filter(bg, is.na(val_lod_adj) == TRUE))/nrow(bg), 2) * 100`%.
 
 ```{r}
   bg <-
@@ -451,7 +512,7 @@ Lab backgrounds with NA values (%):
 * ratio of background median concentration    to burn concentration
 * plotted as a percent
 
-```{r, echo=FALSE, fig.height = 60}
+```{r, echo=FALSE, fig.height = 30}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
     dplyr::mutate(fraction = (bg_median / conc) * 100)  %>%
@@ -499,7 +560,7 @@ Burn concentrations (ug per meter cubed):
 * grouped by pollutant
 * plotted and colored by filter type
 
-```{r, echo=FALSE, fig.height = 20}
+```{r, echo=FALSE, fig.height = 8}
   pah_samples %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
@@ -518,7 +579,7 @@ Burn concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "lab blank lod") +
-      facet_wrap(~pol, ncol = 3, scales = "free") +
+      facet_wrap(~pol, ncol = 2, scales = "free") +
       xlab("") +
       ylab("")
 ```
@@ -530,7 +591,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
 * plotted by stove type
 * colored by fuel type
 
-```{r, echo=FALSE, fig.height = 65}
+```{r, echo=FALSE, fig.height = 35}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
     dplyr::group_by(id, pol) %>%
@@ -566,7 +627,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
 * plotted by fuel type
 * colored by stove type
 
-```{r, echo=FALSE, fig.height = 65}
+```{r, echo=FALSE, fig.height = 35}
   pah_samples %>%
     dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
     dplyr::group_by(id, pol) %>%
@@ -659,7 +720,7 @@ Blank, test, and background data (ug):
 * plotted and colored by test type
 * y-axis on a log base 10 scale
 
-```{r, echo=FALSE, fig.height = 60}
+```{r, echo=FALSE, fig.height = 20}
   pah %>%
     dplyr::filter(!is.na(val_lod_adj)) %>%
     dplyr::mutate(filter_type = 
@@ -679,7 +740,7 @@ Blank, test, and background data (ug):
       xlab("") + 
       theme(text = element_text(size = 20),
             legend.position = "none") +
-      facet_wrap(pol~filter_type, ncol = 3, scales = "free")
+      facet_wrap(pol~filter_type, ncol = 2, scales = "free")
 ```
 
 ## Plot 8: Boxplots of all data by pollutant and filter type
@@ -689,7 +750,7 @@ Blank, test, and background data (ug):
 * plotted and colored by filter type
 * y-axis on a log base 10 scale
 
-```{r, echo=FALSE, fig.height = 60}
+```{r, echo=FALSE, fig.height = 20}
   pah %>%
     dplyr::filter(!is.na(val_lod_adj)) %>%
     dplyr::mutate(filter_type = 
@@ -708,7 +769,7 @@ Blank, test, and background data (ug):
       xlab("") + 
       theme(text = element_text(size = 20),
             legend.position = "none") +
-      facet_wrap(pol~test_type, ncol = 3, scales = "free")
+      facet_wrap(pol~test_type, ncol = 2, scales = "free")
 ```
 
 ```{r}
