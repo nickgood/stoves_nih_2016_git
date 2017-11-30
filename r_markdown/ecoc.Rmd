@@ -207,7 +207,7 @@ output:
                  dplyr::filter(type != "blank", !is.na(id)) %>%
                  dplyr::mutate(dur = end - start) %>%
                  dplyr::mutate(conc = ug_sq_cm * area * 1000 * 60 / (flow * dur)) %>% # ug/l converted to ug/m^3. time converted from seconds to minutes since flow rates in lpm.
-                 dplyr::select(id, id_test, conc, type, pol) %>%
+                 dplyr::select(id, id_test, conc, type, pol, dur, qc) %>%
                  tidyr::spread(type, conc) %>%
                  dplyr::mutate(artifact = ifelse(is.na(artifact), 0, artifact),
                                value_raw = sample - artifact,
