@@ -29,7 +29,9 @@ output:
 
   grav_merged <- readRDS("../r_files/grav_merged.RDS")
 
- # ec/oc, PAHs - no data yet (as of 6/22/17)
+  ecoc_merged <- readRDS("../r_files/ecoc_merged.RDS")
+
+ # PAHs - no data yet (as of 6/22/17)
 ```
 
 * pollutant data - time-resolved
@@ -119,53 +121,19 @@ output:
   head(carbonyls, 2)
 ```
 
-# ecoc - NO DATA YET (6/28/17)
-
-* select data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test", grepl("^[0-9]", id)) %>%
-          dplyr::select(id, cassette,
-                        start, end,
-                        flow,
-                        pol, ug_sq_cm,
-                        conc_bg, type, qc)
-```
-
-* calculate concentrations
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
-  ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
-                              conc = ug_sq_cm * filter_area * 1000 / (flow * dur))
-```
-
-* account for artifact
-
-Use replicate average artifact (probably clean up spreadsheet at some point)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
-  ecoc_a <- dplyr::group_by(ecoc, pol, id, cassette) %>%
-            dplyr::summarise(rep_mean = mean(conc, na.rm = TRUE)) %>%
-            dplyr::ungroup() %>%
-            tidyr::spread(cassette, rep_mean) %>%
-            dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
-            dplyr::mutate(conc_cor = e - a)
-
-  ecoc <- dplyr::left_join(
-            dplyr::filter(ecoc, cassette == "e"),
-            dplyr::select(ecoc_a, -a, -e), 
-          by = c("id", "pol"))
-```
+# ecoc
 
 * calculate mass emitted
 
-Concentration is corrected for background by removing background test average concentration from each test.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
-  ecoc <- dplyr::mutate(ecoc, 
-                        mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  ecoc <- ecoc_merged %>%
+          dplyr::select(id, pol, value, dur, value_raw, background, qc) %>%
+          dplyr::mutate(mass_emitted = value * hood_flow * dur,
                         mass_carbon_emitted = mass_emitted,
-                        inst = "ecoc")
+                        inst = "ecoc") %>%
+          dplyr::rename(conc_emitted = "value",
+                        conc = "value_raw",
+                        bg_conc = "background")
 ```
 
 * output
@@ -359,7 +327,8 @@ ___
   emissions <- dplyr::bind_rows(select_emissions(co_co2_ch4),
                                 select_emissions(carbonyls),
                                 select_emissions(grav),
-                                select_emissions(voc))
+                                select_emissions(voc),
+                                select_emissions(ecoc))
 ```
 
 * convert to longer format
