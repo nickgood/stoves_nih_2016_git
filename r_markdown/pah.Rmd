@@ -252,8 +252,6 @@ Lab blanks with NA values (%):
     dplyr::filter(test_type != "blank") # remove blanks
 ```
 
-
-
 ```{r}
   # check for missing data
   pah_missing <-
