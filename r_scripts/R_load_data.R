@@ -57,7 +57,9 @@ load_ecoc_file <- function(file){
                         id_test = sub("(^[[:alpha:]])I.*", "\\11", id_test),
                         id_test = gsub(" ", "", id_test),
                         id_test = gsub("-", ".", id_test),
-                        id_test = sub("^BGI$", "BG1", id_test))
+                        id_test = sub("^BGI$", "BG1", id_test),
+                        id_test = sub("^L2_2$", "L2", id_test),
+                        id_test = sub("^L1.1_2$", "L1.1", id_test))
 
  # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))

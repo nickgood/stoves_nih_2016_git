@@ -29,6 +29,7 @@ output:
   load("../r_files/inst_constants.Rda")
   load("../r_files/calc_constants.Rda")
   load("../r_files/fuel_properties.Rda")
+  qc <- readRDS("../r_files/qc.RDS")
 ```
 
 # Mass carbon per test
@@ -84,7 +85,6 @@ output:
  ggplot(mass_carbon, aes(mass_fuel_scale_kg, mass_fuel_from_carbon_balance_kg)) + geom_point()
 ```
 
-
 # Calculate emissions factors
  
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -93,6 +93,14 @@ output:
                       dplyr::left_join(fuel_burnt_test, "id") %>%
                       dplyr::left_join(select(test_info, id, fuel), by = c("id", "fuel"))
 ```
+
+# Apply qc
+
+```{r}
+  emission_factors <- emission_factors %>%
+                      dplyr::filter(qc != "bad")
+```
+
 
 # Save
 
@@ -113,5 +121,4 @@ output:
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     ggtitle("mass carbon emitted")
 ```
-
 
