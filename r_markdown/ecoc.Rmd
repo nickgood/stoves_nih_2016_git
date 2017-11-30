@@ -233,7 +233,11 @@ output:
 # Plots
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  
+  ggplot(ecoc_merged, aes(id_test, value, color = pol)) +
+  geom_point() +
+  theme_bw() +
+  scale_y_log10() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
