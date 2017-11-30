@@ -11,6 +11,7 @@ output:
   library(tidyverse)
   library(knitr)
   library(lubridate)
+  library(chron)
 ```
 
 ```{r global_options, include=FALSE}
@@ -78,7 +79,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 ```
 
 
-* other data (yest to be pre-processed) PULL DATA UP AND OUT AS PROCESSED
+* voc
 
 ```{r, eval = FALSE}
   voc <- readRDS("../r_files/voc_merged.RDS")
@@ -386,24 +387,29 @@ Concentration is corrected for background by removing background test average co
 * select data
 
 ```{r, eval = FALSE}
-  voc <- dplyr::select(voc_merged,
+ pol_properties <- mutate(pol_properties, pol = sub("^voc_", "", pol)) 
+ 
+ voc <- dplyr::select(voc_merged,
                        id,
                      start_time, stop_time,
-                        pol, ppb) %>%
+                        pol, ppb, ppb_bg) %>%
                       #ppb_bg, qc) %>%
          dplyr::left_join(dplyr::select(pol_properties,
                                         pol,
                                         mw,
                                         num_c),
                                         by = "pol") %>%
-         dplyr::mutate(start_time = hms(start_time), stop_time = hms(stop_time))
+         dplyr::mutate(start_time = hms(start_time),
+                       stop_time = hms(stop_time)) %>%
+         dplyr::mutate(start_time = period_to_seconds(start_time),
+                       stop_time = period_to_seconds(stop_time))
         # dplyr::filter(grepl("^[A-Z]", id) == FALSE)
 ```
 
 * calculate concentrations
 
 ```{r, eval = FALSE}
-  voc <- dplyr::mutate(voc, dur = (stop_time) - start_time) / 60,
+  voc <- dplyr::mutate(voc, dur = (stop_time - start_time) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
                             conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))

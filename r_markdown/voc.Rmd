@@ -92,7 +92,7 @@ output:
 * flag bad data from notes and plots
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33:36] <- "maybe"
+  # notes$qc[33:36] <- "maybe"
 ```
 
 * apply flags: `bad` preceeds `maybe` preceeds `good`
@@ -125,17 +125,17 @@ output:
 * extract good background data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(voc_merged, type == "bg", qc == "ok") %>%
+  bg_voc <- dplyr::filter(voc_merged, grepl("^BG", id)) %>%
         dplyr::mutate(ppb = ifelse(is.na(ppb), 0, ppb)) %>%
-        na.omit() %>%
-        dplyr::select(-id_can, -id_voc)
+        na.omit()
+        #dplyr::select(-id_can, -id_voc)
 
 ```
 
 * plot vocs with a background test higher than 10 ppb (note box plots contain all data points)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  p_data <-  dplyr::group_by(bg, pol) %>%
+  p_data <-  dplyr::group_by(bg_voc, pol) %>%
              dplyr::mutate(max = max(ppb)) %>%
              dplyr::ungroup() %>%
              dplyr::filter(max > 10) %>%
@@ -158,7 +158,7 @@ output:
 ## average background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::group_by(bg, pol) %>%
+  bg_voc <- dplyr::group_by(bg_voc, pol) %>%
         dplyr::summarise(mean = mean(ppb),
                          sd = sd(ppb),
                          min = min(ppb),
@@ -169,16 +169,16 @@ output:
 * background values (ppb)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
+  knitr::kable(bg_voc, "markdown", digits = 2)
 ```
 
 ## merge background
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::select(bg, pol, mean) %>%
+  bg_voc <- dplyr::select(bg_voc, pol, mean) %>%
         dplyr::rename(ppb_bg = mean)
 
-  voc_merged <- dplyr::left_join(voc_merged, bg, by = "pol") %>%
+  voc_merged <- dplyr::left_join(voc_merged, bg_voc, by = "pol") %>%
                 dplyr::mutate(ppb_bg = ifelse(is.na(ppb_bg), 0, ppb_bg))
 ```
 
@@ -193,7 +193,7 @@ output:
 # Save
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(voc_merged, file="../r_files/voc_merged.Rda")
+  saveRDS(voc_merged, file="../r_files/voc_merged.RDS")
 ```
 
 # Summary
@@ -219,7 +219,7 @@ VOCs data is expected to be missing for: G18 only. We did not collect a canister
                           grepl("^G", id)==FALSE)
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=20, fig.height=250}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6, fig.height=8}
   ggplot(p_data, aes(id, ppb, colour = fuel)) + 
          geom_point() +
          facet_wrap(~pol, ncol = 1, scales = "free") +
