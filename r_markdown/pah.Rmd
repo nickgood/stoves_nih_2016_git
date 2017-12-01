@@ -3,7 +3,6 @@ title: "PAHs"
 output:
   html_document:
     toc: true
-    toc_float: true
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE}
@@ -20,9 +19,7 @@ output:
 
 ```{r load_source}
   # load source files
-  source("../r_scripts/R_load_data.R")
-  source("../r_scripts/R_load_metadata.R")
-  source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 ```{r load_data}
@@ -130,22 +127,24 @@ Lab blanks (ug):
 ```{r, echo=FALSE, fig.height = 8}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::mutate(z_score = (val - mean(val))/ sd(val),
+                  outlier = ifelse(is_outlier(val), as.character(id), NA)) %>%
+    dplyr::ungroup() %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "filter_type", y = "val_lod_adj")) +
-      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
-      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "filter_type", y = "z_score")) +
+      geom_boxplot(aes(fill = filter_type)) +
+      geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.5, size = 4) +
       theme_bw() +
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
       facet_wrap(~pol, ncol = 2, scales = "free") +
-      ylab("") +
+      ylab("z-score") +
       xlab("")
 ```
 
@@ -171,12 +170,11 @@ Lab blanks (ug):
       guides(fill = FALSE) +
       theme_bw() +
       theme(text = element_text(size = 20),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
-      facet_wrap(filter_type~pol, ncol = 2, scales = "free") +
-      ylab("") +
-      xlab("")
+      facet_wrap(pol~filter_type, ncol = 3, scales = "free_x") +
+      ylab("micrograms") +
+      xlab("blank id")
 ```
 
 ## Table 1: Lab blanks below lod for chemical analysis
@@ -268,14 +266,12 @@ Lab blanks with NA values (%):
 ```
 
 ```{r}
-  pah_missing <-
-    pah_missing %>%
-    dplyr::filter(filter_type != "b") %>%
-    dplyr::select(id)
-
   # remove all data from tests that are missing a filter or front puf
   pah_merged <-
-    dplyr::anti_join(pah_merged, pah_missing, by = "id") %>%
+    dplyr::anti_join(pah_merged,
+                     pah_missing %>%
+                     dplyr::filter(filter_type != "b") %>%
+                     dplyr::select(id), by = "id") %>%
     dplyr::filter(!grepl("10D|8E", id))
 ```
 
@@ -399,7 +395,7 @@ Background concentrations (ug per meter cubed):
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
     ggplot(aes_string(x = "id", y = "conc")) +
-      geom_point(aes(shape = lod, size = 4)) +
+      geom_point(aes(shape = lod), size = 4) +
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
@@ -411,7 +407,7 @@ Background concentrations (ug per meter cubed):
       xlab("")
 ```
 
-## Table 4: Lab backgrounds below lod for chemical analysis
+## Table 3: Lab backgrounds below lod for chemical analysis
 
 Lab backgrounds below the lod of chemical analysis (%):
 
@@ -432,7 +428,7 @@ Lab backgrounds below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table 5: Lab backgrounds with NA values
+## Table 4: Lab backgrounds with NA values
 
 Lab backgrounds with NA values (%):
 
@@ -476,12 +472,11 @@ Lab backgrounds with NA values (%):
 
 # Comparing measurement types
 
-## Plot 7: Boxplots of all data by pollutant and test type
+## Plot 5: Boxplots of all data by pollutant and test type
 
 Blank, test, and background data (ug):
 
 * plotted and colored by test type
-* y-axis on a log base 10 scale
 
 ```{r, echo=FALSE, fig.height = 20}
   pah %>%
@@ -495,14 +490,13 @@ Blank, test, and background data (ug):
                                        "filter" = "ba")) %>%
     ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(size = 4,  width = 0.2, shape = 1) + 
-      scale_shape(solid = FALSE) +
+      coord_cartesian(ylim = quantile(val_lod_adj, c(0.1, 0.9))) +
       theme_bw() +
       ylab("") +
       xlab("") + 
       theme(text = element_text(size = 20),
             legend.position = "none") +
-      facet_wrap(pol~filter_type, ncol = 2, scales = "free")
+      facet_grid(pol~filter_type, scales = "free")
 ```
 
 # Sample analysis
@@ -521,52 +515,13 @@ Blank, test, and background data (ug):
     dplyr::left_join(bg, by = c("pol", "filter_type"))
 ```
 
-## Plot 3: Comparing burns to backgrounds
-
-* ratio of background median concentration    to burn concentration
-* plotted as a percent
-
-```{r, echo=FALSE, fig.height = 30}
-  pah_samples %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
-    dplyr::mutate(fraction = (bg_median / conc) * 100)  %>%
-    dplyr::filter(!is.na(fraction)) %>%
-    dplyr::mutate(filter_type = 
-                    filter_type %>% 
-                    as.factor %>%
-                    forcats::fct_recode("back puf" = "b",
-                                        "front puf" = "f",
-                                        "filter" = "p")) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "",.),
-                  fuel = 
-                    fuel %>% 
-                    tolower) %>%
-    ggplot(aes_string(x = "stove", y = "fraction", color = "filter_type")) +
-      geom_jitter(shape = 1, size = 4,  width = 0.2, stroke = 2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      scale_y_log10() +
-      theme(text = element_text(size = 20),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      labs(color = "filter type") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      xlab("") +
-      ylab("")
-```
-
 ```{r}
   pah_samples <-
     pah_samples %>%
     dplyr::mutate(conc = conc - bg_mean)
 ```
 
-## Plot 4: Lab burns
+## Plot 6: Lab burns
 
 Burn concentrations (ug per meter cubed):
 
@@ -598,7 +553,7 @@ Burn concentrations (ug per meter cubed):
       ylab("")
 ```
 
-## Plot 5: PAH concentrations by stove type
+## Plot 7: PAH concentrations by stove type
 
 Summed particle and gas phase pah concentrations (ug per meter cubed):
 
@@ -624,7 +579,6 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      scale_y_log10() +
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -634,7 +588,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       xlab("")
 ```
 
-## Plot 6: PAH concentrations by fuel type
+## Plot 8: PAH concentrations by fuel type
 
 Summed particle and gas phase pah concentrations (ug per meter cubed):
 
@@ -662,7 +616,6 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      scale_y_log10() +
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -672,7 +625,7 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       xlab("")
 ```
 
-## Table 7: Burn samples below lod for chemical analysis
+## Table 5: Burn samples below lod for chemical analysis
 
 Burn samples below the lod of chemical analysis (%):
 
@@ -693,7 +646,7 @@ Burn samples below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table 8: Burn samples with NA values
+## Table 6: Burn samples with NA values
 
 Burn samples with NA values (%):
 
@@ -716,7 +669,7 @@ Burn samples with NA values (%):
 
 # Missing data
 
-## Table 3: Missing measurements
+## Table 7: Missing measurements
 
 ```{r}
   pah_missing %>%
