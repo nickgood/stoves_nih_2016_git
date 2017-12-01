@@ -81,7 +81,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
 * voc
 
-```{r, eval = FALSE}
+```{r}
   voc <- readRDS("../r_files/voc_merged.RDS")
 ```
 
@@ -118,7 +118,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
 * select data
 
-```{r, eval = FALSE}
+```{r}
   carbonyls <- dplyr::select(carbonyls_merged,
                              id, qc,
                              flow, dur,
@@ -135,7 +135,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
 * calculate mass emitted
 
-```{r, eval = FALSE}
+```{r}
   carbonyls <- dplyr::mutate(carbonyls, 
                              mass_emitted = (conc - conc_bg) * hood_flow * dur,
                              mass_carbon = mass_emitted * (num_c * mw_c / mw),
@@ -152,7 +152,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
 * select data
 
-```{r,}
+```{r}
   ecoc <- samples %>%
           dplyr::left_join(ecoc_merged, by = "id") %>%
           dplyr::select(id, cassette,
@@ -341,12 +341,12 @@ Concentration is corrected for background by removing background test average co
 * calculate test average number concentration
 * calculate test duration
 
-```{r, eval = FALSE}
-  ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
-               dplyr::group_by(id) %>%
+```{r}
+  ultrafine <-  # dplyr::filter(smps_ultrafine, n_bad == 0) %>%
+               dplyr::group_by(smps_ultrafine, id) %>%
                dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
-                                n = n(),
-               	                qc = first(qc)) %>%
+                                n = n()) %>%
+               	                 # qc = first(qc)) %>%
                dplyr::ungroup(id) %>%
                dplyr::left_join(times, by = "id") %>%
                dplyr::mutate(dur = end - start)
@@ -354,11 +354,11 @@ Concentration is corrected for background by removing background test average co
 
 * calculate average background (use other method?)
 
-```{r, eval = FALSE}
-  bg_smps <- dplyr::filter(smps_ultrafine_bg,
-                           qc == "ok",
-                           n_bad == 0) %>%
-             dplyr::group_by(id) %>%
+```{r}
+  bg_smps <-  # dplyr::filter(smps_ultrafine_bg,
+                #           qc == "ok",
+                 #          n_bad == 0) %>%
+             dplyr::group_by(smps_ultrafine_bg, id) %>%
              dplyr::summarise(conc_bg = mean(number_conc)) %>%
              dplyr::ungroup()
 
@@ -367,7 +367,7 @@ Concentration is corrected for background by removing background test average co
 
 * calculate number of particles emitted during tests (check this is all???)
 
-```{r, eval = FALSE}
+```{r}
  # # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
   ultrafine <- dplyr::mutate(ultrafine,
                              num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
@@ -376,7 +376,7 @@ Concentration is corrected for background by removing background test average co
 
 * output
 
-```{r, eval = FALSE}
+```{r}
   head(ultrafine, 2)
 ```
 
@@ -386,7 +386,7 @@ Concentration is corrected for background by removing background test average co
 
 * select data
 
-```{r, eval = FALSE}
+```{r}
  pol_properties <- mutate(pol_properties, pol = sub("^voc_", "", pol)) 
  
  voc <- dplyr::select(voc_merged,
@@ -408,7 +408,7 @@ Concentration is corrected for background by removing background test average co
 
 * calculate concentrations
 
-```{r, eval = FALSE}
+```{r}
   voc <- dplyr::mutate(voc, dur = (stop_time - start_time) / 60,
                             ppm = ppb / 1000,
                             conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
@@ -417,7 +417,7 @@ Concentration is corrected for background by removing background test average co
 
 * calculate mass emitted
 
-```{r, eval = FALSE}
+```{r}
   voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
                             mass_carbon = mass_emitted * (mw_c * num_c / mw),
                             inst = "voc")
@@ -458,31 +458,29 @@ Concentration is corrected for background by removing background test average co
                                               conc, conc_bg,
                                               mass_emitted,
                                               mass_carbon,
+                                              inst)) %>%
+               dplyr::bind_rows(dplyr::select(carbonyls,
+                                              id,
+                                              pol,
+                                              conc,
+                                              conc_bg,
+                                              mass_emitted,
+                                              mass_carbon,
+                                              inst)) %>%
+               dplyr::bind_rows(dplyr::select(ecoc,
+                                              id,
+                                              pol,
+                                              conc, conc_bg,
+                                              mass_emitted,
+                                              mass_carbon,
+                                              inst)) %>%
+               dplyr::bind_rows(dplyr::select(voc,
+                                              id,
+                                              pol,
+                                              conc, conc_bg,
+                                              mass_emitted,
+                                              mass_carbon,
                                               inst))
-``` 
- 
-```{r, eval = FALSE}
-               # dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
-               #                                           conc, conc_bg,
-               #                                           mass_emitted,
-               #                                           mass_carbon,
-               #                                           inst, qc)) %>%
-               # dplyr::bind_rows(dplyr::select(ecoc, id, pol,
-               #                                      conc, conc_bg,
-               #                                      mass_emitted,
-               #                                      mass_carbon,
-               #                                      inst, qc)) %>%
-
-               # dplyr::bind_rows(dplyr::select(ions, id, pol,
-               #                                      conc, conc_bg,
-               #                                      mass_emitted,
-               #                                      mass_carbon,
-               #                                      inst, qc)) %>%
-               # dplyr::bind_rows(dplyr::select(voc, id, pol,
-               #                                     conc, conc_bg,
-               #                                     mass_emitted,
-               #                                     mass_carbon,
-               #                                     inst, qc))
 ```
 
 * convert to longer format
@@ -494,7 +492,7 @@ Concentration is corrected for background by removing background test average co
 * number based
 
 ```{r, eval = FALSE}
-  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
+  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst) %>%
             dplyr::mutate(pol = "number") %>%
             tidyr::gather("metric", "value", 2:3)
 ```

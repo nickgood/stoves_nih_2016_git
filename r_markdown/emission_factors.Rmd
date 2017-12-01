@@ -19,6 +19,7 @@ output:
 ```{r, echo=FALSE}
   library(tidyverse)
   library(knitr)
+  library(viridis)
 ```
 
 # Load
@@ -94,8 +95,11 @@ output:
 ```
 
 ```{r}
-  df <- dplyr::select(carbon_emitted, mass_fuel_from_carbon_balance_kg, mass_fuel_scale_kg) %>%
-      dplyr::rename(mass_carbon_balance = mass_fuel_from_carbon_balance_kg, mass_scale = mass_fuel_scale_kg)
+  df <- dplyr::select(carbon_emitted,
+                      mass_fuel_from_carbon_balance_kg,
+                      mass_fuel_scale_kg) %>%
+        dplyr::rename(mass_carbon_balance = mass_fuel_from_carbon_balance_kg,
+                      mass_scale = mass_fuel_scale_kg)
 
   summary(lm(mass_carbon_balance ~ mass_scale, data = df))
 ```
@@ -119,16 +123,27 @@ output:
             dplyr::filter(type != "bg") %>%
             dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low",
                                                                     "med",
-                                                                    "high"))
+                                                                    "high")) %>%
+            #dplyr::mutate(id = as.factor(id)) %>%
+            dplyr::mutate(id = factor(id, levels = c("FL1", "FL2", "FL3", "FL4", "FM1", "FM2",
+                                                     "FM3", "FM4", "FH1", "FH2", "FH3", "FH4",
+                                                     "LL1", "LL2", "LL3", "LL4", "LM1", "LM2",
+                                                     "LM3", "LM4", "LH1", "LH2", "LH3",
+                                                     "LH4")))
 
-  ggplot(p_data, aes(id, mass_pol_mass_fuel, color = pol)) +
+   p_data_1 <- dplyr::filter(p_data, pol %in% c("co", "acetaldehyde", "acetone", "benzene", "ch4",
+                                        "ec", "ethylbenzene", "formadehyde", "grav", "m+p-xylene",
+                                        "o-xylene", "oc", "tc", "toluene"))
+
+  ggplot(p_data_1, aes(id, mass_pol_mass_fuel, color = pol)) +
   geom_point(size = 4) +
   scale_y_log10() +
   theme_minimal() +
   theme(legend.position = "top",
         text = element_text(size=20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylab("g pol / kg fuel") + xlab("")
+  ylab("g pol / kg fuel") + xlab("") +
+  scale_color_viridis(discrete=TRUE)
   
 ```
 
@@ -202,8 +217,11 @@ output:
 
 ```{r fig.width = 12, fig.height = 5}
   ecoc <- emissions_long %>%
-          dplyr::filter(pol == "ec" | pol == "oc", metric == "conc") %>%
-          dplyr::select(-inst) %>%
+          dplyr::filter(pol %in% c("ec", "oc"), metric %in% "conc") %>%
+          dplyr::select(-inst)
+          
+
+  ecoc <- unique(ecoc) %>%
           tidyr::spread(pol, value) %>%
           dplyr::mutate(ratio = ec / oc) %>%
           dplyr::right_join(samples, by = "id") %>%
@@ -246,10 +264,12 @@ output:
 
 ## Plot emissions by moisture content and fuel type
 
-```{r, fig.width = 14, fig.height = 10}
+```{r}
 library(forcats) 
  
-p_data_ <- dplyr::filter(p_data, !grepl("tc",pol)) %>%
+p_data_ <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4",
+                                        "ec", "grav",
+                                        "oc", "ec/oc")) %>%
              dplyr::mutate(pol = factor(pol)) %>%
              dplyr::mutate(pol = forcats::fct_recode(pol, "Carbon Monoxide" = "co",
                                                      "Carbon Dioxide" = "co2",
@@ -266,9 +286,10 @@ p_data_ <- dplyr::filter(p_data, !grepl("tc",pol)) %>%
   geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
   theme_bw() +
   # theme(legend.position = "side") +
-  ylab("Emissions Factors [g pol / kg fuel]") + xlab(" Fuel Moisture Content Level") +
-  theme(text = element_text(size=20)) +
-  facet_wrap(~pol, scales = "free")
+  ylab("Emissions Factors [g pol / kg fuel]") +
+  xlab(" Fuel Moisture Content Level") +
+  theme(text = element_text(size=5)) +
+  facet_wrap(~ pol, scales = "free")
 ```
 
 ## Plot tc vs grav
