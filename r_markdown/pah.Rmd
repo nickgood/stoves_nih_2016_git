@@ -138,7 +138,7 @@ Lab blanks (ug):
                                         "filter" = "ba")) %>%
     ggplot(aes_string(x = "filter_type", y = "z_score")) +
       geom_boxplot(aes(fill = filter_type)) +
-      geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.5, size = 4) +
+      geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.5, size = 6) +
       theme_bw() +
       theme(text = element_text(size = 20),
             legend.position = "top") +
@@ -156,7 +156,7 @@ Lab blanks (ug):
 * plotted in time
 * shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 16}
+```{r, echo=FALSE, fig.height = 16, fig.width = 14}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(filter_type = 
@@ -386,7 +386,7 @@ Background concentrations (ug per meter cubed):
 * plotted in time
 * shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 16}
+```{r, echo=FALSE, fig.height = 16, fig.width = 12}
  bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::mutate(filter_type = 
@@ -402,7 +402,7 @@ Background concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
-      facet_wrap(filter_type~pol, ncol = 2, scales = "free") +
+      facet_wrap(pol~filter_type, ncol = 3, scales = "free") +
       ylab("") +
       xlab("")
 ```
@@ -490,7 +490,6 @@ Blank, test, and background data (ug):
                                        "filter" = "ba")) %>%
     ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
-      coord_cartesian(ylim = quantile(val_lod_adj, c(0.1, 0.9))) +
       theme_bw() +
       ylab("") +
       xlab("") + 
