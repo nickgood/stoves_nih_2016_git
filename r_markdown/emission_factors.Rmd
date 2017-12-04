@@ -111,7 +111,7 @@ output:
                                        dplyr::select(fuel_burnt, id, mass_burnt),
                                        by = "id" ) %>%
                       dplyr::mutate(mass_pol_mass_fuel = ((value * 1e-3) / mass_burnt)) # g pol / kg fuel
-                            
+                          
 ```
 
 ## Plot emissions by id
@@ -131,8 +131,8 @@ output:
                                                      "LM3", "LM4", "LH1", "LH2", "LH3",
                                                      "LH4")))
 
-   p_data_1 <- dplyr::filter(p_data, pol %in% c("co", "acetaldehyde", "acetone", "benzene", "ch4",
-                                        "ec", "ethylbenzene", "formadehyde", "grav", "m+p-xylene",
+   p_data_1 <- dplyr::filter(p_data, pol %in% c("co", "acetaldehyde", "benzene", "ch4",
+                                        "ec", "ethylbenzene", "formaldehyde", "grav", "m+p-xylene",
                                         "o-xylene", "oc", "tc", "toluene"))
 
   ggplot(p_data_1, aes(id, mass_pol_mass_fuel, color = pol)) +
@@ -142,7 +142,7 @@ output:
   theme(legend.position = "top",
         text = element_text(size=20),
         axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylab("g pol / kg fuel") + xlab("") +
+  ylab("g pol / kg fuel") + xlab("Test ID") +
   scale_color_viridis(discrete=TRUE)
   
 ```
@@ -235,6 +235,7 @@ output:
   geom_boxplot(outlier.size = NA, size = 1) +
   geom_point() +
   theme_bw() +
+  scale_fill_brewer(palette = "PRGn") +
   theme(legend.position = "none", text = element_text(size = 20)) +
   ylab("EC/OC Ratio") + xlab("Moisture Content Level")
   #ggtitle("EC ratio")
@@ -251,15 +252,16 @@ output:
 
 ## Plot emissions by moisture content
 
-```{r, fig.width = 12, fig.height = 7.8}
-  p_data_ <- dplyr::filter(p_data, grepl("co2|co|ch4",pol)) # comment this out since p_data redefined here
+```{r, fig.width = 10, fig.height = 6}
+  p_data_ <- dplyr::filter(p_data, grepl("co2|co|ch4",pol), !grepl("FH2", id)) # comment this out since p_data redefined here
   ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel, fill = pol), color = "black") +
   geom_boxplot(outlier.size = NA) +
   geom_point() +
   theme_bw() +
-  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "PRGn") +
+  theme(legend.position = "none", text = element_text(size = 20)) +
   ylab("g pol / kg fuel") + xlab("moisture content") +
-  facet_wrap(~pol, scales = "free")
+  facet_wrap(~pol, scales = "free_y")
 ```
 
 ## Plot emissions by moisture content and fuel type
@@ -269,7 +271,7 @@ library(forcats)
  
 p_data_ <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4",
                                         "ec", "grav",
-                                        "oc", "ec/oc")) %>%
+                                        "oc", "ec/oc"), !grepl("FH2", id)) %>%
              dplyr::mutate(pol = factor(pol)) %>%
              dplyr::mutate(pol = forcats::fct_recode(pol, "Carbon Monoxide" = "co",
                                                      "Carbon Dioxide" = "co2",
@@ -285,11 +287,12 @@ p_data_ <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4",
   ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel), color = "black") +
   geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
   theme_bw() +
+  scale_fill_brewer(palette = "PRGn") +
   # theme(legend.position = "side") +
   ylab("Emissions Factors [g pol / kg fuel]") +
   xlab(" Fuel Moisture Content Level") +
-  theme(text = element_text(size=5)) +
-  facet_wrap(~ pol, scales = "free")
+  theme(text = element_text(size=15)) +
+  facet_wrap(~ pol, scales = "free_y")
 ```
 
 ## Plot tc vs grav
@@ -315,5 +318,57 @@ p_data_ <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4",
 ```{r}
   saveRDS(carbon_emitted, file = "../r_files/carbon_emitted.RDS")
   saveRDS(emission_factors, file = "../r_files/emission_factors.RDS")
+```
+ 
+ * VOC EF's
+ 
+```{r}
+p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenzene",
+                                        "m+p-xylene", "o-xylene")) %>%
+             dplyr::mutate(pol = factor(pol)) %>%
+             dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
+                                                      "Milled" = "lab")) %>%
+             dplyr::rename(Fuel_Shape = type)
+
+  ggplot(p_data_voc, aes(mc_level, mass_pol_mass_fuel), color = "black") +
+  geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
+  theme_bw() +
+  scale_fill_brewer(palette = "PRGn") +
+  # theme(legend.position = "side") +
+  ylab("Emissions Factors [g pol / kg fuel]") +
+  xlab(" Fuel Moisture Content Level") +
+  theme(text = element_text(size=15)) +
+  facet_wrap(~ pol, scales = "free_y")
+```
+
+```{r}
+  p_data_carb <- dplyr::filter(p_data, grepl("formaldehyde|acetaldehyde",pol), !grepl("FH2", id)) # comment this out since p_data redefined here
+  ggplot(p_data_carb, aes(mc_level, mass_pol_mass_fuel, fill = pol), color = "black") +
+  geom_boxplot(outlier.size = NA) +
+  geom_point() +
+  theme_bw() +
+  scale_fill_brewer(palette = "PRGn") +
+  theme(legend.position = "none", text = element_text(size = 20)) +
+  ylab("g pol / kg fuel") + xlab("moisture content") +
+  facet_wrap(~pol, scales = "free_y")
+```
+
+```{r}
+efs_spread <- dplyr::select(emission_factors, id, pol, mass_pol_mass_fuel) %>%
+              dplyr::filter(!grepl("^BG|G", id)) %>%
+              tidyr::spread(key = pol, value = mass_pol_mass_fuel)
+
+library(ggraph)
+
+test_data_dend <- efs_spread %>% 
+  select(2:29) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  dist() %>% 
+  hclust() %>% 
+  as.dendrogram()
+
+ggraph(test_data_dend, layout = "dendrogram") + 
+  geom_edge_diagonal()
 ```
 

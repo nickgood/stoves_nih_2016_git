@@ -467,13 +467,6 @@ Concentration is corrected for background by removing background test average co
                                               mass_emitted,
                                               mass_carbon,
                                               inst)) %>%
-               dplyr::bind_rows(dplyr::select(ecoc,
-                                              id,
-                                              pol,
-                                              conc, conc_bg,
-                                              mass_emitted,
-                                              mass_carbon,
-                                              inst)) %>%
                dplyr::bind_rows(dplyr::select(voc,
                                               id,
                                               pol,
@@ -491,7 +484,7 @@ Concentration is corrected for background by removing background test average co
 
 * number based
 
-```{r, eval = FALSE}
+```{r}
   number <- dplyr::select(ultrafine, id, conc, num_emitted, inst) %>%
             dplyr::mutate(pol = "number") %>%
             tidyr::gather("metric", "value", 2:3)
@@ -499,7 +492,7 @@ Concentration is corrected for background by removing background test average co
 
 * combine mass and number instruments
 
-```{r, eval = FALSE}
+```{r}
   emissions_long  <- dplyr::bind_rows(emissions_long, number)
 ```
 

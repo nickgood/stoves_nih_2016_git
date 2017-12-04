@@ -51,7 +51,9 @@ output:
   voc_merged <- tidyr::gather(voc, "pol", "ppb", - c(id, date, start_time, stop_time,
                                                      start_reading, stop_reading,
                                                      flow_rate_cc_per_min)) %>%
-                dplyr::filter(!is.na(id) & id != "NA")
+                dplyr::filter(!is.na(id) & id != "NA") %>%
+                dplyr::filter(!(stop_reading %in% "X")) %>%
+                dplyr::filter(stop_reading != 0)
 ```
 
 ## merge with meta data
