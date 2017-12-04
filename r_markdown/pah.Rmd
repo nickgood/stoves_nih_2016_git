@@ -83,13 +83,6 @@ output:
 ```
 
 ```{r}
-  # Filter out bad tests
-  pah <-
-    pah %>% 
-    dplyr::filter(qc != "bad")
-```
-
-```{r}
   # Define new variable called test type
   pah <- 
     pah %>%
@@ -104,51 +97,53 @@ output:
     dplyr::filter(grepl("^pyrene$|a]pyrene|fluorene|^anthracene$", pol))
 ```
 
+```{r}
+  # Filter out bad tests
+  pah_bad <-
+    pah %>% 
+    dplyr::filter(qc == "bad")
+```
+
+```{r}
+  # Filter out bad tests
+  pah <-
+    pah %>% 
+    dplyr::filter(qc != "bad")
+```
+
 # Blank analysis 
 
 ```{r}
   # Extract blank pufs and blank filters
   blanks <-
     pah %>%
-    dplyr::filter(test_type == "blank") %>%
-    dplyr::mutate(id = gsub("B", "", id),
-                  id = as.numeric(id)) %>%
-    dplyr::arrange(id)
+    dplyr::filter(test_type == "blank")
 ```
 
-## Plot 1: Lab blanks
+## Table: Lab blanks outliers
 
-Lab blanks (ug):
+When blanks are grouped by pollutant and filter type the following have z-scores greater than three:
 
-* grouped by pollutant
-* plotted and colored by filter type
-* shape indicates if sample was above or below instrument lod
-
-```{r, echo=FALSE, fig.height = 8}
- blanks %>%
-    dplyr::filter(!is.na(val)) %>%
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::filter(!is.na(val_lod_adj)) %>%
     dplyr::group_by(pol, filter_type) %>%
-    dplyr::mutate(z_score = (val - mean(val))/ sd(val),
-                  outlier = ifelse(is_outlier(val), as.character(id), NA)) %>%
+    dplyr::mutate(z_score = (val_lod_adj - mean(val_lod_adj, na.rm = TRUE))/ sd(val_lod_adj, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "filter_type", y = "z_score")) +
-      geom_boxplot(aes(fill = filter_type)) +
-      geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.5, size = 6) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            legend.position = "top") +
-      labs(shape = "chemical analysis lod") +
-      facet_wrap(~pol, ncol = 2, scales = "free") +
-      ylab("z-score") +
-      xlab("")
+    dplyr::select(id, pol, filter_type, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-## Plot 2: Time series of lab blank measurements
+Conclusions: Blanks look good! Some outliers, but they are not consistent across pollutants. Possibly investiage B18 and B27.
+
+## Plot: Time series of lab blanks
 
 Lab blanks (ug):
 
@@ -159,12 +154,13 @@ Lab blanks (ug):
 ```{r, echo=FALSE, fig.height = 16, fig.width = 14}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "ba")) %>%
-    ggplot(aes_string(x = "id", y = "val_lod_adj")) +
+    ggplot(aes_string(x = "date", y = "val_lod_adj")) +
       geom_point(aes(shape = lod), size = 4) +
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
@@ -177,7 +173,9 @@ Lab blanks (ug):
       xlab("blank id")
 ```
 
-## Table 1: Lab blanks below lod for chemical analysis
+Conclusions: Blanks look good! No obvious trends in time.
+
+## Table: Lab blanks below lod for chemical analysis
 
 Lab blanks below lod for chemical analysis (%):
 
@@ -198,7 +196,7 @@ Lab blanks below lod for chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table 2: Lab blanks with NA values
+## Table: Lab blanks with NA values
 
 Lab blanks with NA values (%):
 
@@ -340,45 +338,33 @@ Lab blanks with NA values (%):
   # Extract background pufs (front and back) and background filters
   bg <-
     pah_merged %>%
-    dplyr::filter(test_type == "bg") %>%
-    dplyr::mutate(id = gsub("G", "", id),
-                  id = as.numeric(id)) %>%
-    dplyr::arrange(id)
+    dplyr::filter(test_type == "bg")
 ```
 
-## Plot 3: Lab backgrounds
+## Plot: Lab background outliers
 
-Background concentrations (ug per meter cubed):
-
-* grouped by pollutant
-* plotted and colored by filter type
-* shape indicates if sample was above or below lod calculated from lab blanks
-
+When backgrounds are grouped by pollutant and filter type the following have z-scores greater than three:
 
 ```{r pah_bg_plot, echo=FALSE, fig.height = 8}
   bg %>%
     dplyr::filter(!is.na(conc)) %>%
+    dplyr::group_by(pol, filter_type, test_type) %>%
+    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
-                    as.factor %>%
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc")) +
-      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
-      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            legend.position = "top") +
-      labs(shape = "cookstove lab blank lod") +
-      facet_wrap(~pol, ncol = 2, scales = "free") +
-      ylab("") +
-      xlab("")
+    dplyr::select(id, pol, filter_type, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-## Plot 4: Time series of lab background measurements
+Conclusion: Background to invesigate: G2. Otherwise backgrounds look good.
+
+## Plot: Time series of lab backgrounds
 
 Background concentrations (ug per meter cubed):
 
@@ -386,15 +372,16 @@ Background concentrations (ug per meter cubed):
 * plotted in time
 * shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 16, fig.width = 12}
+```{r, echo=FALSE, fig.height = 16, fig.width = 14}
  bg %>%
     dplyr::filter(!is.na(conc)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "id", y = "conc")) +
+    ggplot(aes_string(x = "date", y = "conc")) +
       geom_point(aes(shape = lod), size = 4) +
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
@@ -402,12 +389,14 @@ Background concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
-      facet_wrap(pol~filter_type, ncol = 3, scales = "free") +
+      facet_wrap(pol~filter_type, ncol = 3, scales = "free_x") +
       ylab("") +
       xlab("")
 ```
 
-## Table 3: Lab backgrounds below lod for chemical analysis
+Conclusions: Backgrounds look good! No obvious trends in time (except pyrene on the front puf?).
+
+## Table: Lab backgrounds below lod for chemical analysis
 
 Lab backgrounds below the lod of chemical analysis (%):
 
@@ -428,7 +417,7 @@ Lab backgrounds below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table 4: Lab backgrounds with NA values
+## Table: Lab backgrounds with NA values
 
 Lab backgrounds with NA values (%):
 
@@ -470,34 +459,6 @@ Lab backgrounds with NA values (%):
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
-# Comparing measurement types
-
-## Plot 5: Boxplots of all data by pollutant and test type
-
-Blank, test, and background data (ug):
-
-* plotted and colored by test type
-
-```{r, echo=FALSE, fig.height = 20}
-  pah %>%
-    dplyr::filter(!is.na(val_lod_adj)) %>%
-    dplyr::mutate(filter_type = 
-                   filter_type %>% 
-                   as.factor %>%
-                   forcats::fct_recode("back puf" = "b",
-                                       "front puf" = "f",
-                                       "filter" = "p",
-                                       "filter" = "ba")) %>%
-    ggplot(aes_string(y = "val_lod_adj", x = "test_type", fill = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      theme_bw() +
-      ylab("") +
-      xlab("") + 
-      theme(text = element_text(size = 20),
-            legend.position = "none") +
-      facet_grid(pol~filter_type, scales = "free")
-```
-
 # Sample analysis
 
 ```{r}
@@ -508,70 +469,138 @@ Blank, test, and background data (ug):
 ```
 
 ```{r}
-  # Subtract background concentrations
   pah_samples <-
     pah_samples %>%
     dplyr::left_join(bg, by = c("pol", "filter_type"))
 ```
 
-```{r}
-  pah_samples <-
-    pah_samples %>%
-    dplyr::mutate(conc = conc - bg_mean)
-```
-
-## Plot 6: Lab burns
+## Plot: Time series of burns
 
 Burn concentrations (ug per meter cubed):
 
-* background subtracted data
-* grouped by pollutant
-* plotted and colored by filter type
+* grouped by pollutant and filter type
+* samples are not background corrected
+* plotted in time
+* shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 8}
-  pah_samples %>%
+```{r, echo=FALSE, fig.height = 16, fig.width = 14}
+ pah_samples %>%
     dplyr::filter(!is.na(conc)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
-                    as.factor %>%
                     forcats::fct_recode("back puf" = "b",
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
-    ggplot(aes_string(x = "filter_type", y = "conc")) +
-      geom_boxplot(aes(fill = filter_type), outlier.colour = NA) +
-      geom_jitter(aes(shape = factor(lod)), size = 4,  width = 0.2) + 
+    ggplot(aes_string(x = "date", y = "conc")) +
+      geom_point(aes(shape = lod), size = 4) +
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(pol~filter_type, ncol = 3, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+Conclusions: Burns look good! No obvious trends in time.
+
+## Plot: Comparing background and sample concentrations
+
+Blank, test, and background data (ug):
+
+* data is summed across all filter types
+* plotted and colored by test type
+
+```{r, echo=FALSE, fig.height = 8, fig.width = 14}
+  pah_merged %>%
+    dplyr::filter(test_type != 'blank') %>%
+    dplyr::group_by(id, pol, test_type) %>%
+    dplyr::summarise(conc = sum(conc)) %>%
+    dplyr::filter(!is.na(conc)) %>%
+    ggplot(aes_string(y = "conc", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = test_type), size = 3) +
       theme_bw() +
       scale_y_log10() +
       theme(text = element_text(size = 20),
             legend.position = "top") +
-      labs(shape = "lab blank lod") +
-      facet_wrap(~pol, ncol = 2, scales = "free") +
-      xlab("") +
-      ylab("")
+      labs(color = "test type") +
+      ylab("concentration") +
+      xlab("") + 
+      facet_wrap(~pol, ncol = 2, scales = "free")
 ```
 
-## Plot 7: PAH concentrations by stove type
+Conclusion: Some overlap between burn and background concentrations. Need to investigate ways to account for background measurements. For now, I will just subtract the median.
+
+```{r}
+  pah_samples <-
+    pah_samples %>%
+    dplyr::mutate(conc = conc - bg_median)
+
+  pah_samples_sum <-
+    pah_samples %>%
+    dplyr::group_by(id, pol, test_type) %>%
+    dplyr::summarise(conc = sum(conc)) %>%
+    dplyr::ungroup()
+```
+
+## Table: Measurements below the background median
+
+The following tests are below the background mean:
+
+```{r, echo=FALSE}
+  pah_samples_sum %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(!is.na(conc), conc < 0) %>%
+    dplyr::select(id, pol, stove, fuel, conc) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## Plot: PAH concentrations by stove type
 
 Summed particle and gas phase pah concentrations (ug per meter cubed):
 
 * plotted by stove type
 * colored by fuel type
+* samples are background corrected
 
-```{r, echo=FALSE, fig.height = 35}
-  pah_samples %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(conc = sum(conc)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+```{r, echo=FALSE, fig.height = 16, fig.width = 16}
+  pah_samples_p <-
+    pah_samples_sum %>%
+    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
     dplyr::mutate(stove = 
                     stove %>% 
                     tolower %>%
-                    gsub(" [:(:].*[:):]", "",.),
+                    gsub(" [:(:].*[:):]", "", .) %>%
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in justa",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg"),
                   fuel = 
                     fuel %>% 
-                    tolower) %>% 
+                    tolower,
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional stoves" = "traditional"),
+                  fuelcat =
+                    fuelcat %>%
+                    forcats::fct_recode("liquid" = "advanced"))
+  pah_samples_p %>%
     ggplot(aes_string(x = "stove", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = factor(fuel)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
@@ -581,34 +610,42 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
+      facet_wrap(pol~stovecat, ncol = 3, scales = "free") +
       labs(color = "fuel type") +
       ylab("") +
       xlab("")
 ```
 
-## Plot 8: PAH concentrations by fuel type
+Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
+
+## Table: Outliers by stove type
+
+When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+
+```{r, echo=FALSE}
+  pah_samples_p %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+Conclusion: No outliers. Looks good! No repeat tests recommended.
+
+## Plot: PAH concentrations by fuel type
 
 Summed particle and gas phase pah concentrations (ug per meter cubed):
 
 * plotted by fuel type
 * colored by stove type
+* samples are background corrected
 
-```{r, echo=FALSE, fig.height = 35}
-  pah_samples %>%
-    dplyr::filter(!is.na(conc), !grepl("27|28|29|30", id), conc >= 0) %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(conc = sum(conc)) %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel,
-                                   stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "",.),
-                  fuel = 
-                    fuel %>% 
-                    tolower) %>% 
+```{r, echo=FALSE, fig.height = 16, fig.width = 14}
+  pah_samples_p %>%
     ggplot(aes_string(x = "fuel", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = factor(stove)), size = 4,  width = 0.2, shape = 1, stroke = 2) + 
@@ -618,13 +655,33 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       theme(text = element_text(size = 20),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
+      facet_wrap(pol~fuelcat, ncol = 4, scales = "free") +
       labs(color = "stove type") +
       ylab("") +
       xlab("")
 ```
 
-## Table 5: Burn samples below lod for chemical analysis
+Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
+
+## Table: Outliers by fuel type
+
+When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+
+```{r, echo=FALSE}
+  pah_samples_p %>%
+    dplyr::filter(!is.na(conc)) %>%
+    dplyr::group_by(pol, fuel) %>%
+    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+Conclusion: A few outliers, but they are not consistent across pollutants. No repeat tests recommended.
+
+## Table: Burns below lod for chemical analysis
 
 Burn samples below the lod of chemical analysis (%):
 
@@ -645,7 +702,7 @@ Burn samples below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table 6: Burn samples with NA values
+## Table: Burns with NA values
 
 Burn samples with NA values (%):
 
@@ -668,19 +725,33 @@ Burn samples with NA values (%):
 
 # Missing data
 
-## Table 7: Missing measurements
+## Table: Measurements that are unaccounted for
+
+* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing back pufs?
+* Any tests that are missing a filter or front puf are removed from the analysis
 
 ```{r}
   pah_missing %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel), by = "id") %>%
     dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
                   filter_type = ifelse(filter_type == "f", "front puf", filter_type),
                   filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
-* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing filters?
-* Any tests that are missing a filter or front puf are removed from the analysis
+## Table: Missing measurements due to bad data
 
+```{r}
+  # Filter out bad tests
+  pah_bad  %>%
+    dplyr::distinct(id) %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel), by = "id") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+Conclusion: Stove design malfunction, no need to repeat tests.
 
 ```{r}
   # Save merged files
