@@ -9,6 +9,7 @@ output:
 ```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
   library(knitr)
+  library(forcats) #meow!
 ```
 
 ```{r global_options, include=FALSE}
@@ -188,46 +189,33 @@ output:
 
 ```{r}
   samples <- dplyr::mutate(samples,
-                           stove = factor(stove,
-                           levels = c("Three Stone Fire (Artisan)",
-                             "Clay Ring (Artisan)",
-                             "Built-in Justa (Envirofit, HM5000)",
-                             "Rocket Elbow (Envirofit, G3300)",
-                             "Fan Rocket Elbow (Biolite, HomeStove)",
-                             "Ceramic Charcoal (Artisan)",
-                             "Metal Charcoal (Burn, Jikokoa)",
-                             "Gasifier (Philips, HD4012)",
-                             "Gasifer (Mimi Moto, Mimi Moto)",
-                             "Gasifier (Envirofit, Prototype)",
-                             "Wick Kerosene (Cook 'n Lite, 82)", 
-                             "Pressurized Kerosene (Butterfly, 2412)",
-                             "Pressurized LPG (WokSmith, WS-C1-25K)")),
                            stove =
                              stove %>%
-                             tolower %>%
-                             gsub(" [:(:].*[:):]", "",.) %>%
-                             forcats::fct_recode("lpg" = "pressurized lpg"),
-                             forcats::fct_recode("pressure kerosene" =
-                                                   "pressurized kerosene"))
+                             as_factor %>%
+                              tolower %>%
+                              gsub(" [:(:].*[:):]", "", .) %>%
+                              forcats::fct_relevel("three stone fire",
+                                                   "clay ring",
+                                                   "ceramic charcoal",
+                                                   "rocket elbow",
+                                                   "built-in justa",
+                                                   "metal charcoal",
+                                                   "fan rocket elbow",
+                                                   "gasifier",
+                                                   "wick kerosene",
+                                                   "pressurized kerosene",
+                                                   "pressurized lpg") %>%
+                               forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                               forcats::fct_recode("pressure kerosene" = "pressurized kerosene"))
 ```
 
 * fuel types
 
 ```{r}
   samples <- dplyr::mutate(samples,
-                           fuel = factor(fuel,
-                           levels = c("Douglas Fir",
-                             "Oak",
-                             "Eucalyptus",
-                             "Lump Hardwood (Sm.)",
-                             "Lump Hardwood (Med.)",
-                             "Coconut Charcoal",
-                             "West Slope Pellets",
-                             "Eucalyptus Pellets",
-                             "Kerosene",
-                             "Liquefied Petroleum Gas")),
-                           fuel =
+                           fuel = 
                              fuel %>%
+                             as_factor %>%
                              tolower %>%
                              forcats::fct_recode("lpg" = "liquefied petroleum gas") %>%
                              forcats::fct_relevel("oak",
@@ -249,15 +237,15 @@ output:
                            fuelcat =
                              forcats::fct_collapse(fuel,
                                "wood" = c("oak",
-                                        "eucalyptus",
-                                        "douglas fir"),
+                                          "eucalyptus",
+                                          "douglas fir"),
                                "charcoal" = c("coconut charcoal",
-                                            "lump hardwood (med.)", 
-                                            "lump hardwood (sm.)"),
+                                              "lump hardwood (med.)", 
+                                              "lump hardwood (sm.)"),
                                "pellets" = c("eucalyptus pellets",
-                                           "west slope lellets"),
+                                             "west slope pellets"),
                                "liquids" = c("kerosene",
-                                          "lpg")))
+                                             "lpg")))
 ```
 
 * stove categories
@@ -266,13 +254,17 @@ output:
   samples <- dplyr::mutate(samples,
                            stovecat =
                             forcats::fct_collapse(stove,
-                               "traditional stoves" =
-                                 c("clay ring", "three stone fire", "ceramic charcoal"),
-                               "insulated [improved] stoves" =
-                                 c("fan rocket elbow", "metal charcoal", "rocket elbow", "built-in justa",
-                                   "gasifier"),
-                               "liquid-fuel stoves" =
-                                 c("lpg", "wick kerosene", "pressure kerosene")))
+                               "traditional stoves" = c("clay ring",
+                                                        "three stone fire",
+                                                        "ceramic charcoal"),
+                               "insulated [improved] stoves" = c("fan rocket elbow",
+                                                                 "metal charcoal",
+                                                                 "rocket elbow",
+                                                                 "built-in justa",
+                                                                 "gasifier"),
+                               "liquid-fuel stoves" = c("lpg",
+                                                        "wick kerosene",
+                                                        "pressure kerosene")))
 ```
 
 * save test info
