@@ -42,7 +42,7 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
   co2_lab_sample <- load_multifile(fldr = "../data/co2",
                                    pattern = "DILUTION.csv$", inst = "co2")
 
-  save(co2_lab_sample, file = "../r_files/co2_lab_sample.Rda")
+  saveRDS(co2_lab_sample, file = "../r_files/co2_lab_sample.RDS")
 ```
 
 ## ecoc
@@ -54,7 +54,7 @@ Loads ecoc data file and resave as .Rda
                          pattern = "ECOC.csv$",
                          inst = "ecoc")
 
-  save(ecoc, file = "../r_files/ecoc.Rda")
+  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
 ## fivegas
@@ -73,7 +73,7 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
   fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",
                                       type = "volts")
 
-  save(fivegas_calibration, file = "../r_files/fivegas_calibration.Rda")
+  saveRDS(fivegas_calibration, file = "../r_files/fivegas_calibration.RDS")
 ```
 
 ## gravimetric
@@ -83,7 +83,7 @@ Loads filter weight data and resaves as .Rda.
 ```{r}
   grav <- load_singlefiles("grav")
 
-  save(grav, file = "../r_files/grav.Rda")
+  saveRDS(grav, file = "../r_files/grav.RDS")
 ```
 
 ## ions and carbonyls
@@ -93,7 +93,7 @@ Loads and resaves data as .Rda.
 ```{r} 
   ions <- load_singlefiles("ions")
 
-  save(ions, file = "../r_files/ions.Rda")
+  saveRDS(ions, file = "../r_files/ions.RDS")
 ```
 
 ## pahs
@@ -116,7 +116,7 @@ Loads and resaves data as .Rda.
   pax <- load_multifile(fldr = "../data/pax",
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
-  save(pax, file = "../r_files/pax.Rda")
+  saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
 ## scale
@@ -127,7 +127,7 @@ Loads and resaves data as .Rda.
   scale <- load_multifile(fldr = "../data/scale",
                           pattern = "_SCALE.xlsx$", inst = "scale")
 
-  save(scale, file = "../r_files/scale.Rda")
+  saveRDS(scale, file = "../r_files/scale.RDS")
 ```
 
 ## smps
@@ -138,7 +138,7 @@ Loads and resaves data as an .Rda.
   smps <- load_multifile(fldr = "../data/smps",
                          pattern = "_SMPS.csv$", inst = "smps")
 
-  save(smps, file = "../r_files/smps.Rda")
+  saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
 ## temperature
@@ -149,7 +149,7 @@ Loads and resaves data as an .Rda.
   temp <- load_multifile(fldr = "../data/temp",
                          pattern = "_TEMP.csv|_TEMP.CSV", inst = "temp")
 
-  save(temp, file = "../r_files/temp.Rda")
+  saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
 ## transmissometer
@@ -159,7 +159,7 @@ Loads and resaves data as an .Rda.
 ```{r}
   trans <- load_singlefiles("trans")
 
-  save(trans, file = "../r_files/trans.Rda")
+  saveRDS(trans, file = "../r_files/trans.RDS")
 ```
  
 ## vocs
@@ -169,7 +169,7 @@ Loads the microgram sheet  and resaves data as an .Rda.
 ```{r}
   voc <- load_singlefiles("voc")
 
-  save(voc, file = "../r_files/voc.Rda")
+  saveRDS(voc, file = "../r_files/voc.RDS")
 ```
 
 # Metadata
@@ -276,7 +276,7 @@ Reference for test id, stove and fuel types.
 * Save samples file
 
 ```{r}
-  save(samples, file = "../r_files/samples.Rda")
+  saveRDS(samples, file = "../r_files/samples.RDS")
 ```
 
 ## batch sample meta data
@@ -291,7 +291,7 @@ Reference for test id, stove and fuel types.
 
   batch <- dplyr::filter(batch, grepl("^[0-9]", id))
 
-  save(batch, file = "../r_files/batch.Rda")
+  saveRDS(batch, file = "../r_files/batch.RDS")
 ```
 
 ## wood sample meta data
@@ -306,7 +306,7 @@ Reference for test id, stove and fuel types.
 
   wood <- dplyr::filter(wood, grepl("^[0-9]", id))
 
-  save(wood, file = "../r_files/wood.Rda")
+  saveRDS(wood, file = "../r_files/wood.RDS")
 ```
 
 ## calibration log 1
@@ -317,7 +317,7 @@ Reference for test id, stove and fuel types.
 ```{r}
   cal_1 <- load_singlefiles("cal_1")
 
-  save(cal_1, file = "../r_files/cal_1.Rda")
+  saveRDS(cal_1, file = "../r_files/cal_1.RDS")
 ```
 
 ## calibration log 2
@@ -328,7 +328,7 @@ Reference for test id, stove and fuel types.
 ```{r}  
   cal_2 <- load_singlefiles("cal_2")
 
-  save(cal_2, file = "../r_files/cal_2.Rda")
+  saveRDS(cal_2, file = "../r_files/cal_2.RDS")
 ```
 
 ## data log 1
@@ -341,7 +341,7 @@ Reference for test id, stove and fuel types.
 ```{r} 
   data_1 <- load_singlefiles("data_1")
 
-  save(data_1, file = "../r_files/data_1.Rda")
+  saveRDS(data_1, file = "../r_files/data_1.RDS")
 ```
  
 ## data log 2
@@ -352,5 +352,5 @@ Reference for test id, stove and fuel types.
 ```{r} 
   data_2 <- load_singlefiles("data_2")
 
-  save(data_2, file = "../r_files/data_2.Rda")
+  saveRDS(data_2, file = "../r_files/data_2.RDS")
 ```
