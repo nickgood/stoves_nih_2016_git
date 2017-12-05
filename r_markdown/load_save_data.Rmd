@@ -66,11 +66,11 @@ output:
 ```{r}
   fivegas_conc <- load_fivegas(type = "conc")
 
-  save(fivegas_conc, file = "../r_files/fivegas_conc.Rda")
+  saveRDS(fivegas_conc, file = "../r_files/fivegas_conc.RDS")
 
   fivegas_volts <- load_fivegas(type = "volts")
 
-  save(fivegas_volts, file = "../r_files/fivegas_volts.Rda")
+  saveRDS(fivegas_volts, file = "../r_files/fivegas_volts.RDS")
 
   fivegas_calibration <- load_fivegas(pattern = "_CALIBRATION_",
                                       type = "volts")
