@@ -26,18 +26,19 @@ output:
 
 ## co2
 
-Loads and saves the CO2 data used for dilution calculations. The data was logged one of two two ways, as separate voltage files or a combined mixing ratio file. Three output files are created containing the room (lab) data (in volts), the diluted sample (sample) data (in volts) and the combined lab and sample data recorded as a mixing ratio (ppm)
+* load and save co2 data
+* logged as voltage or mixing ratio
 
 ```{r} 
   co2_lab <- load_multifile(fldr = "../data/co2",
                             pattern = "DILUTION1.csv$", inst = "co2")
 
-  save(co2_lab, file = "../r_files/co2_lab.Rda")
+  saveRDS(co2_lab, file = "../r_files/co2_lab.RDS")
 
   co2_sample <- load_multifile(fldr = "../data/co2",
                                pattern = "DILUTION2.csv$", inst = "co2")
 
-  save(co2_sample, file = "../r_files/co2_sample.Rda")
+  saveRDS(co2_sample, file = "../r_files/co2_sample.RDS")
 
   co2_lab_sample <- load_multifile(fldr = "../data/co2",
                                    pattern = "DILUTION.csv$", inst = "co2")
@@ -47,7 +48,7 @@ Loads and saves the CO2 data used for dilution calculations. The data was logged
 
 ## ecoc
 
-Loads ecoc data file and resave as .Rda
+* load and save ecoc data
 
 ```{r} 
   ecoc <- load_multifile(fldr = "../data/ecoc",
@@ -59,7 +60,8 @@ Loads ecoc data file and resave as .Rda
 
 ## fivegas
 
-The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw voltages, pre-calibrated mixing ratios (ppm) and voltage calibrations.The data is loaded and resaved as .Rda files.
+* load and save five gas data
+* logged as voltage or mixing ratio
 
 ```{r}
   fivegas_conc <- load_fivegas(type = "conc")
@@ -78,7 +80,7 @@ The fivegas analyzer recorded co, co2 and ch4. Three file types are loaded; raw 
 
 ## gravimetric
 
-Loads filter weight data and resaves as .Rda.
+* load and save gravimetric data
 
 ```{r}
   grav <- load_singlefiles("grav")
@@ -88,7 +90,7 @@ Loads filter weight data and resaves as .Rda.
 
 ## ions and carbonyls
 
-Loads and resaves data as .Rda.
+* load and save ion and carbonyl data
 
 ```{r} 
   ions <- load_singlefiles("ions")
@@ -98,7 +100,7 @@ Loads and resaves data as .Rda.
 
 ## pahs
 
-Loads and resaves data as .Rda.
+* load and save pah data
 
 ```{r}
   pah <- load_singlefiles("pah")
@@ -110,7 +112,7 @@ Loads and resaves data as .Rda.
 
 ## pax
 
-Loads and resaves data as .Rda.
+* load and save pax data
 
 ```{r}
   pax <- load_multifile(fldr = "../data/pax",
@@ -121,7 +123,7 @@ Loads and resaves data as .Rda.
 
 ## scale
 
-Loads and resaves data as .Rda.
+* load and save real-time mass data
 
 ```{r} 
   scale <- load_multifile(fldr = "../data/scale",
@@ -132,7 +134,7 @@ Loads and resaves data as .Rda.
 
 ## smps
 
-Loads and resaves data as an .Rda.
+* load and save smps data
 
 ```{r} 
   smps <- load_multifile(fldr = "../data/smps",
@@ -143,7 +145,7 @@ Loads and resaves data as an .Rda.
 
 ## temperature
 
-Loads and resaves data as an .Rda.
+* load and save thermocouple data
 
 ```{r}
   temp <- load_multifile(fldr = "../data/temp",
@@ -154,7 +156,7 @@ Loads and resaves data as an .Rda.
 
 ## transmissometer
 
-Loads and resaves data as an .Rda.
+* load and save transmissometer data
 
 ```{r}
   trans <- load_singlefiles("trans")
@@ -164,7 +166,7 @@ Loads and resaves data as an .Rda.
  
 ## vocs
 
-Loads the microgram sheet  and resaves data as an .Rda.
+* load and save voc data
  
 ```{r}
   voc <- load_singlefiles("voc")
@@ -176,13 +178,13 @@ Loads the microgram sheet  and resaves data as an .Rda.
 
 ## sample logs
 
-Reference for test id, stove and fuel types.
+* load test info
 
 ```{r}
   samples <- load_singlefiles("sample")
 ```
 
-* Define stove type levels
+* stove types
 
 ```{r}
   samples <- dplyr::mutate(samples,
@@ -209,7 +211,7 @@ Reference for test id, stove and fuel types.
                                                    "pressurized kerosene"))
 ```
 
-* Define fuel category levels
+* fuel types
 
 ```{r}
   samples <- dplyr::mutate(samples,
@@ -240,7 +242,7 @@ Reference for test id, stove and fuel types.
                                                    "kerosene"))
 ```
 
-* Create aggregated fuel category
+* fuel categories
 
 ```{r}
   samples <- dplyr::mutate(samples,
@@ -258,7 +260,7 @@ Reference for test id, stove and fuel types.
                                           "lpg")))
 ```
 
-* Create aggregated stove catergory
+* stove categories
 
 ```{r}
   samples <- dplyr::mutate(samples,
@@ -273,7 +275,7 @@ Reference for test id, stove and fuel types.
                                  c("lpg", "wick kerosene", "pressure kerosene")))
 ```
 
-* Save samples file
+* save test info
 
 ```{r}
   saveRDS(samples, file = "../r_files/samples.RDS")
@@ -333,7 +335,8 @@ Reference for test id, stove and fuel types.
 
 ## data log 1
 
-* vilter cartridge flows and times
+* load and save data
+* filter cartridge flows and times
 * voc times
 * fivegas background times
 * notes
@@ -346,7 +349,8 @@ Reference for test id, stove and fuel types.
  
 ## data log 2
 
-* carbonyls and isokinetic sampler times and flows
+* load and save data
+* carbonyls and isokinetic inlet times and flows
 * smps and pax times (including background)
 
 ```{r} 
