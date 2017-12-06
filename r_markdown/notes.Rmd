@@ -4,14 +4,19 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
+  library(knitr)
+  library(forcats) #meow!
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r}
   source("../r_scripts/R_tidy.R")
   source("../r_scripts/R_functions.R")
   source("../r_scripts/R_load_metadata.R")
@@ -19,18 +24,18 @@ output:
 
 # Load files
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_1.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
-  load("../r_files/grav.Rda")
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+  cal_1 <- readRDS("../r_files/cal_1.RDS")
+  cal_2 <- readRDS("../r_files/cal_2.RDS")
+  data_1 <- readRDS("../r_files/data_1.RDS")
+  data_2 <- readRDS("../r_files/data_2.RDS")
+  grav <- readRDS("../r_files/grav.RDS")
 ```
 
 # Compile notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   test_id_date <- dplyr::select(samples, id, date)  # get id and date
 
   notes_1 <- dplyr::select(cal_1, date, notes) %>%
@@ -66,13 +71,14 @@ output:
   notes <- dplyr::bind_rows(notes_1, notes_2,
                             notes_3, notes_4,
                             notes_5, notes_6) %>%
-           dplyr::filter(grepl("^[0-9]|^G[0-9]", id)==TRUE) %>%
+           dplyr::select(-date) %>%
+           dplyr::filter(grepl("^[0-9]|^G[0-9]", id)) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
 # Break out instruments
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   notes <- dplyr::mutate(notes,
                          inst = ifelse(grepl("5-Gas|5-gas", notes),
                                        "fivegas",
@@ -142,13 +148,13 @@ output:
 
 With default value `maybe`.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   notes <- dplyr::mutate(notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
 ## Combine with kb notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
 
   notes <- dplyr::bind_rows(notes, notes_kb) %>%
@@ -157,12 +163,11 @@ With default value `maybe`.
 
 # Adjust some flags based on notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
-                                            12.12$|^Size range|
-                                            Charcoal test in Thing 2|
+                                            12.12$|^Size range|Thing 2|
                                             Charcoal test running",
-                                            notes),
+                                            notes) & grepl("^[0-9]", id),
                                             "ok",
                                             as.character(qc))) %>%
            dplyr::mutate(qc = ifelse(grepl("^Stove running in Thing 2|
@@ -180,6 +185,6 @@ With default value `maybe`.
 
 # Save notes
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(notes, file = "../r_files/notes.Rda")
+```{r}
+  saveRDS(notes, file = "../r_files/notes.RDS")
 ```
