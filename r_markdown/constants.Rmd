@@ -195,7 +195,9 @@ output:
 ```{r}
   hfg_water <- 2257  # J/g
   c_water <- 4.186  # J/g C
-  R <- 8.314  # J/K mol
+  gas_constant <- 8.314  # J/K mol
 
-  save(hfg_water, c_water, R, file = "../r_files/calc_constants.Rda")
+  saveRDS(hfg_water, file = "../r_files/hfg_water.RDS")
+  saveRDS(c_water, file = "../r_files/c_water.RDS")
+  saveRDS(gas_constant, file = "../r_files/gas_constant.RDS")
 ```
