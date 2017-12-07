@@ -4,31 +4,33 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-# Libraries / source files
-
-```{r setup, include=FALSE}
+```{r load_libraries, echo=FALSE, message=FALSE}
   library(tidyverse)
-  library(tibble)
+  library(knitr)
+  library(forcats) #meow!
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r}
   source("../r_scripts/R_functions.R")
 ```
 
-# Hood flow
+# hood flow
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   hood_flow <- 4  # m^3/min
 
-  save(hood_flow, file = "../r_files/hood_flow.Rda")
+  saveRDS(hood_flow, file = "../r_files/hood_flow.RDS")
 ```
 
-# Fuel properties
+# fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
                                                  "Eucalyptus",
                                                  "Oak",
@@ -47,12 +49,12 @@ output:
                                                              0.840833333, 0.4852,
                                                              0.4852, 0.82, 0.82))  # kg_C/kg_fuel
 
-  save(fuel_properties, file = "../r_files/fuel_properties.Rda")
+  saveRDS(fuel_properties, file = "../r_files/fuel_properties.RDS")
 ```
 
-# Molecular formula and weight 
+# molecular formula and weight 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   pol_properties <- tibble::data_frame(pol = c ("co2", "co", "ch4", "ec", "oc",
                                                 "tc", "grav", "ultrafines",
                                                 "voc_ethane", "voc_ethene",
@@ -172,22 +174,25 @@ output:
 
   mw_c <- 12.0106
 
-  save(pol_properties, mw_c, file = "../r_files/pol_properties.Rda")
+  saveRDS(pol_properties, file = "../r_files/pol_properties.RDS")
+  saveRDS( mw_c, file = "../r_files/mw_c.RDS")
 ```
 
-# Instrument specific
+# instrument constants
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   filter_area <- 11.79  # cm^2
   voc_flow <- 0.0135  # L/min
   smps_dlogdp <- 0.015625355  # dlogDp
 
-  save(filter_area, voc_flow, smps_dlogdp, file = "../r_files/inst_constants.Rda")
+  saveRDS(filter_area, file = "../r_files/filter_area.RDS") 
+  saveRDS(voc_flow, file = "../r_files/voc_flow.RDS")
+  saveRDS(smps_dlogdp, file = "../r_files/smps_constant.RDS")
 ```
 
-# Thermodynamic
+# thermodynamic properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   hfg_water <- 2257  # J/g
   c_water <- 4.186  # J/g C
   R <- 8.314  # J/K mol
