@@ -548,7 +548,7 @@ knitr::kable(fuel_sum)
 
 ```{r, echo = FALSE}
 var_per_fuel_cov <- mean_per_startup %>%
-                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC 
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>% 
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                                      "newspaper", "fabric", 
                                                                                      "plastic bags", "food packaging", 
