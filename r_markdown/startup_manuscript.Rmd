@@ -145,14 +145,23 @@ knitr::kable(fuel_sum)
   mean_per_startup <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
-                                   mean = round(mean(mass_pol_per_startup_std, na.rm = TRUE), 2),
-                                   min = round(min(mass_pol_per_startup_std, na.rm = TRUE), 2),
-                                   max = round(max(mass_pol_per_startup_std, na.rm = TRUE), 2),
-                                   stdev = round(sd(mass_pol_per_startup_std, na.rm = TRUE), 2), 
+                                   mean = mean(mass_pol_per_startup_std, na.rm = TRUE),
+                                   min = min(mass_pol_per_startup_std, na.rm = TRUE),
+                                   max = max(mass_pol_per_startup_std, na.rm = TRUE),
+                                   stdev = sd(mass_pol_per_startup_std, na.rm = TRUE),
                                    cov = round(((stdev/mean) * 100), 2),
                                    variation_pct = round(((max - min) / max)*100, 0),
                                    variation_act = round((max - min), 2)) %>%
-                      dplyr::ungroup()
+                      dplyr::ungroup() %>%
+                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 2), 
+                                                        round(mean,0)),
+                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 2),
+                                                       round(min,0)),
+                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 2),
+                                                       round(max,0)),
+                                    result_table = paste0(mean_round, " (", min_round, ", ", max_round, ")"))
+
+  
 
   mean_per_startup_table <- mean_per_startup %>%
                             dplyr::select(fuel_names, pol, mean, inst) %>%
