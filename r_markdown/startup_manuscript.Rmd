@@ -211,7 +211,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants (standardized calc)
 
-```{r, echo = FALSE, fig.width = 16, fig.height = 11}
+```{r, echo = FALSE, fig.width = 16, fig.height = 12}
   p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>% 
                 dplyr::mutate(pol = sub("^voc_", "", pol),
                               pol = sub("^grav", "PM2.5", pol)) %>%
@@ -223,10 +223,10 @@ knitr::kable(fuel_sum)
                                                                        "plastic bags", "food packaging", 
                                                                        "inner tubes", "footwear"))
 
-  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>%
+  p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>%
                       dplyr::mutate(pol = sub("^voc_", "", pol),
                                     pol = sub("^grav", "PM2.5", pol))%>%
-                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co",
+                      dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "ec", "oc", "co",
                                                                     "formaldehyde", "acetaldehyde",
                                                                     "benzene", "toluene"))
 
@@ -241,7 +241,7 @@ knitr::kable(fuel_sum)
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   scale_y_log10(breaks = c(0, 0.1, 0.5, 1, 3, 10, 25, 100, 500, 1000)) + 
   ylab("Emissions Factor (mg per startup event) per Test") + xlab("Fuel Type") +
-  facet_wrap(~pol, scales = "free")
+  facet_wrap(~pol, scales = "free", ncol = 3)
 ```
 
 ## Supplemental Figure 1.
