@@ -164,10 +164,12 @@ knitr::kable(fuel_sum)
   
 
   mean_per_startup_table <- mean_per_startup %>%
-                            dplyr::select(fuel_names, pol, mean, inst) %>%
-                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::select(fuel_names, pol, result_table, inst) %>%
+                            tidyr::spread(fuel_names, result_table) %>%
                             dplyr::arrange(inst)
-  
+
+  write_csv(mean_per_startup_table, "../r_files/mean_per_startup_table.csv")
+
   knitr::kable(mean_per_startup_table)
 ```
 
@@ -179,16 +181,25 @@ knitr::kable(fuel_sum)
   per_fuel_mass <- per_test %>%
                       dplyr::group_by(inst, fuel_names, pol) %>%
                       dplyr::summarize(nreps = n(),
-                                   mean = round(mean(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
-                                   min = round(min(mass_pol_per_mass_fuel, na.rm = TRUE), 2),
-                                   max = round(max(mass_pol_per_mass_fuel, na.rm = TRUE), 2)) %>%
-                      dplyr::ungroup()
+                                   mean = mean(mass_pol_per_mass_fuel, na.rm = TRUE),
+                                   min = min(mass_pol_per_mass_fuel, na.rm = TRUE),
+                                   max = max(mass_pol_per_mass_fuel, na.rm = TRUE)) %>%
+                      dplyr::ungroup() %>%
+                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 2), 
+                                                        round(mean,0)),
+                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 2),
+                                                       round(min,0)),
+                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 2),
+                                                       round(max,0)),
+                                    result_table = paste0(mean_round, " (", min_round, ", ", max_round, ")"))
 
   per_fuel_mass_table <- per_fuel_mass %>%
-                            dplyr::select(fuel_names, pol, mean, inst) %>%
-                            tidyr::spread(fuel_names, mean) %>%
+                            dplyr::select(fuel_names, pol, result_table, inst) %>%
+                            tidyr::spread(fuel_names, result_table) %>%
                             dplyr::arrange(inst)
-  
+
+  write_csv(per_fuel_mass_table, "../r_files/mean_per_fuel_mass_table.csv")
+
   knitr::kable(per_fuel_mass_table)
 ```
 
