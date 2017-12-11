@@ -96,12 +96,12 @@ output: html_document
                                                                    "food packaging" = "food_packaging"),
                             mass_pol_per_startup = (mass_emitted * 1e-3) / fuel_quant, # mg per startup event
                             mass_fuel_per_startup = fuelmass_total / fuel_quant, # g per startup event
-                            mass_pol_per_mass_fuel = mass_emitted / fuelmass_total) %>%  # mg/g (same as g/kg)
+                            mass_pol_per_mass_fuel = (mass_emitted * 1e-3) / fuelmass_total) %>%  # mg/g (same as g/kg)
               dplyr::filter(!grepl("^B", id_test)) %>%
               dplyr::left_join(dplyr::select(fuel_consumed, fuel_names, mean_dm),
                                by = "fuel_names") %>%
               dplyr::mutate(fuel_quant_std = fuelmass_total / mean_dm,
-                            mass_pol_per_startup_std = (mass_emitted * 1e-3) / fuel_quant_std)
+                            mass_pol_per_startup_std = (mass_emitted * 1e-3) / fuel_quant_std) # mg/standard startup
 
 ```
 
@@ -605,6 +605,8 @@ var_per_fuel_pct <- mean_per_startup %>%
                             pol == "voc_m_p_xylene" |
                             pol == "voc_o_xylene") %>%
               dplyr::mutate(cat = "BTEX") %>%
+              dplyr::mutate(pol = sub("^voc_", "", pol),
+                             pol = sub(".*xylene.*", "xylenes", pol)) %>%
               dplyr::bind_rows(dplyr::filter(mean_per_startup,
                                              pol == "ec" |
                                              pol == "oc") %>%
@@ -613,34 +615,37 @@ var_per_fuel_pct <- mean_per_startup %>%
                                                                        "newspaper", "fabric", 
                                                                        "plastic bags", "food packaging", 
                                                                        "inner tubes", "footwear"))) %>%
-              dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) # deals with negative plastic bag ecoc
+              dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
+              dplyr::mutate(pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", "ec", "oc")))
 
-palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00", "#CC0066")
+#palette <- c("#0099CC", "#33CC99", "#FF6633", "#FF9900", "#CC6633", "#330099")
+#palette <- c("#0099CC", "#FF6633", "#CC6633", "#FF9900", "gray30", "#339999")
+ palette <- c("#339999", "#33CC99", "#0099CC", "#330099", "gray30", "dodgerblue3")
 
 stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                 geom_col(aes(fill = pol), position = "stack") +
                 #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-                facet_wrap(~cat) +
+                facet_wrap(~cat, scale = "free") +
                 theme_bw() +
                 theme(legend.position = "top",text = element_text(size=15), 
                       axis.text.x = element_blank(),
                       axis.title.x=element_blank()) +
                 scale_fill_manual(values = palette) +
                 theme(legend.title=element_blank(),
-                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
-                scale_y_continuous(limits = c(0, 60)) + 
+                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11)) +
+                #scale_y_continuous(limits = c(0, inf)) + 
                 ylab("mg per startup event")
 
 filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                geom_col(aes(fill = pol), position = "fill") +
                #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-               facet_wrap(~cat) +
+               facet_wrap(~cat, scales = "free") +
                theme_bw() +
                theme(legend.position = "none",text = element_text(size=15), 
                      axis.text.x = element_text(angle = 45, hjust = 1)) +
                scale_fill_manual(values = palette) +
                theme(legend.title=element_blank(),
-                     axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
+                     axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 11)) +
                ylab("fraction of total") +
                xlab("Startup Material")
 ```
@@ -663,53 +668,44 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                              pol == "voc_o_xylene") %>%
                dplyr::mutate(cat = "BTEX") %>%
                dplyr::bind_rows(dplyr::filter(per_fuel_mass,
-                                              inst == "carbs") %>%
-                               dplyr::mutate(cat = "Carbonyls")) %>%
-               dplyr::bind_rows(dplyr::filter(per_fuel_mass,
-                                              pol == "voc_benzene" |
-                                              pol == "voc_toluene" |
-                                              pol == "formaldehyde" |
-                                              pol == "acetaldehyde") %>%
-                               dplyr::mutate(cat = "Carcinogens")) %>%
+                                              pol == "ec" | pol == "oc") %>%
+                               dplyr::mutate(cat = "ecoc")) %>%
                dplyr::mutate(pol = sub("^voc_", "", pol),
                              pol = sub(".*xylene.*", "xylenes", pol)) %>%
-               dplyr::filter(cat != "Carbonyls") %>%
-               dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
-                                                          "benzene", "toluene", 
-                                                          "ethylbenzene", "xylenes"))) %>%
-               dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
-                                                                        "newspaper", "fabric", 
-                                                                        "plastic bags", "food packaging", 
-                                                                        "inner tubes", "footwear")))
-
-  palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+               dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling",
+                                                                        "newspaper", "fabric",
+                                                                        "plastic bags", "food packaging",
+                                                                        "inner tubes", "footwear"))) %>%
+               dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
+               dplyr::mutate(pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", "ec", "oc")))
 
   stacked_plot2 <- ggplot(pol_cats2, aes(fuel_names, mean)) +
                    geom_col(aes(fill = pol), position = "stack") +
                    #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-                   facet_wrap(~cat) +
+                   facet_wrap(~cat, scales = "free") +
                    theme_bw() +
                    theme(legend.position = "top",text = element_text(size=15), 
                          axis.text.x = element_blank(),
                          axis.title.x=element_blank()) +
                    scale_fill_manual(values = palette) +
                    theme(legend.title=element_blank(),
-                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
+                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11)) +
                    scale_y_continuous() + #limits = c(0, 60)) + 
                    ylab("g per kg") 
 
   filled_plot2 <- ggplot(pol_cats, aes(fuel_names, mean)) +
                   geom_col(aes(fill = pol), position = "fill") +
                   #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-                  facet_wrap(~cat) +
+                  facet_wrap(~cat, scales = "free") +
                   theme_bw() +
                   theme(legend.position = "none",text = element_text(size=15), 
                         axis.text.x = element_text(angle = 45, hjust = 1)) +
                   scale_fill_manual(values = palette) +
                   theme(legend.title=element_blank(),
-                        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
-                  ylab("fraction of total") + 
-                  xlab("Startup Material") 
+                        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 11)) +
+                  ylab("fraction of total") +
+                  xlab("Startup Material")
+
 ```
 
 ```{r, echo = FALSE, fig.width = 6, fig.height = 9}
