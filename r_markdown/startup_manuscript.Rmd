@@ -580,7 +580,7 @@ var_per_fuel_act <- mean_per_startup %>%
 
 ```{r, echo = FALSE}
 var_per_fuel_pct <- mean_per_startup %>%
-                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$', pol)) %>% #add ECOC
+                            dplyr::filter(grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>%
                             dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                                      "newspaper", "fabric", 
                                                                                      "plastic bags", "food packaging", 
@@ -606,26 +606,16 @@ var_per_fuel_pct <- mean_per_startup %>%
                             pol == "voc_o_xylene") %>%
               dplyr::mutate(cat = "BTEX") %>%
               dplyr::bind_rows(dplyr::filter(mean_per_startup,
-                                             inst == "carbs") %>%
-                              dplyr::mutate(cat = "Carbonyls")) %>%
-              dplyr::bind_rows(dplyr::filter(mean_per_startup,
-                                             pol == "voc_benzene" |
-                                             pol == "voc_toluene" |
-                                             pol == "formaldehyde" |
-                                             pol == "acetaldehyde") %>%
-                              dplyr::mutate(cat = "Carcinogens")) %>%
-              dplyr::mutate(pol = sub("^voc_", "", pol),
-                            pol = sub(".*xylene.*", "xylenes", pol)) %>%
-              dplyr::filter(cat != "Carbonyls") %>%
-              dplyr::mutate(pol = factor(pol, levels = c("formaldehyde", "acetaldehyde", 
-                                                         "benzene", "toluene", 
-                                                         "ethylbenzene", "xylenes"))) %>%
+                                             pol == "ec" |
+                                             pol == "oc") %>%
+                               dplyr::mutate(cat = "ecoc")) %>%
               dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
                                                                        "newspaper", "fabric", 
                                                                        "plastic bags", "food packaging", 
-                                                                       "inner tubes", "footwear")))
+                                                                       "inner tubes", "footwear"))) %>%
+              dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) # deals with negative plastic bag ecoc
 
-palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00")
+palette <- c("#E69F00", "#009E73", "#993333", "#0072B2", "#999999", "#D55E00", "#CC0066")
 
 stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                 geom_col(aes(fill = pol), position = "stack") +
@@ -639,7 +629,7 @@ stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                 theme(legend.title=element_blank(),
                       axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10))) +
                 scale_y_continuous(limits = c(0, 60)) + 
-                ylab("mg per startup event") 
+                ylab("mg per startup event")
 
 filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                geom_col(aes(fill = pol), position = "fill") +
@@ -651,8 +641,8 @@ filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                scale_fill_manual(values = palette) +
                theme(legend.title=element_blank(),
                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 10)) +
-               ylab("fraction of total") + 
-               xlab("Startup Material") 
+               ylab("fraction of total") +
+               xlab("Startup Material")
 ```
 
 ```{r, echo = FALSE, fig.width = 6, fig.height = 9}
