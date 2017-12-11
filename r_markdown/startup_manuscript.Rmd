@@ -278,7 +278,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "pm25_contrasts.csv")
+  write_csv(df, "../r_files/pm25_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = grav_means))) #small p-value indicates non-normal data.
 ```
@@ -325,7 +325,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "co_contrasts.csv")
+  write_csv(df, "../r_files/co_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = co_means))) #small p-value indicates non-normal data.
 ```
@@ -371,7 +371,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "formaldehyde_contrasts.csv")
+  write_csv(df, "../r_files/formaldehyde_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = for_means))) #small p-value indicates non-normal data.
 ```
@@ -417,7 +417,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "acetaldehyde_contrasts.csv")
+  write_csv(df, "../r_files/acetaldehyde_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = acet_means))) #small p-value indicates non-normal data.
 ```
@@ -463,7 +463,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "benzene_contrasts.csv")
+  write_csv(df, "../r_files/benzene_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = bz_means))) #small p-value indicates non-normal data.
 ```
@@ -509,7 +509,7 @@ knitr::kable(fuel_sum)
                spread(comp_a, result) %>%
                arrange(comp_b)
   
-  write_csv(df, "toluene_contrasts.csv")
+  write_csv(df, "../r_files/toluene_contrasts.csv")
   
   shapiro.test(residuals(aov(mass_pol_per_startup_std ~ fuel_names, data = tol_means))) #small p-value indicates non-normal data.
 ```
