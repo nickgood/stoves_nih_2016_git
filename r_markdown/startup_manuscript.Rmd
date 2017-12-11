@@ -248,7 +248,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants (mass per mass fuel basis)
 
-```{r, echo = FALSE, fig.width = 16, fig.height = 11}
+```{r, echo = FALSE, fig.width = 16, fig.height = 12}
   ggplot(p_data_key, aes(fuel_names, mass_pol_per_mass_fuel, color = fuel)) +
   geom_point(size = 5, shape = 1, stroke = 2) +
     theme_bw() +
