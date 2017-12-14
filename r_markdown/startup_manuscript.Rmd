@@ -769,7 +769,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   pmco <- dplyr::filter(per_fuel_mass, grepl('^grav$|^co$', pol)) %>%
           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                           fuel_names == 'kerosene' |
@@ -809,7 +809,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   carbs <- dplyr::filter(per_fuel_mass, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                            fuel_names == 'kerosene' |
@@ -830,7 +830,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 1000, y = 650, label = val[1]), #all
+        geom_text(data = rhos, aes(x = 0.5, y = 0.5, label = val[1]), #all
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("acetaldehyde") +
@@ -849,7 +849,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   voc <- dplyr::filter(per_fuel_mass, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
          dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                          fuel_names == 'kerosene' |
@@ -863,7 +863,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
  # spearman's rho calculations
   rho_all <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
   r_conv <- cor(voc$voc_benzene[voc$fuel_cat == "conventional"], voc$voc_toluene[voc$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[pmco$fuel_cat == "nonconventional"], method = "spearman")
+  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[voc$fuel_cat == "nonconventional"], method = "spearman")
   rhos <- data.frame(c(rho_all, r_conv, r_noncon))
   colnames(rhos) <- "val"
   rhos$val <- round(rhos$val, 2)
@@ -872,7 +872,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 900, y = 175, label = val[1]),
+        geom_text(data = rhos, aes(x = 0.75, y = 0.2, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("toluene") +
@@ -891,7 +891,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   pmfor <- dplyr::filter(per_fuel_mass, grepl('^grav$|^formaldehyde$', pol)) %>%
            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                            fuel_names == 'kerosene' |
@@ -912,7 +912,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 15000, y = 650, label = val[1]),
+        geom_text(data = rhos, aes(x = 15, y = 0.65, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("formaldehyde") +
@@ -931,7 +931,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   pmacet <- dplyr::filter(per_fuel_mass, grepl('^grav$|^acetaldehyde$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -952,7 +952,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = pmacet, aes(x = grav, y = acetaldehyde)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 20000, y = 320, label = val[1]),
+        geom_text(data = rhos, aes(x = 15, y = 0.35, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("acetaldehyde") +
@@ -971,7 +971,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   pmbenz <- dplyr::filter(per_fuel_mass, grepl('^grav$|^voc_benzene$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -992,7 +992,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = pmbenz, aes(x = grav, y =voc_benzene)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 20000, y = 600, label = val[1]),
+        geom_text(data = rhos, aes(x = 15, y = 0.5, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("benzene") +
@@ -1011,7 +1011,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   pmtol <-  dplyr::filter(per_fuel_mass, grepl('^grav$|^voc_toluene$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -1032,7 +1032,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = pmtol, aes(x = grav, y = voc_toluene)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 20000, y = 130, label = val[1]),
+        geom_text(data = rhos, aes(x = 15, y = 0.12, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("toluene") +
@@ -1052,7 +1052,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   cofor <- dplyr::filter(per_fuel_mass, grepl('^co$|^formaldehyde$', pol)) %>%
            dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                            fuel_names == 'kerosene' |
@@ -1073,7 +1073,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = cofor, aes(x = co, y = formaldehyde)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 35000, y = 850, label = val[1]),
+        geom_text(data = rhos, aes(x = 30, y = 0.75, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
         ylab("formaldehyde") +
@@ -1092,7 +1092,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   coacet <- dplyr::filter(per_fuel_mass, grepl('^co$|^acetaldehyde$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -1113,7 +1113,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = coacet, aes(x = co, y = acetaldehyde)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 35000, y = 425, label = val[1]),
+        geom_text(data = rhos, aes(x = 30, y = 0.4, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("acetaldehyde") +
@@ -1132,7 +1132,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   cobenz <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_benzene$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -1153,7 +1153,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = cobenz, aes(x = co, y = voc_benzene)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 30000, y = 350, label = val[1]),
+        geom_text(data = rhos, aes(x = 32, y = 0.5, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("benzene") +
@@ -1172,7 +1172,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * g/kg
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width = 6}
   cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                             fuel_names == 'kerosene' |
@@ -1193,7 +1193,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot(data = cotol, aes(x = co, y = voc_toluene)) + 
         geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
         geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 30000, y = 110, label = val[1]),
+        geom_text(data = rhos, aes(x = 35, y = 0.15, label = val[1]),
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("toluene") +
