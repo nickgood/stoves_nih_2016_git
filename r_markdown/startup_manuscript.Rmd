@@ -785,16 +785,15 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
           tidyr::spread(pol, mean)
 
-pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
-                dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
-                tidyr::spread(pol, mass_pol_per_mass_fuel)
+  pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
+                  dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                  tidyr::spread(pol, mass_pol_per_mass_fuel)
   
  # spearman's rho calculations
   rho_sp <- cor(pmco$grav, pmco$co, method = "spearman")
   rho_pear <- cor(pmco$grav, pmco$co, method = "pearson")
-  rhos <- data.frame(c(rho_all, rho_pear))
+  rhos <- data.frame(c(rho_sp, rho_pear))
   colnames(rhos) <- "val"
-
   rhos <- rhos %>%
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
@@ -806,15 +805,13 @@ pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
         geom_text(data = rhos, aes(x = 50, y = 50, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
-            geom_text(data = rhos, aes(x = 50, y = 45, label = text[2]), 
+            geom_text(data = rhos, aes(x = 48.5, y = 46, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("CO") +
           xlab("PM2.5") +
           scale_color_hue(l=50, c=80) +
           theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
           theme(text = element_text(size = 14),
                 legend.position = "right",
                 legend.key.size = unit(0.1, "cm"),
@@ -835,26 +832,34 @@ pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
           tidyr::spread(pol, mean)
 
- # spearman's rho calculations
-  rho_all <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
-  r_conv <- cor(carbs$formaldehyde[carbs$fuel_cat == "conventional"], carbs$acetaldehyde[carbs$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(carbs$formaldehyde[carbs$fuel_cat == "nonconventional"], carbs$acetaldehyde[carbs$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
+  carbs_pertest <- dplyr::filter(per_test, grepl('^formaldehyde$|^acetaldehyde$', pol)) %>%
+                   dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                   tidyr::spread(pol, mass_pol_per_mass_fuel)
   
-  ggplot(data = carbs, aes(x = formaldehyde, y = acetaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 0.5, y = 0.5, label = val[1]), #all
+ # spearman's rho calculations
+  rho_sp <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
+  rho_pear <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+  
+  ggplot() + 
+          geom_point(data = carbs, aes(x = formaldehyde, y = acetaldehyde, colour = fuel_names), shape = 17, size = 5) +
+          geom_point(data = carbs_pertest, aes(x = formaldehyde, y = acetaldehyde, colour = fuel_names), 
+                     shape = 1, size = 3, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 0.53, y = 1.0, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+            geom_text(data = rhos, aes(x = 0.5, y = 0.88, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("acetaldehyde") +
           xlab("formaldehyde") +
           scale_color_hue(l=50, c=80) +
           theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
           theme(text = element_text(size = 14),
                 legend.position = "right",
                 legend.key.size = unit(0.1, "cm"),
@@ -875,28 +880,35 @@ pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
           tidyr::spread(pol, mean)
 
+  voc_pertest <- dplyr::filter(per_test, grepl('^voc_benzene$|^voc_toluene$', pol)) %>%
+                 dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                 tidyr::spread(pol, mass_pol_per_mass_fuel)
 
  # spearman's rho calculations
-  rho_all <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
-  r_conv <- cor(voc$voc_benzene[voc$fuel_cat == "conventional"], voc$voc_toluene[voc$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(voc$voc_benzene[voc$fuel_cat == "nonconventional"], voc$voc_toluene[voc$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  rho_sp <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
+  rho_pear <- cor(voc$voc_benzene, voc$voc_toluene, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
   colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
   
 
-  ggplot(data = voc, aes(x = voc_benzene, y = voc_toluene)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 0.75, y = 0.2, label = val[1]),
+  ggplot() +
+          geom_point(data = voc, aes(x = voc_benzene, y = voc_toluene, colour = fuel_names), shape = 17, size = 5) +
+          geom_point(data = voc_pertest, aes(x = voc_benzene, y = voc_toluene, colour = fuel_names), 
+                     shape = 1, size = 3, stroke = 1.5) +
+          geom_text(data = rhos, aes(x = 0.9, y = 0.17, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+          geom_text(data = rhos, aes(x = 0.875, y = 0.15, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("toluene") +
           xlab("benzene") +
           scale_color_hue(l=50, c=80) +
           theme_bw() +
-          #scale_x_log10() +
-          #scale_y_log10() +
           theme(text = element_text(size = 14),
                 legend.position = "right",
                 legend.key.size = unit(0.1, "cm"),
@@ -917,18 +929,28 @@ pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
           tidyr::spread(pol, mean)
 
- # spearman's rho calculations
-  rho_all <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
-  r_conv <- cor(pmfor$grav[pmfor$fuel_cat == "conventional"], pmfor$formaldehyde[pmfor$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmfor$grav[pmfor$fuel_cat == "nonconventional"], pmfor$formaldehyde[pmfor$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
-  colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
+  pmfor_pertest <- dplyr::filter(per_test, grepl('^grav$|^formaldehyde$', pol)) %>%
+                 dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                 tidyr::spread(pol, mass_pol_per_mass_fuel)
 
-  ggplot(data = pmfor, aes(x = grav, y = formaldehyde)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 15, y = 0.65, label = val[1]),
+ # spearman's rho calculations
+  rho_sp <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
+  rho_pear <- cor(pmfor$grav, pmfor$formaldehyde, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+          geom_point(data = pmfor, aes(x = grav, y = formaldehyde, colour = fuel_names), shape = 17, size = 5) +
+          geom_point(data = pmfor_pertest, aes(x = grav, y = formaldehyde, colour = fuel_names), 
+                     shape = 1, size = 3, stroke = 1.5) +
+          geom_text(data = rhos, aes(x = 47, y = 1.2, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+          geom_text(data = rhos, aes(x = 45, y = 1.1, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("formaldehyde") +
