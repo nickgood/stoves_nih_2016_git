@@ -785,18 +785,28 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
           tidyr::spread(pol, mean)
 
+pmco_pertest <- dplyr::filter(per_test, grepl('^grav$|^co$', pol)) %>%
+                dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                tidyr::spread(pol, mass_pol_per_mass_fuel)
+  
  # spearman's rho calculations
-  rho_all <- cor(pmco$grav, pmco$co, method = "spearman")
-  r_conv <- cor(pmco$grav[pmco$fuel_cat == "conventional"], pmco$co[pmco$fuel_cat == "conventional"], method = "spearman")
-  r_noncon <- cor(pmco$grav[pmco$fuel_cat == "nonconventional"], pmco$co[pmco$fuel_cat == "nonconventional"], method = "spearman")
-  rhos <- data.frame(c(rho_all, r_conv, r_noncon))
+  rho_sp <- cor(pmco$grav, pmco$co, method = "spearman")
+  rho_pear <- cor(pmco$grav, pmco$co, method = "pearson")
+  rhos <- data.frame(c(rho_all, rho_pear))
   colnames(rhos) <- "val"
-  rhos$val <- round(rhos$val, 2)
 
-  ggplot(data = pmco, aes(x = grav, y = co)) + 
-        geom_point(size = 5, aes(colour = fuel_names, shape = fuel_cat)) +
-        geom_smooth(method = "lm", se = FALSE, color = "black") +
-        geom_text(data = rhos, aes(x = 10, y = 30, label = val[1]), #all
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+        geom_point(data = pmco, aes(x = grav, y = co, colour = fuel_names), shape = 17, size = 5) +
+        geom_point(data = pmco_pertest, aes(x = grav, y = co, colour = fuel_names), shape = 1, size = 3, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 50, y = 50, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 5) +
+            geom_text(data = rhos, aes(x = 50, y = 45, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("CO") +
