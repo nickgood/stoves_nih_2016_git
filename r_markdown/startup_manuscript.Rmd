@@ -217,11 +217,11 @@ knitr::kable(fuel_sum)
                               pol = sub("^grav", "PM2.5", pol)) %>%
                 dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co", "ec", "oc",
                                                       "formaldehyde", "acetaldehyde",
-                                                      "benzene", "toluene")) %>%
-                dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "wood shims", "kindling", 
-                                                                       "newspaper", "fabric", 
-                                                                       "plastic bags", "food packaging", 
-                                                                       "inner tubes", "footwear"))
+                                                      "benzene", "toluene")) #%>%
+                #dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "wood shims", "kindling", 
+                #                                                       "newspaper", "fabric", 
+                #                                                       "plastic bags", "food packaging", 
+                #                                                       "inner tubes", "footwear"))
 
   p_data_key_means <- dplyr::filter(mean_per_startup, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>%
                       dplyr::mutate(pol = sub("^voc_", "", pol),
@@ -249,7 +249,13 @@ knitr::kable(fuel_sum)
 * emissions of key pollutants (mass per mass fuel basis)
 
 ```{r, echo = FALSE, fig.width = 12, fig.height = 17}
-  ggplot(p_data_key, aes(fuel_names, mass_pol_per_mass_fuel, color = fuel)) +
+  p_data_key_reorder <- p_data_key %>%
+                        dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "inner tubes", "footwear", 
+                                                                        "kerosene", "kindling",
+                                                                       "newspaper", "fabric", "food packaging",
+                                                                       "wood shims", "plastic bags"))
+
+  ggplot(p_data_key_reorder, aes(fuel_names, mass_pol_per_mass_fuel, color = fuel)) +
   geom_point(size = 5, shape = 1, stroke = 2) +
     theme_bw() +
   theme(legend.position = "none",
