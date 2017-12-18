@@ -803,7 +803,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
         geom_text(data = rhos, aes(x = 50, y = 50, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
-            geom_text(data = rhos, aes(x = 48.5, y = 46, label = text[2]), 
+            geom_text(data = rhos, aes(x = 49.5, y = 46, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("CO") +
@@ -1186,7 +1186,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot() + 
           geom_point(data = coacet, aes(x = co, y = acetaldehyde, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = coacet_pertest, aes(x = co, y = acetaldehyde, colour = fuel_names), 
-                     shape = 1, size = 3, stroke = 1.1) +
+                     shape = 1, size = 3, stroke = 1.5) +
           geom_text(data = rhos, aes(x = 35, y = 1.1, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
@@ -1234,7 +1234,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot() + 
           geom_point(data = cobenz, aes(x = co, y = voc_benzene, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = cobenz_pertest, aes(x = co, y = voc_benzene, colour = fuel_names), 
-                     shape = 1, size = 3, stroke = 1.0) +
+                     shape = 1, size = 3, stroke = 1.5) +
           geom_text(data = rhos, aes(x = 43, y = 0.9, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
@@ -1282,7 +1282,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   ggplot() + 
           geom_point(data = cotol, aes(x = co, y = voc_toluene, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = cotol_pertest, aes(x = co, y = voc_toluene, colour = fuel_names), 
-                     shape = 1, size = 3, stroke = 1.0) +
+                     shape = 1, size = 3, stroke = 1.5) +
           geom_text(data = rhos, aes(x = 15, y = 0.24, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
