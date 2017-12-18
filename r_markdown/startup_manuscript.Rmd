@@ -769,8 +769,6 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 ## Figure 4
 
-*note lines are linear but R values are Spearman's rank correlation. 
-
 ### PM vs CO
 
 * g/kg
@@ -789,7 +787,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                   dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                   tidyr::spread(pol, mass_pol_per_mass_fuel)
   
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(pmco$grav, pmco$co, method = "spearman")
   rho_pear <- cor(pmco$grav, pmco$co, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -836,7 +834,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
   
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "spearman")
   rho_pear <- cor(carbs$formaldehyde, carbs$acetaldehyde, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -884,7 +882,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                  dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                  tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(voc$voc_benzene, voc$voc_toluene, method = "spearman")
   rho_pear <- cor(voc$voc_benzene, voc$voc_toluene, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -933,7 +931,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                  dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                  tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(pmfor$grav, pmfor$formaldehyde, method = "spearman")
   rho_pear <- cor(pmfor$grav, pmfor$formaldehyde, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -980,8 +978,8 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   pmacet_pertest <- dplyr::filter(per_test, grepl('^grav$|^acetaldehyde$', pol)) %>%
                  dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                  tidyr::spread(pol, mass_pol_per_mass_fuel)
-  
- # spearman's rho calculations
+
+ # rho calculations
   rho_sp <- cor(pmacet$grav, pmacet$acetaldehyde, method = "spearman")
   rho_pear <- cor(pmacet$grav, pmacet$acetaldehyde, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1029,7 +1027,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                  dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                  tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(pmbenz$grav, pmbenz$voc_benzene, method = "spearman")
   rho_pear <- cor(pmbenz$grav, pmbenz$voc_benzene, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1038,7 +1036,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
                         text = paste0(type, val))
-  
+
   ggplot() + 
           geom_point(data = pmbenz, aes(x = grav, y =voc_benzene, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = pmbenz_pertest, aes(x = grav, y =voc_benzene, colour = fuel_names), 
@@ -1077,7 +1075,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(pmtol$grav, pmtol$voc_toluene, method = "spearman")
   rho_pear <- cor(pmtol$grav, pmtol$voc_toluene, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1126,7 +1124,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(cofor$co, cofor$formaldehyde, method = "spearman")
   rho_pear <- cor(cofor$co, cofor$formaldehyde, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1135,7 +1133,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
                         text = paste0(type, val))
-  
+
   ggplot() + 
           geom_point(data = cofor, aes(x = co, y = formaldehyde, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = cofor_pertest, aes(x = co, y = formaldehyde, colour = fuel_names), 
@@ -1175,7 +1173,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
 
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(coacet$co, coacet$acetaldehyde, method = "spearman")
   rho_pear <- cor(coacet$co, coacet$acetaldehyde, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1184,7 +1182,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
                         text = paste0(type, val))
-  
+
   ggplot() + 
           geom_point(data = coacet, aes(x = co, y = acetaldehyde, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = coacet_pertest, aes(x = co, y = acetaldehyde, colour = fuel_names), 
@@ -1223,7 +1221,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
 
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(cobenz$co, cobenz$voc_benzene, method = "spearman")
   rho_pear <- cor(cobenz$co, cobenz$voc_benzene, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1232,7 +1230,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
                         text = paste0(type, val))
-  
+
   ggplot() + 
           geom_point(data = cobenz, aes(x = co, y = voc_benzene, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = cobenz_pertest, aes(x = co, y = voc_benzene, colour = fuel_names), 
@@ -1271,8 +1269,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                    dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
                    tidyr::spread(pol, mass_pol_per_mass_fuel)
 
-
- # spearman's rho calculations
+ # rho calculations
   rho_sp <- cor(cotol$co, cotol$voc_toluene, method = "spearman")
   rho_pear <- cor(cotol$co, cotol$voc_toluene, method = "pearson")
   rhos <- data.frame(c(rho_sp, rho_pear))
@@ -1281,7 +1278,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           dplyr::mutate(type = c("Spearman: ", "Pearson: "),
                         val = round(rhos$val, 2),
                         text = paste0(type, val))
-  
+
   ggplot() + 
           geom_point(data = cotol, aes(x = co, y = voc_toluene, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = cotol_pertest, aes(x = co, y = voc_toluene, colour = fuel_names), 
