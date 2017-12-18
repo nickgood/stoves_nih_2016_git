@@ -811,7 +811,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           scale_color_hue(l=50, c=80) +
           theme_bw() +
           theme(text = element_text(size = 14),
-                legend.position = "right",
+                legend.position = "left",
                 legend.key.size = unit(0.1, "cm"),
                 legend.title = element_blank())
 ```
@@ -945,10 +945,10 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
           geom_point(data = pmfor, aes(x = grav, y = formaldehyde, colour = fuel_names), shape = 17, size = 5) +
           geom_point(data = pmfor_pertest, aes(x = grav, y = formaldehyde, colour = fuel_names), 
                      shape = 1, size = 3, stroke = 1.5) +
-          geom_text(data = rhos, aes(x = 47, y = 1.2, label = text[1]), 
+          geom_text(data = rhos, aes(x = 47, y = 1.55, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
-          geom_text(data = rhos, aes(x = 45, y = 1.1, label = text[2]), 
+          geom_text(data = rhos, aes(x = 45, y = 1.45, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 5) +
           ylab("formaldehyde") +
