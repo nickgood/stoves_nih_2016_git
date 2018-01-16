@@ -284,8 +284,9 @@ p_data_ <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4",
                                                       "Milled" = "lab")) %>%
              dplyr::rename(Fuel_Shape = type)
 
-  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel), color = "black") +
-  geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
+  ggplot(p_data_, aes(mc_level, mass_pol_mass_fuel)) +
+  geom_point(aes(color = Fuel_Shape), shape = 1) +
+  #geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
   theme_bw() +
   scale_fill_brewer(palette = "PRGn") +
   # theme(legend.position = "side") +
@@ -331,7 +332,8 @@ p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenze
              dplyr::rename(Fuel_Shape = type)
 
   ggplot(p_data_voc, aes(mc_level, mass_pol_mass_fuel), color = "black") +
-  geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
+  geom_point(aes(color = Fuel_Shape), shape = 1, size = 3) +
+  #geom_boxplot(outlier.size = NA, mapping = aes(fill = Fuel_Shape)) +
   theme_bw() +
   scale_fill_brewer(palette = "PRGn") +
   # theme(legend.position = "side") +
@@ -343,12 +345,13 @@ p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenze
 
 ```{r}
   p_data_carb <- dplyr::filter(p_data, grepl("formaldehyde|acetaldehyde",pol), !grepl("FH2", id)) # comment this out since p_data redefined here
-  ggplot(p_data_carb, aes(mc_level, mass_pol_mass_fuel, fill = pol), color = "black") +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
+  ggplot(p_data_carb, aes(mc_level, mass_pol_mass_fuel), color = "black") +
+  geom_point(aes(color = type), shape = 1, size = 5) +
+  #geom_boxplot(outlier.size = NA) +
+  #geom_point() +
   theme_bw() +
   scale_fill_brewer(palette = "PRGn") +
-  theme(legend.position = "none", text = element_text(size = 20)) +
+  theme(legend.position = "right", text = element_text(size = 20)) +
   ylab("g pol / kg fuel") + xlab("moisture content") +
   facet_wrap(~pol, scales = "free_y")
 ```
