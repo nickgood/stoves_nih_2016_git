@@ -22,17 +22,13 @@ output:
   source("../r_scripts/R_functions.R")
 ```
 
-```{r load_data}
+```{r}
   # load pah data
   pah_raw <- readRDS("../r_files/pah.RDS")    # pah dataset
   pah_lod <- readRDS("../r_files/pah_lod.RDS")    # pah lod dataset
-```
-
-```{r load_metadata}
-  # load metadata
-  load("../r_files/data_1.Rda")
-  load("../r_files/notes.Rda")
-  load("../r_files/samples.Rda")
+  data_1 <- readRDS("../r_files/data_1.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 ```{r}
