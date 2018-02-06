@@ -1,14 +1,23 @@
 ---
-title: "Carbonyls"
+title: "Process carbonyl data"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -22,18 +31,18 @@ output:
 * carbonyls
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")
+  carbonyls <- readRDS("../r_files/ions.RDS")
 ```
 
 * metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/carb_flows.Rda")
-  load("../r_files/carb_times.Rda")
-  load("../r_files/notes.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  carb_flows <- readRDS("../r_files/carb_flows.RDS")
+  carb_times <- readRDS("../r_files/carb_times.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 
-  load("../r_files/data_2.Rda")
+  data_2 <- readRDS("../r_files/data_2.RDS")
 ```
 
 # Organize
@@ -44,7 +53,7 @@ output:
 * remove G8B (breakthrough test)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  carbonyls_merged <- dplyr::select(ions, 27:42, type, id, id_ions) %>%
+  carbonyls_merged <- dplyr::select(carbonyls, 27:42, type, id, id_ions) %>%
                       dplyr::filter(type == "test" | type == "bg", id != "G8B")
 ```
 
@@ -87,7 +96,7 @@ Load notes
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(dplyr::filter(notes, grepl(".*carb.*", inst)) %>% 
-               dplyr::select(-inst, -date),
+               dplyr::select(-inst),
                "markdown", digits = 2)
 ```
 
@@ -167,7 +176,7 @@ Load notes
 ## Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(carbonyls_merged, file = "../r_files/carbonyls_merged.Rda")
+  saveRDS(carbonyls_merged, file = "../r_files/carbonyls_merged.RDS")
 ```
 
 ## Summary

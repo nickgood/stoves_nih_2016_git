@@ -1,15 +1,23 @@
 ---
-title: "Ions"
+title: "Process ion data"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
-  library(knitr)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -23,16 +31,16 @@ output:
 * load ions
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ions.Rda")
+  ions <- readRDS("../r_files/ions.RDS")
 ```
 
 * metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/filter_times.Rda")
-  load("../r_files/filter_flows.Rda")
-  load("../r_files/notes.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  filter_times <- readRDS("../r_files/filter_times.RDS")
+  filter_flows <- readRDS("../r_files/filter_flows.RDS")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
 # Organize
@@ -90,7 +98,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   knitr::kable(dplyr::filter(notes, grepl(".*ions.*", inst)) %>% 
-               dplyr::select(-inst, -date),
+               dplyr::select(-inst),
                "markdown", digits = 2)
 ```
 
@@ -174,7 +182,7 @@ Ion data was collected during `r length(unique(ions_merged$id))` experiments. Th
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(ions_merged, file = "../r_files/ions_merged.Rda")
+  saveRDS(ions_merged, file = "../r_files/ions_merged.RDS")
 ```
 
 # Plots
