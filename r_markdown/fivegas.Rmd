@@ -1,14 +1,23 @@
 ---
-title: "Fivegas Data Processing"
+title: "Process five gas data"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -21,37 +30,37 @@ output:
 * data logged in ppm units.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_conc.Rda")    
+  fivegas_conc <- readRDS("../r_files/fivegas_conc.RDS")    
 ```
 
 * data logged in voltage units
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_volts.Rda")
+  fivegas_volts <- readRDS("../r_files/fivegas_volts.RDS")
 ```
 
 * voltage calibration
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/fivegas_calibration.Rda")
+  fivegas_calibration <- readRDS("../r_files/fivegas_calibration.RDS")
 ```
 
 * calibration metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/cal_1.Rda")
+  cal_1 <- readRDS("../r_files/cal_1.RDS")
 ```
 
 * sample information
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
 ```
 
 * notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
+  notes <- readRDS("../r_files/notes.RDS")
 ```
 
 # Reformat data
@@ -341,7 +350,7 @@ Additional bad tests
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(fivegas_merged, file = "../r_files/fivegas_merged.Rda")
+  saveRDS(fivegas_merged, file = "../r_files/fivegas_merged.RDS")
 ```
 
 # Summary

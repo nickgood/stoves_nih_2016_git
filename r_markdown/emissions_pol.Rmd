@@ -1,15 +1,23 @@
 ---
-title: "Pollutant emissions"
+title: "Process and combine"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
-  library(knitr)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -21,7 +29,7 @@ output:
 * pollutant data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/ecoc_merged.Rda")
+  ecoc <- readRDS("../r_files/ecoc_merged.RDS")
   load("../r_files/fivegas_merged.Rda")
   load("../r_files/background_co.Rda")
     bg_co <- background$bg
@@ -44,7 +52,8 @@ output:
 * constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/hood_flow.Rda")
+  hood_flow <- readRDS("../r_files/hood_flow.RDS")
+  filter_area <- readRDS("../r_files/filter_area.RDS")
   load("../r_files/pol_properties.Rda")
   load("../r_files/inst_constants.Rda")
   load("../r_files/calc_constants.Rda")
@@ -53,8 +62,8 @@ output:
 * metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
 ```
 
 # timestamps
@@ -113,7 +122,7 @@ output:
 * select data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- dplyr::filter(ecoc_merged, type == "test", qc != "bad", grepl("^[0-9]", id)) %>%
+  ecoc <- dplyr::filter(ecoc, type == "test", qc != "bad", grepl("^[0-9]", id)) %>%
           dplyr::select(id, cassette,
                         start, end,
                         flow,
