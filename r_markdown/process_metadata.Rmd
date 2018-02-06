@@ -1,16 +1,21 @@
 ---
-title: "Data file summary"
+title: "Process metadata"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
-  library(tidyverse)
-  library(GGally)
-  library(gridExtra)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse", "GGally", "gridExtra")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
@@ -22,25 +27,25 @@ output:
 # Load data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
-  load("../r_files/pax.Rda")         # pax data
-  load("../r_files/co2_lab.Rda")     # lab co2 levels
-  load("../r_files/co2_sample.Rda")  # diluted sample line co2 levels
-  load("../r_files/scale.Rda")       # scale data
-  load("../r_files/temp.Rda")        # temperature data
-  load("../r_files/smps.Rda")        # smps data
+  pax <- readRDS("../r_files/pax.RDS")         # pax data
+  co2_lab <- readRDS("../r_files/co2_lab.RDS")     # lab co2 levels
+  co2_sample <- readRDS("../r_files/co2_sample.RDS")  # diluted sample line co2 levels
+  scale <- readRDS("../r_files/scale.RDS")       # scale data
+  temp <- readRDS("../r_files/temp.RDS")        # temperature data
+  smps <- readRDS("../r_files/smps.RDS")        # smps data
 
-  load("../r_files/ecoc.Rda")        # ecoc analysis
-  load("../r_files/ions.Rda")        # ion and carbonyls
-  load("../r_files/trans.Rda")       # transmissometer data
-  load("../r_files/voc.Rda")         # voc canister data
+  ecoc <- readRDS("../r_files/ecoc.RDS")        # ecoc analysis
+  ions <- readRDS("../r_files/ions.RDS")        # ion and carbonyls
+  trans <- readRDS("../r_files/trans.RDS")       # transmissometer data
+  voc <- readRDS("../r_files/voc.RDS")         # voc canister data
 
-  load("../r_files/samples.Rda")     # sample info
-  load("../r_files/batch.Rda")       # batch sampling log
-  load("../r_files/wood.Rda")        # wood sampling log
-  load("../r_files/cal_1.Rda")       # meta data
-  load("../r_files/data_1.Rda")      # meta data
-  load("../r_files/cal_2.Rda")       # meta data
-  load("../r_files/data_2.Rda")      # meta data
+  samples <- readRDS("../r_files/samples.RDS")     # sample info
+  batch <- readRDS("../r_files/batch.RDS")       # batch sampling log
+  wood <- readRDS("../r_files/wood.RDS")        # wood sampling log
+  cal_1 <- readRDS("../r_files/cal_1.RDS")       # meta data
+  data_1 <- readRDS("../r_files/data_1.RDS")      # meta data
+  cal_2 <- readRDS("../r_files/cal_2.RDS")       # meta data
+  data_2 <- readRDS("../r_files/data_2.RDS")      # meta data
 ```
 
 # Stove-fuel combinations
@@ -69,7 +74,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   batch_wgts <- dplyr::filter(tidy_id_date(batch, "^wgt_", "wgt_"), !is.na(value))
 
-  save(batch_wgts, file="../r_files/batch_wgts.Rda")
+  saveRDS(batch_wgts, file="../r_files/batch_wgts.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -93,8 +98,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   batch_times <- dplyr::filter(tidy_id_date(batch, "^time_", "time_"), !is.na(value))
 
-  save(batch_times, file="../r_files/batch_times.Rda")
-
+  saveRDS(batch_times, file="../r_files/batch_times.RDS")
 ```
   
  * unexpected values:
@@ -112,7 +116,7 @@ Outliers shown on graph (18A, 16B, 17D, 23D, 17A, 25B, 25C, 16C) were all  check
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   batch_lab <- dplyr::filter(tidy_id_date(batch, "^lab_", "lab_"), !is.na(value))
 
-  save(batch_lab, file="../r_files/batch_lab.Rda")
+  saveRDS(batch_lab, file="../r_files/batch_lab.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
@@ -153,7 +157,7 @@ Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperatu
   batch_pot$pot <- forcats::fct_recode(batch_pot$pot,
                                    a = "1", b = "2", c = "3", d = "4")
 
-  save(batch_pot, file="../r_files/batch_pot.Rda")
+  saveRDS(batch_pot, file="../r_files/batch_pot.RDS")
 ```
 
 ## carbonyl flows
@@ -163,7 +167,7 @@ Outliers shown on graph (22A, 16C, 23A [p] / 29A, 30A [rh] / 25A, 25B [temperatu
   
   carb_flows <- split_flows(carb_flows)
   
-  save(carb_flows, file="../r_files/carb_flows.Rda")
+  saveRDS(carb_flows, file="../r_files/carb_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -193,7 +197,7 @@ Outlier 16B checked by KF in February 2017. There is no transcription error, but
   
   carb_times <- split_times(carb_times)
   
-  save(carb_times, file="../r_files/carb_times.Rda")
+  saveRDS(carb_times, file="../r_files/carb_times.RDS")
 ```
 
 * unexpected values:
@@ -211,7 +215,7 @@ Outlier 16B checked by KF in February 2017. There is no transcription error, but
   
   iso_flows <- split_flows(iso_flows)
   
-  save(iso_flows, file="../r_files/iso_flows.Rda")
+  saveRDS(iso_flows, file="../r_files/iso_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -237,7 +241,7 @@ Outlier 1C checked by KF in February 2017. There is no transcription error and t
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   wood_wgts <- dplyr::filter(tidy_id_date(wood, "^wgt_", "wgt_"), !is.na(value))
   
-  save(wood_wgts, file="../r_files/wood_wgts.Rda")
+  saveRDS(wood_wgts, file="../r_files/wood_wgts.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -265,7 +269,7 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   wood_times <- dplyr::filter(tidy_id_date(wood, "^time_", "time_"), !is.na(value))
 
-  save(wood_times, file="../r_files/wood_times.Rda")
+  saveRDS(wood_times, file="../r_files/wood_times.RDS")
 ```
 
  * unexpected values:
@@ -282,7 +286,7 @@ Outliers 6A and 13A were transcription errors that were fixed in wood sampling l
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}
   wood_lab <- dplyr::filter(tidy_id_date(wood, "^lab_", "lab_"), !is.na(value))
   
-  save(wood_lab, file="../r_files/wood_lab.Rda")
+  saveRDS(wood_lab, file="../r_files/wood_lab.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=12, fig.height=6}
@@ -322,7 +326,7 @@ All outliers checked by KF in February 2017. There are no transcription errors.
   wood_pot$pot <- forcats::fct_recode(wood_pot$pot,
                                    a = "1", b = "2", c = "3", d = "4")
   
-  save(wood_pot, file="../r_files/wood_pot.Rda")
+  saveRDS(wood_pot, file="../r_files/wood_pot.RDS")
 ```
 
 
@@ -331,7 +335,7 @@ All outliers checked by KF in February 2017. There are no transcription errors.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide', cache=FALSE}    
   fivegas_cal_conc <- dplyr::filter(tidy_date(cal_1, "^conc_", "conc_"), !is.na(value))
   
-  save(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.Rda")
+  saveRDS(fivegas_cal_conc, file="../r_files/fivegas_cal_conc.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -360,7 +364,7 @@ Outlier date of 3-11-16: No transcription error, but KF thinks there was a mista
 
   fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
 
-  save(fivegas_cal_times, file="../r_files/fivegas_cal_times.Rda")
+  saveRDS(fivegas_cal_times, file="../r_files/fivegas_cal_times.RDS")
 ```
 
  * unexpected values:
@@ -381,7 +385,7 @@ Outlier date of 3-11-16: No transcription error, but KF thinks there was a mista
 
   filter_flows <- split_filter_flows(filter_flows)
 
-  save(filter_flows, file="../r_files/filter_flows.Rda")
+  saveRDS(filter_flows, file="../r_files/filter_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=16}
@@ -408,7 +412,7 @@ Outlier date of 3-11-16: No transcription error, but KF thinks there was a mista
 
   filter_times <- split_filter_times(filter_times)
 
-  save(filter_times, file="../r_files/filter_times.Rda")
+  saveRDS(filter_times, file="../r_files/filter_times.RDS")
 ```
 
  * unexpected values:
@@ -429,7 +433,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
 
   co2_lab_cal <- split_co2_cal(co2_lab_cal)
 
-  save(co2_lab_cal, file="../r_files/co2_lab_cal.Rda")
+  saveRDS(co2_lab_cal, file="../r_files/co2_lab_cal.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -454,7 +458,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
   
   co2_sample_cal <- split_co2_cal(co2_sample_cal)
   
-  save(co2_sample_cal, file="../r_files/co2_sample_cal.Rda")
+  saveRDS(co2_sample_cal, file = "../r_files/co2_sample_cal.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -482,7 +486,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
   
   pax_flows <- split_pax_flows(pax_flows)
   
-  save(pax_flows, file="../r_files/pax_flows.Rda")
+  saveRDS(pax_flows, file = "../r_files/pax_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -510,7 +514,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
 
   smps_flows <- split_flows(smps_flows)
   
-  save(smps_flows, file="../r_files/smps_flows.Rda")
+  saveRDS(smps_flows, file="../r_files/smps_flows.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide', cache=FALSE, fig.width=20, fig.height=12}
@@ -539,7 +543,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
 
   smps_pax_bg_times <- split_times_smps_pax(smps_pax_bg_times)
 
-  save(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.Rda")
+  saveRDS(smps_pax_bg_times, file="../r_files/smps_pax_bg_times.RDS")
 ```
 
 * unexpected values:
