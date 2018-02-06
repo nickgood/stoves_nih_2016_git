@@ -1,1 +1,4 @@
-Created by: K. Bilsback,  K. Fedak &  N. Good  -  Volckens Group -  Colorado State University
+Volckens Group  -  Colorado State University  -  http://jv.colostate.edu/
+Website created by: K. Bilsback,  K. Fedak &  N. Good 
+Emissions tests conducted by: K. Bilsback, J. Dahlke, K. Fedak, E. Walker, L. Van Zyl
+Funded through NIH grant R01ES023688
