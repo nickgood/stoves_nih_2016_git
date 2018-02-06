@@ -1,15 +1,21 @@
 ---
-title: "test times"
+title: "Process test times"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
-  library(gridExtra)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse", "gridExtra")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -24,16 +30,16 @@ output:
 * sample, wood and batch test metadata
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/batch_times.Rda")
-  load("../r_files/wood_times.Rda")
+  samples <- readRDS("../r_files/samples.RDS")
+  batch_times <- readRDS("../r_files/batch_times.RDS")
+  wood_times <- readRDS("../r_files/wood_times.RDS")
 ```
 
 * pre and post experiment background times for online instruments
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/data_1.Rda")
-  load("../r_files/data_2.Rda")
+  data_1 <- readRDS("../r_files/data_1.RDS")
+  data_2 <- readRDS("../r_files/data_2.RDS")
 ```
 
 # Combine time data
@@ -101,7 +107,7 @@ output:
 # Save data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(test_times, file = "../r_files/test_times.Rda")
+  saveRDS(test_times, file = "../r_files/test_times.RDS")
 ```
 
 # Summary
