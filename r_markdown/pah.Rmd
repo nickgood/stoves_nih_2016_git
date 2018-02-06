@@ -1,14 +1,17 @@
 ---
-title: "PAHs"
+title: "Process PAH data"
 output:
   html_document:
     toc: true
+    toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE}
-  library(tidyverse)
-  library(knitr)
-  library(kableExtra)
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse", "kableExtra")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
 ```
 
 ```{r global_options, echo=FALSE}
