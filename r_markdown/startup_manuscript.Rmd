@@ -130,9 +130,9 @@ geom_point(aes(x= id, y=mass_pol_per_startup), size = 2, color = 'red') +
                                min_events_per_test_std = round(min(fuel_quant_std), 2),
                                max_events_per_test_std = round(max(fuel_quant_std), 2)) %>%
              dplyr::left_join(select(fuel_consumed, -fuel, -num_reps), by = "fuel_names") %>%
-             dplyr::mutate(mean_dm = round(mean_dm, 2),
-                           max_dm = round(max_dm, 2),
-                           total_dm = round(total_dm, 2))
+             dplyr::mutate(mean_dm = round(mean_dm, 1),
+                           max_dm = round(max_dm, 1),
+                           total_dm = round(total_dm, 1))
 
 knitr::kable(fuel_sum)
 ```
@@ -153,11 +153,11 @@ knitr::kable(fuel_sum)
                                    variation_pct = round(((max - min) / max)*100, 0),
                                    variation_act = round((max - min), 2)) %>%
                       dplyr::ungroup() %>%
-                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 2), 
+                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 1), 
                                                         round(mean,0)),
-                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 2),
+                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 1),
                                                        round(min,0)),
-                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 2),
+                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 1),
                                                        round(max,0)),
                                     result_table = paste0(mean_round, " (", min_round, ", ", max_round, ")"))
 
@@ -185,11 +185,11 @@ knitr::kable(fuel_sum)
                                    min = min(mass_pol_per_mass_fuel, na.rm = TRUE),
                                    max = max(mass_pol_per_mass_fuel, na.rm = TRUE)) %>%
                       dplyr::ungroup() %>%
-                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 2), 
+                      dplyr::mutate(mean_round = ifelse(inst == "carbs" | inst == "voc", round(mean, 1), 
                                                         round(mean,0)),
-                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 2),
+                                    min_round = ifelse(inst == "carbs" | inst == "voc", round(min, 1),
                                                        round(min,0)),
-                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 2),
+                                    max_round = ifelse(inst == "carbs" | inst == "voc", round(max, 1),
                                                        round(max,0)),
                                     result_table = paste0(mean_round, " (", min_round, ", ", max_round, ")"))
 
@@ -240,7 +240,7 @@ knitr::kable(fuel_sum)
         axis.text.x = element_text(angle = 45, hjust = 1),
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   scale_y_log10(breaks = c(0, 0.1, 0.5, 1, 3, 10, 25, 100, 500, 1000)) + 
-  ylab("Emissions Factor (mg per startup event) per Test") + xlab("Fuel Type") +
+  ylab("Emissions Factor (mg per startup event)") + xlab("Fuel Type") +
   facet_wrap(~pol, scales = "free", ncol = 2)
 ```
 
