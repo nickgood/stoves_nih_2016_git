@@ -128,7 +128,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
   ecoc <- ecoc_merged %>%
           dplyr::select(id, pol, value, dur, value_raw, background, qc) %>%
-          dplyr::mutate(mass_emitted = value * hood_flow * dur,
+          dplyr::mutate(mass_emitted = value * hood_flow * dur / 60,
                         mass_carbon_emitted = mass_emitted,
                         inst = "ecoc") %>%
           dplyr::rename(conc_emitted = "value",
@@ -138,7 +138,7 @@ output:
 
 * output
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
   head(ecoc, 2)
 ```
 
