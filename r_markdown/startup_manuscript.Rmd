@@ -214,10 +214,13 @@ knitr::kable(fuel_sum)
 ```{r, echo = FALSE, fig.width = 12, fig.height = 17}
   p_data_key <- dplyr::filter(per_test, grepl('^grav$|^co$|^formaldehyde$|^acetaldehyde$|^voc_benzene$|^voc_toluene$|^oc$|^ec$', pol)) %>% 
                 dplyr::mutate(pol = sub("^voc_", "", pol),
-                              pol = sub("^grav", "PM2.5", pol)) %>%
-                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "co", "ec", "oc",
-                                                      "formaldehyde", "acetaldehyde",
-                                                      "benzene", "toluene")) #%>%
+                              pol = sub("^grav", "PM2.5", pol),
+                              pol = sub("co", "carbon monoxide", pol),
+                              pol = sub("ec", "elemental carbon", pol),
+                              pol = sub("oc", "organic carbon", pol)) %>%
+                dplyr::mutate(pol = forcats::fct_relevel(pol, "PM2.5", "carbon monoxide", "elemental carbon", 
+                                                              "organic carbon", "formaldehyde", "acetaldehyde",
+                                                              "benzene", "toluene")) #%>%
                 #dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "kerosene", "wood shims", "kindling", 
                 #                                                       "newspaper", "fabric", 
                 #                                                       "plastic bags", "food packaging", 
@@ -262,7 +265,7 @@ knitr::kable(fuel_sum)
         text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1),
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
-  ylab("Emissions Factor (g/kg) per Test") + xlab("Fuel Type") +
+  ylab("Emissions Factor (g/kg)") + xlab("Fuel Type") +
   facet_wrap(~pol, scales = "free", ncol = 2)
 ```
 
@@ -632,7 +635,7 @@ var_per_fuel_pct <- mean_per_startup %>%
 * stacked bar charts of health relevent pollutant categories.
 * change carcinogens to ECOC once have data
 
-```{r, echo = FALSE, fig.width = 6, fig.height = 4}
+```{r, echo = FALSE, fig.width = 9, fig.height = 4}
   pol_cats <- mean_per_startup %>%
               dplyr::filter(pol == "voc_benzene" |
                             pol == "voc_toluene" |
@@ -651,10 +654,11 @@ var_per_fuel_pct <- mean_per_startup %>%
                                                                        "plastic bags", "food packaging", 
                                                                        "inner tubes", "footwear"))) %>%
               dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
-              dplyr::mutate(pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", "ec", "oc")))
+              dplyr::mutate(pol = sub("ec", "elemental carbon", pol),
+                            pol = sub("oc", "organic carbon", pol),
+                            pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", 
+                                                         "elemental carbon", "organic carbon")))
 
-#palette <- c("#0099CC", "#33CC99", "#FF6633", "#FF9900", "#CC6633", "#330099")
-#palette <- c("#0099CC", "#FF6633", "#CC6633", "#FF9900", "gray30", "#339999")
  palette <- c("#339999", "#33CC99", "#0099CC", "#330099", "gray30", "dodgerblue3")
 
 stacked_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
@@ -677,7 +681,7 @@ filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                facet_wrap(~cat, scales = "free") +
                theme_bw() +
                theme(legend.position = "none",text = element_text(size=15), 
-                     axis.text.x = element_text(angle = 45, hjust = 1)) +
+                     axis.text.x = element_text(angle = 30, hjust = 1)) +
                scale_fill_manual(values = palette) +
                theme(legend.title=element_blank(),
                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 11)) +
@@ -685,7 +689,7 @@ filled_plot <- ggplot(pol_cats, aes(fuel_names, mean)) +
                xlab("Startup Material")
 ```
 
-```{r, echo = FALSE, fig.width = 6, fig.height = 9}
+```{r, echo = FALSE, fig.width = 9, fig.height = 9}
 gridExtra::grid.arrange(stacked_plot, filled_plot)
 ```
 
@@ -693,7 +697,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 * stacked bar charts of health relevent pollutant categories - 
 
-```{r, echo = FALSE, fig.width = 6, fig.height = 4}
+```{r, echo = FALSE, fig.width = 9, fig.height = 4}
 
   pol_cats2 <- per_fuel_mass %>%
                dplyr::filter(pol == "voc_benzene" |
@@ -712,7 +716,10 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                                                                         "plastic bags", "food packaging",
                                                                         "inner tubes", "footwear"))) %>%
                dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
-               dplyr::mutate(pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", "ec", "oc")))
+               dplyr::mutate(pol = sub("ec", "elemental carbon", pol),
+                            pol = sub("oc", "organic carbon", pol),
+                            pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", 
+                                                         "elemental carbon", "organic carbon")))
 
   stacked_plot2 <- ggplot(pol_cats2, aes(fuel_names, mean)) +
                    geom_col(aes(fill = pol), position = "stack") +
@@ -734,7 +741,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
                   facet_wrap(~cat, scales = "free") +
                   theme_bw() +
                   theme(legend.position = "none",text = element_text(size=15), 
-                        axis.text.x = element_text(angle = 45, hjust = 1)) +
+                        axis.text.x = element_text(angle = 30, hjust = 1)) +
                   scale_fill_manual(values = palette) +
                   theme(legend.title=element_blank(),
                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 11)) +
@@ -743,13 +750,12 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 ```
 
-```{r, echo = FALSE, fig.width = 6, fig.height = 9}
+```{r, echo = FALSE, fig.width = 9, fig.height = 9}
   gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```
 
 # Correlations 
 
-<<<<<<< HEAD
 ```{r}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
@@ -762,7 +768,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 ## Figure 4
 
 *note lines are linear but R values are Spearman's rank correlation. 
-=======
+
 ```{r, echo =FALSE, fig.width = 15, fig.height = 15}
   cor_data <- per_fuel_mass %>%
               dplyr::select(-inst, -nreps, -min, -max) %>%
@@ -782,17 +788,14 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 ```
 
 ## Figure 4
->>>>>>> 18532735e56e098820d2ce8ea392eeb2b29b3ec3
+
 
 ### PM vs CO
 
 * g/kg
 
-<<<<<<< HEAD
-```{r, echo=FALSE}
-=======
 ```{r, echo=FALSE, fig.width = 6}
->>>>>>> 18532735e56e098820d2ce8ea392eeb2b29b3ec3
+
   pmco <- dplyr::filter(per_fuel_mass, grepl('^grav$|^co$', pol)) %>%
           dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
                                           fuel_names == 'kerosene' |
