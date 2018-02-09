@@ -329,7 +329,7 @@ knitr::kable(fuel_sum)
 
 * pairwise t test (standard ANOVA) to get mean contrasts
 ```{r, echo = FALSE}
-  co_means <- dplyr::filter(p_data_key, grepl('^co$', pol))
+  co_means <- dplyr::filter(p_data_key, grepl('^carbon monoxide$', pol))
 
   #lsmeans((aov(mass_pol_per_startup_std ~ fuel_names, data = co_means)), pairwise ~ fuel_names, adjust = "none")
   out <- pairwiseCI(mass_pol_per_startup_std ~ fuel_names, data = co_means)
@@ -754,18 +754,7 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
   gridExtra::grid.arrange(stacked_plot2, filled_plot2)
 ```
 
-# Correlations 
-
-```{r}
-  cor_data <- per_fuel_mass %>%
-              dplyr::select(-inst, -nreps, -min, -max) %>%
-              tidyr::spread(pol, mean) %>%
-              dplyr::mutate(mean = as.numeric(mean))
-
-  cor(cor_data, method = "spearman")
-```
-
-## Supplemental Figure 3
+# Correlations
 
 ```{r, echo =FALSE, fig.width = 15, fig.height = 15}
   cor_data <- per_fuel_mass %>%
@@ -784,6 +773,8 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 ```
 
+
+## Supplemental Figure 3
 ### scatterplots (using g/kg EFs)
 
 ```{r, echo=FALSE, fig.width = 7.5}
@@ -1322,7 +1313,3 @@ cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
                 legend.title = element_blank())
 ```
 
-
-```{r, echo = FALSE, fig.width = 9, fig.height = 9}
-  gridExtra::grid.arrange(p_pmco, p_foracet)
-```
