@@ -41,11 +41,26 @@ output:
 * fuel consumed
 
 ```{r}
-  fuel_burnt <- fuel_wgts %>%
+  
+fuel_burnt <- fuel_wgts %>%
                 tidyr::spread(var, val) %>%
-                dplyr::select(id, mass_dry_sum, wgt_ashpot_char_ash, wgt_ashpot_lid) %>%
-                mutate(mass_burnt = mass_dry_sum + wgt_ashpot_lid - wgt_ashpot_char_ash,
-                       units = "g")
+                filter(!is.na(mass_dry_new_first))
+
+fuel_burnt[ , 18][is.na(fuel_burnt[ , 18] ) ] <- 0
+
+fuel_burnt <- mutate(fuel_burnt, wgt_ashpot_unusedfuel =
+                       ifelse(wgt_ashpot_unusedfuel %in% 0, wgt_ashpot_lid, wgt_ashpot_unusedfuel)) %>%
+              mutate(unused_fuel = wgt_ashpot_unusedfuel - wgt_ashpot_lid) %>%
+              mutate(char_ash = wgt_ashpot_char_ash - wgt_ashpot_unusedfuel)
+
+fuel_burnt <- fuel_burnt %>%
+                filter(!is.na(wgt_ashpot_lid)) %>%
+                dplyr::select(id, mass_dry_new_sum, wgt_ashpot_char_ash,
+                              wgt_ashpot_lid, wgt_ashpot_unusedfuel, unused_fuel, char_ash) %>%
+                mutate(mass_burnt_wrong = mass_dry_new_sum + wgt_ashpot_lid - wgt_ashpot_char_ash,
+                       units = "g") %>%
+                mutate(mass_burned_correct = (mass_dry_new_sum - unused_fuel) - char_ash)
+                
 
 ```
 

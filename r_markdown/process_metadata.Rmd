@@ -40,6 +40,8 @@ output:
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
   
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
+  
+  fuel_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
 ```
 
 # Sample data
@@ -90,7 +92,19 @@ output:
   fuel_no_fh2_3 <- dplyr::setdiff(fuel,
                                   dplyr::filter(fuel, (id == "FH2" & order == "3")))
 
-  fuel_mass <- dplyr::select(fuel_no_fh2_3, id, order, starts_with("mass")) %>%
+  fuel_clean_no_fh2_3 <- dplyr::setdiff(fuel_clean,
+                                  dplyr::filter(fuel_clean, (fuel_id == "FH2" & test_order == "3"))) %>%
+                         dplyr::rename(id = fuel_id, mass_dry_new = m_dry) %>%
+                         dplyr::select(id, mass_dry_new)
+  
+  fuel_clean_no_fh2_3 <- cbind(fuel_clean_no_fh2_3, fuel_no_fh2_3$order)
+  fuel_clean_no_fh2_3 <- rename(fuel_clean_no_fh2_3, order = `fuel_no_fh2_3$order`) %>%
+                         select(mass_dry_new)
+  
+  fuel_clean_no_fh2_3 <- cbind(fuel_no_fh2_3, fuel_clean_no_fh2_3)
+  fuel_clean_no_fh2_3 <- select(fuel_clean_no_fh2_3, -13, -14, -15, -16, -17, -18, -19)
+    
+  fuel_mass <- dplyr::select(fuel_clean_no_fh2_3, id, order, starts_with("mass")) %>%
                dplyr::group_by(id) %>%
                dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first)) %>%
                tidyr::gather("var", "val", 2:15)
@@ -102,7 +116,8 @@ output:
                tidyr::gather("var", "val", 2:26) %>%
                dplyr::filter(!is.na(val), id != "BG2")
 
-  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass)
+  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass) %>%
+               dplyr::select(id, var, val)
 
   saveRDS(test_mass, file="../r_files/fuel_wgts.RDS")
 ```
