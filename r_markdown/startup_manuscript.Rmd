@@ -25,6 +25,7 @@ output: html_document
   emission_factors <- readRDS(file = "../r_files/emission_factors.RDS")
   fuel_burnt_reps <- readRDS(file = "../r_files/fuel_burnt_reps.RDS")
   qc <- readRDS(file = "../r_files/qc.RDS")
+  mce_summary <- readRDS(file = "../r_files/mce_summary.RDS")
 ```
 
 
@@ -776,6 +777,31 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 
 ## Supplemental Figure 3
 ### scatterplots (using g/kg EFs)
+```{r}
+# add MCE to per_test data
+
+mce_summary_ <- mce_summary %>%
+                dplyr::mutate(inst = "MCE",
+                              pol = "MCE") %>%
+              dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                   "kindling" = "leaves_twigs",
+                                                                   "inner tubes" = "rubber",
+                                                                   "footwear" = "flipflops",
+                                                                   "fabric" = "t_shirts",
+                                                                   "wood shims" = "wood_shims",
+                                                                   "food packaging" = "food_packaging")) %>%
+              dplyr::select(inst, pol, fuel_names, mean)
+
+per_fuel_mass <- per_fuel_mass %>%
+                 bind_rows(mce_summary_) %>%
+                 dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "background", "kerosene",
+                                                                             "kindling", "flipflops",
+                                                                             "rubber", "newspaper",
+                                                                             "wood shims", "t shirts",
+                                                                             "food packaging", "plastic bags"))
+
+```
+
 
 ```{r, echo=FALSE, fig.width = 7.5}
 # PM vs CO
