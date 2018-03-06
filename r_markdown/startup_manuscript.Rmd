@@ -26,6 +26,7 @@ output: html_document
   fuel_burnt_reps <- readRDS(file = "../r_files/fuel_burnt_reps.RDS")
   qc <- readRDS(file = "../r_files/qc.RDS")
   mce_summary <- readRDS(file = "../r_files/mce_summary.RDS")
+  mce_summary_per_test <- readRDS(file = "../r_files/mce_summary_per_test.RDS")
 ```
 
 
@@ -778,28 +779,49 @@ gridExtra::grid.arrange(stacked_plot, filled_plot)
 ## Supplemental Figure 3
 ### scatterplots (using g/kg EFs)
 ```{r}
-# add MCE to per_test data
+# add MCE to per_fuel_mass and per_test data
 
-mce_summary_ <- mce_summary %>%
-                dplyr::mutate(inst = "MCE",
-                              pol = "MCE") %>%
-              dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
-                                                                   "kindling" = "leaves_twigs",
-                                                                   "inner tubes" = "rubber",
-                                                                   "footwear" = "flipflops",
-                                                                   "fabric" = "t_shirts",
-                                                                   "wood shims" = "wood_shims",
-                                                                   "food packaging" = "food_packaging")) %>%
-              dplyr::select(inst, pol, fuel_names, mean)
+  mce_summary_ <- mce_summary %>%
+                  dplyr::mutate(inst = "MCE",
+                                pol = "MCE") %>%
+                  dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                       "kindling" = "leaves_twigs",
+                                                                       "inner tubes" = "rubber",
+                                                                       "footwear" = "flipflops",
+                                                                       "fabric" = "t_shirts",
+                                                                       "wood shims" = "wood_shims",
+                                                                       "food packaging" = "food_packaging")) %>%
+                  dplyr::select(inst, pol, fuel_names, mean)
 
-per_fuel_mass <- per_fuel_mass %>%
-                 bind_rows(mce_summary_) %>%
-                 dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "background", "kerosene",
-                                                                             "kindling", "flipflops",
-                                                                             "rubber", "newspaper",
-                                                                             "wood shims", "t shirts",
-                                                                             "food packaging", "plastic bags"))
+  per_fuel_mass <- per_fuel_mass %>%
+                   bind_rows(mce_summary_) %>%
+                   dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "background", "kerosene",
+                                                                               "kindling", "flipflops",
+                                                                               "rubber", "newspaper",
+                                                                               "wood shims", "t shirts",
+                                                                               "food packaging", "plastic bags"))
 
+
+  mce_summary_per_test_ <- mce_summary_per_test %>%
+                           dplyr::mutate(inst = "MCE",
+                                         pol = "MCE",
+                                         mass_pol_per_mass_fuel = mean) %>%
+                           dplyr::mutate(fuel_names = forcats::fct_recode(fuel, "plastic bags" = "plastic_bags",
+                                                                                "kindling" = "leaves_twigs",
+                                                                                "inner tubes" = "rubber",
+                                                                                "footwear" = "flipflops",
+                                                                                "fabric" = "t_shirts",
+                                                                                "wood shims" = "wood_shims",
+                                                                                "food packaging" = "food_packaging")) %>%
+                          dplyr::select(id, pol, inst, fuel_names, mass_pol_per_mass_fuel)
+  
+  per_test <- per_test %>%
+              bind_rows(mce_summary_per_test_) %>%
+              dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "background", "kerosene",
+                                                                          "kindling", "flipflops",
+                                                                          "rubber", "newspaper",
+                                                                          "wood shims", "t shirts",
+                                                                          "food packaging", "plastic bags"))
 ```
 
 
@@ -1339,7 +1361,6 @@ cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
                 legend.title = element_blank())
 ```
 
-
 ```{r, echo=FALSE, fig.width = 7.5}
 # PM vs MCE
   pmMCE <- dplyr::filter(per_fuel_mass, grepl('^grav$|^MCE$', pol)) %>%
@@ -1367,16 +1388,157 @@ cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
   ggplot() + 
         geom_point(data = pmMCE, aes(x = MCE, y = grav, colour = fuel_names), 
                    shape = 17, size = 6) +
-        geom_point(data = pmMCE_pertest, aes(x = grav, y = co, colour = fuel_names), 
+        geom_point(data = pmMCE_pertest, aes(x = MCE, y = grav, colour = fuel_names), 
                    shape = 1, size = 4, stroke = 1.5) +
-        geom_text(data = rhos, aes(x = 50, y = 50, label = text[1]), 
+        geom_text(data = rhos, aes(x = 97, y = 65, label = text[1]), 
                       color = 'black',  parse = TRUE,
                       size = 7) +
-            geom_text(data = rhos, aes(x = 48, y = 46, label = text[2]), 
+            geom_text(data = rhos, aes(x = 97, y = 60, label = text[2]), 
                       color = 'black',  parse = TRUE,
                       size = 7) +
           xlab("MCE") +
           ylab("PM2.5") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          theme(text = element_text(size = 20),
+                axis.text=element_text(size=20),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.text = element_text(size=20),
+                legend.title = element_blank())
+```
+
+```{r, echo=FALSE, fig.width = 7.5}
+# formaldehyde vs MCE
+  formMCE <- dplyr::filter(per_fuel_mass, grepl('^formaldehyde$|^MCE$', pol)) %>%
+             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                             fuel_names == 'kerosene' |
+                                             fuel_names == 'wood shims' | 
+                                             fuel_names == 'kindling', 
+                                             'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+  formMCE_pertest <- dplyr::filter(per_test, grepl('^formaldehyde$|^MCE$', pol)) %>%
+                     dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                     tidyr::spread(pol, mass_pol_per_mass_fuel)
+ # rho calculations
+  rho_sp <- cor(formMCE$formaldehyde, formMCE$MCE, method = "spearman")
+  rho_pear <- cor(formMCE$formaldehyde, formMCE$MCE, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+        geom_point(data = formMCE, aes(x = MCE, y = formaldehyde, colour = fuel_names), 
+                   shape = 17, size = 6) +
+        geom_point(data = formMCE_pertest, aes(x = MCE, y = formaldehyde, colour = fuel_names), 
+                   shape = 1, size = 4, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 97, y = 1.45, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+            geom_text(data = rhos, aes(x = 96.8, y = 1.35, label = text[2]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+          xlab("MCE") +
+          ylab("formaldehyde") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          theme(text = element_text(size = 20),
+                axis.text=element_text(size=20),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.text = element_text(size=20),
+                legend.title = element_blank())
+```
+
+```{r, echo=FALSE, fig.width = 7.5}
+# acetaldehyde vs MCE
+  acetMCE <- dplyr::filter(per_fuel_mass, grepl('^acetaldehyde$|^MCE$', pol)) %>%
+             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                             fuel_names == 'kerosene' |
+                                             fuel_names == 'wood shims' | 
+                                             fuel_names == 'kindling', 
+                                             'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+  acetMCE_pertest <- dplyr::filter(per_test, grepl('^acetaldehyde$|^MCE$', pol)) %>%
+                     dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                     tidyr::spread(pol, mass_pol_per_mass_fuel)
+ # rho calculations
+  rho_sp <- cor(acetMCE$acetaldehyde, acetMCE$MCE, method = "spearman")
+  rho_pear <- cor(acetMCE$acetaldehyde, acetMCE$MCE, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+        geom_point(data = acetMCE, aes(x = MCE, y = acetaldehyde, colour = fuel_names), 
+                   shape = 17, size = 6) +
+        geom_point(data = acetMCE_pertest, aes(x = MCE, y = acetaldehyde, colour = fuel_names), 
+                   shape = 1, size = 4, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 97, y = 1.15, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+            geom_text(data = rhos, aes(x = 96.8, y = 1.05, label = text[2]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+          xlab("MCE") +
+          ylab("acetaldehyde") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          theme(text = element_text(size = 20),
+                axis.text=element_text(size=20),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.text = element_text(size=20),
+                legend.title = element_blank())
+```
+
+```{r, echo=FALSE, fig.width = 7.5}
+# benzene vs MCE
+  benzMCE <- dplyr::filter(per_fuel_mass, grepl('^voc_benzene$|^MCE$', pol)) %>%
+             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                             fuel_names == 'kerosene' |
+                                             fuel_names == 'wood shims' | 
+                                             fuel_names == 'kindling', 
+                                             'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+  benzMCE_pertest <- dplyr::filter(per_test, grepl('^voc_benzene$|^MCE$', pol)) %>%
+                     dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                     tidyr::spread(pol, mass_pol_per_mass_fuel)
+ # rho calculations
+  rho_sp <- cor(benzMCE$voc_benzene, benzMCE$MCE, method = "spearman")
+  rho_pear <- cor(benzMCE$voc_benzene, benzMCE$MCE, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+        geom_point(data = benzMCE, aes(x = MCE, y = voc_benzene, colour = fuel_names), 
+                   shape = 17, size = 6) +
+        geom_point(data = benzMCE_pertest, aes(x = MCE, y = voc_benzene, colour = fuel_names), 
+                   shape = 1, size = 4, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 97, y = 1.15, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+            geom_text(data = rhos, aes(x = 96.8, y = 1.05, label = text[2]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+          xlab("MCE") +
+          ylab("benzene") +
           scale_color_hue(l=50, c=80) +
           theme_bw() +
           theme(text = element_text(size = 20),
