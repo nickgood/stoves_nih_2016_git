@@ -1548,3 +1548,50 @@ cotol <- dplyr::filter(per_fuel_mass, grepl('^co$|^voc_toluene$', pol)) %>%
                 legend.text = element_text(size=20),
                 legend.title = element_blank())
 ```
+
+```{r, echo=FALSE, fig.width = 7.5}
+# toluene vs MCE
+  tolMCE <- dplyr::filter(per_fuel_mass, grepl('^voc_toluene$|^MCE$', pol)) %>%
+             dplyr::mutate(fuel_cat = ifelse(fuel_names == 'newspaper' | 
+                                             fuel_names == 'kerosene' |
+                                             fuel_names == 'wood shims' | 
+                                             fuel_names == 'kindling', 
+                                             'conventional', 'nonconventional')) %>%
+          dplyr::select(fuel_names, fuel_cat, pol, mean) %>%
+          tidyr::spread(pol, mean)
+
+  tolMCE_pertest <- dplyr::filter(per_test, grepl('^voc_toluene$|^MCE$', pol)) %>%
+                     dplyr::select(id, fuel_names, pol, mass_pol_per_mass_fuel) %>%
+                     tidyr::spread(pol, mass_pol_per_mass_fuel)
+ # rho calculations
+  rho_sp <- cor(tolMCE$voc_toluene, tolMCE$MCE, method = "spearman")
+  rho_pear <- cor(tolMCE$voc_toluene, tolMCE$MCE, method = "pearson")
+  rhos <- data.frame(c(rho_sp, rho_pear))
+  colnames(rhos) <- "val"
+  rhos <- rhos %>%
+          dplyr::mutate(type = c("Spearman: ", "Pearson: "),
+                        val = round(rhos$val, 2),
+                        text = paste0(type, val))
+
+  ggplot() + 
+        geom_point(data = tolMCE, aes(x = MCE, y = voc_toluene, colour = fuel_names), 
+                   shape = 17, size = 6) +
+        geom_point(data = tolMCE_pertest, aes(x = MCE, y = voc_toluene, colour = fuel_names), 
+                   shape = 1, size = 4, stroke = 1.5) +
+        geom_text(data = rhos, aes(x = 97, y = 0.28, label = text[1]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+            geom_text(data = rhos, aes(x = 96.8, y = 0.26, label = text[2]), 
+                      color = 'black',  parse = TRUE,
+                      size = 7) +
+          xlab("MCE") +
+          ylab("toluene") +
+          scale_color_hue(l=50, c=80) +
+          theme_bw() +
+          theme(text = element_text(size = 20),
+                axis.text=element_text(size=20),
+                legend.position = "right",
+                legend.key.size = unit(0.1, "cm"),
+                legend.text = element_text(size=20),
+                legend.title = element_blank())
+```
