@@ -650,17 +650,46 @@ var_per_fuel_pct <- mean_per_startup %>%
 
   voc_palette <- c("#339999", "#33CC99", "#0099CC", "#330099")
 
-stacked_plot <- ggplot(voc_cats, aes(fuel_names, mean)) +
+  voc_plot <- ggplot(voc_cats, aes(fuel_names, mean)) +
                 geom_col(aes(fill = pol), position = "stack") +
                 theme_bw() +
                 theme(legend.position = "top",text = element_text(size=15),
-                      axis.title.x=element_blank()) +
-                scale_fill_manual(values = palette) +
-                theme(legend.title=element_blank(),
+                      axis.title.x=element_blank(),
+                      legend.title=element_blank(),
                       axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
-                      axis.text.x = element_text(angle = 30, hjust = 1)) +
+                      #axis.text.x = element_text(angle = 30, hjust = 1),
+                      axis.text.x = element_blank()) +
+                scale_fill_manual(values = palette) +
                 ylab("mg per startup event") +
-                ylim(0,30)
+                ylim(0,30) 
+
+  voc_plot_zoom <- ggplot(voc_cats, aes(fuel_names, mean)) +
+                    geom_col(aes(fill = pol), position = "stack") +
+                    theme_bw() +
+                    theme(legend.position = "none",
+                          axis.title.x=element_blank(),
+                          legend.title=element_blank(),
+                          axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
+                          axis.text.x = element_text(angle = 30, hjust = 1, size = 13)) +
+                    scale_fill_manual(values = palette) +
+                    ylab("mg per startup event") +
+                    ylim(0,5) 
+  
+#spread and save as CSV for plotting in Igor
+  voc_cats_spread <- mean_per_startup %>%
+                     dplyr::filter(pol == "voc_benzene" |
+                                   pol == "voc_toluene" |
+                                   pol == "voc_ethylbenzene" |
+                                   pol == "voc_m_p_xylene" |
+                                   pol == "voc_o_xylene") %>%
+                    dplyr::mutate(cat = "BTEX") %>%
+                    dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
+                    select(fuel_names, pol, mean) %>%
+                    tidyr::spread(pol, mean) %>%
+                    dplyr::mutate(xylenes = m_p_xylene + o_xylene) %>%
+                    dplyr::select(-m_p_xylene, -o_xylene) %>%
+                    write_csv("../r_files/voc_cats_spread.csv")
+
 ```
 
 ```{r}
@@ -684,25 +713,41 @@ stacked_plot <- ggplot(voc_cats, aes(fuel_names, mean)) +
   data_pm25 <- pm_ec_oc %>%
                 filter(inst == "grav")
   
-  pm_palette <- c("elemental carbon" = "grey45", "organic carbon" = "seagreen4", "PM2.5 mass" = "grey15")
+  pm_palette <- c("elemental carbon" = "grey65", "organic carbon" = "palegreen3", "PM2.5 mass" = "grey30")
 
   pm_plot <- ggplot(mapping = aes(fuel_names, mean)) +
-    geom_col(data = data_pm25, aes(fill = pol)) +
-    geom_col(aes(fill = pol), data_ec_oc, position = "stack") +
-    scale_fill_manual(values = pm_palette) +
-    theme_bw() +
-    theme(legend.position = "top",text = element_text(size=15),
-          legend.title=element_blank(),
-          axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
-          axis.text.x = element_text(angle = 30, hjust = 1),
-          axis.title=element_blank())
+              geom_col(data = data_pm25, aes(fill = pol)) +
+              geom_col(aes(fill = pol), data_ec_oc, position = "stack") +
+              scale_fill_manual(values = pm_palette) +
+              theme_bw() +
+              theme(legend.position = "top",text = element_text(size=15),
+                    legend.title=element_blank(),
+                    axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
+                    #axis.text.x = element_text(angle = 30, hjust = 1),
+                    axis.text.x = element_blank(),
+                    axis.title=element_blank())
+  
+  pm_plot_zoom <- ggplot(mapping = aes(fuel_names, mean)) +
+                   geom_col(data = data_pm25, aes(fill = pol)) +
+                   geom_col(aes(fill = pol), data_ec_oc, position = "stack") +
+                   scale_fill_manual(values = pm_palette) +
+                   theme_bw() +
+                   theme(legend.position = "none",
+                         legend.title=element_blank(),
+                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
+                         axis.text.x = element_text(angle = 30, hjust = 1, size = 13),
+                         axis.title=element_blank()) +
+                   ylim(0,50) 
 
+  # spread and save as csv for plotting in Igor
+  pm_ec_oc_spread <- pm_ec_oc %>% 
+                     select(fuel_names, pol, mean) %>%
+                     tidyr::spread(key = pol, value = mean) %>%
+                     write_csv("../r_files/pm_ec_oc_spread.csv")
 ```
 
-
-
-```{r, echo = FALSE, fig.width = 10, fig.height = 5}
-gridExtra::grid.arrange(stacked_plot, pm_plot, ncol = 2)
+```{r, echo = FALSE, fig.width = 10, fig.height = 10}
+gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2)
 ```
 
 ## Supplemental Figure 2. 
