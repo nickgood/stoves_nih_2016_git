@@ -756,59 +756,92 @@ gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2
 
 ```{r, echo = FALSE, fig.width = 9, fig.height = 4}
 
-  pol_cats2 <- per_fuel_mass %>%
-               dplyr::filter(pol == "voc_benzene" |
-                             pol == "voc_toluene" |
-                             pol == "voc_ethylbenzene" |
-                             pol == "voc_m_p_xylene" |
-                             pol == "voc_o_xylene") %>%
-               dplyr::mutate(cat = "BTEX") %>%
-               dplyr::bind_rows(dplyr::filter(per_fuel_mass,
-                                              pol == "ec" | pol == "oc") %>%
-                               dplyr::mutate(cat = "ecoc")) %>%
-               dplyr::mutate(pol = sub("^voc_", "", pol),
+  voc_cats_fuelmass <- per_fuel_mass %>%
+              dplyr::filter(pol == "voc_benzene" |
+                            pol == "voc_toluene" |
+                            pol == "voc_ethylbenzene" |
+                            pol == "voc_m_p_xylene" |
+                            pol == "voc_o_xylene") %>%
+              dplyr::mutate(cat = "BTEX") %>%
+              dplyr::mutate(pol = sub("^voc_", "", pol),
                              pol = sub(".*xylene.*", "xylenes", pol)) %>%
-               dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling",
-                                                                        "newspaper", "fabric",
-                                                                        "plastic bags", "food packaging",
-                                                                        "inner tubes", "footwear"))) %>%
-               dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
-               dplyr::mutate(pol = sub("ec", "elemental carbon", pol),
-                            pol = sub("oc", "organic carbon", pol),
-                            pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes", 
-                                                         "elemental carbon", "organic carbon")))
+              dplyr::mutate(pol = factor(pol, levels = c("benzene", "toluene", "ethylbenzene", "xylenes")))
 
-  stacked_plot2 <- ggplot(pol_cats2, aes(fuel_names, mean)) +
-                   geom_col(aes(fill = pol), position = "stack") +
-                   #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-                   facet_wrap(~cat, scales = "free") +
-                   theme_bw() +
-                   theme(legend.position = "top",text = element_text(size=15), 
-                         axis.text.x = element_blank(),
-                         axis.title.x=element_blank()) +
-                   scale_fill_manual(values = palette) +
-                   theme(legend.title=element_blank(),
-                         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11)) +
-                   scale_y_continuous() + #limits = c(0, 60)) + 
-                   ylab("g per kg") 
+  voc_palette <- c("#339999", "#33CC99", "#0099CC", "#330099")
 
-  filled_plot2 <- ggplot(pol_cats, aes(fuel_names, mean)) +
-                  geom_col(aes(fill = pol), position = "fill") +
-                  #geom_vline(xintercept = 4.5, col='black', lwd=1) +
-                  facet_wrap(~cat, scales = "free") +
-                  theme_bw() +
-                  theme(legend.position = "none",text = element_text(size=15), 
-                        axis.text.x = element_text(angle = 30, hjust = 1)) +
-                  scale_fill_manual(values = palette) +
-                  theme(legend.title=element_blank(),
-                        axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 10), size = 11)) +
-                  ylab("fraction of total") +
-                  xlab("Startup Material")
+  voc_plot_sup <- ggplot(voc_cats_fuelmass, aes(fuel_names, mean)) +
+                geom_col(aes(fill = pol), position = "stack") +
+                theme_bw() +
+                theme(legend.position = "top",text = element_text(size=15),
+                      axis.title.x=element_blank(),
+                      legend.title=element_blank(),
+                      axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
+                      axis.text.x = element_text(angle = 30, hjust = 1, size = 13)) +
+                scale_fill_manual(values = palette) +
+                ylab("mg per startup event") +
+                ylim(0,2) 
+  
+#spread and save as CSV for plotting in Igor
+  voc_cats_spread_fuelmass <- per_fuel_mass %>%
+                     dplyr::filter(pol == "voc_benzene" |
+                                   pol == "voc_toluene" |
+                                   pol == "voc_ethylbenzene" |
+                                   pol == "voc_m_p_xylene" |
+                                   pol == "voc_o_xylene") %>%
+                    dplyr::mutate(cat = "BTEX") %>%
+                    dplyr::mutate(pol = sub("^voc_", "", pol)) %>%
+                    select(fuel_names, pol, mean) %>%
+                    tidyr::spread(pol, mean) %>%
+                    dplyr::mutate(xylenes = m_p_xylene + o_xylene) %>%
+                    dplyr::select(-m_p_xylene, -o_xylene) %>%
+                    write_csv("../r_files/voc_cats_spread_fuelmass.csv")
 
 ```
 
-```{r, echo = FALSE, fig.width = 9, fig.height = 9}
-  gridExtra::grid.arrange(stacked_plot2, filled_plot2)
+```{r}
+  pm_ec_oc_fuelmass <- per_fuel_mass %>%
+              dplyr::filter(pol == "ec" |
+                            pol == "oc" |
+                            pol == "grav") %>%
+              dplyr::mutate(fuel_names = factor(fuel_names, levels = c("kerosene", "wood shims", "kindling", 
+                                                                       "newspaper", "fabric", 
+                                                                       "plastic bags", "food packaging", 
+                                                                       "inner tubes", "footwear"))) %>%
+              dplyr::mutate(mean = ifelse(mean < 0, 0, mean)) %>% # deals with negative plastic bag ecoc
+              dplyr::mutate(pol = sub("ec", "elemental carbon", pol),
+                            pol = sub("oc", "organic carbon", pol),
+                            pol = sub("grav", "PM2.5 mass", pol),
+                            pol = factor(pol, levels = c("elemental carbon", "organic carbon", "PM2.5 mass")))
+
+  data_ec_oc_sup <- pm_ec_oc_fuelmass %>%
+                filter(inst == "ecoc")
+ 
+  data_pm25_sup <- pm_ec_oc_fuelmass %>%
+                filter(inst == "grav")
+  
+  pm_palette <- c("elemental carbon" = "grey65", "organic carbon" = "palegreen3", "PM2.5 mass" = "grey30")
+
+  pm_plot_sup <- ggplot(mapping = aes(fuel_names, mean)) +
+              geom_col(data = data_pm25_sup, aes(fill = pol)) +
+              geom_col(aes(fill = pol), data_ec_oc_sup, position = "stack") +
+              scale_fill_manual(values = pm_palette) +
+              theme_bw() +
+              theme(legend.position = "top",text = element_text(size=15),
+                    legend.title=element_blank(),
+                    axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
+                    axis.text.x = element_text(angle = 30, hjust = 1, size = 13),
+                    axis.title=element_blank()) +
+                    ylim(0,35) 
+
+  # spread and save as csv for plotting in Igor
+  pm_ec_oc_spread <- pm_ec_oc %>% 
+                     select(fuel_names, pol, mean) %>%
+                     tidyr::spread(key = pol, value = mean) %>%
+                     write_csv("../r_files/pm_ec_oc_spread_fuelmass.csv")
+```
+
+```{r, echo = FALSE, fig.width = 9.25, fig.height = 5}
+  gridExtra::grid.arrange(voc_plot_sup, pm_plot_sup, ncol = 2)
 ```
 
 # Correlations
