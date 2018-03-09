@@ -44,32 +44,25 @@ output:
                                          by = "id")
 ```
 
-
-```{r}
-  p_data <- mutate(mass_carbon, fuelmass_total = fuelmass_total * 1e6) %>%
-            gather("var", "val", 2:3)
-           
-
-  ggplot(p_data, aes(id, val, color = var)) + geom_point() + scale_y_log10()
-
-  p_data <- mutate(mass_carbon, fuelmass_total = fuelmass_total * 1e6,
-                                frac = mass_carbon / fuelmass_total)
-  
-  ggplot(p_data, aes(id, frac)) +
-  geom_point(color = "blue") +
-  theme_minimal()
-          
-```
-
-
 # Merge with fuel properties
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_carbon <- dplyr::left_join(mass_carbon,
+  mass_carbon_ <- dplyr::left_join(mass_carbon,
                                   dplyr::select(test_info, id, fuel),
                                   by = "id") %>%
-                 dplyr::left_join(fuel_properties, by = "fuel")
+                 dplyr::left_join(fuel_properties, by = "fuel") %>%
+                 dplyr::mutate(fuelmass_total = ifelse(fuelmass_total == 0, NA, fuelmass_total),
+                               fuelmass_ug = fuelmass_total * 1e6,
+                               carbon_frac = mass_carbon / fuelmass_ug)
 ```
+
+```{r, fig.width=10}
+  ggplot(mass_carbon_, aes(x = id, y = carbon_frac, color = fuel)) +
+    geom_point(size = 4) +
+    theme_bw() +
+    ylim(0,1)
+```
+
 
 # Carbon balance
 
