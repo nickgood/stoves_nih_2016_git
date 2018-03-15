@@ -253,7 +253,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants (mass per mass fuel basis)
 
-```{r, echo = FALSE, fig.width = 12, fig.height = 17}
+```{r, echo = FALSE, fig.width = 12, fig.height = 17.5}
   p_data_key_reorder <- p_data_key %>%
                         dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "inner tubes", "footwear", 
                                                                         "kerosene", "kindling",
@@ -267,6 +267,7 @@ knitr::kable(fuel_sum)
         text = element_text(size=25),
         axis.text.x = element_text(angle = 45, hjust = 1),
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
+  scale_y_log10(breaks = c(0, 0.05, 0.1, 0.5, 1, 5, 10, 20, 40, 80)) +
   ylab("Emissions Factor (g/kg)") + xlab("Fuel Type") +
   facet_wrap(~pol, scales = "free", ncol = 2)
 ```
@@ -834,7 +835,7 @@ gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2
                     ylim(0,35) 
 
   # spread and save as csv for plotting in Igor
-  pm_ec_oc_spread <- pm_ec_oc %>% 
+  pm_ec_oc_spread <- pm_ec_oc_fuelmass %>% 
                      select(fuel_names, pol, mean) %>%
                      tidyr::spread(key = pol, value = mean) %>%
                      write_csv("../r_files/pm_ec_oc_spread_fuelmass.csv")
