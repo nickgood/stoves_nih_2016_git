@@ -6,10 +6,10 @@
 .RData
 .Ruserdata
 data/
-r_files/
+r_data/
+*.RDS
 figures/
 r_csv/
 *_cache/
 *.html
-r_presentation/
 .Rproj.user
