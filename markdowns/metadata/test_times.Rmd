@@ -1,0 +1,161 @@
+---
+title: "Process test times"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse", "gridExtra")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../R_scripts/R_load_data.R")
+  source("../R_scripts/R_load_metadata.R")
+  source("../R_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
+```
+
+# Load data
+
+* sample, wood and batch test metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- readRDS("../r_files/samples.RDS")
+  batch_times <- readRDS("../r_files/batch_times.RDS")
+  wood_times <- readRDS("../r_files/wood_times.RDS")
+```
+
+* pre and post experiment background times for online instruments
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_1 <- readRDS("../r_files/data_1.RDS")
+  data_2 <- readRDS("../r_files/data_2.RDS")
+```
+
+# Combine time data
+
+* wood and batch times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  wood_batch_times <- dplyr::bind_rows(dplyr::select(wood_times, -date),
+                                       dplyr::select(batch_times, -date)) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                                      test_times, by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* fivegas background times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg_fivegas <- dplyr::select(data_1, id, 
+                                    time_start_fivegas_prebg,
+                                    time_end_fivegas_prebg,
+                                    time_start_fivegas_post_bg,
+                                    time_end_fivegas_post_bg) %>%
+                      dplyr::rename(bg_pre_start_fivegas = time_start_fivegas_prebg,
+                                    bg_pre_end_fivegas = time_end_fivegas_prebg,
+                                    bg_post_start_fivegas = time_start_fivegas_post_bg,
+                                    bg_post_end_fivegas = time_end_fivegas_post_bg) %>%
+                      tidyr::gather("var", "value", 2:5) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                        by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* pax/smps background times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times_bg_pax_smps <- dplyr::select(data_2, id, 
+                                     time_start_smps_pax_bg_pre,
+                                     time_end_smps_pax_bg_pre,
+                                     time_start_smps_pax_bg_post,
+                                     time_end_smps_pax_bg_post) %>%
+                       dplyr::rename(bg_pre_start_pax_smps = time_start_smps_pax_bg_pre,
+                                     bg_pre_end_pax_smps = time_end_smps_pax_bg_pre,
+                                     bg_post_start_pax_smps = time_start_smps_pax_bg_post,
+                                     bg_post_end_pax_smps = time_end_smps_pax_bg_post) %>%
+                      tidyr::gather("var", "value", 2:5) %>%
+                      dplyr::inner_join(dplyr::select(samples, id, date),
+                                        by = "id") %>%
+                      dplyr::filter(is.na(value)==FALSE) %>%
+                      dplyr::mutate(id = as.factor(id))
+```
+
+* combine times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  test_times <- dplyr::bind_rows(wood_batch_times,
+                                 times_bg_fivegas,
+                                 times_bg_pax_smps) %>%
+                dplyr::mutate(id = as.factor(id)) %>%
+                dplyr::mutate(var = as.factor(var)) %>%
+                tibble::as_data_frame()
+```
+
+# Save data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(test_times, file = "../r_files/test_times.RDS")
+```
+
+# Summary
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample info
+  samples <- dplyr::select(samples, id, stove, fuel)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # sample durations (minutes)
+  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::mutate(dur = (shutdown - start_1) / 60)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # merge with full test list
+  times <- dplyr::left_join(dplyr::select(samples, id) %>%
+                            dplyr::filter(grepl("^[0-9]", id) == TRUE), 
+                            times,
+                            by = "id")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  p_hist <- ggplot(times, aes(x = dur)) +
+            geom_histogram(binwidth = 15) +
+            theme_minimal() +
+            xlab("test duration (min)")
+
+  p_data <- dplyr::mutate(times,
+                          value_norm = (dur - mean(dur, na.rm = TRUE)) / sd(dur, na.rm = TRUE),
+                          outlier = ifelse(is_outlier(dur),
+                          as.character(id),
+                          NA))
+
+  p_box <- ggplot(p_data, aes(x = "duration", y = value_norm)) +
+           geom_boxplot() +
+           geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 4) +
+           theme_minimal() +
+           ylab("z score normalized value") +
+           xlab("") +
+           theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
+           theme(axis.text.y = element_text(size = 30),
+           axis.title=element_text(size=40))
+
+  grid.arrange(p_hist, p_box, ncol = 2)
+```
+```
+
+There are `r sum(is.na(times$dur))` tests with missing sample duration data, these are: `r times$id[is.na(times$dur)]`.

@@ -1,0 +1,547 @@
+---
+title: "Process and combine"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
+  packages <- c("tidyverse")
+
+  new <- packages[!(packages %in% installed.packages()[,"Package"])]
+  if(length(new)) install.packages(new)
+  lapply(packages, library, character.only = TRUE)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
+                        echo = FALSE,
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
+```
+
+# Load
+
+* pollutant data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- readRDS("../r_files/ecoc_merged.RDS")
+  load("../r_files/fivegas_merged.Rda")
+  load("../r_files/background_co.Rda")
+    bg_co <- background$bg
+    bg_co_mean <- background$mean
+  load("../r_files/background_co2.Rda")
+    bg_co2 <- background$bg
+    bg_co2_mean <- background$mean
+  load("../r_files/background_ch4.Rda")
+    bg_ch4 <- background$bg
+    bg_ch4_mean <- background$mean
+  load("../r_files/grav_merged.Rda")
+  load("../r_files/smps_ultrafine.Rda")
+  load("../r_files/smps_ultrafine_bg.Rda")
+  load("../r_files/ions_merged.Rda")
+  load("../r_files/carbonyls_merged.Rda")
+  load("../r_files/voc_merged.Rda")
+  pah_merged <- readRDS("../r_files/pah_merged.RDS")
+```
+
+* constants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  hood_flow <- readRDS("../r_files/hood_flow.RDS")
+  filter_area <- readRDS("../r_files/filter_area.RDS")
+  load("../r_files/pol_properties.Rda")
+  load("../r_files/inst_constants.Rda")
+  load("../r_files/calc_constants.Rda")
+```
+
+* metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times.RDS")
+```
+
+# timestamps
+
+* integrated sample start & end times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+           tidyr::spread(var, value) %>%
+           dplyr::select(-date) %>%
+           dplyr::rename(start = start_1, end = shutdown)
+```
+
+# carbonyls
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::select(carbonyls_merged,
+                             id, qc,
+                             flow,
+                             start, end,
+                             pol, mass_ug,
+                             conc_bg) %>%
+               dplyr::left_join(dplyr::select(pol_properties, 
+                                              pol, 
+                                              mw, 
+                                              num_c), by = "pol") %>%
+               dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, dur = (end - start) / 60,
+                             conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  carbonyls <- dplyr::mutate(carbonyls, 
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_carbon = mass_emitted * (num_c * mw_c / mw),
+                             inst = "carbs")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(carbonyls, 2)
+```
+
+# ecoc
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::filter(ecoc, type == "test", qc != "bad", grepl("^[0-9]", id)) %>%
+          dplyr::select(id, cassette,
+                        start, end,
+                        flow,
+                        pol, ug_sq_cm,
+                        conc_bg, type, qc)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::mutate(ecoc, dur = (end - start) / 60,
+                              conc = (ug_sq_cm * filter_area * 1000) / (flow * dur))
+```
+
+* account for artifact
+
+Use replicate average artifact (probably clean up spreadsheet at some point)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::group_by(ecoc, pol, id, cassette, qc, type) %>%
+          dplyr::summarise_if(is.numeric, mean, na.rm = TRUE) %>%
+          dplyr::ungroup()
+
+  ecoc_a <- ecoc %>%
+            dplyr::select(id, cassette, conc, pol) %>%
+            tidyr::spread(cassette, conc) %>%
+            dplyr::mutate(a = ifelse(is.na(a), 0, a)) %>%
+            dplyr::mutate(conc_cor = e - a)
+
+  ecoc <- dplyr::left_join(
+            dplyr::filter(ecoc, cassette == "e"),
+            dplyr::select(ecoc_a, -a, -e), 
+          by = c("id", "pol"))
+```
+
+* calculate mass emitted
+
+Concentration is corrected for background by removing background test average concentration from each test.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- dplyr::mutate(ecoc, 
+                        mass_emitted = (conc_cor - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted,
+                        inst = "ecoc")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ecoc, 2)
+```
+
+___
+
+# fivegas
+
+* select co, co2 and ch4.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::filter(fivegas_merged, pol == "co" | pol == "co2" | pol == "ch4")
+```
+
+* filter out data from outside emissions window
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- filter_times(times, co_co2_ch4)
+```
+
+* calculate average for each test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE),
+                                 qc = first(qc)) %>%
+                dplyr::ungroup()
+```
+
+* convert mixing ratio to mass (assuming constant T and P)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4,
+                                 dplyr::select(pol_properties,
+                                               pol,
+                                               mw,
+                                               num_c), by = "pol") %>%
+                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84))
+```
+
+* merge with sample time data and calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, times, by = "id") %>%
+                dplyr::mutate(dur = end - start) %>%
+                dplyr::mutate(id = as.factor(id))
+```
+
+* background analysis
+* replace NaN with between test mean value
+* combine pollutants
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg_co <- dplyr::left_join(dplyr::select(samples, id), bg_co) %>%
+           dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co_mean$ppm[1], ppm),
+                         conc_bg = ifelse(is.na(conc), bg_co_mean$conc[1], conc),
+                         pol = "co")
+
+  bg_co2 <- dplyr::left_join(dplyr::select(samples, id), bg_co2) %>%
+            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_co2_mean$ppm[1], ppm),
+                          conc_bg = ifelse(is.na(conc), bg_co2_mean$conc[1], conc),
+                          pol = "co2")
+
+  bg_ch4 <- dplyr::left_join(dplyr::select(samples, id), bg_ch4) %>%
+            dplyr::mutate(ppm_bg = ifelse(is.na(ppm), bg_ch4_mean$ppm[1], ppm),
+                          conc_bg = ifelse(is.na(conc), bg_ch4_mean$conc[1], conc),
+                          pol = "ch4")
+
+  bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
+```
+
+* merge background with fivegas data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
+                dplyr::select(bg, id, pol, conc_bg), by = c("id", "pol"))
+```
+
+* calculate micrograms emitted during tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co_co2_ch4 <- dplyr::mutate(co_co2_ch4,
+                              mass_emitted = (conc - conc_bg) * hood_flow * (dur / 60),
+                              num_c = 1,
+                              mass_carbon = mass_emitted * (mw_c * num_c / mw),
+                              inst = "fivegas")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(co_co2_ch4, 2)
+```
+
+___
+
+# grav
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::select(grav_merged,
+                        id, pol,
+                        start, end,
+                        flow,
+                        wgt_delta,
+                        conc_bg, qc) %>%
+          dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::mutate(grav, dur = (end - start) / 60,
+                              conc = (wgt_delta * 1000) / (flow * dur), 
+                              qc = as.factor(qc))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  grav <- dplyr::mutate(grav, 
+                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted * 0,
+                        inst = "grav")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(grav, 2)
+```
+
+# ions
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::select(ions_merged,
+                        id, qc,
+                        flow,
+                        start, end,
+                        pol, mass_ug,
+                        conc_bg) %>%
+	        dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, dur = (end - start) / 60,
+                              conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ions <- dplyr::mutate(ions, 
+                        mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                        mass_carbon = mass_emitted * 0,
+                        inst = "ions")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ions, 2)
+```
+
+___
+
+# smps
+
+* calculate test average number concentration
+* calculate test duration
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ultrafine <- dplyr::filter(smps_ultrafine, n_bad == 0) %>%
+               dplyr::group_by(id) %>%
+               dplyr::summarise(conc = mean(number_conc, na.rm = TRUE),
+                                n = n(),
+               	                qc = first(qc)) %>%
+               dplyr::ungroup(id) %>%
+               dplyr::left_join(times, by = "id") %>%
+               dplyr::mutate(dur = end - start)
+```
+
+* calculate average background (use other method?)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  bg <- dplyr::filter(smps_ultrafine_bg, qc == "ok", n_bad == 0) %>%
+        dplyr::group_by(id) %>%
+        dplyr::summarise(conc_bg = mean(number_conc)) %>%
+        dplyr::ungroup()
+
+  conc_bg <- mean(bg$conc_bg)
+```
+
+* calculate number of particles emitted during tests (check this is all???)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # (N * 1,000,000 /cm^3) * m^3/min * (s / 60)
+  ultrafine <- dplyr::mutate(ultrafine,
+                             num_emitted = (conc - conc_bg) * 1e6 * hood_flow * (dur / 60),
+                             inst = "smps")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(ultrafine, 2)
+```
+
+___
+
+# pah
+
+ * select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=FALSE}
+  pah <- pah_merged %>%
+         dplyr::select(id,
+                       lod,
+                       flow,
+                       start, end,
+                       pol, mass_ug,
+                       conc_bg) %>%
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pah <- pah %>%
+         dplyr::mutate(dur = (end - start) / 60,
+                       conc = (mass_ug * 1000 / (flow * dur)))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  pah <- pah %>%
+         dplyr::mutate(mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                       mass_carbon = mass_emitted * 0,
+                       inst = "pah")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(pah, 2)
+```
+
+
+# voc
+
+* select data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- dplyr::select(voc_merged,
+                       id,
+                       start, end,
+                       pol, ppb,
+                       ppb_bg, qc) %>%
+         dplyr::left_join(dplyr::select(pol_properties,
+                                        pol,
+                                        mw,
+                                        num_c), by = "pol") %>% 
+         dplyr::filter(grepl("^[A-Z]", id) == FALSE)
+```
+
+* calculate concentrations
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- dplyr::mutate(voc, dur = (end - start) / 60,
+                            ppm = ppb / 1000,
+                            conc = convert_ppmv_ugpmc(ppm, mw, 25, 85),
+                            conc_bg = convert_ppmv_ugpmc(ppb_bg / 1000, mw, 25, 85))
+```
+
+* calculate mass emitted
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  voc <- dplyr::mutate(voc, mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                            mass_carbon = mass_emitted * (mw_c * num_c / mw),
+                            inst = "voc")
+```
+
+* output
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  head(voc, 2)
+```
+
+___
+
+# Output
+
+## combine pollutants
+
+* mass based
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emissions <- dplyr::select(co_co2_ch4, id, pol, 
+                                         conc, conc_bg,
+                                         mass_emitted,
+                                         mass_carbon,
+                                         inst, qc) %>%
+               dplyr::bind_rows(dplyr::select(carbonyls, id, pol,
+                                                         conc, conc_bg,
+                                                         mass_emitted,
+                                                         mass_carbon,
+                                                         inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(ecoc, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(grav, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(ions, id, pol,
+                                                    conc, conc_bg,
+                                                    mass_emitted,
+                                                    mass_carbon,
+                                                    inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(voc, id, pol,
+                                                   conc, conc_bg,
+                                                   mass_emitted,
+                                                   mass_carbon,
+                                                   inst, qc)) %>%
+               dplyr::bind_rows(dplyr::select(pah, id, pol,
+                                                   conc, conc_bg,
+                                                   mass_emitted,
+                                                   mass_carbon,
+                                                   inst, qc))
+```
+
+* convert to longer format
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
+```
+
+* number based
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  number <- dplyr::select(ultrafine, id, conc, num_emitted, inst, qc) %>%
+            dplyr::mutate(pol = "number") %>%
+            tidyr::gather("metric", "value", 2:3)
+```
+
+* combine mass and number instruments
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emissions_long  <- dplyr::bind_rows(emissions_long, number)
+```
+
+## save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(emissions_long, file = "../r_files/emissions_long.RDS")
+```
+
+## negative emissions
+
+* tests with negative net emissions
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
+  kable(dplyr::filter(emissions, mass_emitted < 0),
+        align = 'c', caption = "Tests with negative values")
+```

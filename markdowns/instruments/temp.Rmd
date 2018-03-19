@@ -1,0 +1,212 @@
+---
+title: "temp"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_tidy.R")
+```
+
+# Load data
+
+* pot and hood temperature
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/temp.Rda")
+```
+
+* metadata
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load(file = "../r_files/samples.Rda")
+  load("../r_files/notes.Rda")
+```
+
+# Tidy
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_merged <- tidyr::gather(temp, loc, t_oc,
+                               t_1, t_2, t_3, t_4) %>%
+                 dplyr::arrange(id)
+```
+
+# Switch probes
+
+* standard set-up is `t_1 = t_pot` and `t_4 = flue`
+* test `10x, 11x and 12x` have two pots
+* some tests have inconsistant probe locations
+
+* filter out `NAs`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
+```
+
+* one pot stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  flipped_25a <- dplyr::filter(temp_merged,
+                           id =="25A") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                           loc = ifelse(loc == "t_4", "front", loc))
+
+  flipped_25bc <- dplyr::filter(temp_merged,
+                           id =="25B" |id =="25C") %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                           loc = ifelse(loc == "t_2", "front", loc))
+
+  regular <- dplyr::filter(temp_merged,
+                          id !="25A" & id !="25B" & id !="25C" &
+                          grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id) == FALSE) %>%
+             dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                           loc = ifelse(loc == "t_4", "flue", loc))
+
+```
+
+* two pot stoves
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  temp_10a <- dplyr::filter(temp_merged, id == "10A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_10b <- dplyr::filter(temp_merged, id == "10B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                            loc = ifelse(loc == "t_3", "front", loc),
+                            loc = ifelse(loc == "t_4", "back", loc))
+
+  temp_10c <- dplyr::filter(temp_merged, id == "10C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+  
+  temp_11a <- dplyr::filter(temp_merged, id == "11A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_11b <- dplyr::filter(temp_merged, id == "11B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_11c <- dplyr::filter(temp_merged, id == "11C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_12a <- dplyr::filter(temp_merged, id == "12A") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+
+  temp_12b <- dplyr::filter(temp_merged, id == "12B") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
+                            loc = ifelse(loc == "t_3", "back", loc),
+                            loc = ifelse(loc == "t_4", "front", loc))
+
+  temp_12c <- dplyr::filter(temp_merged, id == "12C") %>%
+              dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
+                            loc = ifelse(loc == "t_2", "back", loc),
+                            loc = ifelse(loc == "t_4", "flue", loc))
+```
+
+* combine
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+  temp_merged <- dplyr::bind_rows(regular,
+                                  flipped_25a,
+                                  flipped_25bc,
+                                  temp_10a, temp_10b, temp_10c,
+                                  temp_11a, temp_11b, temp_11c,
+                                  temp_12a, temp_12b, temp_12c) %>%
+                 dplyr::filter(grepl("^t_", loc) != TRUE)
+```
+
+# QC
+
+## flags from notes
+
+* extract notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
+```
+
+* apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+* couple of tests with 2 file e.g. 1B (merged files)
+
+* merge flags with data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  temp_merged <- dplyr::left_join(temp_merged, flags, by = "id") %>%
+                 dplyr::mutate(id = as.factor(id)) %>%
+                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+## additional bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # temp_merged$qc[temp_merged$id == ""] <- "bad"
+```
+
+# Save merged file
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(temp_merged, file = "../r_files/temp_merged.Rda")
+```
+
+# Summary
+
+Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
+
+Temperature data is expected to be missing for: 
+All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated.
+
+13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost. It is possible that there were some thermocouple malfunctions resulting in this data loss (check "notes" on transcribed testing sheets).
+
+# Plots
+
+## all
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
+  ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
+```
+
+## pot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
+  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
+                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
+
+  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
+         geom_line() +
+         geom_point() +
+         facet_wrap(~id, ncol = 3, scales = "free") +
+         theme_minimal() +
+         theme(legend.position = "top") +
+         ylab("degress celsius")
+```

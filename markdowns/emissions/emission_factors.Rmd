@@ -1,0 +1,172 @@
+---
+title: "Emission factors"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(knitr)
+```
+
+# Load
+
+* pollutant data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")
+  load("../r_files/fuel_burnt.Rda")
+  emissions_long <- readRDS("../r_files/emissions_long.RDS")
+  energy <- readRDS("../r_files/energy.RDS")
+```
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/hood_flow.Rda")
+  load("../r_files/pol_properties.Rda")
+  load("../r_files/inst_constants.Rda")
+  load("../r_files/calc_constants.Rda")
+  load("../r_files/fuel_properties.Rda")
+```
+
+# Mass carbon per test
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
+               dplyr::group_by(id) %>%
+               dplyr::filter(value >= 0) %>%  # ignore negatives
+               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
+               dplyr::mutate(mass_carbon = 
+                               ifelse(grepl("^1A$|^2A$", id),
+                                      NA, mass_carbon))  # ignore tests with missing fivegas data
+```
+
+# Merge with fuel properties
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  mass_fuel <- dplyr::left_join(mass_fuel,
+                                dplyr::select(samples, id, fuel),
+                                by = "id") %>%
+               dplyr::left_join(fuel_properties, by = "fuel")
+```
+
+# Carbon balance
+
+* Calculate fuel burned using carbon balance method
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  mass_fuel <- dplyr::left_join(mass_fuel, fuel_burnt, by = "id") %>%
+               dplyr::mutate(mass_fuel_c = mass_carbon * (1e-9) *
+                               (1 / carbon_fraction)) %>%
+               dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
+```
+
+# Energy delivered
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  energy %<>% 
+    dplyr::filter(qc != "bad") %>%
+    dplyr::select(-qc)
+              
+```
+
+
+* Filter out bad tests
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
+  # NG: are these still unrealistic?
+  emissions <- dplyr::filter(emissions_long, qc != "bad") %>%
+               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>% # unrealistic values
+               dplyr::filter(value >= 0)  # ignore negatives
+```
+
+# Calculate emissions factors
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  emission_factors <- emissions %>%
+                      dplyr::filter(metric == "mass_emitted") %>%
+                      dplyr::left_join(dplyr::select(mass_fuel, id, mass_fuel_c, 
+                                                     mass_fuel_kg, lhv), by = "id" ) %>%
+                      dplyr::left_join(energy, by = "id") %>%
+                      dplyr::mutate(mass_ef = ((value * 1e-3) / mass_fuel_kg),  # mg / kg
+                                    mass_c_ef = ((value * 1e-3) / mass_fuel_c),  # mg / kg carbon
+                                    energy_fuel_ef = ((mass_ef) / (lhv * 1e-3)),  # mg / MJ fuel
+                                    energy_fuel_c_ef = ((mass_c_ef) / (lhv * 1e-3)),
+                                    energy_ef = ((value * 1e-3) / (joules * 1e-6)))  %>% # mg / MJ 
+                      dplyr::mutate(mass_ef_comb = ifelse(is.na(mass_ef), mass_c_ef, mass_ef)) %>%
+                      dplyr::mutate(energy_fuel_ef_comb = ifelse(is.na(energy_fuel_ef), energy_fuel_c_ef, energy_fuel_ef)) %>%
+                      dplyr::select(-metric, -value, -mass_fuel_c, -mass_fuel_kg, -lhv, -joules) %>%
+                      tidyr::gather("metric", "value", 5:11) %>%
+                      dplyr::bind_rows(emissions) %>%
+                      dplyr::distinct()
+```
+
+# Save
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(mass_fuel, file = "../r_files/mass_fuel.RDS")
+  saveRDS(emission_factors, file = "../r_files/emissions_factors.RDS")
+```
+
+# Plots
+
+## carbon emitted
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(mass_fuel, aes(x = id, y = mass_carbon)) +
+    geom_point() +
+    theme_minimal() +
+    scale_y_log10() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
+## carbon from CO2
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
+  ggplot(dplyr::filter(emission_factors, pol == "co2", metric == "mass_carbon"),
+         aes(x = id, y = value)) +
+    geom_point() +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    ggtitle("mass carbon emitted")
+```
+
+## fuel burnt vs carbon
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10}  
+  ggplot(mass_fuel, aes(x = mass_fuel_kg, y = mass_fuel_c, color = fuel)) +
+    geom_point() +
+    theme_minimal() +
+    ylim(0, 2) +
+    xlab("mass of fuel (measured) [kg]") +
+    ylab("mass of fuel (carbon balance) [kg]")
+```
+
+## carbon emitted (bar)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
+  ggplot(dplyr::filter(emission_factors, metric == "mass_carbon"),
+                       aes(x = id, y = value, fill = inst), na.rm = TRUE) +
+    geom_bar(stat = "identity")+
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") +
+    theme(legend.position = "top")
+```
+
+## mass emitted (bar)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40, eval=TRUE} 
+  ggplot(dplyr::filter(emission_factors, metric == "mass_emitted"),
+        aes(x = id, y = value, fill = inst), na.rm = TRUE) +
+    geom_bar(stat = "identity")+
+    coord_flip() +
+    theme_minimal() +
+    ylab("test id") + 
+    ylab("mass emitted") + 
+    theme(legend.position = "top")
+```

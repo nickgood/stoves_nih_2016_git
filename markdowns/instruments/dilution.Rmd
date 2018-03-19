@@ -1,0 +1,147 @@
+---
+title: "dilution"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  source("../r_scripts/R_functions.R")
+```
+
+## Load data
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  load("../r_files/samples.Rda")  # sample info
+  load("../r_files/batch_times.Rda")
+  load("../r_files/wood_times.Rda")
+  load("../r_files/co2_merged.Rda")
+  load("../r_files/fivegas_merged.Rda")
+```
+
+## Extract fivegas co2
+
+Extract, match naming conventions and drop implicit pollutant variable.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2_fivegas <- dplyr::filter(fivegas_merged, pol == "co2") %>%
+                 dplyr::select(-pol) %>%
+                 dplyr::rename(ppm = ppm) %>%
+                 dplyr::mutate(loc = "flue")
+```
+
+## Combine data
+
+### with co2
+
+Combine fivegas & co2 analyzer
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  co2 <- dplyr::bind_rows(co2_merged, co2_fivegas) %>%
+         dplyr::mutate(loc = as.factor(loc))
+```
+
+### with timestamps
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ # make wood times wider and create common names
+  wood_times <- dplyr::filter(wood_times, var == "start_1" | var == "shutdown") %>%
+                tidyr::spread(var, value) %>%
+                dplyr::rename(start = start_1, end = shutdown)
+
+ # make batch times wider and create common names
+  batch_times <- dplyr::filter(batch_times, var == "start_1" | var == "shutdown") %>%
+                 tidyr::spread(var, value) %>%
+                 dplyr::rename(start = start_1, end = shutdown)
+
+  times <- dplyr::bind_rows(wood_times, batch_times) %>%
+           dplyr::filter(!is.na(start), !is.na(end)) %>%
+           dplyr::mutate(id = as.factor(id))
+```
+
+## Extract
+
+* test periods only
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ids <- unique(times$id)
+
+  for(i in 1:length(ids)){
+    co2_tmp <- dplyr::filter(co2, 
+    as.character(id) == as.character(times$id[i]),
+    time >= times$start[i],
+    time <= times$end[i])
+
+  if(exists("co2_test", inherits = FALSE) == FALSE & nrow(co2_tmp) > 0){
+    co2_test <- co2_tmp
+
+    samples <- tibble::data_frame(id = times$id[i],
+                                  dur = (times$end[i] - times$start[i]),
+                                  n = nrow(co2_tmp))
+  }
+
+  if(exists("co2_test", inherits = FALSE) == TRUE & nrow(co2_tmp) > 0){
+    co2_test <- dplyr::bind_rows(co2_test, co2_tmp)
+
+    samples_tmp <- tibble::data_frame(id = times$id[i],
+                                      dur = times$end[i]-times$start[i],
+                                      n = nrow(co2_tmp))
+
+    samples <- dplyr::bind_rows(samples, samples_tmp)
+  }
+  }
+```
+
+### Plot time series
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
+  ggplot(co2_test,  aes(datetime, ppm, colour = loc)) +
+         geom_line() +
+         facet_wrap(~id, ncol = 2, scales = "free") +
+         theme_minimal() +
+         xlab("") + ylab("ppm") +
+         theme(legend.position = "top")
+```
+
+## Calculate dilution
+
+* entire test average
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  dilution <- dplyr::filter(co2_test, qc != "bad") %>%
+              dplyr::group_by(id, loc) %>%
+              dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
+              dplyr::ungroup() %>%
+              tidyr::spread(loc, ppm) %>%
+              dplyr::mutate(dilution_ratio = (sample - flue) / (lab - sample))
+```
+
+## Plot dilution
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=10}
+  ggplot(dilution, aes(id, dilution_ratio)) +
+  geom_point() +
+  ylim(0,50) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+## Save
+
+* times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  save(times, file = "../r_files/times_integrated.Rda")
+```
+
+* dilution
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(dilution, file = "../r_files/dilution_ratio.RDS")
+```

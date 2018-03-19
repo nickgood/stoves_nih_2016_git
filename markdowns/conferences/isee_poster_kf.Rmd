@@ -1,0 +1,260 @@
+---
+title: "ISEE Poster (Kristen)"
+author: "Kristen Fedak"
+date: "September 11, 2017"
+output: html_document
+---
+
+# Setup
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(forcats)
+  library(MASS)
+  library(GGally)
+  library(scales)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load data and meta data
+  emissions_factors <- readRDS("../r_files/emissions_factors.RDS")
+  load("../r_files/samples.Rda")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Load functions
+  source("../r_scripts/R_functions.R")
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Add stove/fuel information
+  emissions_factors <- dplyr::left_join(emissions_factors, 
+                       dplyr::select(samples,
+                                     id,
+                                     stove, stovecat,
+                                     fuel, fuelcat),
+                                    by = "id") %>%
+                       dplyr::filter(metric == "energy_fuel_ef_comb") %>%
+                       tidyr::spread(metric, value)
+```
+
+# Emissions Factors
+
+```{r}
+  emissions_factors <- emissions_factors %>% 
+                       dplyr::filter(pol == "grav" | pol == "voc_benzene" | pol == "co" |
+                                     pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene", id != "1A")
+
+  emissions_factors$pol <- forcats::fct_recode(emissions_factors$pol, PM2.5 = "grav",
+                                                                  benzene = "voc_benzene",
+                                                                  toluene = "voc_toluene",
+                                                                  CO = "co")
+
+  emissions_factors$pol <- forcats::fct_relevel(emissions_factors$pol, "PM2.5", "CO",
+                                                                   "benzene", "toluene",
+                                                                  "formaldehyde", "acetaldehyde")
+  emissions_factors$stovecat <- forcats::fct_recode(emissions_factors$stovecat, insulated = "improved",
+                                                                                liquid = "advanced")
+
+  emissions_factors$fuel <- factor(tolower(emissions_factors$fuel))
+  
+  emissions_factors$fuel <- forcats::fct_relevel(emissions_factors$fuel, "oak",
+                                                 "eucalyptus",
+                                                 "douglas fir",
+                                                 "lump hardwood (med.)",
+                                                 "lump hardwood (sm.)",
+                                                 "coconut charcoal",
+                                                 "west slope pellets",
+                                                 "eucalyptus pellets",
+                                                 "liquefied petroleum gas",
+                                                 "kerosene")
+```
+
+* average emissions by stovecat and fuelcat
+
+```{r}
+ avg <- emissions_factors %>%
+        dplyr::group_by(stovecat, fuelcat, pol) %>%
+        dplyr::summarise(mean = round(mean(energy_fuel_ef_comb, na.rm = TRUE), 1))
+```
+
+
+
+```{r}
+  #options(scipen = 999)
+
+  plot_ef <- ggplot(emissions_factors, aes(y = energy_fuel_ef_comb, x = stovecat)) +
+         geom_point(position = position_dodge(0.5), size = 2, aes(group = fuel, color = fuel)) +
+         geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 4, size = 2, stroke = 2) +
+         facet_wrap(~pol, ncol = 2, scales = "free") +
+         theme_bw() +
+         ylab("mg emitted per MJ") +
+         xlab("stove category") +
+         theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.55),
+               text = element_text(size=20)) +
+         theme(legend.position = "top") +
+         scale_color_hue(l = 55) +
+         theme(legend.title=element_blank())
+  plot_ef
+
+```
+
+
+```{r}
+ # filter/setup for analysis
+  ef_plotdata <- emissions_factors %>%
+                 dplyr::select(id, pol, energy_fuel_ef_comb, fuel, fuelcat, stove, stovecat) %>%
+                 dplyr::distinct() %>%
+                 tidyr::spread(pol, energy_fuel_ef_comb)
+```
+
+# Plot relationships 
+
+```{r, echo=FALSE}
+ # function for calculating  r2 value to add to plots
+ # fit lm to formula
+  lm_mod = function(out = ef_plotdata, fm = "CO ~ PM2.5"){
+    m = lm(fm, out)
+    eq <- substitute(~~R^2~"="~r2, 
+                     list(r2 = format(summary(m)$r.squared, digits = 2)))
+    as.character(as.expression(eq))
+  }
+
+```
+
+## PM vs CO
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ PM2.5")))
+
+# r2 for each task
+  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
+
+
+  PMCOplot <- ggplot(ef_plotdata, aes(x = PM2.5, y = CO)) + 
+      geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      geom_text(data = r2_each, aes(x = 260, y = 15000, label = eq[1]),
+                       color = 'brown3',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 13000, label = eq[2]),
+                       color = 'chartreuse4',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 11000, label = eq[3]),
+                       color = 'turquoise4',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 9000, label = eq[4]),
+                       color = 'purple3',  parse = TRUE,
+                       size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
+      theme_bw() +
+      theme(text = element_text(size = 27),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "none",
+            legend.title = element_blank())
+PMCOplot
+```
+
+
+## PM vs Benzene
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "benzene ~ PM2.5")))
+
+  PMbenz_plot <- ggplot(ef_plotdata, aes(x = PM2.5, y = benzene)) + 
+      geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      #geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq),
+                      #color = 'black',  parse = TRUE,
+                      #size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Benzene EF (mg/MJ)") +
+      theme_bw() +
+      theme(text = element_text(size = 27),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "none",
+            legend.title = element_blank())
+PMbenz_plot
+  
+```
+
+## CO vs Benzene
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~benzene")))
+
+  CObenz_plot <- ggplot(ef_plotdata, aes(x = benzene, y = CO)) + 
+      geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      #geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("Benzene EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
+      theme_bw() +
+      theme(text = element_text(size = 27),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "none",
+            legend.title = element_blank())
+CObenz_plot
+```
+
+## PM vs Formaldehyde
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "formaldehyde ~ PM2.5")))
+
+  PMform_plot <- ggplot(ef_plotdata, aes(x = PM2.5, y = formaldehyde)) + 
+      geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      #geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Formaldehyde EF (mg/MJ)") +
+      theme_bw() +
+      theme(text = element_text(size = 27),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "none",
+            legend.title = element_blank())
+PMform_plot
+```
+
+## CO vs Formaldehyde
+
+```{r}
+ # r2 for all fuels combined
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ formaldehyde")))
+
+  COform_plot <- ggplot(ef_plotdata, aes(y = CO, x = formaldehyde)) + 
+      geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
+      scale_color_hue(l = 55) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
+      #geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq),
+      #                color = 'black',  parse = TRUE,
+      #                size = 8) +
+      xlab("Formaldehyde EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
+      theme_bw() +
+      theme(text = element_text(size = 27),
+            legend.key = element_rect(fill = 'white'),
+            legend.position = "none",
+            legend.title = element_blank())
+COform_plot
+```
+
