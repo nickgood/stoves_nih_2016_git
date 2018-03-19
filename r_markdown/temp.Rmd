@@ -28,6 +28,7 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS(file = "../r_files/samples.RDS")
   notes <- readRDS("../r_files/notes.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 # Tidy
@@ -128,3 +129,16 @@ All "G" and "BG" tests. We did not collect stove/pot temperature for background 
          theme(legend.position = "top") +
          ylab("degrees celsius")
 ```
+
+```{r}
+times <- rename(test_times, time = value) %>%
+         select(id, var, time)
+#temp_merged1 <-
+
+temps_times <- filter(temp_merged, loc == "stove") %>%
+               select(time, id, t_oc) %>%
+               left_join(times, by = c("id", "time"))
+
+temps_times <- filter_times(times, temp_merged)
+```
+

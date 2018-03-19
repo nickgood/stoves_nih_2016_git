@@ -68,7 +68,7 @@ fuel_burnt <- fuel_burnt %>%
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id))
 
-  ggplot(p_data, aes(x = id, y = mass_burnt, colour = stove)) +
+  ggplot(p_data, aes(x = id, y = mass_burned_correct, colour = stove)) +
         geom_point() +
         theme_minimal() + 
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +

@@ -138,6 +138,40 @@ output:
    # smps_merged$qc[smps_merged$id == ""] <- "bad"
 ```
 
+```{r}
+types <- readRDS("../r_files/samples.RDS") %>%
+         select(id, type, mc_level)
+
+smps_plot <- select(smps_merged, id, size_nm, dw) %>%
+             left_join(types, by = "id") %>%
+             filter(!is.na(size_nm)) %>%
+             filter(!grepl("^BG", id)) %>%
+             mutate(dw = as.numeric(dw)) %>%
+             mutate(mc_level = forcats::fct_relevel(mc_level, "low","med","high")) %>%
+             group_by(mc_level, size_nm) %>%
+             summarise(avg_val = mean(dw))
+             
+smps_bg <- select(smps_merged, id, size_nm, dw) %>%
+             left_join(types, by = "id") %>%
+             filter(!is.na(size_nm)) %>%
+             filter(grepl("^BG", id)) %>%
+             mutate(dw = as.numeric(dw)) %>%
+             group_by(size_nm) %>%
+             summarise(avg_val_bg = mean(dw))
+
+smps_plot_bg_correct <- left_join(smps_plot, smps_bg, by = "size_nm") %>%
+                        mutate(corrected_num = avg_val - avg_val_bg)
+
+ggplot(smps_plot_bg_correct, aes(x = size_nm, y = corrected_num, color = mc_level)) +
+  geom_point() +
+  geom_line() +
+  scale_y_log10() +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  theme_bw() +
+  labs(color = "MC Level", x = "Particle Size [nm]", y = "Number of Particles [dw/dlogDp]")
+```
+
+
 # Ultrafine number
 
 ## per scan 
@@ -240,7 +274,7 @@ output:
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=10}
-  p_id <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = id)) +
+  ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = id)) +
             geom_point() +
             theme_minimal() +
             scale_y_log10() +

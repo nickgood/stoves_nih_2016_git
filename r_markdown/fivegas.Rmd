@@ -28,13 +28,16 @@ output:
 
 ```{r}
   fivegas <- readRDS("../r_files/fivegas.RDS")
-  samples <- readRDS("../r_files/samples.RDS")
+  #samples <- readRDS("../r_files/samples.RDS")
 ```
 
 * sample information
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
+  fuel_prep_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
+  fuel_wgts <- readRDS("../r_files/fuel_wgts.RDS")
+  carbon_bal_2 <- readRDS("../r_files/carbon_bal_2.RDS")
 ```
 
 * notes
@@ -145,9 +148,11 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
     xlab("") +
     theme(legend.position = "top")
 ```
-```{r fig.width = 12, fig.height = 5}
+```{r}
 # calculate MCE
 summary <- tidyr::spread(fivegas_merged, pol, ppm)
+
+carbon_bal_2 <- select(carbon_bal_2, id, mean_mc)
            
 library(forcats)
 
@@ -162,17 +167,53 @@ mce <- dplyr::group_by(summary, id) %>%
 mce <- dplyr::left_join(mce, samples) %>%
        dplyr::select(-date, -stove, - fuel, - notes, - mc_target) %>%
        dplyr::filter(type != "bg", id != "FH2", id != "LM4")
+
+#mce check for significance
+df_anova <- dplyr::select(mce, mce, type, mc_level, id) %>%
+       dplyr::mutate(type = as.factor(type),
+                     mc_level = as.factor(mc_level)) %>%
+       dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_"))
+                
+TukeyHSD(aov(mce ~ test_fuel_type, df_anova))
+TukeyHSD(aov(mce ~ mc_level, df_anova))
+pairwise.t.test(df_anova$mce, df_anova$test_fuel_type, p.adj = "none")
+```
+
+```{r}
        
-mce <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", "med", "high")) %>%
+mce_plot <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", "med", "high")) %>%
        dplyr::mutate(mc_level = forcats::fct_recode(mc_level, "medium" = "med")) %>%
-       dplyr::group_by(mc_level, type)
+       dplyr::left_join(carbon_bal_2, by = "id") %>%
+       dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
+                                                      "Milled" = "lab"), mce = 100*mce) %>%
+       dplyr::group_by(mc_level, type) %>%
+       dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type)
 
-
-ggplot(data = mce, aes(x = mc_level, y = mce, fill = mc_level), color = "black") +
-  geom_boxplot(size = 1) +
-  geom_point() +
+ggplot(data = mce_plot, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `Fuel Shape`)) +
+  #geom_boxplot(size = 1) +
+  geom_point(size = 4) +
   theme_bw() +
-  labs(x = "Moisture Content of Wood", y = "Modified Combustion Efficiency (%)") +
-  theme(legend.position = "none", text = element_text(size=20))
+  labs(x = "Moisture Content (%)", y = "Modified Combustion Efficiency (%)") +
+  theme(text = element_text(size=15)) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25))
+```
+
+```{r}
+mce_means <- ungroup(mce, `Fuel Shape`) %>%
+       group_by(mc_level) %>%
+       summarise(sd_mce = 1-median(mce))
+
+#inefficienies
+mce_plot <- mutate(mce_plot, mce = 100-mce)
+
+ggplot(data = mce_plot, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `Fuel Shape`)) +
+  #geom_boxplot(size = 1) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(x = "Moisture Content (%)", y = "100 - MCE (%)") +
+  theme(text = element_text(size=15)) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25))
 ```
 

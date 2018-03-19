@@ -82,7 +82,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 * voc
 
 ```{r}
-  voc <- readRDS("../r_files/voc_merged.RDS")
+  voc_merged <- readRDS("../r_files/voc_merged.RDS")
 ```
 
 * constants
@@ -289,6 +289,13 @@ Concentration is corrected for background by removing background test average co
                               num_c = 1,
                               mass_carbon = mass_emitted * (mw_c * num_c / mw),
                               inst = "fivegas")
+```
+
+
+```{r}
+# check rates
+
+rates_gases <- mutate(co_co2_ch4, rate = (conc-conc_bg)*hood_flow/(10^6))
 ```
 
 * output

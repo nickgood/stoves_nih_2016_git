@@ -28,7 +28,10 @@ output:
 * constants
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  calc_constants <- readRDS("../r_files/calc_constants.RDS")
+
+  c_water <- readRDS("../r_files/c_water.RDS")
+  
+  hfg_water <- readRDS("../r_files/hfg_water.RDS")
 ```
 
 * metadata
@@ -36,97 +39,68 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")
   test_times <- readRDS("../r_files/test_times.RDS")
-  batch_wgts <- readRDS("../r_files/batch_wgts.RDS")
-  batch_pot <- readRDS("../r_files/batch_pot.RDS")
-  wood_wgts <- readRDS("../r_files/wood_wgts.RDS")
-  wood_pot <- readRDS("../r_files/wood_pot.RDS")
+  mc_test_log <- readRDS("../r_files/mc_test_log.RDS")
+
 ```
 
 # Test timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
+  times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
            tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
+           dplyr::rename(start = set_1)
 ```
 
 # Energy
 
 ## joules applied
 
-* timestamps
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_times <- dplyr::filter(test_times, grepl("^start_[0-9]|^end_[0-9]", var)) %>%
-             dplyr::select(-date) %>%
-             tidyr::separate(var, c("var", "rep")) %>%
-             tidyr::spread(var, value)
-```
-
-* which pot
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot <- dplyr::select(wood_pot, -date) %>%
-           dplyr::bind_rows(dplyr::select(batch_pot, -date))
-```
 
 * pot mass
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot_mass <- dplyr::filter(wood_wgts,
-                              grepl("^pot",
-                              var)) %>%
-                tidyr::separate(var, c("var", "pot")) %>%
-                dplyr::select(-var, -date) %>%
-                tidyr::spread(pot, value)
+pot_weights <- select(mc_test_log, wgt_pot_a, wgt_on_1, wgt_off_1, id, date) %>%
+               mutate(delta_m = wgt_on_1 - wgt_off_1, m_start = wgt_on_1 - wgt_pot_a) %>%
+               filter(!is.na(wgt_on_1))
+  
 
-  e_pot_mass <- dplyr::bind_rows(e_pot_mass,
-                                 dplyr::bind_rows(e_pot_mass,
-                                 dplyr::filter(batch_wgts,
-                                               grepl("^pot",
-                                               var)) %>%
-                                 tidyr::separate(var, c("var", "pot")) %>%
-                                 dplyr::select(-var, -date) %>%
-                                 tidyr::spread(pot, value)))
-
-```
-
-* pot + water mass
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot_water_mass <- dplyr::filter(wood_wgts,
-                                    grepl("^on_[0-9]|^off_[0-9]", var)) %>%
-                      tidyr::separate(var, c("var", "rep")) %>%
-                      tidyr::spread(var, value) %>%
-                      dplyr::select(-date) %>%
-                      dplyr::rename(mass_on = on, mass_off = off)
-
-  e_pot_water_mass <- dplyr::bind_rows(e_pot_water_mass,
-                                       dplyr::filter(batch_wgts,
-                                       grepl("^on_[0-9]|^off_[0-9]", var)) %>%
-                                       tidyr::separate(var, c("var", "rep")) %>%
-                                       tidyr::spread(var, value) %>%
-                                       dplyr::select(-date) %>%
-                                       dplyr::rename(mass_on = on,
-                                                     mass_off = off))
 ```
 
 * extract temperature for periods of interest
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <- dplyr::filter(temp_merged, loc != "flue")
+  temp_merged <- mutate(temp_merged, time = time + 3600)  
 
-  e_temp <- filter_temp(e_times, e_temp)
+  e_temp <- dplyr::filter(temp_merged, loc != "stove")
+
+
+  e_temp <- filter_temp(times, e_temp)
 ```
 
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  t_range <- dplyr::group_by(e_temp, id, rep) %>%
+  t_range <- dplyr::group_by(e_temp, id) %>%
             dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
-                             t_max = quantile(t_oc, 0.95, na.rm = TRUE))
+                             t_max = quantile(t_oc, 0.95, na.rm = TRUE),
+                             t_med = median(t_oc))
+
+saveRDS(t_range, file = "../r_files/t_range.RDS")
 ```
+
+```{r}
+# plot temps
+ mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
+
+ temp_plot <- left_join(t_range, mean_mc, by = "id")
+ 
+ ggplot(data = temp_plot, aes(x = mean_mc)) +
+   geom_point(aes(y = t_med), color = "darkblue") +
+   #geom_point(aes(y = t_min, color= "blue")) +
+   theme_bw() +
+   labs(x = "Mean Moisture Content (%)", y = "Maximum Temperature (C)")
+```
+
 
 * merge data
 

@@ -345,9 +345,9 @@ filter_temp <- function(times, df){
   for(i in 1:rows){
     tmp <- dplyr::filter(df,
                          as.character(id) == as.character(times$id[i]),
+                         date == times$date[i],
                          time >= times$start[i],
-                         time <= times$end[i]) %>%
-           dplyr::mutate(rep = times$rep[i])
+                         time <= times$end[i])
 
  # if first match
   if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
