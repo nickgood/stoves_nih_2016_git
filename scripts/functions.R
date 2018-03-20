@@ -4,6 +4,22 @@
   library(reshape2)
 #________________________________________________________
 
+#________________________________________________________
+# convert POSIXct to seconds of day
+# used in load_save_data.Rmd
+posixct_secsofday <- function(x) {
+
+  x <- as.character(x)
+
+  out <- as.numeric(substr(x,12,13))*60*60 + 
+         as.numeric(substr(x,15,16))*60 +
+         as.numeric(substr(x,18,19))
+
+  return(out)
+  }
+#________________________________________________________
+  
+  
   ##________________________________________________________
 # check for outliers
   is_outlier <- function(x) {
@@ -14,21 +30,6 @@
   # return
     return(out)
 }
-#________________________________________________________
-  
-  ##________________________________________________________
-# convert POSIXct to seconds of day
-  posixct_secsofday <- function(x) {
-
-    x <- as.character(x)
-      
-    out <- as.numeric(substr(x,12,13))*60*60 + 
-           as.numeric(substr(x,15,16))*60 +
-           as.numeric(substr(x,18,19))
-    
-  # return
-    return(out)
-  }
 #________________________________________________________
   
   ##________________________________________________________

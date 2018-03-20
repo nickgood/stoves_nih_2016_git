@@ -1,12 +1,11 @@
 #________________________________________________________
-# Libraries
-  library(tidyverse)
-  library(readxl)
-  library(forcats)
+# load libraries
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, readxl, forcats)
 #________________________________________________________
 
 #________________________________________________________
-# Load sample tracking log
+# load sample tracking log
 # file <- "data/logs/Sample Tracking Log.xlsx"
 # df <- load.samples(file)
 load_samples <- function(file, sheet = "Completed Test Log"){
@@ -33,7 +32,7 @@ load_samples <- function(file, sheet = "Completed Test Log"){
 
   df_char <- subset(df, select = notes)
   df_char <- as.data.frame(lapply(df_char, 
-                                  function(x) as.character(x)), stringsAsFactors=FALSE) 
+                                  function(x) as.character(x)), stringsAsFactors = FALSE) 
 
   df_num <- subset(df, select = c(num))
   df_num <- as.data.frame(lapply(df_num, 
@@ -42,21 +41,20 @@ load_samples <- function(file, sheet = "Completed Test Log"){
   df_fac <- subset(df, select = c(-date, -notes, -num))
 
   out <- dplyr::bind_cols(df_dat, df_num, df_char, df_fac)
-      
- # return
+
   return(out)
 }
 #________________________________________________________
  
 #________________________________________________________
-# Load sample batch log
+# load sample batch log
 # file <- "../data/logs/Transcribed Batch Fed Stove Sampling Forms.xlsx"
 # df <- load_batch(file) 
 load_batch <- function(file, sheet = "Batch Fed Sampling Forms"){
 
   df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
 
-  df <- df[1:53,]
+  df <- df[1:53, ]
 
   df <- as.data.frame(t(df[c(-1,-2)]))
 
@@ -120,19 +118,19 @@ load_batch <- function(file, sheet = "Batch Fed Sampling Forms"){
                                  function(x) as.Date(as.numeric(as.character(x)),
                                  origin = "1899-12-30")))
 
-  cols <- subset(colnames(df), grepl("^wgt|^lab_t|^lab_p",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^wgt|^lab_t|^lab_p",colnames(df)) == TRUE)
 
   df_num <- subset(df, select = cols)
 
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(as.character(x))))
 
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^time",colnames(df)) == TRUE)
 
   df_time <- subset(df, select = cols)
 
   df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60)) 
+                                  function(x) as.numeric(as.character(x)) * 24 * 60 * 60)) 
 
   df_rh <- subset(df, select = lab_rh)
 
@@ -142,26 +140,25 @@ load_batch <- function(file, sheet = "Batch Fed Sampling Forms"){
 
   df_rh$lab_rh <- as.numeric(df_rh$lab_rh)
 
-  df_rh$lab_rh <- ifelse(df_rh$lab_rh<1,df_rh$lab_rh*100,df_rh$lab_rh)
+  df_rh$lab_rh <- ifelse(df_rh$lab_rh < 1, df_rh$lab_rh * 100, df_rh$lab_rh)
 
   df_char <- subset(df, select = notes)
 
   df_char <- as.data.frame(lapply(df_char,
                                   function(x) as.character(x)))
 
-  cols <- subset(colnames(df), grepl("^id$|^stove$|^fuel$|^person$|^pot|^other_stoves$", colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^id$|^stove$|^fuel$|^person$|^pot|^other_stoves$", colnames(df)) == TRUE)
   
   df_fac <- subset(df, select = cols)
 
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_rh, df_char, df_fac)
 
- # return
   return(out)
 }
 #________________________________________________________  
- 
+
 #________________________________________________________
-# Load five gas calibration
+# load five gas calibration
 # file <- "../data/logs/Transcribed Emissions Tester 1 Calibration Log.xlsx"
 # df <- load_fivegascal(file)
 load_fivegascal <- function(file, sheet = "Sheet1"){
@@ -209,34 +206,33 @@ load_fivegascal <- function(file, sheet = "Sheet1"){
   df_dat <- as.data.frame(lapply(df_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
-  cols <- subset(colnames(df), grepl("^conc|^preflow|^postflow",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^conc|^preflow|^postflow",colnames(df)) == TRUE)
 
   df_num <- subset(df, select = cols)
 
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(as.character(x))))
 
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^time",colnames(df)) == TRUE)
 
   df_time <- subset(df, select = cols)
 
   df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60)) 
+                                  function(x) as.numeric(as.character(x))* 24 * 60 * 60)) 
 
   df_char <- subset(df, select = notes)
   
   df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
+                                  function(x) as.character(x)), stringsAsFactors = FALSE)
 
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char)
-    
- # return
+
   return(out)
 }
 #________________________________________________________  
-    
+
 #________________________________________________________
-# Load fivegas and filter metadata
+# load five gas and filter metadata
 # file <- "../data/logs/Transcribed Emissions Tester 1 Data Sheets.xlsx"
 # df <- load_fivegas_filter_meta(file)
 load_fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
@@ -303,36 +299,35 @@ load_fivegas_filter_meta <- function(file, sheet = "Tester 1 Data Sheet"){
   df_dat <- as.data.frame(lapply(df_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
-  cols <- subset(colnames(df), grepl("^pre|^post|^cart|^voc",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^pre|^post|^cart|^voc",colnames(df)) == TRUE)
 
   df_num <- subset(df, select = cols)
   
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(as.character(x))))
 
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^time",colnames(df)) == TRUE)
 
   df_time <- subset(df, select = cols)
 
   df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60)) 
+                                  function(x) as.numeric(as.character(x)) * 24 * 60 * 60)) 
 
   df_char <- subset(df, select = notes)
 
   df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
+                                  function(x) as.character(x)), stringsAsFactors = FALSE)
 
   df_fac <- subset(df, select = c(id, person))
     
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
-    
- # return
+
   return(out)
 } 
 #________________________________________________________
-  
+
 #________________________________________________________
-# Load five gas and filter metadata
+# load five gas and filter metadata
 # file <- "../data/logs/Transcribed Emissions Tester 2 Calibration Log.xlsx"
 # df <- load_co2_cal_flows_meta(file)
 load_co2_cal_flows_meta <- function(file, sheet = "Sheet1"){
@@ -393,24 +388,23 @@ load_co2_cal_flows_meta <- function(file, sheet = "Sheet1"){
   df_char <- subset(df, select = notes)
 
   df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
+                                  function(x) as.character(x)), stringsAsFactors = FALSE)
 
   out <- dplyr::bind_cols(df_dat, df_num, df_char)
-        
- # return
+
   return(out)
 }
 #________________________________________________________
- 
+
 #________________________________________________________
-# Load flows and five gas metadata
+# load flows and five gas metadata
 # file <- "../data/logs/Transcribed Emissions Tester 2 Data Sheets.xlsx"
 # df <- load_flow_fivegas_meta(file)
 load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
 
   df <- read_excel(path = file, sheet = sheet, col_names = FALSE, skip = 0)
 
-  df <- df[1:26,]
+  df <- df[1:26, ]
 
   df <- as.data.frame(t(df[c(-1,-2)])) 
 
@@ -446,36 +440,35 @@ load_flow_fivegas_meta <- function(file, sheet = "Tester 2 Data Sheet"){
   df_dat <- as.data.frame(lapply(df_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
-  cols <- subset(colnames(df), grepl("^preflow|^postflow",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^preflow|^postflow",colnames(df)) == TRUE)
 
   df_num <- subset(df, select = cols)
 
   df_num <- as.data.frame(lapply(df_num, 
                                  function(x) as.numeric(as.character(x))))
 
-  cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^time",colnames(df)) == TRUE)
 
   df_time <- subset(df, select = cols)
 
   df_time <- as.data.frame(lapply(df_time, 
-                                  function(x) as.numeric(as.character(x))*24*60*60))  
+                                  function(x) as.numeric(as.character(x)) * 24 * 60 * 60))  
 
   df_char <- subset(df, select = notes)
 
   df_char <- as.data.frame(lapply(df_char,
-                                  function(x) as.character(x)), stringsAsFactors=FALSE)
+                                  function(x) as.character(x)), stringsAsFactors = FALSE)
 
   df_fac <- subset(df, select = c(id, person))
 
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
-    
- # return
+
   return(out)
 } 
 #________________________________________________________
-  
+
 #________________________________________________________
-# Load wood stove log
+# load wood stove log
 # file <- "../data/logs/Transcribed Wood Stove Sampling Forms.xlsx"
 # df <- load_wood(file)
 load_wood <- function(file, sheet = "Wood Sampling Form"){
@@ -564,7 +557,7 @@ load_wood <- function(file, sheet = "Wood Sampling Form"){
   df_dat <- as.data.frame(lapply(df_dat, 
                                  function(x) as.Date(as.numeric(as.character(x)), origin = "1899-12-30")))
 
- cols <- subset(colnames(df), grepl("^wgt|^lab",colnames(df))==TRUE)
+  cols <- subset(colnames(df), grepl("^wgt|^lab",colnames(df))==TRUE)
 
   df_num <- subset(df, select = cols)
 
@@ -588,31 +581,30 @@ load_wood <- function(file, sheet = "Wood Sampling Form"){
   df_fac <- subset(df, select = cols)
 
   out <- dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac)
-    
- # return
+
   return(out)
 }
 #________________________________________________________   
-  
+
 #________________________________________________________
 # load kb qc data
 # file <- "../data/logs/aim_1_qaqc.csv"
 load_qc_kb <- function(file , grep_str){
- # read csv file
+  # read csv file
   notes_kb <- read_csv(file)
     
- # rename columns
+  # rename columns
   notes_kb <- dplyr::rename(notes_kb, inst = instrument)
 
- # filter for instrument
+  # filter for instrument
   notes_kb <- dplyr::filter(notes_kb, grepl(grep_str, notes_kb$inst) == TRUE)
 
- # classes
+  # classes
   notes_kb <- dplyr::mutate(notes_kb, 
                             id = factor(id),
                             inst = factor(inst),
                             qc = factor(qc, levels = c("bad", "maybe", "ok")))
- # return
+
   return(notes_kb)
 }
 #________________________________________________________   
