@@ -1,2 +1,3 @@
 # stoves_nih_2016
-# r data wrangling tools
+# To run the full analysis, knit the rmarkdown files in the following order:
+# load_save_data.Rmd
