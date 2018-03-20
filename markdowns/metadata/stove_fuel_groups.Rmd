@@ -1,0 +1,110 @@
+---
+title: "Stove-fuel groupings"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+* load data
+
+```{r load_files}
+  samples <- readRDS("../../r_data/samples.RDS")
+```
+
+# stove types
+
+```{r}
+  samples <- dplyr::mutate(samples,
+                           stove =
+                             stove %>%
+                             as_factor %>%
+                              tolower %>%
+                              gsub(" [:(:].*[:):]", "", .) %>%
+                              forcats::fct_relevel("three stone fire",
+                                                   "clay ring",
+                                                   "ceramic charcoal",
+                                                   "rocket elbow",
+                                                   "built-in justa",
+                                                   "metal charcoal",
+                                                   "fan rocket elbow",
+                                                   "gasifier",
+                                                   "wick kerosene",
+                                                   "pressurized kerosene",
+                                                   "pressurized lpg") %>%
+                               forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                               forcats::fct_recode("pressure kerosene" = "pressurized kerosene"))
+```
+
+# fuel types
+
+```{r}
+  samples <- dplyr::mutate(samples,
+                           fuel = 
+                             fuel %>%
+                             as_factor %>%
+                             tolower %>%
+                             forcats::fct_recode("lpg" = "liquefied petroleum gas") %>%
+                             forcats::fct_relevel("oak",
+                                                   "eucalyptus",
+                                                   "douglas fir",
+                                                   "lump hardwood (med.)",
+                                                   "lump hardwood (sm.)",
+                                                   "coconut charcoal",
+                                                   "west slope pellets",
+                                                   "eucalyptus pellets",
+                                                   "lpg",
+                                                   "kerosene"))
+```
+
+# fuel categories
+
+```{r}
+  samples <- dplyr::mutate(samples,
+                           fuelcat =
+                             forcats::fct_collapse(fuel,
+                               "wood" = c("oak",
+                                          "eucalyptus",
+                                          "douglas fir"),
+                               "charcoal" = c("coconut charcoal",
+                                              "lump hardwood (med.)", 
+                                              "lump hardwood (sm.)"),
+                               "pellets" = c("eucalyptus pellets",
+                                             "west slope pellets"),
+                               "liquids" = c("kerosene",
+                                             "lpg")))
+```
+
+# stove categories
+
+```{r}
+  samples <- dplyr::mutate(samples,
+                           stovecat =
+                            forcats::fct_collapse(stove,
+                               "traditional stoves" = c("clay ring",
+                                                        "three stone fire",
+                                                        "ceramic charcoal"),
+                               "insulated [improved] stoves" = c("fan rocket elbow",
+                                                                 "metal charcoal",
+                                                                 "rocket elbow",
+                                                                 "built-in justa",
+                                                                 "gasifier"),
+                               "liquid-fuel stoves" = c("lpg",
+                                                        "wick kerosene",
+                                                        "pressure kerosene")))
+```
+
+* save info
+
+```{r}
+  saveRDS(samples, "../../r_data/samples.RDS")
+```

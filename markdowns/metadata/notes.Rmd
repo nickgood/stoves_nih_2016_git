@@ -7,9 +7,8 @@ output:
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
-  library(tidyverse)
-  library(knitr)
-  library(forcats) #meow!
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, forcats)
 ```
 
 ```{r global_options, include=FALSE}
@@ -17,23 +16,21 @@ output:
 ```
 
 ```{r}
-  source("../r_scripts/R_tidy.R")
-  source("../r_scripts/R_functions.R")
-  source("../r_scripts/R_load_metadata.R")
+  source("../../scripts/load_metadata.R")
 ```
 
-# Load files
+# load files
 
 ```{r}
-  samples <- readRDS("../r_files/samples.RDS")
-  cal_1 <- readRDS("../r_files/cal_1.RDS")
-  cal_2 <- readRDS("../r_files/cal_2.RDS")
-  data_1 <- readRDS("../r_files/data_1.RDS")
-  data_2 <- readRDS("../r_files/data_2.RDS")
-  grav <- readRDS("../r_files/grav.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  cal_1 <- readRDS("../../r_data/cal_1.RDS")
+  cal_2 <- readRDS("../../r_data/cal_2.RDS")
+  data_1 <- readRDS("../../r_data/data_1.RDS")
+  data_2 <- readRDS("../../r_data/data_2.RDS")
+  grav <- readRDS("../../r_data/grav.RDS")
 ```
 
-# Compile notes
+# compile notes
 
 ```{r}
   test_id_date <- dplyr::select(samples, id, date)  # get id and date
@@ -76,7 +73,7 @@ output:
            dplyr::mutate(id = as.factor(id))
 ```
 
-# Break out instruments
+# break out instruments
 
 ```{r}
   notes <- dplyr::mutate(notes,
@@ -144,24 +141,24 @@ output:
            dplyr::arrange(inst)
 ```
 
-## Create qc flag
+## create qc flag
 
-With default value `maybe`.
+* default value `maybe`.
 
 ```{r}
   notes <- dplyr::mutate(notes, qc = factor("maybe", c("bad", "maybe", "ok")))
 ```
 
-## Combine with kb notes
+## combine with kb notes
 
 ```{r}
-  notes_kb <- load_qc_kb("../data/logs/aim_1_qaqc.csv", "*")
+  notes_kb <- load_qc_kb("../../data/logs/aim_1_qaqc.csv", "*")
 
   notes <- dplyr::bind_rows(notes, notes_kb) %>%
            dplyr::mutate(id = as.factor(id))
 ```
 
-# Adjust some flags based on notes
+# adjust some flags based on notes
 
 ```{r}
   notes <- dplyr::mutate(notes, qc = ifelse(grepl("^Thing 2|19:57:00$|
@@ -183,8 +180,8 @@ With default value `maybe`.
                                            "bad", as.character(qc)))
 ```
 
-# Save notes
+# save notes
 
 ```{r}
-  saveRDS(notes, file = "../r_files/notes.RDS")
+  saveRDS(notes, file = "../../r_data/notes.RDS")
 ```

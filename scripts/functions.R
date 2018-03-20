@@ -1,7 +1,7 @@
 #________________________________________________________
 # require libraries
-  library(tidyverse)
-  library(reshape2)
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, reshape2)
 #________________________________________________________
 
 #________________________________________________________
@@ -11,14 +11,46 @@ posixct_secsofday <- function(x) {
 
   x <- as.character(x)
 
-  out <- as.numeric(substr(x,12,13))*60*60 + 
-         as.numeric(substr(x,15,16))*60 +
-         as.numeric(substr(x,18,19))
+  out <- as.numeric(substr(x, 12, 13)) * 60 * 60 + 
+         as.numeric(substr(x, 15, 16)) * 60 +
+         as.numeric(substr(x, 18, 19))
 
   return(out)
   }
 #________________________________________________________
+
+#________________________________________________________
+# calculate the molecular weight of study pollutants
+# weights are calculated using the average
+# standard atomic weights of each individual elements
+#
+# atomic weights are from the NIST Physical Reference Data Website
+calc_mw <- function(pol_properties){
   
+  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
+                       (pol_properties$num_h * 1.007975) +
+                       (pol_properties$num_o * 15.9994)
+  
+  pol_properties <- dplyr::mutate(pol_properties,
+                                  mw = ifelse(ions == "Na" & !is.na(ions),
+                                              mw + 22.98976928, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
+                              mw + 14.006855, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
+                              mw + 39.0983, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
+                              mw + 24.3055, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
+                              mw + 40.078, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
+                              mw + 35.4515, mw)) %>%
+    dplyr::mutate(mw = ifelse(ions == "S" & !is.na(ions),
+                              mw + 32.065, mw)) 
+
+  # return the molecular weight
+  return(pol_properties$mw)
+}
+#________________________________________________________
   
   ##________________________________________________________
 # check for outliers
@@ -636,38 +668,6 @@ filter_temp <- function(times, df){
 }
 #________________________________________________________
 
-##________________________________________________________
-# Calculate the molecular weight of study pollutants
-# Molecuar weights are calculated using the average
-# standard atomic weights of each individual elements
-#
-# Atomic weights are from the NIST Physical Reference Data Website
-calc_mw <- function(pol_properties){
-
-  pol_properties$mw <- (pol_properties$num_c * 12.0106) +
-                       (pol_properties$num_h * 1.007975) +
-                       (pol_properties$num_o * 15.9994)
-
-  pol_properties <- dplyr::mutate(pol_properties,
-                                  mw = ifelse(ions == "Na" & !is.na(ions),
-                                  mw + 22.98976928, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "N" & !is.na(ions),
-                                  mw + 14.006855, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "K" & !is.na(ions),
-                                  mw + 39.0983, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Mg" & !is.na(ions),
-                                  mw + 24.3055, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Ca" & !is.na(ions),
-                                  mw + 40.078, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "Cl" & !is.na(ions),
-                                  mw + 35.4515, mw)) %>%
-        dplyr::mutate(mw = ifelse(ions == "S" & !is.na(ions),
-                                  mw + 32.065, mw)) 
-
-  # return the molecular weight
-  return(pol_properties$mw)
-}
-#________________________________________________________
 ##________________________________________________________
 # summarize data by category
 # default is to group by stove type

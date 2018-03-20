@@ -7,9 +7,8 @@ output:
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
-  library(tidyverse)
-  library(knitr)
-  library(forcats) #meow!
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, forcats)
 ```
 
 ```{r global_options, include=FALSE}
@@ -17,7 +16,7 @@ output:
 ```
 
 ```{r}
-  source("../r_scripts/R_functions.R")
+  source("../../scripts/functions.R")
 ```
 
 # hood flow
@@ -25,7 +24,7 @@ output:
 ```{r}
   hood_flow <- 4  # m^3/min
 
-  saveRDS(hood_flow, file = "../r_files/hood_flow.RDS")
+  saveRDS(hood_flow, file = "../../r_data/hood_flow.RDS")
 ```
 
 # fuel properties
@@ -49,7 +48,7 @@ output:
                                                              0.840833333, 0.4852,
                                                              0.4852, 0.82, 0.82))  # kg_C/kg_fuel
 
-  saveRDS(fuel_properties, file = "../r_files/fuel_properties.RDS")
+  saveRDS(fuel_properties, file = "../../r_data/fuel_properties.RDS")
 ```
 
 # molecular formula and weight 
@@ -174,8 +173,8 @@ output:
 
   mw_c <- 12.0106
 
-  saveRDS(pol_properties, file = "../r_files/pol_properties.RDS")
-  saveRDS( mw_c, file = "../r_files/mw_c.RDS")
+  saveRDS(pol_properties, file = "../../r_data/pol_properties.RDS")
+  saveRDS( mw_c, file = "../../r_data/mw_c.RDS")
 ```
 
 # instrument constants
@@ -185,9 +184,9 @@ output:
   voc_flow <- 0.0135  # L/min
   smps_dlogdp <- 0.015625355  # dlogDp
 
-  saveRDS(filter_area, file = "../r_files/filter_area.RDS") 
-  saveRDS(voc_flow, file = "../r_files/voc_flow.RDS")
-  saveRDS(smps_dlogdp, file = "../r_files/smps_constant.RDS")
+  saveRDS(filter_area, file = "../../r_data/filter_area.RDS") 
+  saveRDS(voc_flow, file = "../../r_data/voc_flow.RDS")
+  saveRDS(smps_dlogdp, file = "../../r_data/smps_constant.RDS")
 ```
 
 # thermodynamic properties
@@ -197,7 +196,7 @@ output:
   c_water <- 4.186  # J/g C
   gas_constant <- 8.314  # J/K mol
 
-  saveRDS(hfg_water, file = "../r_files/hfg_water.RDS")
-  saveRDS(c_water, file = "../r_files/c_water.RDS")
-  saveRDS(gas_constant, file = "../r_files/gas_constant.RDS")
+  saveRDS(hfg_water, file = "../../r_data/hfg_water.RDS")
+  saveRDS(c_water, file = "../../r_data/c_water.RDS")
+  saveRDS(gas_constant, file = "../../r_data/gas_constant.RDS")
 ```
