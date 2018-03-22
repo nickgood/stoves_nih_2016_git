@@ -35,6 +35,10 @@ output:
   smps_pax_bg_times <- readRDS("../r_files/smps_pax_bg_times.RDS")
 ```
 
+```{r}
+const <- 0.015625355
+```
+
 # Organize
 
 * extract test times
@@ -141,6 +145,66 @@ output:
 ```{r}
 types <- readRDS("../r_files/samples.RDS") %>%
          select(id, type, mc_level)
+
+smps_conc <- select(smps_merged, id, size_nm, dw) %>%
+                 filter(!is.na(size_nm)) %>%
+                 mutate(dw = as.numeric(dw)) %>%
+                 group_by(id, size_nm) %>%
+                 summarise(avg_val = mean(dw)) %>%
+                 ungroup() %>%
+                 group_by(id) %>%
+                 mutate(conc = avg_val/sum(avg_val)) %>%
+                 ungroup() %>%
+                 left_join(types, by = "id") %>%
+                 filter(!grepl("^BG", id))
+
+smps_conc1 <- group_by(smps_conc, mc_level, size_nm) %>%
+              mutate(conc = mean(conc)) %>%
+              ungroup() %>%
+              mutate(mc_level = forcats::fct_relevel(mc_level, "low","med","high"))
+
+smps_conc2 <- filter(smps_conc, grepl("low", mc_level))
+smps_conc3 <- filter(smps_conc, grepl("med", mc_level))
+smps_conc4 <- filter(smps_conc, grepl("high", mc_level))
+
+ggplot(smps_conc1, aes(x = size_nm, y = conc, color = mc_level)) +
+  geom_line(size = 2) +
+  scale_y_log10() +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  theme_bw() +
+  labs(color = "MC Level", x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
+
+```
+
+```{r}
+ggplot(filter(smps_conc1, grepl("low", mc_level)), aes(x = size_nm, y = conc)) +
+  geom_line(size = 2, color = "darkorange") +
+  geom_line(data = smps_conc2, aes(group = id, x = size_nm, y = conc), color = "darkorange", alpha = 0.7) +
+  scale_y_log10() +
+  theme_bw() +
+  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
+```
+
+```{r}
+ggplot(filter(smps_conc1, grepl("med", mc_level)), aes(x = size_nm, y = conc)) +
+  geom_line(size = 2, color = "darkorchid3") +
+  geom_line(data = smps_conc3, aes(group = id, x = size_nm, y = conc), color = "darkorchid3", alpha = 0.7) +
+  scale_y_log10() +
+  theme_bw() +
+  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
+```
+
+```{r}
+ggplot(filter(smps_conc1, grepl("high", mc_level)), aes(x = size_nm, y = conc)) +
+  geom_line(size = 2, color = "blue") +
+  geom_line(data = smps_conc4, aes(group = id, x = size_nm, y = conc), color = "blue", alpha = 0.7) +
+  scale_y_log10() +
+  theme_bw() +
+  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
+```
+
+
+```{r}
 
 smps_plot <- select(smps_merged, id, size_nm, dw) %>%
              left_join(types, by = "id") %>%

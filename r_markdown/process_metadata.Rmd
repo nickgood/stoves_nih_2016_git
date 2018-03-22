@@ -97,8 +97,7 @@ output:
                          dplyr::rename(id = fuel_id, mass_dry_new = m_dry) %>%
                          dplyr::select(id, mass_dry_new)
   
-  fuel_clean_no_fh2_3 <- cbind(fuel_clean_no_fh2_3, fuel_no_fh2_3$order)
-  fuel_clean_no_fh2_3 <- rename(fuel_clean_no_fh2_3, order = `fuel_no_fh2_3$order`) %>%
+  fuel_clean_no_fh2_3 <- cbind(fuel_clean_no_fh2_3, select(fuel_no_fh2_3, order))%>%
                          select(mass_dry_new)
   
   fuel_clean_no_fh2_3 <- cbind(fuel_no_fh2_3, fuel_clean_no_fh2_3)
@@ -162,41 +161,6 @@ output:
   outliers <- dplyr::filter(test_times, value < 60 * 60 * 4 | value > 60 * 60 * 20)
 
   knitr::kable(outliers, "markdown", digits = 2)
-```
-
-## batch lab conditions
-
-```{r}
-  # lab_cond <- dplyr::filter(tidy_id_date(test_log, "^lab_", "lab_"), !is.na(value))
-  # 
-  # saveRDS(lab_cond, file="../r_files/batch_lab.RDS")
-```
-
-KB: Currently no data is recorded in the test log
-
-```{r, echo=FALSE}
-  # p_data <- dplyr::group_by(lab_cond, var) %>%
-  #           dplyr::mutate(value_norm =
-  #                        (value - mean(value, na.rm = TRUE)) / sd(value, na.rm = TRUE),
-  #                         outlier = ifelse(is_outlier(value), as.character(id), NA))
-  # 
-  # p_box <- ggplot(p_data, aes(x = factor(var), y = value_norm)) +
-  #          geom_boxplot() +
-  #          geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 8) +
-  #          theme_bw() +
-  #          ylab("z score normalized value") +
-  #          xlab("") +
-  #          theme(axis.text.x = element_text(angle = 35, hjust = 0.95, size = 30)) +
-  #          theme(axis.text.y = element_text(size = 30),
-  #          axis.title=element_text(size=40))
-  # 
-  # p_hist <- ggplot(p_data, aes(x = value)) +
-  #           geom_histogram(binwidth = 15) +
-  #           theme_bw() +
-  #           facet_wrap(~var, scales = "free") +
-  #           xlab("")
-  # 
-  # grid.arrange(p_hist, p_box, ncol = 2)
 ```
 
 ## carbonyl flows

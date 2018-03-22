@@ -18,11 +18,12 @@ output:
 
 # Load
 
-* water (pot) temperature
+* water (pot) temperature and emissions
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
+  emissions_long <- readRDS("../r_files/emissions_long.RDS")
   temp_merged <- readRDS("../r_files/temp_merged.RDS")
+  mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
 ```
 
 * constants
@@ -48,7 +49,8 @@ output:
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
            tidyr::spread(var, value) %>%
-           dplyr::rename(start = set_1)
+           dplyr::rename(start = set_1) %>%
+           dplyr::filter(!grepl("^BG", id))
 ```
 
 # Energy
@@ -71,7 +73,7 @@ pot_weights <- select(mc_test_log, wgt_pot_a, wgt_on_1, wgt_off_1, id, date) %>%
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp_merged <- mutate(temp_merged, time = time + 3600)  
 
-  e_temp <- dplyr::filter(temp_merged, loc != "stove")
+  e_temp <- dplyr::filter(temp_merged, grepl("stove", loc))
 
 
   e_temp <- filter_temp(times, e_temp)
@@ -81,8 +83,8 @@ pot_weights <- select(mc_test_log, wgt_pot_a, wgt_on_1, wgt_off_1, id, date) %>%
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   t_range <- dplyr::group_by(e_temp, id) %>%
-            dplyr::summarise(t_min = quantile(t_oc, 0.05, na.rm = TRUE),  
-                             t_max = quantile(t_oc, 0.95, na.rm = TRUE),
+            dplyr::summarise(t_min = min(t_oc, na.rm = TRUE),  
+                             t_max = max(t_oc, na.rm = TRUE),
                              t_med = median(t_oc))
 
 saveRDS(t_range, file = "../r_files/t_range.RDS")
@@ -95,7 +97,7 @@ saveRDS(t_range, file = "../r_files/t_range.RDS")
  temp_plot <- left_join(t_range, mean_mc, by = "id")
  
  ggplot(data = temp_plot, aes(x = mean_mc)) +
-   geom_point(aes(y = t_med), color = "darkblue") +
+   geom_point(aes(y = t_max), color = "darkblue") +
    #geom_point(aes(y = t_min, color= "blue")) +
    theme_bw() +
    labs(x = "Mean Moisture Content (%)", y = "Maximum Temperature (C)")
@@ -105,22 +107,18 @@ saveRDS(t_range, file = "../r_files/t_range.RDS")
 * merge data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_data <- dplyr::left_join(e_times, e_pot_water_mass, by = c("id", "rep")) %>%
-            dplyr::left_join(t_range, by = c("id", "rep")) %>%
-            dplyr::left_join(e_pot_mass, by = "id") %>%
-            dplyr::left_join(e_pot, by = c("id", "rep")) %>%
-            dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
-                          mass_pot = ifelse(pot == "b", b, mass_pot),
-                          id = as.factor(id)) %>%
-            dplyr::select(-a, -b)
+  e_data <- dplyr::left_join(pot_weights, times, by = "id") %>%
+            dplyr::left_join(t_range, by = "id")%>%
+            dplyr::select(-date.y) %>%
+            dplyr::rename(date = date.x)
 ```
 
 * energy applied
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   e_data <- dplyr::mutate(e_data,
-                          mass_evap = mass_on - mass_off,
-                          mass_h2o = mass_on - mass_pot,
+                          mass_evap = delta_m,
+                          mass_h2o = wgt_on_1 - wgt_pot_a,
                           dt = t_max - t_min,
                           j_heat = mass_h2o * c_water * dt, # g * J/(g.oC) * oC
                           j_vap = mass_evap * hfg_water,
@@ -158,35 +156,79 @@ saveRDS(t_range, file = "../r_files/t_range.RDS")
 
 ## temperature (id & rep)
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  ggplot(e_temp, aes(datetime, t_oc, group = loc, colour = rep)) +
-    geom_point() +
-    facet_wrap(~id, scales = "free", ncol = 3) +
-    theme_minimal() +
-    theme(legend.position = "top") +
-    ylab("temperature oC")
+
+
+
+# Plot EFs for Energy
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+ ef_energy <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted", !grepl("^BG|G", id)), 
+                                       energy,
+                                       by = "id" ) %>%
+                      dplyr::mutate(mass_pol_energy = ((value * 1e-6) / (joules *1e-6))) %>%
+              left_join(mean_mc, by = "id")
 ```
 
 ## energy delivered
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
-  p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
-                             energy,
-                             by = "id")
+
+```{r}
+p_data <- dplyr::left_join(ef_energy,
+                             dplyr::select(samples, id, type, mc_level),
+                                           by = "id") %>%
+            dplyr::filter(type != "bg") %>%
+            dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low",
+                                                                    "med",
+                                                                    "high")) %>%
+            dplyr::mutate(id = factor(id, levels = c("FL1", "FL2", "FL3", "FL4", "FM1", "FM2",
+                                                     "FM3", "FM4", "FH1", "FH2", "FH3", "FH4",
+                                                     "LL1", "LL2", "LL3", "LL4", "LM1", "LM2",
+                                                     "LM3", "LM4", "LH1", "LH2", "LH3",
+                                                     "LH4")))
+mj_delivered <- p_data %>%
+                select(joules, id, type, mc_level, mean_mc) %>%
+                mutate(joules = joules * 10^-6) %>%
+                distinct()
+
+ggplot(mj_delivered, aes(x = mean_mc, y = joules, color = mc_level)) +
+  geom_point(size = 3.5)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(p_data, aes(id, joules, colour = stove)) +
-  geom_point() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  theme(legend.position = "top") +
-  ylab("energy delivered to pot (J)") +
-  theme(legend.position = "top")
+```{r}
+temps <- group_by(e_temp, id) %>%
+            dplyr::summarise(t_mean = mean(t_oc, na.rm = TRUE))
+
+grav_energy <- p_data %>%
+          dplyr::filter(pol %in% "grav") %>%
+          dplyr::select(-inst) %>%
+          left_join(temps, by = "id")
+
+ggplot(grav_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+  geom_point(size = 3.5) +
+  theme_bw() +
+  theme(text = element_text(size=15)) +
+  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  #facet_wrap(~pol, scales = "free") +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape")
 ```
 
-# Save (not implemented)
+```{r}
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- 
+gas_energy <- p_data %>%
+          dplyr::filter(pol %in% c("co", "co2", "ch4")) %>%
+          dplyr::select(-inst) %>%
+          left_join(temps, by = "id")
+
+ggplot(gas_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+  geom_point(size = 3.5) +
+  theme_bw() +
+  theme(text = element_text(size=15)) +
+  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  facet_wrap(~pol, scales = "free", ncol = 2) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape")
 ```
+
