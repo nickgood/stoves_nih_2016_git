@@ -1,10 +1,11 @@
 ---
-author: "Nicholas Good"
-date: "1/11/2017"
-title: "Style Guide"
-output: html_document
+title: "Style guide"
+output:
+  html_document:
+    toc: true
+    toc_float: true
 ---
-
+ 
 The purpose of this guide is to facilitate R programming consistancy in the project. This guide is based on [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml).
 
 ## Assignment

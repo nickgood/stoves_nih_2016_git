@@ -4,27 +4,28 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-# Libraries / source files
-
-```{r setup, include=FALSE}
-  library(tidyverse)
-  library(tibble)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
 ```
 
-# Qaqc
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# qa/qc
+
+```{r}
   qc_colours = c("ok" = "mediumaquamarine",
                  "maybe" = "darkorange1",
                  "bad" = "mediumorchid1")
 ```
 
-# Temperature probe location
+# temperature probe location
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   temp_colours = c("front" = "slateblue",
                  "back" = "lightseagreen",
                  "flue" = "tomato3",

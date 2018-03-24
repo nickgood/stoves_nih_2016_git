@@ -5,11 +5,11 @@ is_outlier <- function(x) {
 }
 #________________________________________________________________
 
-##________________________________________________________________
+#________________________________________________________________
 # boxplot with outlier labels
 p_box_outliers <- function(df, grep_str, scale = 1){
  # select data
-  df <- subset(df, select =  c(grep(grep_str, colnames(df), value=TRUE),"date", "id"))
+  df <- subset(df, select =  c(grep(grep_str, colnames(df), value = TRUE),"date", "id"))
 
  # rename columns
   names(df) <- gsub(grep_str, "", colnames(df))
@@ -22,18 +22,24 @@ p_box_outliers <- function(df, grep_str, scale = 1){
   df <- mutate(df, outlier = ifelse(is_outlier(value), as.character(id), NA))
     
  # scale
-  df$value <- df$value/scale
+  df$value <- df$value / scale
 
  # plot
   p <- ggplot(df, aes(x = series, y = value)) +
        geom_boxplot() +
        theme_bw() +
        geom_text(aes(label = outlier), na.rm = TRUE, nudge_y = 0, nudge_x = 0.3, size = 4)
-    
- # return plot
+
   return(p)
 }
 #________________________________________________________________
+
+
+
+
+
+
+
 
 ##________________________________________________________________
 # stacked bar
