@@ -6,45 +6,53 @@ output:
     toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
-  packages <- c("tidyverse", "kableExtra")
-
-  new <- packages[!(packages %in% installed.packages()[,"Package"])]
-  if(length(new)) install.packages(new)
-  lapply(packages, library, character.only = TRUE)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
-                        echo = FALSE,
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        fig.width = 12, fig.height = 5,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-```{r load_source}
-  # load source files
-  source("../r_scripts/R_functions.R")
-```
+# tidy data
+
+## load files
+
+load scripts
 
 ```{r}
-  # load pah data
-  pah_raw <- readRDS("../r_files/pah.RDS")    # pah dataset
-  pah_lod <- readRDS("../r_files/pah_lod.RDS")    # pah lod dataset
-  data_1 <- readRDS("../r_files/data_1.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
-  samples <- readRDS("../r_files/samples.RDS")
+  source("../../scripts/functions.R")
 ```
 
+load data
+
 ```{r}
-  # Extract chemical analysis lod data
+  pah_raw <- readRDS("../../r_data/pah.RDS")    # pah dataset
+  pah_lod <- readRDS("../../r_data/pah_lod.RDS")    # pah lod dataset
+  data_1 <- readRDS("../../r_data/data_1.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+```
+
+## lod
+
+extract chemical analysis lod data
+
+```{r}
   lod <-
     pah_lod %>%
     dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
     dplyr::select(-val)
 ```
 
+lod replacement
+
+* replace values below the lod with lod/sqrt(2)
+
 ```{r}
-  # Calculate new value if measurement below instrument lod
-  # Replace values below the lod and loq with lod/sqrt(2)
   pah <- 
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
@@ -55,15 +63,19 @@ output:
     dplyr::mutate(val_lod_adj = ifelse(lod == "below", val / sqrt(2), val))
 ```
 
+## flags
+
+* extract flags
+
 ```{r}
-  # Extract notes for pah
   notes <- 
     notes %>%
     dplyr::filter(grepl("pah|all", inst) == TRUE)
 ```
 
+* bad preceeds maybe preceeds good
+
 ```{r}
-  # Apply flags: bad preceeds maybe preceeds good
   flags <-
     notes %>%
     dplyr::select(id, qc) %>%
@@ -72,8 +84,9 @@ output:
     dplyr::summarise(qc = first(qc))
 ```
 
+* add flag by id
+
 ```{r}
-  # Merge data with flags
   pah <-
     pah %>%
     dplyr::left_join(flags, by = "id") %>%
@@ -81,47 +94,54 @@ output:
     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
+## test type 
+
+define test type variable
+
 ```{r}
-  # Define new variable called test type
   pah <- 
     pah %>%
     dplyr::mutate(test_type = ifelse(!grepl("^B|^G", id), "test", "bg"),
                   test_type = ifelse(grepl("^B", id), "blank", test_type))
 ```
 
+extract four pollutants to represent all pahs
+
+* can be turned on or off
+
 ```{r}
-  # Extract four pollutants to represent all pahs
   pah <-
     pah %>%
     dplyr::filter(grepl("^pyrene$|a]pyrene|fluorene|^anthracene$", pol))
 ```
 
+## bad tests
+
 ```{r}
-  # Filter out bad tests
   pah_bad <-
     pah %>% 
     dplyr::filter(qc == "bad")
 ```
 
 ```{r}
-  # Filter out bad tests
   pah <-
     pah %>% 
     dplyr::filter(qc != "bad")
 ```
 
-# Blank analysis 
+# blank analysis 
+
+extract blanks
 
 ```{r}
-  # Extract blank pufs and blank filters
   blanks <-
     pah %>%
     dplyr::filter(test_type == "blank")
 ```
 
-## Table: Lab blanks outliers
+## table: lab blank outliers
 
-When blanks are grouped by pollutant and filter type the following have z-scores greater than three:
+outliers (z > 3) when blanks are grouped by pollutant and filter type
 
 ```{r, echo=FALSE}
   blanks %>%
@@ -140,14 +160,15 @@ When blanks are grouped by pollutant and filter type the following have z-scores
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusions: Blanks look good! Some outliers, but they are not consistent across pollutants. Possibly investiage B18 and B27.
+conclusions: 
 
-## Plot: Time series of lab blanks
+* blanks look good! 
+* some outliers, but they are not consistent across pollutants (possibly investiage B18 and B27)
 
-Lab blanks (ug):
+## plot: time series of lab blanks
 
-* grouped by pollutant and filter type
-* plotted in time
+lab blanks (ug)
+
 * shape indicates if sample was above or below instrument lod
 
 ```{r, echo=FALSE, fig.height = 16, fig.width = 14}
@@ -172,15 +193,16 @@ Lab blanks (ug):
       xlab("blank id")
 ```
 
-Conclusions: Blanks look good! No obvious trends in time.
+conclusions: 
 
-## Table: Lab blanks below lod for chemical analysis
+* blanks look good!
+* no obvious trends in time.
 
-Lab blanks below lod for chemical analysis (%):
+## table: lab blanks below lod for chemical analysis
 
-* values given by pollutant and filter type
+percent of lab blanks below the lod for chemical analysis
 
-```{r}
+```{r, echo=FALSE}
   blanks %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -195,13 +217,11 @@ Lab blanks below lod for chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table: Lab blanks with NA values
+## table: lab blanks with NA values
 
-Lab blanks with NA values (%):
+percent of lab blanks with NA values
 
-* values given by pollutant and filter type
-
-```{r}
+```{r, echo=FALSE}
   blanks %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -216,6 +236,10 @@ Lab blanks with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
+## table: blank summary
+
+summarize blanks
+
 ```{r}
   blanks <-
     blanks %>%
@@ -228,8 +252,9 @@ Lab blanks with NA values (%):
                     forcats::fct_recode("p" = "ba"))
 ```
 
-```{r, include=FALSE}
-  # summary table of blank data
+summary of lab blanks (ug)
+
+```{r, echo=FALSE}
   blanks %>%
     dplyr::mutate(filter_type = 
                     filter_type %>% 
@@ -240,15 +265,25 @@ Lab blanks with NA values (%):
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
+## save blanks
+
 ```{r}
-  # remove lab blanks from pah_merged file
+  saveRDS(blanks, file = "../../r_data/pah_bk.RDS")
+```
+
+remove lab blanks from pah_merged file
+
+```{r}
   pah_merged <-
     pah %>%
     dplyr::filter(test_type != "blank") # remove blanks
 ```
 
+# missing data
+
+check for missing data
+
 ```{r}
-  # check for missing data
   pah_missing <-
     pah_merged %>%
     dplyr::select(id, pol, filter_type) %>%
@@ -262,8 +297,9 @@ Lab blanks with NA values (%):
     dplyr::select(-n)
 ```
 
+remove all data from tests that are missing a filter or front puf
+
 ```{r}
-  # remove all data from tests that are missing a filter or front puf
   pah_merged <-
     dplyr::anti_join(pah_merged,
                      pah_missing %>%
@@ -272,15 +308,50 @@ Lab blanks with NA values (%):
     dplyr::filter(!grepl("10D|8E", id))
 ```
 
-```{r extract_cartridge_data}
-  # Extract pah filter cartridge data
+## table: filters that weren't analyzed 
+
+* we have measurements for 10D-B and 8E-B, which don't match our test ids
+* any tests that are missing a filter or front puf are removed from the analysis
+
+```{r}
+  pah_missing %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel), by = "id") %>%
+    dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
+                  filter_type = ifelse(filter_type == "f", "front puf", filter_type),
+                  filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: tests that have bad data
+
+```{r}
+  pah_bad  %>%
+    dplyr::distinct(id) %>%
+    dplyr::left_join(dplyr::select(samples, id,
+                                   stove, fuel), by = "id") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+conclusions: 
+
+* stove design malfunction (no need to repeat tests)
+
+# concentration calculations
+
+## extract data
+
+extract red cartridge data
+
+```{r}
   meta <-
     data_1 %>%
     dplyr::select(matches("_red|^id$|^date$"))
 ```
 
-```{r extract_flows}
-  # Extra flow rate data
+extract flow rate data
+
+```{r}
   flows <-
     meta %>%
     dplyr::select(matches("flow_|^id$|^date$")) %>%
@@ -298,8 +369,9 @@ Lab blanks with NA values (%):
     tidyr::spread(type, mean)
 ```
 
-```{r extract_times}
-  # Extra time data
+extract time data
+
+```{r}
   times <-
     meta %>% 
     dplyr::select(matches("^time_|^id$|^date$")) %>%
@@ -312,8 +384,11 @@ Lab blanks with NA values (%):
     tidyr::spread(type, value)
 ```
 
+## merge and calculate
+
+merge data with flows and times
+
 ```{r}
-  # Merge pah with filter metadata
   pah_merged <-
     pah_merged %>%
     dplyr::filter(test_type != "blank") %>%
@@ -323,26 +398,28 @@ Lab blanks with NA values (%):
     dplyr::mutate(flow = (pre_flow + post_flow) / 2)
 ```
 
+calculate concentrations
+
 ```{r}
-  # Calculate concentrations
   pah_merged <-
     pah_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
                   conc = val_lod_adj * 1000 / (flow * dur))
 ```
 
-# Background analysis
+# backgrounds
+
+extract background pufs (front and back) and background filters
 
 ```{r}
-  # Extract background pufs (front and back) and background filters
   bg <-
     pah_merged %>%
     dplyr::filter(test_type == "bg")
 ```
 
-## Plot: Lab background outliers
+## plot: lab background outliers
 
-When backgrounds are grouped by pollutant and filter type the following have z-scores greater than three:
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
 ```{r pah_bg_plot, echo=FALSE, fig.height = 8}
   bg %>%
@@ -361,14 +438,14 @@ When backgrounds are grouped by pollutant and filter type the following have z-s
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusion: Background to invesigate: G2. Otherwise backgrounds look good.
+conclusions: 
 
-## Plot: Time series of lab backgrounds
+* background to invesigate: G2
 
-Background concentrations (ug per meter cubed):
+## plot: time series of lab backgrounds
 
-* grouped by pollutant and filter type
-* plotted in time
+background concentrations (ug per meter cubed)
+
 * shape indicates if sample was above or below instrument lod
 
 ```{r, echo=FALSE, fig.height = 16, fig.width = 14}
@@ -393,13 +470,14 @@ Background concentrations (ug per meter cubed):
       xlab("")
 ```
 
-Conclusions: Backgrounds look good! No obvious trends in time (except pyrene on the front puf?).
+conclusions: 
 
-## Table: Lab backgrounds below lod for chemical analysis
+* backgrounds look good! 
+* no obvious trends in time
 
-Lab backgrounds below the lod of chemical analysis (%):
+## table: lab backgrounds below lod for chemical analysis
 
-* values given by pollutant and filter type
+percent of lab backgrounds below the lod of chemical analysis
 
 ```{r}
   bg %>%
@@ -416,11 +494,9 @@ Lab backgrounds below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table: Lab backgrounds with NA values
+## table: lab backgrounds with NA values
 
-Lab backgrounds with NA values (%):
-
-* values given by pollutant and filter type
+percent of lab backgrounds with NA values
 
 ```{r}
   bg %>%
@@ -437,6 +513,10 @@ Lab backgrounds with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
+## table: background summary
+
+summarize backgrounds
+
 ```{r}
   bg <-
     bg %>%
@@ -446,8 +526,9 @@ Lab backgrounds with NA values (%):
                      bg_sd = sd(conc, na.rm = TRUE))
 ```
 
-```{r, include=FALSE}
-  # Summary statistics of lab backgrounds
+summary of backgrounds (ug per meter cubed)
+
+```{r}
   bg %>%
     dplyr::mutate(filter_type = 
                   filter_type %>% 
@@ -458,10 +539,18 @@ Lab backgrounds with NA values (%):
                  col.names = c("type of pah", "filter type", "mean", "median", "standard deviation"))
 ```
 
-# Sample analysis
+## save backgrounds
 
 ```{r}
-  # Extract sample pufs (front and back) and sample filters
+  saveRDS(bg, file = "../../r_data/pah_bg.RDS")
+```
+
+
+# sample analysis
+
+extract sample pufs (front and back) and sample filters
+
+```{r}
   pah_samples <-
     pah_merged %>%
     dplyr::filter(test_type == "test")
@@ -473,13 +562,11 @@ Lab backgrounds with NA values (%):
     dplyr::left_join(bg, by = c("pol", "filter_type"))
 ```
 
-## Plot: Time series of burns
+## plot: time series of burns
 
-Burn concentrations (ug per meter cubed):
+burn concentrations (ug per meter cubed)
 
-* grouped by pollutant and filter type
 * samples are not background corrected
-* plotted in time
 * shape indicates if sample was above or below instrument lod
 
 ```{r, echo=FALSE, fig.height = 16, fig.width = 14}
@@ -504,11 +591,14 @@ Burn concentrations (ug per meter cubed):
       xlab("")
 ```
 
-Conclusions: Burns look good! No obvious trends in time.
+conclusions:
 
-## Plot: Comparing background and sample concentrations
+* burns look good! 
+* no obvious trends in time
 
-Blank, test, and background data (ug):
+## plot: comparing background and sample concentrations
+
+test and background concentrations (ug per meter cubed)
 
 * data is summed across all filter types
 * plotted and colored by test type
@@ -532,7 +622,10 @@ Blank, test, and background data (ug):
       facet_wrap(~pol, ncol = 2, scales = "free")
 ```
 
-Conclusion: Some overlap between burn and background concentrations. Need to investigate ways to account for background measurements. For now, I will just subtract the median.
+conclusions: 
+
+* some overlap between burn and background concentrations
+* need to investigate ways to account for background measurements (for now, subtract the median)
 
 ```{r}
   pah_samples <-
@@ -546,9 +639,7 @@ Conclusion: Some overlap between burn and background concentrations. Need to inv
     dplyr::ungroup()
 ```
 
-## Table: Measurements below the background median
-
-The following tests are below the background mean:
+## table: measurements below the background median
 
 ```{r, echo=FALSE}
   pah_samples_sum %>%
@@ -559,9 +650,9 @@ The following tests are below the background mean:
     knitr::kable("markdown", align = 'c')
 ```
 
-## Plot: PAH concentrations by stove type
+## plot: PAH concentrations by stove type
 
-Summed particle and gas phase pah concentrations (ug per meter cubed):
+summed particle and gas phase pah concentrations (ug per meter cubed)
 
 * plotted by stove type
 * colored by fuel type
@@ -615,11 +706,13 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       xlab("")
 ```
 
-Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
+conclusions: 
 
-## Table: Outliers by stove type
+* some liquid fuel stoves have NA values for pollutants of interest (would rerunning these samples at higher concentrations allow us to resolve values for these stoves?)
 
-When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
 
 ```{r, echo=FALSE}
   pah_samples_p %>%
@@ -633,11 +726,14 @@ When tests are grouped by pollutant and stove type the following have z-scores g
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusion: No outliers. Looks good! No repeat tests recommended.
+conclusion:
 
-## Plot: PAH concentrations by fuel type
+* no outliers. Looks good! 
+* no repeat tests recommended
 
-Summed particle and gas phase pah concentrations (ug per meter cubed):
+## plot: PAH concentrations by fuel type
+
+summed particle and gas phase pah concentrations (ug per meter cubed):
 
 * plotted by fuel type
 * colored by stove type
@@ -660,11 +756,13 @@ Summed particle and gas phase pah concentrations (ug per meter cubed):
       xlab("")
 ```
 
-Conclusion: Some of our liquid fuel stoves have NA values for pollutants of interest, would rerunning these samples at higher concentrations allow us to resolve values for these stoves?
+conclusions: 
 
-## Table: Outliers by fuel type
+* some liquid fuel stoves have NA values for pollutants of interest (would rerunning these samples at higher concentrations allow us to resolve values for these stoves?)
 
-When tests are grouped by pollutant and stove type the following have z-scores greater than three:
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
   pah_samples_p %>%
@@ -678,13 +776,14 @@ When tests are grouped by pollutant and stove type the following have z-scores g
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusion: A few outliers, but they are not consistent across pollutants. No repeat tests recommended.
+conclusions: 
 
-## Table: Burns below lod for chemical analysis
+* a few outliers, but they are not consistent across pollutants
+* no repeat tests recommended
 
-Burn samples below the lod of chemical analysis (%):
+## table: burns below lod for chemical analysis
 
-* values given by pollutant and filter type
+percent of burn samples below the lod of chemical analysis
 
 ```{r}
   pah_samples %>%
@@ -701,11 +800,9 @@ Burn samples below the lod of chemical analysis (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-## Table: Burns with NA values
+## table: burns with NA values
 
-Burn samples with NA values (%):
-
-* values given by pollutant and filter type
+percent of burn samples with NA values
 
 ```{r}
   pah_samples %>%
@@ -722,38 +819,8 @@ Burn samples with NA values (%):
     knitr::kable("markdown", align = 'c')
 ```
 
-# Missing data
-
-## Table: Measurements that are unaccounted for
-
-* We have measurements for 10D-B and 8E-B, which don't match our test ids. Could either of these fit the id of our missing back pufs?
-* Any tests that are missing a filter or front puf are removed from the analysis
+## save data
 
 ```{r}
-  pah_missing %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel), by = "id") %>%
-    dplyr::mutate(filter_type = ifelse(filter_type == "b", "back puf", filter_type),
-                  filter_type = ifelse(filter_type == "f", "front puf", filter_type),
-                  filter_type = ifelse(filter_type == "p", "filter", filter_type)) %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-## Table: Missing measurements due to bad data
-
-```{r}
-  # Filter out bad tests
-  pah_bad  %>%
-    dplyr::distinct(id) %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel), by = "id") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-Conclusion: Stove design malfunction, no need to repeat tests.
-
-```{r}
-  # Save merged files
-  # saveRDS(pah_merged, file = "../r_files/pah_merged.RDS")
-  # saveRDS(bg, file = "../r_files/pah_bg.RDS")
+  saveRDS(pah_merged, file = "../../r_data/pah_merged.RDS")
 ```
