@@ -9,7 +9,23 @@
 # 4. /markdowns/metadata/constants.Rmd
 # 5. /markdowns/metadata/test_times.Rmd
 # 6. /markdowns/metadata/process_metadata.Rmd
-# 7. /markdowns/instruments/carbonyls.Rmd
+# 7. Then, run the following in any order:
+# a. /markdowns/instruments/carbonyls.Rmd
+# b. /markdowns/instruments/trans.Rmd
+# c. /markdowns/instruments/temp.Rmd
+# d. /markdowns/instruments/smps.Rmd
+# e. /markdowns/instruments/scale.Rmd
+# f. /markdowns/instruments/pax.Rmd
+# g. /markdowns/instruments/ions.Rmd
+# h. /markdowns/instruments/grav.Rmd
+# i. /markdowns/instruments/fivegas.Rmd
+# j. /markdowns/instruments/ecoc.Rmd
+# k. /markdowns/instruments/co2.Rmd
+# l. /markdowns/instruments/dilution.Rmd
+# m. /markdowns/instruments/voc.Rmd
+# n. /markdowns/instruments/pah.Rmd
+
+
 
 # Notes:
 # to edit a markdown set working directory to the directory of the markdown
