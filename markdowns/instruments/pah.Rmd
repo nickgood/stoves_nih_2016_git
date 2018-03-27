@@ -308,7 +308,7 @@ remove all data from tests that are missing a filter or front puf
     dplyr::filter(!grepl("10D|8E", id))
 ```
 
-## table: filters that weren't analyzed 
+## table: missing data
 
 * we have measurements for 10D-B and 8E-B, which don't match our test ids
 * any tests that are missing a filter or front puf are removed from the analysis
@@ -323,7 +323,7 @@ remove all data from tests that are missing a filter or front puf
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: tests that have bad data
+## table: tests with bad measurements
 
 ```{r}
   pah_bad  %>%
@@ -349,7 +349,7 @@ extract red cartridge data
     dplyr::select(matches("_red|^id$|^date$"))
 ```
 
-extract flow rate data
+extract flow rate data and average
 
 ```{r}
   flows <-
@@ -458,7 +458,7 @@ background concentrations (ug per meter cubed)
                                         "front puf" = "f",
                                         "filter" = "p")) %>%
     ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(shape = lod), size = 4) +
+      geom_point(aes(shape = lod, color = qc), size = 4) +
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
