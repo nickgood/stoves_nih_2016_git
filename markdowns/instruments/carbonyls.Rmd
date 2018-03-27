@@ -209,7 +209,7 @@ extract background pufs (front and back) and background filters
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
-```{r pah_bg_plot, echo=FALSE, fig.height = 8}
+```{r, echo=FALSE, fig.height = 8}
   bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::group_by(pol) %>%
@@ -349,14 +349,13 @@ conclusions:
 
 test and background concentrations (ug per meter cubed)
 
-```{r, echo=FALSE, fig.height = 16, fig.width = 16}
+```{r carbs_test_bg_conc, echo=FALSE, fig.height = 16, fig.width = 16}
   carbs_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
     ggplot(aes_string(y = "conc", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc), size = 3) +
       theme_bw() +
-      scale_y_log10() +
       theme(text = element_text(size = 20),
             legend.position = "top") +
       ylab("concentration") +
@@ -382,7 +381,7 @@ conclusions:
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     dplyr::filter(!is.na(conc), conc < 0) %>%
     dplyr::select(id, pol, stove, fuel, conc) %>%
-    dplyr::rename("pah type" = "pol") %>%
+    dplyr::rename("carbonyl type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -392,7 +391,7 @@ carbonyl concentrations (ug per meter cubed)
 
 * samples are background corrected
 
-```{r carbonyls_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
+```{r carbs_stovetype, echo=FALSE, fig.height = 50, fig.width = 16}
   carbs_samples_p <-
     carbs_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
@@ -443,7 +442,7 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("pah type" = "pol") %>%
+    dplyr::rename("carbonyl type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -459,7 +458,7 @@ carbonyl concentrations (ug per meter cubed):
 * colored by stove type
 * samples are background corrected
 
-```{r carboyls_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
+```{r carbs_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
   carbs_samples_p %>%
     ggplot(aes_string(x = "fuel", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
@@ -491,7 +490,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("pah type" = "pol") %>%
+    dplyr::rename("carbonyl type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -518,4 +517,4 @@ percent of burn samples with NA values
   saveRDS(carbs_merged, file = "../../r_data/carbs_merged.RDS")
 ```
 
-## conclusions
+# conclusions
