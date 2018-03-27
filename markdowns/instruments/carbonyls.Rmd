@@ -110,7 +110,7 @@ define test type variable
     dplyr::filter(qc != "bad")
 ```
 
-# missing and bad measurements
+# missing and bad data
 
 ```{r, echo=FALSE}
   carbs_missing <-
@@ -517,3 +517,5 @@ percent of burn samples with NA values
 ```{r}
   saveRDS(carbs_merged, file = "../../r_data/carbs_merged.RDS")
 ```
+
+## conclusions
