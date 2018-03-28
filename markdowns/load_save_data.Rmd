@@ -18,7 +18,6 @@ output:
 ```{r}
   source("../scripts/load_data.R")
   source("../scripts/load_metadata.R")
-  #source("../scripts/tidy.R")
   source("../scripts/functions.R")
 ```
 
@@ -172,6 +171,12 @@ output:
   voc <- load_singlefiles("voc")
 
   saveRDS(voc, file = "../r_data/voc.RDS")
+```
+
+```{r}
+  voc_lod <- readr::read_csv("../data/voc/voc_lods.csv")
+
+  saveRDS(voc_lod, file = "../r_data/voc_lod.RDS")
 ```
 
 # Metadata
