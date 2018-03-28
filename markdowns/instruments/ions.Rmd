@@ -102,32 +102,16 @@ define test type variable
     dplyr::rename("test_type" = "type")
 ```
 
-## remove bad tests
-
-```{r}
-  ions_merged <-
-    ions %>% 
-    dplyr::filter(qc != "bad")
-```
-
 # missing and bad data
-
-```{r, echo=FALSE}
-  ions_missing <-
-    ions_merged %>%
-    dplyr::filter(is.na(val)) %>%
-    dplyr::select(-val) %>%
-    dplyr::group_by(id) %>%
-    dplyr::count() %>%
-    dplyr::filter(n > 16)
-```
 
 ## table: missing data
 
 ```{r, echo = FALSE}
-  ions_missing %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel), by = "id") %>%
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(ions %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -139,6 +123,14 @@ define test type variable
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
     knitr::kable("markdown", align = 'c')
+```
+
+## remove bad tests
+
+```{r}
+  ions_merged <-
+    ions %>% 
+    dplyr::filter(qc != "bad")
 ```
 
 # concentration calculations

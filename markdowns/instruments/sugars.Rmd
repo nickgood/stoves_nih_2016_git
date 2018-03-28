@@ -102,32 +102,16 @@ define test type variable
     dplyr::rename("test_type" = "type")
 ```
 
-## remove bad tests
-
-```{r}
-  sugars_merged <-
-    sugars %>% 
-    dplyr::filter(qc != "bad")
-```
-
 # missing and bad data
-
-```{r, echo=FALSE}
-  sugars_missing <-
-    sugars_merged %>%
-    dplyr::filter(is.na(val)) %>%
-    dplyr::select(-val) %>%
-    dplyr::group_by(id) %>%
-    dplyr::count() %>%
-    dplyr::filter(n > 16)
-```
 
 ## table: missing data
 
 ```{r, echo = FALSE}
-  sugars_missing %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel), by = "id") %>%
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(sugars %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -139,6 +123,14 @@ define test type variable
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
     knitr::kable("markdown", align = 'c')
+```
+
+## remove bad tests
+
+```{r}
+  sugars_merged <-
+    sugars %>% 
+    dplyr::filter(qc != "bad")
 ```
 
 # concentration calculations
@@ -212,7 +204,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -255,7 +247,7 @@ percent of lab backgrounds with NA values
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -373,7 +365,7 @@ conclusions:
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     dplyr::filter(!is.na(conc), conc < 0) %>%
     dplyr::select(id, pol, stove, fuel, conc) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -434,7 +426,7 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -482,7 +474,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -499,7 +491,7 @@ percent of burn samples with NA values
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(conc) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("ion type" = "pol") %>%
+    dplyr::rename("sugar type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
