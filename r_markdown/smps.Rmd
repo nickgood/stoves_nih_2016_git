@@ -159,7 +159,7 @@ smps_conc <- select(smps_merged, id, size_nm, dw) %>%
                  filter(!grepl("^BG", id))
 
 smps_conc1 <- group_by(smps_conc, mc_level, size_nm) %>%
-              mutate(conc = mean(conc)) %>%
+              mutate(conc_avg = mean(conc), conc_sd = sd(conc)) %>%
               ungroup() %>%
               mutate(mc_level = forcats::fct_relevel(mc_level, "low","med","high"))
 
@@ -167,9 +167,10 @@ smps_conc2 <- filter(smps_conc, grepl("low", mc_level))
 smps_conc3 <- filter(smps_conc, grepl("med", mc_level))
 smps_conc4 <- filter(smps_conc, grepl("high", mc_level))
 
-ggplot(smps_conc1, aes(x = size_nm, y = conc, color = mc_level)) +
+ggplot(smps_conc1, aes(x = size_nm, y = conc_avg, color = mc_level)) +
   geom_line(size = 2) +
   scale_y_log10() +
+  geom_errorbar(aes(ymin = conc_avg-conc_sd, ymax = conc_avg+conc_sd), width = 0.2) +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme_bw() +
   labs(color = "MC Level", x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
