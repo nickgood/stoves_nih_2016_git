@@ -102,32 +102,16 @@ define test type variable
     dplyr::rename("test_type" = "type")
 ```
 
-## remove bad tests
-
-```{r}
-  carbs_merged <-
-    carbs %>% 
-    dplyr::filter(qc != "bad")
-```
-
 # missing and bad data
-
-```{r, echo=FALSE}
-  carbs_missing <-
-    carbs_merged %>%
-    dplyr::filter(is.na(val)) %>%
-    dplyr::select(-val) %>%
-    dplyr::group_by(id) %>%
-    dplyr::count() %>%
-    dplyr::filter(n > 16)
-```
 
 ## table: missing data
 
 ```{r, echo = FALSE}
-  carbs_missing %>%
-    dplyr::left_join(dplyr::select(samples, id,
-                                   stove, fuel), by = "id") %>%
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(carbs %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -148,6 +132,14 @@ conclusions:
 * 2B - repeated test twice (2D & 2E)
 * 1C - repeated test (1D)
 * 8C - repeated test (8D)
+
+## remove bad tests
+
+```{r}
+  carbs_merged <-
+    carbs %>% 
+    dplyr::filter(qc != "bad")
+```
 
 # concentration calculations
 
