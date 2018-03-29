@@ -6,302 +6,713 @@ output:
     toc_float: true
 ---
 
-```{r load_libraries, echo=FALSE, message=FALSE, warning = FALSE, results='hide'}
-  packages <- c("tidyverse", "forcats")
-
-  new <- packages[!(packages %in% installed.packages()[,"Package"])]
-  if(length(new)) install.packages(new)
-  lapply(packages, library, character.only = TRUE)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', fig.height = 5, fig.width = 12,
-                        echo = FALSE,
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        fig.width = 12, fig.height = 5,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_tidy.R")
+# tidy data
+
+## load files
+
+load scripts
+
+```{r}
+  source("../../scripts/functions.R")
 ```
 
-# Load data
+load data
 
-* gravimetric
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav <- readRDS("../r_files/grav.RDS")
+```{r}
+  grav <- readRDS("../../r_data/grav.RDS")
+  times <- readRDS("../../r_data/filter_times.RDS")
+  flows <- readRDS("../../r_data/filter_flows.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
 ```
 
-* metadata
+## flags
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- readRDS("../r_files/samples.RDS")
-  filter_times <- readRDS("../r_files/filter_times.RDS")
-  filter_flows <- readRDS("../r_files/filter_flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+* extract flags
+
+```{r}
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("grav|all", inst) == TRUE)
 ```
 
-# Organize
+* bad preceeds maybe preceeds good
 
-## filter tests
-
-* select stove and background tests only. Remove pre-calculated LOD.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::filter(grav, grepl("^[0-9]|^G[0-9]", id)) %>%
-                 dplyr::select(-lod) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id) == TRUE, "test", "bg"))
+```{r}
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
 ```
 
-## set levels
+* add flag by id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  levels_type <- c("test", "bg")
+```{r}
+  grav <-
+    grav %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-# Metadata
+## test type 
 
-* match cassette flows to id
+define test type variable
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- flows <- dplyr::select(filter_flows, -date) %>%
-           dplyr::filter(colour == "white") %>%
-           dplyr::group_by(id, type, colour) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id, colour) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-           dplyr::select(-colour)
+```{r}
+  grav <- 
+    grav %>%
+    dplyr::mutate(test_type = ifelse(!grepl("^B|^G", id), "test", "bg"),
+                  test_type = ifelse(grepl("^B", id), "blank", test_type)) %>%
+    dplyr::filter(!grepl("MC", id))
 ```
 
-* match cassette timestamps to id
+## calculate mass
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- times <- dplyr::select(filter_times, -date) %>%
-           dplyr::filter(color == "white") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::select(-color)
+pre-weights
+
+```{r}
+  grav_pre <- 
+    grav %>%
+    dplyr::select(wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
+    tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(wgt_pre = mean(val))
 ```
 
-* merge gravimetric with metadata
+post-weights
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  flows,
-                                  by = "id") %>%
-                 dplyr::left_join(times,
-                                  by = "id")
+```{r}
+  grav_post <- 
+    grav %>%
+    dplyr::select(wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
+    tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(wgt_post = mean(val))
 ```
 
-# Reformat
+* merge weights and calculate difference
+* correct for blank filter weight
 
-* pre-average
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
-              tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
-              dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(id) %>%
-              dplyr::summarise(wgt_pre = mean(val))
+```{r}
+  grav <- 
+    grav %>%
+    dplyr::left_join(grav_pre, by = "id") %>%
+    dplyr::left_join(grav_post, by = "id") %>%
+    dplyr::mutate(wgt_delta = wgt_post - wgt_pre,
+                  wgt_cal_delta = wgt_cal_post - wgt_cal_pre,
+                  wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre,
+                  val = wgt_delta - wgt_blank_delta) %>%
+    dplyr::filter(!is.na(id))
 ```
 
-* post-average
+plot calibration weight by date
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
-               tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
-               dplyr::filter(!is.na(val)) %>%
-               dplyr::group_by(id) %>%
-               dplyr::summarise(wgt_post = mean(val))
+```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+  grav %>%
+    ggplot(aes(x = date_pre, y = wgt_cal_pre)) +
+      geom_point(shape = 1) +
+      geom_point(aes(x = date_post, y = wgt_cal_post), shape = 1) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+    ylab("calibration weight") +
+    xlab("")
 ```
 
-* merge averages
+plots scale room blank by date
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
-                 dplyr::left_join(grav_post, by = "id")
+```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+  grav %>%
+    ggplot(aes(x = date_pre, y = wgt_blank_avg_pre)) +
+      geom_point(shape = 1) +
+      geom_point(aes(x = date_post, y = wgt_blank_avg_post), shape = 1) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+    ylab("calibration weight") +
+    xlab("")
 ```
 
-* mass added
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged, 
-                               wgt_delta = wgt_post - wgt_pre)
+add pollutant
+
+```{r}
+  grav <-
+    grav %>%
+    dplyr::mutate(pol = "pm_mass") %>%
+    dplyr::select(id, val, qc, test_type, pol)
 ```
 
-* change in calibration weight
+# missing and bad data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(grav %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-* change in blank weight
+## table: tests with bad measurements
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("grav|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-* add pollutant variable `pol`
+## remove bad tests
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               pol = "grav")
+```{r}
+  grav_merged <-
+    grav %>% 
+    dplyr::filter(qc != "bad")
 ```
 
-# QC
+# blank analysis 
 
-* extract notes for gravimetric data
+extract blanks
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", inst) == TRUE)
+```{r}
+  blanks <-
+    grav_merged %>%
+    dplyr::filter(test_type == "blank")
 ```
 
-* mark `bad` tests
+## table: lab blank outliers
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes$qc[33] <- "bad"
-  notes$qc[34] <- "bad"
+outliers (z > 3) when blanks are grouped by pollutant and filter type
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+conclusions: 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+* possibly investiage B18
+
+## plot: time series of lab blanks
+
+lab blanks (ug)
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+ blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc), size = 4, shape = 1, stroke = 2) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      ylab("micrograms")
 ```
 
-* merge
+conclusions: 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+* blanks look good!
+* no obvious trends in time.
+
+## table: lab blanks with NA values
+
+percent of lab blanks with NA values
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-Additional bad tests
+## table: blank summary
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged$qc[grav_merged$id == "28A"] <- "bad"
-  grav_merged$qc[grav_merged$id == "28B"] <- "bad"
-  grav_merged$qc[grav_merged$id == "29A"] <- "bad"
+summarize blanks
+
+```{r}
+  blanks <-
+    blanks %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     lod = stdev * 3 + mean,
+                     loq = stdev * 10 + mean)
 ```
 
-# LOD/LOQ
+summary of lab blanks (ug)
 
-* remove backgrounds and bad data then calculate the limit of detection and quantification
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  signal <- dplyr::filter(grav_merged, type == "test", qc != "bad") %>%
-            dplyr::summarise(lod = sd(wgt_blank_delta) * 3 - mean(wgt_blank_delta),
-                             loq = sd(wgt_blank_delta) * 10 - mean(wgt_blank_delta))
+```{r, echo=FALSE}
+  blanks %>%
+    knitr::kable(digits = 2, align = 'c')
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_var <- signal$lod[1]
-  loq_var <- signal$loq[1]
+## save blanks
+
+```{r}
+  saveRDS(blanks, file = "../../r_data/grav_lod.RDS")
 ```
 
-The LOD is `r lod_var`, the LOQ is `r loq_var`.
+remove lab blanks from merged file
 
-* flag the measurements
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
-                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::filter(test_type != "blank") # remove blanks
 ```
 
-# Background analysis
+add lod variable
 
-* extract background data
-* remove missing data
-* calculate average concentration emitted ( and other stats)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav_merged, type == "bg", qc == "ok") %>%
-        dplyr::select(id, flow,
-                         start, end,
-                         wgt_delta) %>%
-        na.omit() %>%
-        dplyr::mutate(dur = (end - start) / 60,
-                      conc = wgt_delta * 1000 / (flow * dur)) %>%
-        dplyr::summarise(conc_bg = mean(conc),
-                         sd = sd(conc),
-                         min = min(conc),
-                         max = max(conc),
-                         n = n()) %>%
-        dplyr::mutate(type = factor("test", levels_type))
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::mutate(lod = ifelse(val <= blanks$lod, "below", "above"),
+                  val = ifelse(val <= blanks$lod, blanks$lod / sqrt(2), val))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg, "markdown", digits = 2)
+# concentration calculations
+
+## extract data
+
+extract flow rate data and average
+
+```{r}
+  flows <- 
+    flows %>%
+    dplyr::select(-date) %>%
+    dplyr::filter(colour == "white") %>%
+    dplyr::group_by(id, type, colour) %>%
+    dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+    dplyr::group_by(id, colour) %>%
+    dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+    dplyr::select(-colour)
 ```
 
-* add background to main dataframe
+extract time data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  dplyr::select(bg, type, conc_bg),
-                                                by = "type")
+```{r}
+  times <-
+    times %>%
+    dplyr::select(-date) %>%
+    dplyr::filter(color == "white") %>%
+    tidyr::spread(type, value) %>%
+    dplyr::select(-color)
 ```
 
-# Summary
+## merge and calculate
 
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no $Gravimetric$ data for tests: `r setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+merge data with flows and times
 
-Gravimetric data is expected to be missing for: 17A only. Filter ruptured so could not be post-weighed. 
-
-# Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(grav_merged, file = "../r_files/grav_merged.RDS")
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::left_join(flows, by = "id") %>%
+    dplyr::left_join(times, by = "id")
 ```
 
-# Plots
+calculate concentrations
 
-## weights
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav_merged, grepl("^[0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color = loq)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[1][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color = loq)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[2-3][0-9][A-Z]", id)==TRUE),
-         aes(id, wgt_delta, color = loq)) +
-  geom_point() +
-  theme_minimal()
-  
-  ggplot(dplyr::filter(grav_merged, grepl("^[G]", id)==TRUE),
-         aes(id, wgt_delta, color = loq)) +
-  geom_point() +
-  theme_minimal()
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::mutate(dur = (end - start) / 60,
+                  val = val * 1000 / (flow * dur))
 ```
 
-## calibration
+# backgrounds
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_cal_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Cal weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+extract background pufs (front and back) and background filters
+
+```{r}
+  bg <-
+    grav_merged %>%
+    dplyr::filter(test_type == "bg")
 ```
 
-## blanks
+## plot: lab background outliers
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_blank_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Blanks weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+
+```{r pah_bg_plot, echo=FALSE, fig.height = 8}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+conclusions: 
+
+* background to invesigate: G7 (filter weights possibly switched)
+
+## plot: time series of lab backgrounds
+
+background concentrations (ug per meter cubed)
+
+* shape indicates if sample was above or below instrument lod
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 12}
+ bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 4, stroke = 2) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions: 
+
+* Check G7 (filter out for now)
+
+remove G7
+
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::filter(id != "G7")
+
+  bg <-
+    bg %>%
+    dplyr::filter(id != "G7")
+```
+
+## table: lab backgrounds below lod for chemical analysis
+
+percent of lab backgrounds below the lod of chemical analysis
+
+```{r}
+  bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: lab backgrounds with NA values
+
+percent of lab backgrounds with NA values
+
+```{r}
+  bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: background summary
+
+summarize backgrounds
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+summary of backgrounds (ug per meter cubed)
+
+```{r}
+  bg %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../r_data/grav_bg.RDS")
+```
+
+
+# sample analysis
+
+extract sample pufs (front and back) and sample filters
+
+```{r}
+  grav_samples <-
+    grav_merged %>%
+    dplyr::filter(test_type == "test")
+```
+
+```{r}
+  grav_samples <-
+    grav_samples %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
+
+## plot: time series of burns
+
+burn concentrations (ug per meter cubed)
+
+* samples are not background corrected
+* shape indicates if sample was above or below instrument lod
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 14}
+ grav_samples %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 4, stroke = 2) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions:
+
+* burns look good! 
+* no obvious trends in time
+
+## plot: comparing background and sample concentrations
+
+test and background concentrations (ug per meter cubed)
+
+* data is summed across all filter types
+* plotted and colored by test type
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 6}
+  grav_merged %>%
+    dplyr::group_by(id, test_type) %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 3, stroke = 2) +
+      theme_bw() +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      ylab("concentration") +
+      xlab("")
+```
+
+conclusions: 
+
+* some overlap between burn and background concentrations
+* need to investigate ways to account for background measurements (for now, subtract the median)
+
+```{r}
+  grav_samples <-
+    grav_samples %>%
+    dplyr::mutate(val = val - median)
+```
+
+## table: measurements below the background median
+
+percentage of test concentrations below background median
+
+```{r, echo=FALSE}
+  grav_samples %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## plot: PM concentrations by stove type
+
+concentrations (ug per meter cubed)
+
+* samples are background corrected
+
+```{r, echo=FALSE, fig.height = 6, fig.width = 16}
+  grav_samples_p <-
+    grav_samples %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "", .) %>%
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in justa",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg"),
+                  fuel = 
+                    fuel %>% 
+                    tolower,
+                  stovecat = 
+                    stovecat %>%
+                    forcats::fct_recode("insulated [improved] stoves" = "improved",
+                                        "insulated [improved] stoves" = "gasifiers",
+                                        "liquid-fuel stoves" = "advanced",
+                                        "traditional stoves" = "traditional"),
+                  fuelcat =
+                    fuelcat %>%
+                    forcats::fct_recode("liquid" = "advanced"))
+ grav_samples_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 4,  width = 0.2, stroke = 2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      facet_wrap(~fuelcat, ncol = 4, scales = "free") +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions: 
+
+* some liquid fuel stoves have NA values for pollutants of interest (would rerunning these samples at higher concentrations allow us to resolve values for these stoves?)
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  grav_samples_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("pah type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+conclusion:
+
+* no outliers. Looks good! 
+
+## plot: PM concentrations by fuel type
+
+concentrations (ug per meter cubed):
+
+* samples are background corrected
+
+```{r, echo=FALSE, fig.height = 6, fig.width = 16}
+  grav_samples_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 4,  width = 0.2, stroke = 2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_wrap(~fuelcat, ncol = 4, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions: 
+
+* some liquid fuel stoves have NA values for pollutants of interest (would rerunning these samples at higher concentrations allow us to resolve values for these stoves?)
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  grav_samples_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+conclusions: 
+
+* no repeat tests recommended
+
+## table: burns below lod for chemical analysis
+
+percent of burn samples below the lod
+
+```{r}
+  grav_samples %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: burns with NA values
+
+percent of burn samples with NA values
+
+```{r}
+  grav_samples %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## save data
+
+```{r}
+  saveRDS(grav_merged, file = "../../r_data/grav_merged.RDS")
 ```
