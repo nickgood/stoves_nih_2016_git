@@ -360,11 +360,15 @@ conclusions:
 
 ## table: measurements below the background median
 
+percentage of test concentrations below background concentration
+
 ```{r, echo=FALSE}
   ions_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(!is.na(conc), conc < 0) %>%
-    dplyr::select(id, pol, stove, fuel, conc) %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     dplyr::rename("ion type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```

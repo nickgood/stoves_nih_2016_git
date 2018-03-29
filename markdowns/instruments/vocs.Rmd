@@ -227,7 +227,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
   bg %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
-    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
@@ -369,7 +369,7 @@ conclusions:
 
 *
 
-## plot: comparing background and sample valentrations
+## plot: comparing background and sample concentrations
 
 test and background concentrations (ug per meter cubed)
 
@@ -406,7 +406,7 @@ percentage of test concentrations below background concentration
 ```{r, echo=FALSE}
   vocs_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::select(id, pol, stove, fuel, val) %>%
+    #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%

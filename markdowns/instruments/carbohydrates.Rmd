@@ -1,5 +1,5 @@
 ---
-title: "Process sugar data"
+title: "Process carbohyrate data"
 output:
   html_document:
     toc: true
@@ -30,18 +30,18 @@ load scripts
 load data
 
 ```{r}
-  sugars <- readRDS("../../r_data/ions.RDS")
+  carbohyrates <- readRDS("../../r_data/ions.RDS")
   flows <- readRDS("../../r_data/filter_flows.RDS")
   times <- readRDS("../../r_data/filter_times.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
 ```
 
-## extract sugars 
+## extract carbohyrates 
 
 ```{r}
-  sugars <- 
-    sugars %>%
+  carbohyrates <- 
+    carbohyrates %>%
     dplyr::select(2:13, type, id) %>%
     dplyr::filter(type == "test" | type == "bg")
 ```
@@ -51,8 +51,8 @@ load data
 * convert to long format
 
 ```{r}
-  sugars <- 
-    sugars %>%
+  carbohyrates <- 
+    carbohyrates %>%
     tidyr::gather("pol", "val",
                   -id, -type) %>%
     dplyr::filter(!is.na(pol)) %>%
@@ -85,8 +85,8 @@ load data
 * add flag by id
 
 ```{r}
-  sugars <-
-    sugars %>%
+  carbohyrates <-
+    carbohyrates %>%
     dplyr::left_join(flags, by = "id") %>%
     dplyr::mutate(id = as.factor(id)) %>%
     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
@@ -97,8 +97,8 @@ load data
 define test type variable
 
 ```{r}
-  sugars <- 
-    sugars %>%
+  carbohyrates <- 
+    carbohyrates %>%
     dplyr::rename("test_type" = "type")
 ```
 
@@ -108,7 +108,7 @@ define test type variable
 
 ```{r, echo = FALSE}
   dplyr::select(samples, id, stove, fuel) %>%
-    dplyr::anti_join(sugars %>%
+    dplyr::anti_join(carbohyrates %>%
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
@@ -128,8 +128,8 @@ define test type variable
 ## remove bad tests
 
 ```{r}
-  sugars_merged <-
-    sugars %>% 
+  carbohyrates_merged <-
+    carbohyrates %>% 
     dplyr::filter(qc != "bad")
 ```
 
@@ -167,8 +167,8 @@ extract time data
 merge data with flows and times
 
 ```{r}
-  sugars_merged <-
-    sugars_merged %>%
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
     dplyr::left_join(flows, by = "id") %>%
     dplyr::left_join(times, by = "id")
 ```
@@ -176,8 +176,8 @@ merge data with flows and times
 calculate concentrations
 
 ```{r}
-  sugars_merged <-
-    sugars_merged %>%
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
                   conc = val * 1000 / (flow * dur))
 ```
@@ -188,7 +188,7 @@ extract background pufs (front and back) and background filters
 
 ```{r}
   bg <-
-    sugars_merged %>%
+    carbohyrates_merged %>%
     dplyr::filter(test_type == "bg")
 ```
 
@@ -204,7 +204,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -218,7 +218,7 @@ background concentrations (ug per meter cubed)
 
 * shape indicates if sample was above or below instrument lod
 
-```{r sugars_bg_timeseries, echo=FALSE, fig.height = 10, fig.width =12}
+```{r carbohyrates_bg_timeseries, echo=FALSE, fig.height = 10, fig.width =12}
  bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -247,7 +247,7 @@ percent of lab backgrounds with NA values
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -283,7 +283,7 @@ summary of backgrounds (ug per meter cubed)
 ## save backgrounds
 
 ```{r}
-  saveRDS(bg, file = "../../r_data/sugars_bg.RDS")
+  saveRDS(bg, file = "../../r_data/carbohydrates_bg.RDS")
 ```
 
 
@@ -292,14 +292,14 @@ summary of backgrounds (ug per meter cubed)
 extract burn data
 
 ```{r}
-  sugars_samples <-
-    sugars_merged %>%
+  carbohyrates_samples <-
+    carbohyrates_merged %>%
     dplyr::filter(test_type == "test")
 ```
 
 ```{r}
-  sugars_samples <-
-    sugars_samples %>%
+  carbohyrates_samples <-
+    carbohyrates_samples %>%
     dplyr::left_join(bg, by = c("pol"))
 ```
 
@@ -309,8 +309,8 @@ burn concentrations (ug per meter cubed)
 
 * samples are not background corrected
 
-```{r sugars_samples_timeseries, echo=FALSE, fig.height = 10, fig.width = 12}
- sugars_samples %>%
+```{r carbohyrates_samples_timeseries, echo=FALSE, fig.height = 10, fig.width = 12}
+ carbohyrates_samples %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "conc")) +
@@ -333,8 +333,8 @@ conclusions:
 
 test and background concentrations (ug per meter cubed)
 
-```{r sugars_test_bg_conc, echo=FALSE, fig.height = 10, fig.width = 12}
-  sugars_merged %>%
+```{r carbohyrates_test_bg_conc, echo=FALSE, fig.height = 10, fig.width = 12}
+  carbohyrates_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
     ggplot(aes_string(y = "conc", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
@@ -353,19 +353,23 @@ conclusions:
 * need to investigate ways to account for background measurements (for now, subtract the median)
 
 ```{r}
-  sugars_samples <-
-    sugars_samples %>%
+  carbohyrates_samples <-
+    carbohyrates_samples %>%
     dplyr::mutate(conc = conc - median)
 ```
 
 ## table: measurements below the background median
 
+percentage of test concentrations below background concentration
+
 ```{r, echo=FALSE}
-  sugars_samples %>%
+  carbohyrates_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(!is.na(conc), conc < 0) %>%
-    dplyr::select(id, pol, stove, fuel, conc) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::rename("carbohydrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -375,9 +379,9 @@ concentrations (ug per meter cubed)
 
 * samples are background corrected
 
-```{r sugars_stovetype, echo=FALSE, fig.height = 30, fig.width = 16}
-  sugars_samples_p <-
-    sugars_samples %>%
+```{r carbohyrates_stovetype, echo=FALSE, fig.height = 30, fig.width = 16}
+  carbohyrates_samples_p <-
+    carbohyrates_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
     dplyr::mutate(stove = 
                     stove %>% 
@@ -395,7 +399,7 @@ concentrations (ug per meter cubed)
                                          "pressure kerosene",
                                          "lpg"))
 
-  sugars_samples_p %>%
+  carbohyrates_samples_p %>%
     ggplot(aes_string(x = "stove", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
@@ -419,14 +423,14 @@ conclusions:
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
 ```{r, echo=FALSE}
-  sugars_samples_p %>%
+  carbohyrates_samples_p %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::group_by(pol, stove) %>%
     dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -442,8 +446,8 @@ concentrations (ug per meter cubed):
 * colored by stove type
 * samples are background corrected
 
-```{r sugars_fueltype, echo=FALSE, fig.height = 30, fig.width = 16}
-  sugars_samples_p %>%
+```{r carbohyrates_fueltype, echo=FALSE, fig.height = 30, fig.width = 16}
+  carbohyrates_samples_p %>%
     ggplot(aes_string(x = "fuel", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
@@ -467,14 +471,14 @@ conclusions:
 outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
-  sugars_samples_p %>%
+  carbohyrates_samples_p %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::group_by(pol, fuel) %>%
     dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
@@ -487,18 +491,18 @@ conclusions:
 percent of burn samples with NA values
 
 ```{r, echo=FALSE}
-  sugars_samples %>%
+  carbohyrates_samples %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(conc) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("sugar type" = "pol") %>%
+    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
 ## save data
 
 ```{r}
-  saveRDS(sugars_merged, file = "../../r_data/sugars_merged.RDS")
+  saveRDS(carbohyrates_merged, file = "../../r_data/carbohydrates_merged.RDS")
 ```
 
 # conclusions
