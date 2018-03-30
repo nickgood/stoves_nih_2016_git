@@ -131,7 +131,7 @@ plot calibration weight by date
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
     ylab("calibration weight") +
     xlab("")
@@ -147,9 +147,9 @@ plots scale room blank by date
       scale_shape(solid = FALSE) +
       guides(fill = FALSE) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-    ylab("calibration weight") +
+    ylab("blank filter weight") +
     xlab("")
 ```
 
