@@ -123,7 +123,7 @@ post-weights
 
 plot calibration weight by date
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+```{r pm_calibration_wgt_timeseries, echo=FALSE, fig.height = 4, fig.width = 8}
   grav %>%
     ggplot(aes(x = date_pre, y = wgt_cal_pre)) +
       geom_point(shape = 1) +
@@ -139,7 +139,7 @@ plot calibration weight by date
 
 plots scale room blank by date
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+```{r pm_wgtoom_filter_timeseries, echo=FALSE, fig.height = 4, fig.width = 8}
   grav %>%
     ggplot(aes(x = date_pre, y = wgt_blank_avg_pre)) +
       geom_point(shape = 1) +
