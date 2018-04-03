@@ -116,7 +116,7 @@ load_ecoc_file <- function(file){
   # determine filter id (a, e or NA)
   ecoc <- dplyr::mutate(ecoc,
                         cassette = as.character(ecoc_id),
-                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$|2016-01-22|2016-02-15|2016-3-9",
+                        cassette = sub("^A-2016-2-15$|^E-2016-2-2 B9-BA$|^G 06-07-2016$|A-2016-01-22 B5-BA|C-2016-1-22 B7-BA|2016-02-15|2016-3-9",
                                    NA, cassette),
                         cassette = sub("^30A-3$", "e", cassette),
                         cassette = sub(".*-A.*|.*[0-9]A$", "a", cassette),
