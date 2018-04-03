@@ -225,7 +225,7 @@ conclusions:
 
 lab blanks (ug)
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 8}
+```{r pm_blank_timeseries, echo=FALSE, fig.height = 4, fig.width = 8}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
@@ -362,7 +362,7 @@ extract background pufs (front and back) and background filters
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
-```{r pah_bg_plot, echo=FALSE, fig.height = 8}
+```{r echo=FALSE, fig.height = 8}
   bg %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
@@ -382,7 +382,7 @@ background concentrations (ug per meter cubed)
 
 * shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 12}
+```{r pm_bg_timeseries, echo=FALSE, fig.height = 4, fig.width = 12}
  bg %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -496,7 +496,7 @@ burn concentrations (ug per meter cubed)
 * samples are not background corrected
 * shape indicates if sample was above or below instrument lod
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 14}
+```{r pm_samples_timeseries, echo=FALSE, fig.height = 4, fig.width = 14}
  grav_samples %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -521,10 +521,7 @@ conclusions:
 
 test and background concentrations (ug per meter cubed)
 
-* data is summed across all filter types
-* plotted and colored by test type
-
-```{r, echo=FALSE, fig.height = 4, fig.width = 6}
+```{r pm_test_bg_conc, echo=FALSE, fig.height = 4, fig.width = 6}
   grav_merged %>%
     dplyr::group_by(id, test_type) %>%
     dplyr::filter(!is.na(val)) %>%
@@ -572,7 +569,7 @@ concentrations (ug per meter cubed)
 
 * samples are background corrected
 
-```{r, echo=FALSE, fig.height = 6, fig.width = 16}
+```{r pm_stovetype, echo=FALSE, fig.height = 6, fig.width = 16}
   grav_samples_p <-
     grav_samples %>%
     dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
@@ -595,12 +592,6 @@ concentrations (ug per meter cubed)
                   fuel = 
                     fuel %>% 
                     tolower,
-                  stovecat = 
-                    stovecat %>%
-                    forcats::fct_recode("insulated [improved] stoves" = "improved",
-                                        "insulated [improved] stoves" = "gasifiers",
-                                        "liquid-fuel stoves" = "advanced",
-                                        "traditional stoves" = "traditional"),
                   fuelcat =
                     fuelcat %>%
                     forcats::fct_recode("liquid" = "advanced"))
@@ -635,7 +626,6 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("pah type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -649,7 +639,7 @@ concentrations (ug per meter cubed):
 
 * samples are background corrected
 
-```{r, echo=FALSE, fig.height = 6, fig.width = 16}
+```{r pm_fueltype, echo=FALSE, fig.height = 6, fig.width = 16}
   grav_samples_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
@@ -714,5 +704,5 @@ percent of burn samples with NA values
 ## save data
 
 ```{r}
-  saveRDS(grav_merged, file = "../../r_data/grav_merged.RDS")
+  saveRDS(grav_merged, file = "../../r_data/pm_merged.RDS")
 ```

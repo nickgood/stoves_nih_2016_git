@@ -223,7 +223,7 @@ background concentrations (ug per meter cubed)
 
 * shape indicates if sample was above or below instrument lod
 
-```{r carbs_bg_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
+```{r carbonyls_bg_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
  bg %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -316,7 +316,7 @@ burn concentrations (ug per meter cubed)
 
 * samples are not background corrected
 
-```{r carbs_samples_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
+```{r carbonyls_samples_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
  carbs_samples %>%
     dplyr::filter(!is.na(conc)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -341,7 +341,7 @@ conclusions:
 
 test and background concentrations (ug per meter cubed)
 
-```{r carbs_test_bg_conc, echo=FALSE, fig.height = 16, fig.width = 16}
+```{r carbonyls_test_bg_conc, echo=FALSE, fig.height = 16, fig.width = 16}
   carbs_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
     ggplot(aes_string(y = "conc", x = "test_type")) +
@@ -388,7 +388,7 @@ carbonyl concentrations (ug per meter cubed)
 
 * samples are background corrected
 
-```{r carbs_stovetype, echo=FALSE, fig.height = 50, fig.width = 16}
+```{r carbonyls_stovetype, echo=FALSE, fig.height = 50, fig.width = 16}
   carbs_samples_p <-
     carbs_samples %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
@@ -455,7 +455,7 @@ carbonyl concentrations (ug per meter cubed):
 * colored by stove type
 * samples are background corrected
 
-```{r carbs_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
+```{r carbonyls_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
   carbs_samples_p %>%
     ggplot(aes_string(x = "fuel", y = "conc")) +
       geom_boxplot(outlier.colour = NA) +
