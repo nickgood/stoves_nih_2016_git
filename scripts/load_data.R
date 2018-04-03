@@ -133,7 +133,6 @@ load_ecoc_file <- function(file){
                          id = sub(".*P5-A$", "5", id),
                          id = sub(".*india.*", NA, id, ignore.case = TRUE),
                          id = sub(".*blank.*|.*start.*", "system_blank", id, ignore.case = TRUE),
-                         id = sub("^BG.*|.*BQ.*|^BK.*|.*BA$", "lab_blank", id),
                          id = gsub("^P.*", NA, id),
                          id = sub("-[0-9]$", "", id),
                          id = sub("-[A-Z] [A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$", "", id),
@@ -143,7 +142,10 @@ load_ecoc_file <- function(file){
                          id = sub("^[A-Z]-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
                          id = sub("^[A-Z] [0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
                          id = sub("^[A-Z]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9] ", "", id),
-                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id))
+                         id = sub("^[A-Z] [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ", "", id),
+                         id = sub("H-8-8-16 ", "", id),
+                         id = sub("B-206-3-4 ", "", id),
+                         id = sub("-BQ.*|-BA.*", "", id))
 
   # rename columns
   names(ecoc) <- gsub("\\.$", "", colnames(ecoc))
