@@ -18,8 +18,11 @@ output:
 # define qc color scheme
 
 ```{r}
-  qc_colors <- tibble::data_frame(qc = c("ok", "maybe", "bad"),
-                                  color= c("#009E73", "#56B4E9", "#E69F00"))
+  colors <- tibble::data_frame(qc = c("ok", "maybe", "bad"),
+                               color= c("#009E73", "#56B4E9", "#E69F00"))
+
+  qc_colors <- colors$color
+  names(qc_colors) <- colors$qc
 
   saveRDS(qc_colors, file = "../../r_data/qc_colors.RDS")
 ```
@@ -27,9 +30,12 @@ output:
 # define lod shape scheme
 
 ```{r}
-  lod_shape <- tibble::data_frame(lod = c("above", "below"),
-                                  color= c(16, 17))
+  shapes <- tibble::data_frame(lod = c("above", "below"),
+                               shape = c(16, 17))
 
-  saveRDS(lod_shape, file = "../../r_data/lod_shape.RDS")
+  lod_shapes <- shapes$shape
+  names(lod_shapes) <- shapes$lod
+
+  saveRDS(lod_shapes, file = "../../r_data/lod_shapes.RDS")
 ```
 
