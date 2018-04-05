@@ -12,8 +12,7 @@ output:
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', 
-                        fig.width = 12, fig.height = 5,
+  knitr::opts_chunk$set(fig.path ='figures/',
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -38,6 +37,14 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
 ```
 
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
+```
+
+
 ## fix incorrect ids
 
 ```{r}
@@ -54,7 +61,7 @@ load data
 
 ## flags
 
-* extract flags
+extract flags
 
 ```{r}
   notes <- 
@@ -62,7 +69,7 @@ load data
     dplyr::filter(grepl("ecoc|all", inst) == TRUE)
 ```
 
-* bad preceeds maybe preceeds good
+bad preceeds maybe preceeds good
 
 ```{r}
   flags <-
@@ -73,7 +80,7 @@ load data
     dplyr::summarise(qc = first(qc))
 ```
 
-* add flag by id
+add flag by id
 
 ```{r}
   ecoc <-
@@ -90,7 +97,6 @@ define test type variable
 ```{r}
   ecoc <- 
     ecoc %>%
-    
     dplyr::mutate(test_type = ifelse(grepl("^[0-9]", id), "test", "bg"),
                   test_type = ifelse(grepl("^B", id), "blank", test_type)) %>%
     dplyr::filter(!grepl("MC", id))
@@ -102,14 +108,14 @@ define test type variable
 
 ```{r, echo = FALSE}
   dplyr::select(samples, id, stove, fuel) %>%
-    dplyr::anti_join(ecoc %>%
+  dplyr::anti_join(ecoc %>%
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: tests with bad measurements
+## table: bad data
 
 ```{r, echo=FALSE}
   notes %>%
@@ -142,8 +148,6 @@ define test type variable
 
 # blank analysis 
 
-extract blanks
-
 ```{r}
   blanks <-
     ecoc_merged %>%
@@ -152,7 +156,7 @@ extract blanks
 
 ## table: lab blank outliers
 
-outliers (z > 3) when blanks are grouped by pollutant and filter type
+outliers (z > 3) when blanks are grouped by pollutant
 
 ```{r, echo=FALSE}
   blanks %>%
@@ -170,24 +174,21 @@ conclusions:
 
 lab blanks (ug)
 
-```{r ecoc_blank_timeseries, echo=FALSE, fig.height = 6, fig.width = 8}
+```{r ecoc_blank_timeseries}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(color = qc), size = 2) +
-      guides(fill = FALSE) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 16),
             legend.position = "top") +
       facet_wrap(~pol, scales = "free", ncol = 1) +
-      ylab("micrograms")
+      ylab("mass (micrograms)")
 ```
 
 conclusions: 
-
-* blanks look good!
-* no obvious trends in time.
 
 ## table: lab blanks with NA values
 
@@ -255,8 +256,6 @@ add lod variable
 
 extract flow rate data and average
 
-* match cassette flows to id
-
 ```{r}
  flows <- 
   flows %>%
@@ -313,11 +312,11 @@ extract background and remove any data with no cassette
     dplyr::filter(test_type == "bg", grepl("a|e", cassette))
 ```
 
-## plot: lab background outliers
+## table: lab background outliers
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
-```{r pah_bg_plot, echo=FALSE, fig.height = 8}
+```{r, echo=FALSE}
   bg %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
@@ -330,27 +329,21 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
 conclusions: 
 
-* no backgrounds to investigate
-
 ## plot: time series of lab backgrounds
 
-background concentrations (ug per meter cubed)
-
-* shape indicates if sample was above or below instrument lod
-
-```{r ecoc_bg_timeseries, echo=FALSE, fig.height = 6, fig.width = 12}
+```{r ecoc_bg_timeseries, echo=FALSE}
   bg %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 4, stroke = 2) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 16),
             legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
-      ylab("concentration") +
+      ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
@@ -360,7 +353,7 @@ conclusions:
 
 percent of lab backgrounds below the lod of chemical analysis
 
-```{r}
+```{r, echo=FALSE}
   bg %>%
     dplyr::group_by(pol, cassette) %>%
     dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
@@ -372,7 +365,7 @@ percent of lab backgrounds below the lod of chemical analysis
 
 percent of lab backgrounds with NA values
 
-```{r}
+```{r, echo=FALSE}
   bg %>%
     dplyr::group_by(pol, cassette) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
@@ -380,9 +373,7 @@ percent of lab backgrounds with NA values
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: background summary
-
-summarize backgrounds
+## summarize backgrounds
 
 ```{r}
   bg <-
@@ -402,9 +393,9 @@ summarize backgrounds
                   count = ifelse(is.nan(count), NA, count))
 ```
 
-summary of backgrounds (ug per meter cubed)
+## table: background summary
 
-```{r}
+```{r, echo=FALSE}
   bg %>%
     knitr::kable(digits = 2, align = 'c')
 ```
@@ -415,8 +406,7 @@ summary of backgrounds (ug per meter cubed)
   saveRDS(bg, file = "../../r_data/ecoc_bg.RDS")
 ```
 
-
-# sample analysis
+# burn analysis
 
 remove bad tests
 
@@ -428,62 +418,47 @@ remove bad tests
 
 ## plot: time series of burns
 
-burn concentrations (ug per meter cubed)
-
-* samples are not background corrected
-* shape indicates if sample was above or below instrument lod
-
-```{r ecoc_samples_timeseries, echo=FALSE, fig.height = 6, fig.width = 14}
- ecoc_merged %>%
+```{r ecoc_burn_timeseries, echo=FALSE}
+  ecoc_merged %>%
     dplyr::filter(test_type == "test") %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 4, stroke = 2) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 16),
             legend.position = "top") +
       labs(shape = "lod") +
+      facet_wrap(pol~cassette, scales = "free", ncol = 2) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+conclusions: 6D and 8D have very high values, remove for now
+
+## plot: background and burn concentrations
+
+```{r ecoc_burn_bg_conc, echo=FALSE}
+  ecoc_merged %>%
+    dplyr::group_by(id, test_type) %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) +
+      theme_bw() +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
       ylab("concentration") +
       xlab("")
 ```
 
 conclusions:
-
-* 6D and 8D have very high values, remove for now
-
-## plot: comparing background and sample concentrations
-
-test and background concentrations (ug per meter cubed)
-
-* data is summed across all filter types
-* plotted and colored by test type
-
-```{r ecoc_test_bg_conc, echo=FALSE, fig.height = 8, fig.width = 10}
-  ecoc_merged %>%
-    dplyr::group_by(id, test_type) %>%
-    dplyr::filter(!is.na(val)) %>%
-    ggplot(aes_string(y = "val", x = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 3, stroke = 2) +
-      theme_bw() +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      scale_y_log10() +
-      theme(text = element_text(size = 20),
-            legend.position = "top") +
-      facet_wrap(pol~cassette, scales = "free", ncol = 2) +
-      ylab("concentration") +
-      xlab("")
-```
-
-conclusions: 
-
-* some overlap between burn and background concentrations
-* need to investigate ways to account for background measurements (for now, subtract the median)
 
 ## subtract background
 
@@ -506,9 +481,7 @@ conclusions:
     dplyr::select(-min, -max, -count, -mean, -median, -stdev)
 ```
 
-## table: measurements below the background median
-
-percentage of test concentrations below background median
+## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
   ecoc_merged %>%
@@ -537,13 +510,9 @@ percentage of test concentrations below background median
     dplyr::select(-artifact, -cassette)
 ```
 
-## plot: PM concentrations by stove type
+## plot: concentrations by stove type
 
-concentrations (ug per meter cubed)
-
-* samples are background corrected
-
-```{r ecoc_stovetype, echo=FALSE, fig.height = 10, fig.width = 16}
+```{r ecoc_stovetype, echo=FALSE, fig.width=10}
   ecoc_merged_p <-
     ecoc_merged %>%
     dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
@@ -573,22 +542,20 @@ concentrations (ug per meter cubed)
  ecoc_merged_p %>%
     ggplot(aes_string(x = "stove", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 4,  width = 0.2, stroke = 2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
       scale_y_log10() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 16),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
       facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
-      ylab("concentration") +
+      ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
 conclusions: 
-
-* some liquid fuel stoves have NA values for pollutants of interest (would rerunning these samples at higher concentrations allow us to resolve values for these stoves?)
 
 ## table: outliers by stove type
 
@@ -606,30 +573,24 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusion:
+conclusions:
 
-* no outliers. Looks good! 
+## plot: concentrations by fuel type
 
-## plot: PM concentrations by fuel type
-
-concentrations (ug per meter cubed):
-
-* samples are background corrected
-
-```{r ecoc_fueltype, echo=FALSE, fig.height = 10, fig.width = 16}
+```{r ecoc_fueltype, echo=FALSE, fig.width=10}
   ecoc_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 4,  width = 0.2, stroke = 2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
       theme_bw() +
       scale_y_log10() +
-      theme(text = element_text(size = 20),
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme(text = element_text(size = 16),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
       facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
-      ylab("concentration") +
+      ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
@@ -652,13 +613,11 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 conclusions: 
 
-* no repeat tests recommended
-
 ## table: burns below lod for chemical analysis
 
 percent of burn samples below the lod
 
-```{r}
+```{r, echo=FALSE}
   ecoc_merged %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
@@ -670,7 +629,7 @@ percent of burn samples below the lod
 
 percent of burn samples with NA values
 
-```{r}
+```{r, echo=FALSE}
   ecoc_merged %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
