@@ -642,8 +642,7 @@ percent of burn samples with NA values
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::select(id, pol, val, lod, qc) %>%
-    dplyr::mutate(units = "micrograms per meter cubed")
+    dplyr::select(id, pol, val, dur, lod, qc)
 
   saveRDS(ecoc_merged, file = "../../r_data/ecoc_merged.RDS")
 ```
