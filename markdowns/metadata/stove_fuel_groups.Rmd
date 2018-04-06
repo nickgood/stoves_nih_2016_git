@@ -93,7 +93,7 @@ output:
                                "traditional stoves" = c("clay ring",
                                                         "three stone fire",
                                                         "ceramic charcoal"),
-                               "insulated [improved] stoves" = c("fan rocket elbow",
+                               "improved stoves" = c("fan rocket elbow",
                                                                  "metal charcoal",
                                                                  "rocket elbow",
                                                                  "built-in justa",
