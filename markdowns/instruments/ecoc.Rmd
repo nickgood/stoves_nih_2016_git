@@ -44,7 +44,6 @@ load schemes
   lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
-
 ## fix incorrect ids
 
 ```{r}
@@ -516,28 +515,7 @@ conclusions:
   ecoc_merged_p <-
     ecoc_merged %>%
     dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "", .) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
-                                         "gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"),
-                  fuel = 
-                    fuel %>% 
-                    tolower,
-                  fuelcat =
-                    fuelcat %>%
-                    forcats::fct_recode("liquid" = "advanced"))
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  ecoc_merged_p %>%
     ggplot(aes_string(x = "stove", y = "val")) +
