@@ -540,7 +540,6 @@ conclusions:
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      facet_wrap(~fuelcat, ncol = 4, scales = "free") +
       theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
