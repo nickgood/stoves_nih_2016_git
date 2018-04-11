@@ -13,7 +13,6 @@ output:
 
 ```{r global_options, echo=FALSE}
   knitr::opts_chunk$set(fig.path ='figures/', 
-                        fig.width = 12, fig.height = 5,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -37,6 +36,13 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
 ```
 
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
+```
+
 ## extract carbonyls 
 
 ```{r}
@@ -48,7 +54,7 @@ load data
 
 ## reformat
 
-* convert to long format
+convert to long format
 
 ```{r}
   carbs <- 
@@ -63,7 +69,7 @@ load data
 
 ## flags
 
-* extract flags
+extract flags
 
 ```{r}
   notes <- 
@@ -71,7 +77,7 @@ load data
     dplyr::filter(grepl("carb|carbonyl|carbonyls|all", inst) == TRUE)
 ```
 
-* bad preceeds maybe preceeds good
+bad preceeds maybe preceeds good
 
 ```{r}
   flags <-
@@ -82,7 +88,7 @@ load data
     dplyr::summarise(qc = first(qc))
 ```
 
-* add flag by id
+add flag by id
 
 ```{r}
   carbs <-
@@ -115,7 +121,7 @@ define test type variable
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: tests with bad measurements
+## table: bad data
 
 ```{r, echo=FALSE}
   notes %>%
@@ -125,7 +131,7 @@ define test type variable
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions: 
+notes: 
 
 * 29A and 29B - no repeat
 * 16B - no repeat
@@ -173,9 +179,22 @@ merge data with flows and times
 ```{r}
   carbs_merged <-
     carbs_merged %>%
-    dplyr::filter(test_type != "blank") %>%
     dplyr::left_join(flows, by = "id") %>%
     dplyr::left_join(times, by = "id")
+```
+
+## flag filters below lod
+
+define lod
+
+```{r}
+  lod <- 0.1 # micrograms per cubic meter
+```
+
+```{r}
+  carbs_merged <- 
+    carbs_merged %>%
+    dplyr::mutate(lod = ifelse(is.na(val), "below", "above"))
 ```
 
 calculate concentrations
@@ -184,12 +203,24 @@ calculate concentrations
   carbs_merged <-
     carbs_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val * 1000 / (flow * dur))
+                  val = val * 1000 / (flow * dur))
+```
+
+replace NA values with lod / sqrt(2)
+
+```{r}
+  carbs_merged <- 
+    carbs_merged %>%
+    dplyr::mutate(val = ifelse(grepl("below", lod), 0.1 / sqrt(2), val))
+```
+
+## save lod
+
+```{r}
+  saveRDS(lod, file = "../../r_data/carbonyls_lod.RDS")
 ```
 
 # backgrounds
-
-extract background pufs (front and back) and background filters
 
 ```{r}
   bg <-
@@ -199,43 +230,37 @@ extract background pufs (front and back) and background filters
 
 ## plot: lab background outliers
 
-outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+outliers (z > 3) when backgrounds are grouped by pollutant
 
-```{r, echo=FALSE, fig.height = 8}
+```{r, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE)) / sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
     dplyr::rename("carbonyl type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
-
-* backgrounds look good - no backgrounds were outliers across pollutants
+conclusions:
 
 ## plot: time series of lab backgrounds
 
-background concentrations (ug per meter cubed)
-
-* shape indicates if sample was above or below instrument lod
-
-```{r carbonyls_bg_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
- bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+```{r carbonyls_bg_timeseries, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("") +
+      ylab("concentration (micrograms per meters cubed)") +
       xlab("")
 ```
 
@@ -245,17 +270,14 @@ conclusions:
 * backgrounds look good! 
 * no obvious trends in time
 
-## table: lab backgrounds with NA values
-
-percent of lab backgrounds with NA values
+## table: percent lab backgrounds with NA values
 
 ```{r, echo=FALSE}
   bg %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("carbonyl type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## table: background summary
@@ -266,11 +288,11 @@ summarize backgrounds
   bg <-
     bg %>%
     dplyr::group_by(pol) %>%
-    dplyr::summarise(mean = mean(conc, na.rm = TRUE),
-                     median = median(conc, na.rm = TRUE),
-                     stdev = sd(conc, na.rm = TRUE),
-                     min = min(conc, na.rm = TRUE),
-                     max = max(conc, na.rm = TRUE),
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
                      count = n()) %>%
     dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
                   median = ifelse(is.nan(median), NA, median),
@@ -293,42 +315,24 @@ summary of backgrounds (ug per meter cubed)
   saveRDS(bg, file = "../../r_data/carbonyls_bg.RDS")
 ```
 
-
-# sample analysis
-
-extract burn data
-
-```{r}
-  carbs_samples <-
-    carbs_merged %>%
-    dplyr::filter(test_type == "test")
-```
-
-```{r}
-  carbs_samples <-
-    carbs_samples %>%
-    dplyr::left_join(bg, by = c("pol"))
-```
+# burn analysis
 
 ## plot: time series of burns
 
-burn concentrations (ug per meter cubed)
-
-* samples are not background corrected
-
-```{r carbonyls_samples_timeseries, echo=FALSE, fig.height = 16, fig.width = 16}
- carbs_samples %>%
-    dplyr::filter(!is.na(conc)) %>%
+```{r carbonyls_samples_timeseries, echo=FALSE}
+ carbs_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("") +
+      ylab("concentrations (micrograms per cubic meter)") +
       xlab("")
 ```
 
@@ -337,23 +341,24 @@ conclusions:
 * o_tolualdehyde trend?
 * acetalaldehyde trend?
 
-## plot: comparing background and sample concentrations
+## plot: background and burn concentrations
 
-test and background concentrations (ug per meter cubed)
-
-```{r carbonyls_test_bg_conc, echo=FALSE, fig.height = 16, fig.width = 16}
+```{r carbonyls_test_bg_conc, echo=FALSE}
   carbs_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
-    ggplot(aes_string(y = "conc", x = "test_type")) +
+    ggplot(aes_string(y = "val", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3) +
-      theme_bw() +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       scale_y_log10() +
-      theme(text = element_text(size = 20),
+      theme_bw() +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      ylab("concentration") +
-      xlab("") + 
-      facet_wrap(~pol, ncol = 4, scales = "free")
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
+
 ```
 
 conclusions: 
@@ -361,157 +366,133 @@ conclusions:
 * some overlap between burn and background concentrations
 * need to investigate ways to account for background measurements (for now, subtract the median)
 
+extract burn data
+
 ```{r}
-  carbs_samples <-
-    carbs_samples %>%
-    dplyr::mutate(conc = conc - median)
+  carbs_merged <-
+    carbs_merged %>%
+    dplyr::filter(test_type == "test")
 ```
 
-## table: measurements below the background median
+```{r}
+  carbs_merged <-
+    carbs_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
 
-percentage of test concentrations below background concentration
+```{r}
+  carbs_merged <-
+    carbs_merged %>%
+    dplyr::mutate(val = val - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
-  carbs_samples %>%
+  carbs_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("carbonyl type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## plot: concentrations by stove type
 
-carbonyl concentrations (ug per meter cubed)
+```{r carbonyls_stovetype, echo=FALSE}
+  carbs_merged_p <-
+    carbs_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
-* samples are background corrected
-
-```{r carbonyls_stovetype, echo=FALSE, fig.height = 50, fig.width = 16}
-  carbs_samples_p <-
-    carbs_samples %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "", .) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
-                                         "gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"))
-
-  carbs_samples_p %>%
-    ggplot(aes_string(x = "stove", y = "conc")) +
+  carbs_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
 conclusions:
-
-* 
 
 ## table: outliers by stove type
 
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
 ```{r, echo=FALSE}
-  carbs_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  carbs_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, stove) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("carbonyl type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-conclusion:
-
-* no repeat tests recommended
-
-## plot: concentrations by fuel type
-
-carbonyl concentrations (ug per meter cubed):
-
-* plotted by fuel type
-* colored by stove type
-* samples are background corrected
-
-```{r carbonyls_fueltype, echo=FALSE, fig.height = 50, fig.width = 16}
-  carbs_samples_p %>%
-    ggplot(aes_string(x = "fuel", y = "conc")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
-            legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
-      xlab("")
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 conclusions: 
 
-* 
+## plot: concentrations by fuel type
+
+```{r carbonyls_fueltype, echo=FALSE}
+  carbs_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
+```
+
+conclusions: 
 
 ## table: outliers by fuel type
 
 outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
-  carbs_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  carbs_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, fuel) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("carbonyl type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+conclusions: 1A seems to be a consistent outlier across pollutants
 
-* 1A seems to be a consistent outlier across pollutants
-
-## table: burns with NA values
-
-percent of burn samples with NA values
+## table: percent of burns with NA values
 
 ```{r, echo=FALSE}
-  carbs_samples %>%
+  carbs_merged %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., is.na(conc) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    dplyr::rename("carbonyl type" = "pol") %>%
     knitr::kable("markdown", align = 'c')
 ```
 
 ## save data
 
 ```{r}
+  carbs_merged <-
+    carbs_merged %>%
+    dplyr::select(id, pol, val, dur, lod, qc)
+
   saveRDS(carbs_merged, file = "../../r_data/carbs_merged.RDS")
 ```
-
-# conclusions
