@@ -12,7 +12,8 @@ output:
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', 
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        fig.width = 8, fig.height = 8,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -347,8 +348,8 @@ conclusions:
   carbs_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 2) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       scale_y_log10() +
@@ -401,18 +402,19 @@ extract burn data
 
 ## plot: concentrations by stove type
 
-```{r carbonyls_stovetype, echo=FALSE}
+```{r carbonyls_stovetype, echo=FALSE, fig.height=25}
   carbs_merged_p <-
     carbs_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
   carbs_merged_p %>%
     ggplot(aes_string(x = "stove", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
+      scale_y_log10() +
       theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -442,14 +444,15 @@ conclusions:
 
 ## plot: concentrations by fuel type
 
-```{r carbonyls_fueltype, echo=FALSE}
+```{r carbonyls_fueltype, echo=FALSE, fig.height=25}
   carbs_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
-      geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
+      scale_y_log10() +
       theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
