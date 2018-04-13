@@ -12,8 +12,8 @@ output:
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', 
-                        fig.width = 12, fig.height = 5,
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        fig.width = 8, fig.height = 6,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -35,6 +35,13 @@ load data
   times <- readRDS("../../r_data/filter_times.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
+```
+
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
 ## extract carbohyrates 
@@ -173,18 +180,44 @@ merge data with flows and times
     dplyr::left_join(times, by = "id")
 ```
 
+## flag filters below lod
+
+define lod
+
+```{r}
+  lod <- 0.0001 # micrograms per cubic meter
+```
+
+```{r}
+  carbohyrates_merged <- 
+    carbohyrates_merged %>%
+    dplyr::mutate(lod = ifelse(is.na(val), "below", "above"))
+```
+
 calculate concentrations
 
 ```{r}
   carbohyrates_merged <-
     carbohyrates_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val * 1000 / (flow * dur))
+                  val = val * 1000 / (flow * dur))
+```
+
+replace NA values with lod / sqrt(2)
+
+```{r}
+  carbohyrates_merged <- 
+    carbohyrates_merged %>%
+    dplyr::mutate(val = ifelse(grepl("below", lod), 0.0001 / sqrt(2), val))
+```
+
+## save lod
+
+```{r}
+  saveRDS(lod, file = "../../r_data/carbonyls_lod.RDS")
 ```
 
 # backgrounds
-
-extract background pufs (front and back) and background filters
 
 ```{r}
   bg <-
@@ -196,11 +229,11 @@ extract background pufs (front and back) and background filters
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
-```{r, echo=FALSE, fig.height = 12}
+```{r, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
@@ -208,39 +241,29 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
-
-* backgrounds look good - no backgrounds were outliers across pollutants
+conclusions: backgrounds look good - no backgrounds were outliers across pollutants
 
 ## plot: time series of lab backgrounds
 
-background concentrations (ug per meter cubed)
-
-* shape indicates if sample was above or below instrument lod
-
-```{r carbohyrates_bg_timeseries, echo=FALSE, fig.height = 10, fig.width =12}
- bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+```{r carbohyrates_bg_timeseries, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 3, scales = "free") +
-      ylab("") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (micrograms per meters cubed)") +
       xlab("")
 ```
 
-conclusions: 
+conclusions:
 
-* 
-
-## table: lab backgrounds with NA values
-
-percent of lab backgrounds with NA values
+## table: percent of lab backgrounds with NA values
 
 ```{r, echo=FALSE}
   bg %>%
@@ -248,7 +271,7 @@ percent of lab backgrounds with NA values
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     dplyr::rename("carbohyrate type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## table: background summary
@@ -259,11 +282,11 @@ summarize backgrounds
   bg <-
     bg %>%
     dplyr::group_by(pol) %>%
-    dplyr::summarise(mean = mean(conc, na.rm = TRUE),
-                     median = median(conc, na.rm = TRUE),
-                     stdev = sd(conc, na.rm = TRUE),
-                     min = min(conc, na.rm = TRUE),
-                     max = max(conc, na.rm = TRUE),
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
                      count = n()) %>%
     dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
                   median = ifelse(is.nan(median), NA, median),
@@ -287,83 +310,74 @@ summary of backgrounds (ug per meter cubed)
 ```
 
 
-# sample analysis
-
-extract burn data
-
-```{r}
-  carbohyrates_samples <-
-    carbohyrates_merged %>%
-    dplyr::filter(test_type == "test")
-```
-
-```{r}
-  carbohyrates_samples <-
-    carbohyrates_samples %>%
-    dplyr::left_join(bg, by = c("pol"))
-```
+# burn analysis
 
 ## plot: time series of burns
 
-burn concentrations (ug per meter cubed)
-
-* samples are not background corrected
-
-```{r carbohyrates_samples_timeseries, echo=FALSE, fig.height = 10, fig.width = 12}
- carbohyrates_samples %>%
-    dplyr::filter(!is.na(conc)) %>%
+```{r carbohyrates_samples_timeseries, echo=FALSE}
+ carbohyrates_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 3, scales = "free") +
-      ylab("") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
 conclusions:
 
-*
-
 ## plot: comparing background and sample concentrations
 
-test and background concentrations (ug per meter cubed)
-
-```{r carbohyrates_test_bg_conc, echo=FALSE, fig.height = 10, fig.width = 12}
+```{r carbohyrates_test_bg_conc, echo=FALSE}
   carbohyrates_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
-    ggplot(aes_string(y = "conc", x = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3) +
-      theme_bw() +
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       scale_y_log10() +
-      theme(text = element_text(size = 20),
+      theme_bw() +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      ylab("concentration") +
-      xlab("") + 
-      facet_wrap(~pol, ncol = 4)
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
 ```
 
-conclusions: 
+conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
 
-* need to investigate ways to account for background measurements (for now, subtract the median)
+extract burn data
 
 ```{r}
-  carbohyrates_samples <-
-    carbohyrates_samples %>%
-    dplyr::mutate(conc = conc - median)
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
+    dplyr::filter(test_type == "test")
 ```
 
-## table: measurements below the background median
+```{r}
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
 
-percentage of test concentrations below background concentration
+```{r}
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
+    dplyr::mutate(val = val - median)
+```
+
+## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
-  carbohyrates_samples %>%
+  carbohyrates_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
@@ -375,42 +389,23 @@ percentage of test concentrations below background concentration
 
 ## plot: concentrations by stove type
 
-concentrations (ug per meter cubed)
+```{r carbohyrates_stovetype, echo=FALSE, fig.height=20}
+  carbohyrates_merged_p <-
+    carbohyrates_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
-* samples are background corrected
-
-```{r carbohyrates_stovetype, echo=FALSE, fig.height = 30, fig.width = 16}
-  carbohyrates_samples_p <-
-    carbohyrates_samples %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "", .) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
-                                         "gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"))
-
-  carbohyrates_samples_p %>%
-    ggplot(aes_string(x = "stove", y = "conc")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+  carbohyrates_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
@@ -423,86 +418,72 @@ conclusions:
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
 ```{r, echo=FALSE}
-  carbohyrates_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  carbohyrates_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, stove) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("carbohyrate type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 conclusion:
 
-* no repeat tests recommended
-
 ## plot: concentrations by fuel type
 
-concentrations (ug per meter cubed):
-
-* plotted by fuel type
-* colored by stove type
-* samples are background corrected
-
-```{r carbohyrates_fueltype, echo=FALSE, fig.height = 30, fig.width = 16}
-  carbohyrates_samples_p %>%
-    ggplot(aes_string(x = "fuel", y = "conc")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+```{r carbohyrates_fueltype, echo=FALSE, fig.height=20}
+  carbohyrates_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
-conclusions: 
-
-* 
+conclusions:
 
 ## table: outliers by fuel type
 
 outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
-  carbohyrates_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  carbohyrates_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, fuel) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("carbohyrate type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+conclusions:
 
-* 
-
-## table: burns with NA values
-
-percent of burn samples with NA values
+## table: percent of burns with NA values
 
 ```{r, echo=FALSE}
-  carbohyrates_samples %>%
+  carbohyrates_merged %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., is.na(conc) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     dplyr::rename("carbohyrate type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## save data
 
 ```{r}
+  carbohyrates_merged <-
+    carbohyrates_merged %>%
+    dplyr::select(id, pol, val, dur, lod, qc)
+
   saveRDS(carbohyrates_merged, file = "../../r_data/carbohydrates_merged.RDS")
 ```
-
-# conclusions
