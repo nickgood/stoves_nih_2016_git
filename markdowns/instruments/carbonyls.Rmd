@@ -333,7 +333,7 @@ summary of backgrounds (ug per meter cubed)
       theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("concentrations (micrograms per cubic meter)") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
@@ -359,7 +359,6 @@ conclusions:
             legend.position = "top") +
       ylab("concentration (micrograms per cubic meter)") +
       xlab("")
-
 ```
 
 conclusions: 
