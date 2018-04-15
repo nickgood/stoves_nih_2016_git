@@ -27,6 +27,8 @@ pollutant data
   pm <- readRDS("../../r_data/pm_merged.RDS")
   carbonyls <- readRDS("../../r_data/carbonyls_merged.RDS")
   carbohydrates <- readRDS("../../r_data/carbohydrates_merged.RDS")
+  ions <- readRDS("../../r_data/ions_merged.RDS")
+  vocs <- readRDS("../../r_data/vocs_merged.RDS")
 ```
 
 constants
@@ -42,9 +44,8 @@ constants
 ```{r}
   emissions <-
     ecoc %>%
-    dplyr::bind_rows(pm) %>%
-    dplyr::bind_rows(carbonyls) %>%
-    dplyr::bind_rows(carbohydrates)
+    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs)
+    
 ```
 
 # calculate additional metrics
@@ -64,5 +65,5 @@ constants
 ## save
 
 ```{r}
-  saveRDS(emissions, file = "../r_files/emissions.RDS")
+  saveRDS(emissions, file = "../../r_data/emissions.RDS")
 ```
