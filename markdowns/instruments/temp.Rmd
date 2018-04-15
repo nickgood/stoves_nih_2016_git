@@ -18,7 +18,7 @@ output:
 
 # tidy data
 
-# load data
+## load data
 
 ```{r}
   temp <- readRDS("../../r_data/temp.RDS")
@@ -34,7 +34,7 @@ convert to long format
                  dplyr::arrange(id)
 ```
 
-# filter NAs
+## filter NAs
 
 ```{r}
   temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
@@ -122,6 +122,16 @@ convert to long format
                                   temp_11a, temp_11b, temp_11c,
                                   temp_12a, temp_12b, temp_12c) %>%
                  dplyr::filter(grepl("^t_", loc) != TRUE)
+```
+
+## fix daylight savings issues
+
+```{r}
+  summer_time <- as.POSIXct("2016/03/13 02:00:00", tz = "MST") 
+  temp_merged <- dplyr::mutate(temp_merged,
+                               datetime = if_else(datetime > summer_time, (datetime + 60 * 60), datetime),
+                               datetime = as.POSIXct(datetime, origin = "1970-01-01"),
+                               time = if_else(datetime > summer_time, (time + 60 * 60), time))
 ```
 
 ## flags
