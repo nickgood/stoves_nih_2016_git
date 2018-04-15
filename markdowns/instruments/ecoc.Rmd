@@ -620,7 +620,8 @@ percent of burn samples with NA values
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc)
+    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::mutate(pol_category = "pm_mass")
 
   saveRDS(ecoc_merged, file = "../../r_data/ecoc_merged.RDS")
 ```

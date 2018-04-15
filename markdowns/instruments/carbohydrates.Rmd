@@ -483,7 +483,8 @@ conclusions:
 ```{r}
   carbohyrates_merged <-
     carbohyrates_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc)
+    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::mutate(pol_category = "carbohydrates")
 
   saveRDS(carbohyrates_merged, file = "../../r_data/carbohydrates_merged.RDS")
 ```

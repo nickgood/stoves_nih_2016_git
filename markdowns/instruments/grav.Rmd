@@ -629,7 +629,8 @@ conclusions:
 ```{r}
   grav_merged <-
     grav_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc)
+    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::mutate(pol_category = "pm_mass")
 
   saveRDS(grav_merged, file = "../../r_data/pm_merged.RDS")
 ```
