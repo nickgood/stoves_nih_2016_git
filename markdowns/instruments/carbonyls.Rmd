@@ -494,7 +494,8 @@ conclusions: 1A seems to be a consistent outlier across pollutants
 ```{r}
   carbs_merged <-
     carbs_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc)
+    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::mutate(pol_category = "carbonyls")
 
-  saveRDS(carbs_merged, file = "../../r_data/carbs_merged.RDS")
+  saveRDS(carbs_merged, file = "../../r_data/carbonyls_merged.RDS")
 ```
