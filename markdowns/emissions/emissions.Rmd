@@ -1,0 +1,68 @@
+---
+title: "Combine all pollutant data and calculate additional emissions metrics"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+pollutant data
+
+```{r}
+  ecoc <- readRDS("../../r_data/ecoc_merged.RDS")
+  pm <- readRDS("../../r_data/pm_merged.RDS")
+  carbonyls <- readRDS("../../r_data/carbonyls_merged.RDS")
+  carbohydrates <- readRDS("../../r_data/carbohydrates_merged.RDS")
+```
+
+constants
+
+```{r}
+  hood_flow <- readRDS("../../r_data/hood_flow.RDS")
+  mw_c <- readRDS("../../r_data/mw_c.RDS")
+  pol_properties <- readRDS("../../r_data/pol_properties.RDS")
+```
+
+# combine pollutants
+
+```{r}
+  emissions <-
+    ecoc %>%
+    dplyr::bind_rows(pm) %>%
+    dplyr::bind_rows(carbonyls) %>%
+    dplyr::bind_rows(carbohydrates)
+```
+
+# calculate additional metrics
+
+```{r}
+  emissions <- 
+    emissions %>%
+    dplyr::rename("conc" = "val") %>%
+    dplyr::left_join(pol_properties, by = "pol") %>%
+    dplyr::mutate(mass_emitted = conc * hood_flow * dur,
+                  mass_carbon = mass_emitted * (num_c * mw_c / mw)) %>%
+    dplyr::select(id, pol, conc, mass_emitted, mass_carbon, lod, qc) %>%
+    tidyr::gather("metric", "val", 3:5) %>%
+    dplyr::filter(!is.na(val))
+```
+
+## save
+
+```{r}
+  saveRDS(emissions, file = "../r_files/emissions.RDS")
+```

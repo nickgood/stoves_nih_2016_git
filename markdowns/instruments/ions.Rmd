@@ -37,6 +37,13 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
 ```
 
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
+```
+
 ## extract ions 
 
 ```{r}
@@ -48,7 +55,7 @@ load data
 
 ## reformat
 
-* convert to long format
+convert to long format
 
 ```{r}
   ions <- 
@@ -63,7 +70,7 @@ load data
 
 ## flags
 
-* extract flags
+extract flags
 
 ```{r}
   notes <- 
@@ -71,7 +78,7 @@ load data
     dplyr::filter(grepl("ions|all", inst) == TRUE)
 ```
 
-* bad preceeds maybe preceeds good
+bad preceeds maybe preceeds good
 
 ```{r}
   flags <-
@@ -112,7 +119,7 @@ define test type variable
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## table: tests with bad measurements
@@ -122,7 +129,7 @@ define test type variable
     dplyr::filter(grepl("ion|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## remove bad tests
@@ -173,18 +180,44 @@ merge data with flows and times
     dplyr::left_join(times, by = "id")
 ```
 
+## flag filters below lod
+
+define lod
+
+```{r}
+  lod <- 0.01 # micrograms per cubic meter
+```
+
+```{r}
+  ions_merged <- 
+    ions_merged %>%
+    dplyr::mutate(lod = ifelse(is.na(val), "below", "above"))
+```
+
 calculate concentrations
 
 ```{r}
   ions_merged <-
     ions_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  conc = val * 1000 / (flow * dur))
+                  val = val * 1000 / (flow * dur))
+```
+
+replace NA values with lod / sqrt(2)
+
+```{r}
+  ions_merged <- 
+    ions_merged %>%
+    dplyr::mutate(val = ifelse(grepl("below", lod), 0.01 / sqrt(2), val))
+```
+
+## save lod
+
+```{r}
+  saveRDS(lod, file = "../../r_data/ions_lod.RDS")
 ```
 
 # backgrounds
-
-extract background pufs (front and back) and background filters
 
 ```{r}
   bg <-
@@ -196,11 +229,11 @@ extract background pufs (front and back) and background filters
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
-```{r, echo=FALSE, fig.height = 12}
+```{r, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
@@ -208,29 +241,23 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
-
-* backgrounds look good - no backgrounds were outliers across pollutants
+conclusions:
 
 ## plot: time series of lab backgrounds
 
-background concentrations (ug per meter cubed)
-
-* shape indicates if sample was above or below instrument lod
-
-```{r ions_bg_timeseries, echo=FALSE, fig.height = 10, fig.width =12}
+```{r ions_bg_timeseries, echo=FALSE}
  bg %>%
-    dplyr::filter(!is.na(conc)) %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(~pol, ncol = 3, scales = "free") +
-      ylab("") +
+      ylab("concentration (micrograms per meters cubed)") +
       xlab("")
 ```
 
@@ -248,7 +275,7 @@ percent of lab backgrounds with NA values
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     dplyr::rename("ion type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## table: background summary
@@ -259,11 +286,11 @@ summarize backgrounds
   bg <-
     bg %>%
     dplyr::group_by(pol) %>%
-    dplyr::summarise(mean = mean(conc, na.rm = TRUE),
-                     median = median(conc, na.rm = TRUE),
-                     stdev = sd(conc, na.rm = TRUE),
-                     min = min(conc, na.rm = TRUE),
-                     max = max(conc, na.rm = TRUE),
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
                      count = n()) %>%
     dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
                   median = ifelse(is.nan(median), NA, median),
@@ -286,84 +313,72 @@ summary of backgrounds (ug per meter cubed)
   saveRDS(bg, file = "../../r_data/ions_bg.RDS")
 ```
 
-
-# sample analysis
+# burn analysis
 
 extract burn data
 
-```{r}
-  ions_samples <-
-    ions_merged %>%
-    dplyr::filter(test_type == "test")
-```
-
-```{r}
-  ions_samples <-
-    ions_samples %>%
-    dplyr::left_join(bg, by = c("pol"))
-```
-
-## plot: time series of burns
-
-burn concentrations (ug per meter cubed)
-
-* samples are not background corrected
-
-```{r ions_samples_timeseries, echo=FALSE, fig.height = 10, fig.width = 12}
- ions_samples %>%
-    dplyr::filter(!is.na(conc)) %>%
+```{r ion_samples_timeseries, echo=FALSE}
+ ions_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "conc")) +
-      geom_point(aes(color = qc), size = 4) +
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(~pol, ncol = 3, scales = "free") +
-      ylab("") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
 conclusions:
 
-*
-
 ## plot: comparing background and sample concentrations
 
-test and background concentrations (ug per meter cubed)
-
-```{r ions_test_bg_conc, echo=FALSE, fig.height = 10, fig.width = 12}
+```{r ions_test_bg_conc, echo=FALSE}
   ions_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
-    ggplot(aes_string(y = "conc", x = "test_type")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3) +
-      theme_bw() +
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       scale_y_log10() +
-      theme(text = element_text(size = 20),
+      theme_bw() +
+      facet_wrap(~pol, ncol = 3, scales = "free") +
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      ylab("concentration") +
-      xlab("") + 
-      facet_wrap(~pol, ncol = 3, scales = "free")
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
 ```
-
-conclusions: 
-
-* need to investigate ways to account for background measurements (for now, subtract the median)
 
 ```{r}
-  ions_samples <-
-    ions_samples %>%
-    dplyr::mutate(conc = conc - median)
+  ions_merged <-
+    ions_merged %>%
+    dplyr::filter(test_type == "test")
 ```
 
-## table: measurements below the background median
+```{r}
+  ions_merged <-
+    ions_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
 
-percentage of test concentrations below background concentration
+conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
+
+```{r}
+  ions_merged <-
+    ions_merged %>%
+    dplyr::mutate(val = val - median)
+```
+
+## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
-  ions_samples %>%
+  ions_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
@@ -375,42 +390,23 @@ percentage of test concentrations below background concentration
 
 ## plot: concentrations by stove type
 
-concentrations (ug per meter cubed)
+```{r ions_stovetype, echo=FALSE}
+  ions_merged_p <-
+    ions_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
-* samples are background corrected
-
-```{r ions_stovetype, echo=FALSE, fig.height = 30, fig.width = 16}
-  ions_samples_p <-
-    ions_samples %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    tolower %>%
-                    gsub(" [:(:].*[:):]", "", .) %>%
-                    forcats::fct_relevel("three stone fire",
-                                         "clay ring",
-                                         "ceramic charcoal",
-                                         "rocket elbow",
-                                         "built-in justa",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
-                                         "gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"))
-
-  ions_samples_p %>%
-    ggplot(aes_string(x = "stove", y = "conc")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+  ions_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
@@ -423,58 +419,47 @@ conclusions:
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
 ```{r, echo=FALSE}
-  ions_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  ions_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, stove) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    dplyr::rename("ion type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 conclusion:
 
-* no repeat tests recommended
-
 ## plot: concentrations by fuel type
 
-concentrations (ug per meter cubed):
-
-* plotted by fuel type
-* colored by stove type
-* samples are background corrected
-
-```{r ions_fueltype, echo=FALSE, fig.height = 30, fig.width = 16}
-  ions_samples_p %>%
-    ggplot(aes_string(x = "fuel", y = "conc")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
-      scale_shape(solid = FALSE) +
-      guides(fill = FALSE) +
+```{r ions_fueltype, echo=FALSE}
+  ions_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_boxplot(outlier.colour = NA, alpha = 0.0) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 20),
+      theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 1, scales = "free") +
-      ylab("") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
 conclusions: 
-
-* 
 
 ## table: outliers by fuel type
 
 outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
-  ions_samples_p %>%
-    dplyr::filter(!is.na(conc)) %>%
+  ions_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, fuel) %>%
-    dplyr::mutate(z_score = (conc - mean(conc, na.rm = TRUE))/ sd(conc, na.rm = TRUE)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, stove, fuel, z_score) %>%
     dplyr::filter(z_score > 3) %>%
@@ -491,18 +476,21 @@ conclusions:
 percent of burn samples with NA values
 
 ```{r, echo=FALSE}
-  ions_samples %>%
+  ions_merged %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., is.na(conc) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     dplyr::rename("ion type" = "pol") %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
 ## save data
 
 ```{r}
+  ions_merged <-
+    ions_merged %>%
+    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::mutate(pol_category = "ions")
+
   saveRDS(ions_merged, file = "../../r_data/ions_merged.RDS")
 ```
-
-# conclusions
