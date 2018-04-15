@@ -4,55 +4,49 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_tidy.R")
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# Load data
+# tidy data
 
-* pot and hood temperature
+# load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/temp.Rda")
+```{r}
+  temp <- readRDS("../../r_data/temp.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
 ```
 
-* metadata
+convert to long format
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load(file = "../r_files/samples.Rda")
-  load("../r_files/notes.Rda")
-```
-
-# Tidy
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   temp_merged <- tidyr::gather(temp, loc, t_oc,
                                t_1, t_2, t_3, t_4) %>%
                  dplyr::arrange(id)
 ```
 
-# Switch probes
+# filter NAs
 
-* standard set-up is `t_1 = t_pot` and `t_4 = flue`
-* test `10x, 11x and 12x` have two pots
-* some tests have inconsistant probe locations
-
-* filter out `NAs`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+```{r}
   temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
 ```
 
-* one pot stoves
+## fix probe locations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+* standard set-up is `t_1 = t_pot` and `t_4 = flue`
+* test `10x, 11x and 12x` have two pots
+* fix stove data where probe location is not standard
+
+```{r}
   flipped_25a <- dplyr::filter(temp_merged,
                            id =="25A") %>%
              dplyr::mutate(loc = ifelse(loc == "t_1", "flue", loc),
@@ -71,9 +65,7 @@ output:
 
 ```
 
-* two pot stoves
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+```{r}
   temp_10a <- dplyr::filter(temp_merged, id == "10A") %>%
               dplyr::mutate(loc = ifelse(loc == "t_1", "front", loc),
                             loc = ifelse(loc == "t_2", "back", loc),
@@ -120,9 +112,9 @@ output:
                             loc = ifelse(loc == "t_4", "flue", loc))
 ```
 
-* combine
+## merge all temp data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
+```{r}
   temp_merged <- dplyr::bind_rows(regular,
                                   flipped_25a,
                                   flipped_25bc,
@@ -132,81 +124,117 @@ output:
                  dplyr::filter(grepl("^t_", loc) != TRUE)
 ```
 
-# QC
+## flags
 
-## flags from notes
+extract notes
 
-* extract notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
 ```
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+apply flags: bad preceeds maybe preceeds good
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   flags <- dplyr::select(notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
 ```
 
-* couple of tests with 2 file e.g. 1B (merged files)
+merge flags with data
 
-* merge flags with data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   temp_merged <- dplyr::left_join(temp_merged, flags, by = "id") %>%
                  dplyr::mutate(id = as.factor(id)) %>%
                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-## additional bad tests
+# missing and bad data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # temp_merged$qc[temp_merged$id == ""] <- "bad"
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(temp_merged %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+    dplyr::filter(!grepl("G", id)) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-# Save merged file
+Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(temp_merged, file = "../r_files/temp_merged.Rda")
+## table: tests with bad measurements
+
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("temp|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-# Summary
+## remove bad tests
 
-Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
-
-Temperature data is expected to be missing for: 
-All "G" tests (1-18). We did not collect stove/pot temperature for background tests as no stove was operated.
-
-13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost. It is possible that there were some thermocouple malfunctions resulting in this data loss (check "notes" on transcribed testing sheets).
-
-# Plots
-
-## all
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
-  ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
+```{r}
+  temp_merged <-
+    temp_merged %>% 
+    dplyr::filter(qc != "bad")
 ```
 
-## pot
+# data summary
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=15}
-  p_data <- dplyr::filter(temp_merged, (loc == "front" | loc == "back")
-                                       & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id)))
+## plot: temperature flue data
 
-  ggplot(p_data, aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius")
+```{r, echo=FALSE, fig.height=25, fig.width=12}
+  temp_merged %>%
+  dplyr::left_join(samples) %>%
+  dplyr::filter(loc == "flue") %>%
+  ggplot(aes(datetime, t_oc, color = loc)) +
+    geom_point(size = 0.5) +
+    geom_line() +
+    facet_wrap(id~stove, ncol = 6, scales = "free") +
+    theme_bw() +
+    theme(legend.position = "top") +
+    ylab("temperature (degress celsius)") +
+    xlab("")
+```
+
+## plot: temperature pot data
+
+```{r, echo=FALSE, fig.height=25, fig.width=12}
+  temp_merged %>%
+  dplyr::left_join(samples) %>%
+  dplyr::filter(loc != "flue") %>%
+  ggplot(aes(datetime, t_oc, color = loc)) +
+    geom_point(size = 0.5) +
+    geom_line() +
+    facet_wrap(id~stove, ncol = 6, scales = "free") +
+    theme_bw() +
+    theme(legend.position = "top") +
+    ylab("temperature (degress celsius)") +
+    xlab("")
+```
+
+## plot: two pot stoves with data colored by pot number
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+  temp_merged %>%
+  dplyr::filter((loc == "front" | loc == "back") & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id))) %>%
+  dplyr::left_join(samples) %>%
+  ggplot(aes(datetime, t_oc, color = loc)) +
+    geom_point(size = 0.5) +
+    geom_line() +
+    facet_wrap(id~stove, ncol = 3, scales = "free") +
+    theme_bw() +
+    theme(legend.position = "top") +
+    ylab("temperature (degress celsius)") +
+    xlab("")
+```
+
+# save
+
+```{r}
+  saveRDS(temp_merged, file = "../../r_data/temp_merged.RDS")
 ```
