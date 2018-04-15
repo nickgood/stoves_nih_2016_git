@@ -13,7 +13,7 @@ output:
 
 ```{r global_options, echo=FALSE}
   knitr::opts_chunk$set(fig.path ='figures/', 
-                        fig.width = 12, fig.height = 5,
+                        fig.width = 8, fig.height = 8,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -390,7 +390,7 @@ conclusions: need to investigate ways to account for background measurements (fo
 
 ## plot: concentrations by stove type
 
-```{r ions_stovetype, echo=FALSE}
+```{r ions_stovetype, echo=FALSE, fig.height=15}
   ions_merged_p <-
     ions_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
@@ -412,8 +412,6 @@ conclusions: need to investigate ways to account for background measurements (fo
 
 conclusions:
 
-* 
-
 ## table: outliers by stove type
 
 outliers (z > 3) when samples are grouped by pollutant and stove type
@@ -433,7 +431,7 @@ conclusion:
 
 ## plot: concentrations by fuel type
 
-```{r ions_fueltype, echo=FALSE}
+```{r ions_fueltype, echo=FALSE, fig.height=15}
   ions_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
