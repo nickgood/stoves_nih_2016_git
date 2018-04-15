@@ -315,7 +315,7 @@ summary of backgrounds (ug per meter cubed)
 
 # burn analysis
 
-extract burn data
+## plot: time series of burns
 
 ```{r ion_samples_timeseries, echo=FALSE}
  ions_merged %>%
@@ -355,6 +355,8 @@ conclusions:
       xlab("")
 ```
 
+conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
+
 ```{r}
   ions_merged <-
     ions_merged %>%
@@ -366,8 +368,6 @@ conclusions:
     ions_merged %>%
     dplyr::left_join(bg, by = c("pol"))
 ```
-
-conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
 
 ```{r}
   ions_merged <-
