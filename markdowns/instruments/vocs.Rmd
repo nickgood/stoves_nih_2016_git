@@ -12,7 +12,8 @@ output:
 ```
 
 ```{r global_options, echo=FALSE}
-  knitr::opts_chunk$set(fig.path ='figures/', 
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        fig.height = 12, fig.width = 12,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
@@ -225,7 +226,7 @@ extract background
     dplyr::filter(test_type == "bg")
 ```
 
-## plot: lab background outliers
+## table: lab background outliers
 
 outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 
@@ -257,7 +258,7 @@ conclusions:
       theme_bw() +
       theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      facet_wrap(~pol, ncol = 6, scales = "free") +
       ylab("concentration (micrograms per meters cubed)") +
       xlab("")
 ```
@@ -337,7 +338,7 @@ summary of backgrounds (ug per meter cubed)
       theme_bw() +
       theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      facet_wrap(~pol, ncol = 6, scales = "free") +
       ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
@@ -356,7 +357,7 @@ conclusions:
       scale_color_manual(values = qc_colors) +
       #scale_y_log10() +
       theme_bw() +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
+      facet_wrap(~pol, ncol = 6, scales = "free") +
       theme(text = element_text(size = 12),
             legend.position = "top") +
       ylab("concentration (micrograms per cubic meter)") +
@@ -394,7 +395,7 @@ extract burn data
 
 ## plot: concentrations by stove type
 
-```{r vocs_stovetype, echo=FALSE}
+```{r vocs_stovetype, echo=FALSE, fig.height=35}
   vocs_merged_p <-
     vocs_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
@@ -436,7 +437,7 @@ conclusions:
 
 ## plot: concentrations by fuel type
 
-```{r vocs_fueltype, echo=FALSE}
+```{r vocs_fueltype, echo=FALSE, fig.height=35}
   vocs_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
