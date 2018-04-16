@@ -29,6 +29,11 @@ output: html_document
   mce_summary_per_test <- readRDS(file = "../r_files/mce_summary_per_test.RDS")
 ```
 
+```{r}
+  jvPalette <- c("#330099","#CC0066","#FF6633", 
+                 "#0099CC", "#FF9900","#CC6633",
+                  "#FF3366", "#33CC99", "#339999")
+```
 
 # Results
 
@@ -246,6 +251,7 @@ knitr::kable(fuel_sum)
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   scale_y_log10(breaks = c(0, 0.1, 0.5, 1, 3, 10, 25, 100, 500, 1000)) + 
   ylab("Emissions Factor (mg per startup event)") + xlab("Fuel Type") +
+  scale_color_manual(values = jvPalette) +
   facet_wrap(~pol, scales = "free", ncol = 2)
 ```
 
@@ -269,6 +275,7 @@ knitr::kable(fuel_sum)
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   scale_y_log10(breaks = c(0, 0.05, 0.1, 0.5, 1, 5, 10, 20, 40, 80)) +
   ylab("Emissions Factor (g/kg)") + xlab("Fuel Type") +
+  scale_color_manual(values = jvPalette) +
   facet_wrap(~pol, scales = "free", ncol = 2)
 ```
 
@@ -660,7 +667,7 @@ var_per_fuel_pct <- mean_per_startup %>%
                       axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
                       #axis.text.x = element_text(angle = 30, hjust = 1),
                       axis.text.x = element_blank()) +
-                scale_fill_manual(values = palette) +
+                scale_fill_manual(values = voc_palette) +
                 ylab("mg per startup event") +
                 ylim(0,30) 
 
@@ -672,7 +679,7 @@ var_per_fuel_pct <- mean_per_startup %>%
                           legend.title=element_blank(),
                           axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
                           axis.text.x = element_text(angle = 30, hjust = 1, size = 13)) +
-                    scale_fill_manual(values = palette) +
+                    scale_fill_manual(values = voc_palette) +
                     ylab("mg per startup event") +
                     ylim(0,5) 
   
@@ -748,7 +755,7 @@ var_per_fuel_pct <- mean_per_startup %>%
 ```
 
 ```{r, echo = FALSE, fig.width = 10, fig.height = 10}
-gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2)
+#gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2)
 ```
 
 ## Supplemental Figure 2. 
@@ -778,7 +785,7 @@ gridExtra::grid.arrange(voc_plot, pm_plot, voc_plot_zoom, pm_plot_zoom, ncol = 2
                       legend.title=element_blank(),
                       axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 14.25), size = 11),
                       axis.text.x = element_text(angle = 30, hjust = 1, size = 13)) +
-                scale_fill_manual(values = palette) +
+                scale_fill_manual(values = voc_palette) +
                 ylab("mg per startup event") +
                 ylim(0,2) 
   
