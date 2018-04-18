@@ -7,133 +7,139 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
-  library(knitr)
-  library(lubridate)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_functions.R")
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# Load
+# tidy data
 
-* water (pot) temperature
+## load files
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/temp_merged.Rda")
+load data
+
+```{r}
+  temp_merged <- readRDS("../../r_data/temp_merged.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  test_times <- readRDS("../../r_data/test_times.RDS")
+  wood_wgts <- readRDS("../../r_data/wood_wgts.RDS")
+  wood_pot <- readRDS("../../r_data/wood_pot.RDS")
+  batch_pot <- readRDS("../../r_data/batch_pot.RDS")
+  batch_wgts <- readRDS("../../r_data/batch_wgts.RDS")
 ```
 
-* constants
+load water properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/calc_constants.Rda")
+```{r}
+  c_water <- readRDS("../../r_data/c_water.RDS")
+  hfg_water <- readRDS("../../r_data/hfg_water.RDS")
 ```
 
-* metadata
+load scripts
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/batch_wgts.Rda")
-  load("../r_files/batch_pot.Rda")
-  load("../r_files/wood_wgts.Rda")
-  load("../r_files/wood_pot.Rda")
+```{r}
+  source("../../scripts/functions.R")
 ```
 
-# Daylight saving
+## organize metadata
 
-* Correct for summertime
+extract test times
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  summer_time <- as.POSIXct("2016/03/13 02:00:00", tz = "MST") 
-  temp_merged <- dplyr::mutate(temp_merged,
-                               datetime = if_else(datetime > summer_time, (datetime + 60 * 60), datetime),
-                               datetime = as.POSIXct(datetime, origin = "1970-01-01"),
-                               time = if_else(datetime > summer_time, (time + 60 * 60), time))
+```{r}
+  times <- 
+    test_times %>%
+    dplyr::filter(var == "start_1" | var == "shutdown") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(start = start_1, end = shutdown)
 ```
 
-# Test timestamps
+pot time stamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
+```{r}
+  e_times <- 
+    test_times %>%
+    dplyr::filter(grepl("^start_[0-9]|^end_[0-9]", var)) %>%
+    dplyr::select(-date) %>%
+    tidyr::separate(var, c("var", "rep")) %>%
+    tidyr::spread(var, value)
 ```
 
-# Energy
+remove redundant reps added for two pot stoves
 
-## joules applied
-
-* timestamps
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_times <- dplyr::filter(test_times, grepl("^start_[0-9]|^end_[0-9]", var)) %>%
-             dplyr::select(-date) %>%
-             tidyr::separate(var, c("var", "rep")) %>%
-             tidyr::spread(var, value)
-
- # remove reps added for 2 pot stoves
-  e_times <- group_by(e_times, id, start) %>% filter(row_number(rep) == 1) %>%
-  	         ungroup()
+```{r}
+  e_times <- 
+    e_times %>%
+    dplyr::group_by(id, start) %>% 
+    dplyr::filter(row_number(rep) == 1) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(!grepl("27|28|29|30", id))
 ```
 
-* which pot
+create file with pot and rep identifiers
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot <- dplyr::select(wood_pot, -date) %>%
-           dplyr::bind_rows(dplyr::select(batch_pot, -date))
+```{r}
+  e_pot <- 
+    wood_pot %>%
+    dplyr::select(-date) %>%
+    dplyr::bind_rows(batch_pot %>%
+                      dplyr::select(-date)) %>%
+    dplyr::filter(!grepl("27|28|29|30", id))
 ```
 
-* pot mass
+create variable with pot mass data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot_mass <- dplyr::filter(wood_wgts,
-                              grepl("^pot",
-                              var)) %>%
-                tidyr::separate(var, c("var", "pot")) %>%
-                dplyr::select(-var, -date) %>%
-                tidyr::spread(pot, value)
+```{r}
+  e_pot_mass <- 
+    wood_wgts %>%
+    dplyr::filter(grepl("^pot", var)) %>%
+    tidyr::separate(var, c("var", "pot")) %>%
+    dplyr::select(-var, -date) %>%
+    tidyr::spread(pot, value)
 
-  e_pot_mass <- dplyr::bind_rows(e_pot_mass,
-                                 dplyr::bind_rows(e_pot_mass,
-                                 dplyr::filter(batch_wgts,
-                                               grepl("^pot",
-                                               var)) %>%
-                                 tidyr::separate(var, c("var", "pot")) %>%
-                                 dplyr::select(-var, -date) %>%
-                                 tidyr::spread(pot, value)))
+  e_pot_mass <- 
+    e_pot_mass %>%
+    dplyr::bind_rows(batch_wgts %>%
+                       dplyr::filter(grepl("^pot", var)) %>%
+                       tidyr::separate(var, c("var", "pot")) %>%
+                       dplyr::select(-var, -date) %>%
+                       tidyr::spread(pot, value)) %>%
+    tidyr::gather("pot", "pot_mass" , 2:3) %>%
+    dplyr::filter(!grepl("27|28|29|30", id))
 ```
 
-* pot + water mass
+tidy pot mass + water mass data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_pot_water_mass <- dplyr::filter(wood_wgts,
-                                    grepl("^on_[0-9]|^off_[0-9]", var)) %>%
+```{r}
+  e_pot_water_mass <- 
+    wood_wgts %>%
+    dplyr::filter(grepl("^on_[0-9]|^off_[0-9]", var)) %>%
+    tidyr::separate(var, c("var", "rep")) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(mass_on = on, mass_off = off)
+
+  e_pot_water_mass <- 
+    e_pot_water_mass %>%
+    dplyr::bind_rows(batch_wgts %>%
+                      dplyr::filter(grepl("^on_[0-9]|^off_[0-9]", var)) %>%
                       tidyr::separate(var, c("var", "rep")) %>%
                       tidyr::spread(var, value) %>%
                       dplyr::select(-date) %>%
-                      dplyr::rename(mass_on = on, mass_off = off)
-
-  e_pot_water_mass <- dplyr::bind_rows(e_pot_water_mass,
-                                       dplyr::filter(batch_wgts,
-                                       grepl("^on_[0-9]|^off_[0-9]", var)) %>%
-                                       tidyr::separate(var, c("var", "rep")) %>%
-                                       tidyr::spread(var, value) %>%
-                                       dplyr::select(-date) %>%
-                                       dplyr::rename(mass_on = on,
-                                                     mass_off = off))
+                      dplyr::rename(mass_on = on, mass_off = off)) %>%
+    dplyr::filter(!grepl("27|28|29|30", id))
 ```
 
-* Tweak
-  tweak times
-  mind min
-  remove leading tail
+## fix time issues
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
- # time tweak
+create data frame with time changes
+
+```{r}
   time_tweak <- data_frame(id = unique(temp_merged$id), dt = 0)
   time_tweak$dt[which(time_tweak$id == "13C")] <- 70
   time_tweak$dt[which(time_tweak$id == "13B")] <- 15
@@ -153,182 +159,150 @@ output:
   time_tweak$dt[which(time_tweak$id == "5A")] <- 60
   time_tweak$dt[which(time_tweak$id == "3D")] <- -60
   time_tweak$dt[which(time_tweak$id == "29A")] <- -60
-  temp_merged <- dplyr::left_join(temp_merged, time_tweak, by = "id") %>%
-                 dplyr::mutate(time = time - 130,
-                                datetime = datetime - 130,
-                                time = time + dt,
-                                datetime = datetime + dt)
 ```
 
-```{r, eval=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  tmp <- dplyr::filter(temp_merged, id == "9B")
-  tmp <- dplyr::filter(tmp, loc != "flue")
-  tmp <- filter_temp(e_times, tmp)
+adjust temperature times
 
- ggplot(tmp, aes(datetime, t_oc, group = loc, colour = rep)) +
-    geom_point() +
-    theme_minimal() +
-    theme(legend.position = "top") +
-    ylab("temperature oC")
+```{r}
+  temp_merged <- 
+    temp_merged %>%
+    dplyr::left_join(time_tweak, by = "id") %>%
+    dplyr::mutate(time = time - 130,
+                  datetime = datetime - 130,
+                  time = time + dt,
+                  datetime = datetime + dt)
 ```
 
-* extract temperature for periods of interest
+## extract test data only
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   e_temp <- dplyr::filter(temp_merged, loc != "flue")
 
   e_temp <- filter_temp(e_times, e_temp) # adds rep
 ```
 
-* filter out unrealistic values
+## filter unrealistic values
 
-Data should be betwen 10 and 100 degrees C.
+data should be betwen 10 and 100 degrees Celsius
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_temp <- dplyr::filter(e_temp, t_oc < 100, t_oc > 10)
+```{r}
+  e_temp <- 
+    e_temp %>%
+    dplyr::filter(t_oc < 100, t_oc > 10)
 ```
 
+## calculate min and max temp for each pot
 
-* temperature change
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   t_range <- dplyr::group_by(e_temp, id, rep, loc) %>%
              dplyr::summarise(t_min = quantile(t_oc, 0.025, na.rm = TRUE) - 2,
                               t_max = quantile(t_oc, 0.975, na.rm = TRUE) + 2)
 ```
 
-* tweak temp values
+fix temp issues
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # missing data from start of 2nd rep
+```{r}
+  # missing data from start of 2nd rep
   t_range$t_min[which(t_range$id == "1B" & t_range$rep == 2)] <- 20.18
 ```
 
-* merge data
+## merge data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # issue with left join on e_pot_mass creating duplicate rows...
- # inconsistant class(id) perhaps an issue?
-  e_data <- dplyr::left_join(e_times, e_pot_water_mass, by = c("id", "rep")) %>%
-            dplyr::left_join(t_range, by = c("id", "rep")) %>%
-            dplyr::left_join(e_pot, by = c("id", "rep")) %>%
-            dplyr::left_join(e_pot_mass, by = "id") %>%
-            dplyr::mutate(mass_pot = ifelse(pot == "a", a, NA),
-                          mass_pot = ifelse(pot == "b", b, mass_pot),
-                          id = as.factor(id)) %>%
-            dplyr::select(-a, -b) %>%
-            dplyr::distinct()
+```{r}
+  e_data <- 
+    e_pot_water_mass %>%
+    dplyr::left_join(e_pot, by = c("id", "rep")) %>%
+    dplyr::left_join(e_pot_mass, by = c("id", "pot")) %>%
+    dplyr::left_join(t_range %>%
+                       dplyr::filter(loc == "front"), by = c("id", "rep"))
 ```
 
-* energy applied
+# calculate energy delivered
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  e_data <- dplyr::mutate(e_data,
-                          mass_evap = mass_on - mass_off,
-                          mass_h2o = mass_on - mass_pot,
-                          dt = t_max - t_min,
-                          j_heat = mass_h2o * c_water * dt, # g * J/(g.oC) * oC
-                          j_vap = mass_evap * hfg_water,
-                          joules = j_heat + j_vap)
+```{r}
+  e_data <- 
+    e_data %>%
+    dplyr::mutate(mass_evap = mass_on - mass_off,
+                  mass_h2o = mass_on - mass_pot,
+                  dt = t_max - t_min,
+                  j_heat = mass_h2o * c_water * dt, # g * J/(g.oC) * oC
+                  j_vap = mass_evap * hfg_water,
+                  joules = j_heat + j_vap)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  kable(dplyr::slice(e_data, 1:5),
-        align = 'c', caption = "Energy Numbers")
-```
+energy delivered per test
 
-* energy applied per test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  energy <- dplyr::select(e_data, id, joules) %>%
-            dplyr::group_by(id) %>%
-            dplyr::summarise(joules = sum(joules, na.rm = TRUE))
-```
-
-# QC
-
-* add flag: default is "ok"
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   energy <- 
-    energy %>%
-    dplyr::mutate(qc = "ok")
+    e_data %>%
+    dplyr::select(id, joules) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(joules = sum(joules))
 ```
 
-* add bad flags
+# summary data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  energy <- 
-    energy %>%
-    dplyr::mutate(qc = ifelse(joules <= 0, "bad", qc))
+## plot: temperature (id & loc)
+
+```{r, echo=FALSE, fig.width=12, fig.height=50}
+  e_temp %>%
+    dplyr::filter(loc != "flue") %>%
+    ggplot(aes(datetime, t_oc, color = loc)) +
+      geom_line() +
+      geom_point() +
+      facet_wrap(~id, ncol = 3, scales = "free") +
+      theme_bw() +
+      theme(legend.position = "top") +
+      ylab("temperature (degress celsius)")
 ```
 
-# Plots
+## plot: temperature (id & rep)
 
-## temperature (id & loc)
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
-  ggplot(dplyr::filter(e_temp, loc != "flue"),
-         aes(datetime, t_oc, color = loc)) +
-         geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degress celsius") +
-         theme(legend.position = "top")
+```{r, echo=FALSE, fig.width=12, fig.height=80}
+  e_temp %>% 
+    dplyr::left_join(t_range, by = c("id", "rep", "loc")) %>%
+    ggplot(aes(datetime, t_oc, group = loc, colour = rep)) +
+      geom_point() +
+      geom_line(aes(datetime, t_min, colour = rep)) +
+      geom_line(aes(datetime, t_max, colour = rep)) +
+      facet_wrap(~id, scales = "free", ncol = 3) +
+      theme_minimal() +
+      theme(legend.position = "top") +
+      ylab("temperature (degress celsius)")
 ```
 
-## temperature (id & rep)
+## plot energy delivered
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80}
-  p_data <- dplyr::left_join(e_temp, t_range, by = c("id", "rep", "loc"))
-
-  ggplot(p_data, aes(datetime, t_oc, group = loc, colour = rep)) +
+```{r, echo=FALSE, fig.width=12, fig.height=8}
+  energy %>%
+    dplyr::left_join(dplyr::filter(samples, type == "SF"), by = "id") %>%
+    ggplot(p_data, aes(id, joules, colour = qc)) +
     geom_point() +
-    geom_line(aes(datetime, t_min, colour = rep)) +
-    geom_line(aes(datetime, t_max, colour = rep)) +
-    facet_wrap(~id, scales = "free", ncol = 3) +
-    theme_minimal() +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
     theme(legend.position = "top") +
-    ylab("temperature oC")
+    ylab("energy delivered to pot (Joules)")
 ```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
- # list of experiment ids
-  ids <- unique(e_temp$id)
- # loop ids
-  for(i in 1:length(ids)){
-   # extract data for id
-    tmp <- dplyr::filter(e_temp, id == ids[i])
-    reps <- unique(tmp$rep)
-     for(j in 1:length(reps)){
-      #print(reps[j])
-     }
-  }
+# missing and bad data
+
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(energy %>%
+                     dplyr::filter(!is.na(joules)) %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+    dplyr::filter(!grepl("^G", id)) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-## energy delivered
+Conclusions: temperature data (and therefore energy data) is expected to be missing for: 13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
-  p_data <- dplyr::left_join(dplyr::filter(samples, type == "SF"),
-                             energy,
-                             by = "id") %>%
-	         dplyr::filter(joules > 0)
-```
+# save data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(p_data, aes(id, joules, colour = qc)) +
-  geom_point() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  theme(legend.position = "top") +
-  ylab("energy delivered to pot (J)") +
-  theme(legend.position = "top")
-```
-
-# Save (not implemented)
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   saveRDS(energy, "../r_files/energy.RDS")
 ```
