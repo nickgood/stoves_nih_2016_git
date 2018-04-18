@@ -19,11 +19,11 @@ output:
 
 # load files
 
-* pollutant data
+load data
 
 ```{r}
   samples <- readRDS("../../r_data/samples.RDS")
-  load("../r_files/fuel_burnt.Rda")
+  fuel <- readRDS("../../r_data/fuel_burnt.RDS")
   emissions <- readRDS("../../r_data/emissions.RDS")
   energy <- readRDS("../r_files/energy.RDS")
 ```
