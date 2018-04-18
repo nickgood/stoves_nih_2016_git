@@ -395,7 +395,7 @@ extract burn data
 
 ## plot: concentrations by stove type
 
-```{r vocs_stovetype, echo=FALSE, fig.height=35}
+```{r vocs_stovetype, echo=FALSE, fig.height=50}
   vocs_merged_p <-
     vocs_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
@@ -437,7 +437,7 @@ conclusions:
 
 ## plot: concentrations by fuel type
 
-```{r vocs_fueltype, echo=FALSE, fig.height=35}
+```{r vocs_fueltype, echo=FALSE, fig.height=50}
   vocs_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
