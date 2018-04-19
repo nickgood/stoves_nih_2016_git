@@ -1,0 +1,680 @@
+---
+title: "Process PAH data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        fig.height = 10, fig.width = 10,
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+load data
+
+```{r}
+  pah_raw <- readRDS("../../r_data/pah.RDS")    # pah dataset
+  pah_bdl <- readRDS("../../r_data/pah_bdl.RDS")    # pah lod dataset
+  data_1 <- readRDS("../../r_data/data_1.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+```
+
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
+```
+
+## lod
+
+extract chemical analysis lod data
+
+```{r}
+  lod <-
+    pah_bdl %>%
+    dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
+    dplyr::select(-val)
+```
+
+replace values below the lod with lod/sqrt(2) 
+
+```{r}
+  pah <- 
+    pah_raw %>% 
+    dplyr::mutate(val = as.numeric(val)) %>%
+    dplyr::left_join(lod, by = c("id_asu", "id", "filter_type", "pol")) %>%
+    dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val),
+                  val = as.numeric(val)) %>%
+    dplyr::select(-id_asu)
+```
+
+average in case there are duplicate measurements
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::group_by(pol, id, filter_type) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE),
+                     lod = last(lod)) %>%
+    dplyr::ungroup()
+```
+
+## recode filter names
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::mutate(filter_type = 
+                    filter_type %>% 
+                    forcats::fct_recode("back puf" = "b",
+                                        "front puf" = "f",
+                                        "filter" = "ba",
+                                        "filter" = "p"))
+```
+
+## flags
+
+extract flags
+
+```{r}
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("pah|all", inst) == TRUE)
+```
+
+bad preceeds maybe preceeds good
+
+```{r}
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
+```
+
+add flag by id
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+## test type 
+
+define test type variable
+
+```{r}
+  pah <- 
+    pah %>%
+    dplyr::mutate(test_type = ifelse(!grepl("^B|^G", id), "test", "bg"),
+                  test_type = ifelse(grepl("^B", id), "blank", test_type))
+```
+
+# missing and bad data
+
+## table: missing data
+
+missing back pufs
+
+```{r, echo = FALSE}
+  missing <-
+    dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(pah %>%
+                       dplyr::filter(test_type != "blank", filter_type == "back puf") %>%
+                       dplyr::select(id), by = "id") %>%
+    dplyr::mutate(filter_type = "back puf") %>%
+    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
+                       dplyr::anti_join(pah %>%
+                                          dplyr::filter(test_type != "blank", filter_type == "front puf") %>%
+                                          dplyr::select(id), by = "id") %>%
+                       dplyr::mutate(filter_type = "front puf")) %>%
+    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
+                       dplyr::anti_join(pah %>%
+                                          dplyr::filter(test_type != "blank", filter_type == "filter") %>%
+                                          dplyr::select(id), by = "id") %>%
+                       dplyr::mutate(filter_type = "filter"))
+
+  knitr::kable(missing, "markdown", align = 'c')
+```
+
+notes: we have measurements labeled 10D-B and 8E-B, which don't match any test ids
+
+## remove tests without front puf or filter
+
+```{r}
+  missing <- 
+    missing %>%
+    dplyr::filter(filter_type != "back puf") 
+
+  pah <-
+    pah %>%
+    dplyr::anti_join(missing, by = "id")
+```
+
+## table: tests with bad measurements
+
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("pah|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## remove bad tests
+
+```{r}
+  pah_merged <-
+    pah %>% 
+    dplyr::filter(qc != "bad")
+```
+
+# blank analysis 
+
+```{r}
+  blanks <-
+    pah_merged %>%
+    dplyr::filter(test_type == "blank") %>%
+    dplyr::mutate(filter_type = gsub("back |front ", "", filter_type))
+```
+
+## table: lab blank outliers
+
+outliers (z > 3) when blanks are grouped by pollutant and filter type
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::select(id, pol, filter_type, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes:
+
+## plot: time series of lab blanks
+
+```{r, echo=FALSE}
+ blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(pol~filter_type, ncol = 4, scales = "free") +
+      ylab("mass (micrograms)")
+```
+
+notes:
+
+## table: percent of lab blanks below lod for chemical analysis
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::group_by(filter_type, pol) %>%
+    dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    tidyr::spread(filter_type, val) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## table: lab blanks with NA values
+
+percent of lab blanks with NA values
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::group_by(filter_type, pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    tidyr::spread(filter_type, val) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## table: blank summary
+
+summarize blanks
+
+```{r}
+  blanks <-
+    blanks %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     lod = stdev * 3 + mean,
+                     loq = stdev * 10 + mean)
+```
+
+summary of lab blanks (ug)
+
+```{r, echo=FALSE}
+  blanks %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save blanks
+
+```{r}
+  saveRDS(blanks, file = "../../r_data/pah_lod.RDS")
+```
+
+remove lab blanks from pah_merged file
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(test_type != "blank") # remove blanks
+```
+
+add lod variable
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(filter_class = gsub("front |back ", "", filter_type)) %>%
+    dplyr::left_join(dplyr::select(blanks, pol, lod, filter_type) %>%
+                     dplyr::rename("lod_val" = "lod",
+                                   "filter_class" = "filter_type"), by = c("pol", "filter_class")) %>%
+    dplyr::mutate(lod = ifelse(val <= lod_val, "below", "above"),
+                  val = ifelse(val <= lod_val, lod_val / sqrt(2), val)) %>%
+    dplyr::select(-lod_val, -filter_class)
+```
+
+# concentration calculations
+
+## extract data
+
+extract red cartridge data
+
+```{r}
+  meta <-
+    data_1 %>%
+    dplyr::select(matches("_red|^id$|^date$"))
+```
+
+extract flow rate data and average
+
+```{r}
+  flows <-
+    meta %>%
+    dplyr::select(matches("flow_|^id$|^date$")) %>%
+    tidyr::gather("var", "value", -id, -date) %>%
+    dplyr::filter(grepl("_avg$", var)==FALSE) %>%
+    dplyr::mutate(type = sub("flow.*", "", var),
+                  rep = as.factor(gsub("[^0-9]", "", var))) %>%
+    dplyr::select(-var)  %>%
+    dplyr::filter(!is.na(id)) %>%
+    dplyr::group_by(rep, id, type) %>%
+    dplyr::mutate(mean = mean(value, na.rm = TRUE))  %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(rep == 1) %>%
+    dplyr::select(-value, -rep, -date)  %>%
+    tidyr::spread(type, mean)
+```
+
+extract time data
+
+```{r}
+  times <-
+    meta %>% 
+    dplyr::select(matches("^time_|^id$|^date$")) %>%
+    tidyr::gather("var", "value", -id, -date) %>%
+    dplyr::mutate(type = ifelse(grepl("_start_", var), "start", "NA"),
+                  type = ifelse(grepl("_end_", var), "end", type)) %>%
+    dplyr::arrange(id) %>%
+    dplyr::filter(!is.na(id)) %>%  
+    dplyr::select(-var, -date) %>%  
+    tidyr::spread(type, value)
+```
+
+## merge and calculate
+
+merge data with flows and times
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(test_type != "blank") %>%
+    dplyr::left_join(flows, by = "id") %>%
+    dplyr::left_join(times, by = "id") %>%
+    dplyr::rename(pre_flow = pre, post_flow = post) %>%
+    dplyr::mutate(flow = (pre_flow + post_flow) / 2)
+```
+
+calculate concentrations
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(dur = (end - start) / 60,
+                  val = val * 1000 / (flow * dur))
+```
+
+# backgrounds
+
+extract background data
+
+```{r}
+  bg <-
+    pah_merged %>%
+    dplyr::filter(test_type == "bg")
+```
+
+## plot: lab background outliers
+
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+
+```{r pah_bg_plot}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::select(id, pol, filter_type, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+## plot: time series of lab backgrounds
+
+```{r, echo=FALSE}
+ bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(pol~filter_type, ncol = 3, scales = "free") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes:
+
+## table: percent of lab backgrounds below lab lod
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::group_by(filter_type, pol) %>%
+    dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    tidyr::spread(filter_type, val) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## table: percent of lab backgrounds with NA values
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::group_by(filter_type, pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    tidyr::spread(filter_type, val) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## summarize backgrounds
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(pol, filter_type) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+## table: background summary
+
+```{r, echo=FALSE}
+  bg %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../r_data/pah_bg.RDS")
+```
+
+# burn analysis
+
+## plot: time series of burns
+
+```{r pah_burn_timeseries, echo=FALSE}
+  pah_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(pol~filter_type, scales = "free", ncol = 3) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: background and burn concentrations
+
+```{r pah_burn_bg_conc, echo=FALSE}
+  pah_merged %>%
+    dplyr::group_by(id, test_type) %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc, shape = lod), size = 2) +
+      theme_bw() +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(pol~filter_type, scales = "free", ncol = 2) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## subtract background
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(test_type == "test")
+```
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::left_join(bg, by = c("pol", "filter_type"))
+```
+
+```{r}
+  pah_merged <-
+   pah_merged %>%
+    dplyr::mutate(val = val - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median
+
+```{r, echo=FALSE}
+  pah_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## replace low values with zero and sum all filters
+
+```{r, echo=FALSE}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val)) %>%
+    dplyr::select(id, pol, dur, filter_type, val) %>%
+    tidyr::spread("filter_type", "val") %>%
+    dplyr::filter(!is.na("front puf"), !is.na("filter")) %>%
+    tidyr::gather("filter_type", "val", 4:6) %>%
+    dplyr::group_by(id, pol) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     dur = first(dur))
+```
+
+## add flags back
+
+add flag by id
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+## plot: concentrations by stove type
+
+```{r pah_stovetype, echo=FALSE, fig.height=30}
+  pah_merged_p <-
+    pah_merged %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
+
+ pah_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  pah_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove, pol) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes:
+
+## plot: concentrations by fuel type
+
+```{r pah_fueltype, echo=FALSE, fig.height=30}
+  pah_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      scale_color_manual(values = qc_colors) +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+ pah_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel, pol) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## table: burns with NA values
+
+percent of burn samples with NA values
+
+```{r, echo=FALSE}
+  pah_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## save data
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(pol_category = "pahs", lod = NA) %>%
+    dplyr::select(id, pol, val, dur, lod, qc, pol_category)
+
+  saveRDS(pah_merged, file = "../../r_data/pah_merged.RDS")
+```

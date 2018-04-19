@@ -171,8 +171,6 @@ conclusions:
 
 ## plot: time series of lab blanks
 
-lab blanks (ug)
-
 ```{r ecoc_blank_timeseries}
  blanks %>%
     dplyr::filter(!is.na(val)) %>%
@@ -453,7 +451,7 @@ conclusions: 6D and 8D have very high values, remove for now
       theme(text = element_text(size = 16),
             legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
-      ylab("concentration") +
+      ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
@@ -591,7 +589,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 conclusions: 
 
-## table: burns below lod for chemical analysis
+## table: burns below lod
 
 percent of burn samples below the lod
 

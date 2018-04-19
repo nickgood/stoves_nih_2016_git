@@ -1,5 +1,5 @@
 ---
-title: "smps"
+title: "Process smps data"
 output:
   html_document:
     toc: true
@@ -7,48 +7,59 @@ output:
     theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
-  library(gridExtra)
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_tidy.R")
-  source("../r_scripts/R_functions.R")
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# Load data
+# tidy data
 
-* smps
+## load files
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/smps.Rda")
+load scripts
+
+```{r}
+  source("../../scripts/tidy.R")
 ```
 
-* metadata
+load data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
-  load("../r_files/cal_2.Rda")
-  load("../r_files/notes.Rda")
-  load("../r_files/test_times.Rda")
-  load("../r_files/smps_pax_bg_times.Rda")
+```{r}
+  smps <- readRDS("../../r_data/smps.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  cal_2 <- readRDS("../../r_data/cal_2.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  test_times <- readRDS("../../r_data/test_times.RDS")
+  bg_times <- readRDS("../../r_data/smps_pax_bg_times.RDS")
 ```
 
-# Organize
+load schemes
 
-* extract measured flows.
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
+```
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+## flows
+
+extract measured flows
+
+```{r}
   smps_flows <- tidy_date(cal_2, "^preflow_smps|^postflow_smps", "")
 
   smps_flows <- split_flows(smps_flows)
 ```
 
-* average flows
+average flows
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_flows <- dplyr::arrange(group_by(smps_flows, date, type), date) %>%
+```{r}
+  smps_flows <- dplyr::arrange(dplyr::group_by(smps_flows, date, type), date) %>%
                 dplyr::mutate(mean = mean(value, na.rm = TRUE),
                               sd = sd(value, na.rm = TRUE)) %>%
                 dplyr::filter(rep == 1) %>%
@@ -58,61 +69,122 @@ output:
                 tidyr::spread(temp1, val)
 ```
 
-* merge
+merge
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps, smps_flows, "date") %>%
-                 dplyr::mutate(sample = as.factor(sample))
+```{r}
+  smps_merged <- 
+    smps %>%
+    dplyr::left_join(smps_flows, "date") %>%
+    dplyr::mutate(sample = as.factor(sample))
 ```
 
-# QC
+## flags
 
-* notes
+extract flags
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("smps|all", inst))
+```{r}
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("smps|all", inst) == TRUE)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(dplyr::filter(notes, grepl(".*smps.*", inst)) %>%
-               dplyr::select(-inst, -date),
-               "markdown", digits = 2)
+bad preceeds maybe preceeds good
+
+```{r}
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
 ```
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+add flag by id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-* merge
+## test type
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
-                                                     "ok",
-                                                     as.character(qc)))) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
-                               type = ifelse(grepl("^G", id), "bg", type))
+```{r}
+  smps_merged <- 
+    smps_merged %>%
+    dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
+                  type = ifelse(grepl("^G", id), "bg", type))
 ```
 
-* error from instrument
+## add flag for instrument error
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::mutate(smps_merged,
-                               qc = ifelse(grepl("^Normal Scan$", instrument_errors),
-                                           as.character(qc),
-                                           "bad"))
+```{r}
+  smps_merged <- 
+    smps_merged %>%
+    dplyr::mutate(qc = ifelse(grepl("^Normal Scan$", instrument_errors),
+                              as.character(qc),
+                              "maybe"))
 ```
 
-* additional bad tests
+# missing and bad data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # smps_merged$qc[smps_merged$id == ""] <- "bad"
+## table: missing data
+
+missing back pufs
+
+```{r, echo = FALSE}
+  missing <-
+    dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(pah %>%
+                       dplyr::filter(test_type != "blank", filter_type == "back puf") %>%
+                       dplyr::select(id), by = "id") %>%
+    dplyr::mutate(filter_type = "back puf") %>%
+    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
+                       dplyr::anti_join(pah %>%
+                                          dplyr::filter(test_type != "blank", filter_type == "front puf") %>%
+                                          dplyr::select(id), by = "id") %>%
+                       dplyr::mutate(filter_type = "front puf")) %>%
+    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
+                       dplyr::anti_join(pah %>%
+                                          dplyr::filter(test_type != "blank", filter_type == "filter") %>%
+                                          dplyr::select(id), by = "id") %>%
+                       dplyr::mutate(filter_type = "filter"))
+
+  knitr::kable(missing, "markdown", align = 'c')
+```
+
+notes: we have measurements labeled 10D-B and 8E-B, which don't match any test ids
+
+## remove tests without front puf or filter
+
+```{r}
+  missing <- 
+    missing %>%
+    dplyr::filter(filter_type != "back puf") 
+
+  pah <-
+    pah %>%
+    dplyr::anti_join(missing, by = "id")
+```
+
+## table: tests with bad measurements
+
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("pah|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## remove bad tests
+
+```{r}
+  pah_merged <-
+    pah %>% 
+    dplyr::filter(qc != "bad")
 ```
 
 # Ultrafine number

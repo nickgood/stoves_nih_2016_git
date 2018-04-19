@@ -1,0 +1,533 @@
+---
+title: "Process voc data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        fig.width = 12, fig.height = 5,
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+load scripts
+
+```{r}
+  source("../../scripts/functions.R")
+```
+
+load data
+
+```{r}
+  fivegas_conc <- readRDS("../../r_data/fivegas_conc.RDS") 
+  fivegas_volts <- readRDS("../../r_data/fivegas_volts.RDS")
+  fivegas_calibration <- readRDS("../../r_data/fivegas_calibration.RDS")
+  cal_1 <- readRDS("../../r_data/cal_1.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../r_data/pol_properties.RDS")
+```
+
+## concentration data
+
+convert concentration data to longer format
+
+```{r}
+  fivegas_conc <- 
+    fivegas_conc %>%
+    dplyr::select(-datetime_secs, -time_str) %>%
+    tidyr::gather("pol", "val", ch4:co)
+```
+
+## extract vocs 
+
+```{r}
+  vocs <- 
+    vocs %>%
+    dplyr::select(id, type, 5:59) %>%
+    dplyr::filter(type == "test" | type == "bg", id != "P8") %>%
+    dplyr::rename("voc_n_nonane" = "voc_n_no_8888ne")
+```
+
+## reformat
+
+* convert to long format
+
+```{r}
+  vocs <- 
+    vocs %>%
+    tidyr::gather("pol", "val",
+                  -id, -type) %>%
+    dplyr::filter(!is.na(pol)) %>%
+    dplyr::mutate(pol = as.factor(pol)) %>%
+    dplyr::select(id, pol, val, type) %>%
+    dplyr::mutate(pol = gsub("voc_", "", pol))
+        
+```
+
+## lod
+
+```{r}
+  vocs <-
+    vocs %>%
+    dplyr::left_join(voc_lod, by = c("pol" = "voc")) %>%
+    dplyr::rename("voc_lod" = "lod") %>%
+    dplyr::mutate(lod = as.factor(ifelse(val == -8888, "below", "above"))) %>%
+    dplyr::mutate(val = ifelse(val == -8888, voc_lod / sqrt(2), val)) %>%
+    dplyr::select(-voc_lod)
+```
+
+## flags
+
+* extract flags
+
+```{r}
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("vocs|all", inst) == TRUE)
+```
+
+* bad preceeds maybe preceeds good
+
+```{r}
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
+```
+
+* add flag by id
+
+```{r}
+  vocs <-
+    vocs %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```
+
+## test type 
+
+define test type variable
+
+```{r}
+  vocs <- 
+    vocs %>%
+    dplyr::rename("test_type" = "type")
+```
+
+# missing and bad data
+
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(vocs %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: tests with bad measurements
+
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("voc|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## remove bad tests
+
+```{r}
+  vocs_merged <-
+    vocs %>% 
+    dplyr::filter(qc != "bad")
+```
+
+# concentration calculations
+
+## extract data
+
+extract time data
+
+```{r}
+  times <- 
+    times %>%
+    dplyr::mutate(dur = difftime(datetime_end, datetime_start)) %>%
+    dplyr::select(id, dur)
+```
+
+## merge and calculate
+
+merge data with flows and times
+
+```{r}
+  vocs_merged <-
+    vocs_merged %>%
+    dplyr::mutate(flow = flow) %>%
+    dplyr::left_join(times, by = "id")
+```
+
+calculate concentrations
+
+```{r}
+  vocs_merged <-
+    vocs_merged %>%
+    dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
+    dplyr::mutate(val = convert_ppmv_ugpmc(val / 1000, mw, 25, 85),
+                  units = "ug per meter cubed") %>%
+    dplyr::select(-mw)
+```
+
+# backgrounds
+
+extract background
+
+```{r}
+  bg <-
+    vocs_merged %>%
+    dplyr::filter(test_type == "bg")
+```
+
+## plot: lab background outliers
+
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+
+```{r, echo=FALSE, fig.height = 12}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+conclusions: 
+
+* 
+
+## plot: time series of lab backgrounds
+
+background concentrations (ug per meter cubed)
+
+* shape indicates if sample was above or below instrument lod
+
+```{r vocs_bg_timeseries, echo=FALSE, fig.height = 30, fig.width =16}
+ bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc), size = 4) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions: 
+
+* 
+
+## table: lab blanks below lod for chemical analysis
+
+percent of lab blanks below the lod for chemical analysis
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: lab backgrounds with NA values
+
+percent of lab backgrounds with NA values
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: background summary
+
+summarize backgrounds
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+summary of backgrounds (ug per meter cubed)
+
+```{r, echo=FALSE}
+  bg %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../r_data/vocs_bg.RDS")
+```
+
+
+# sample analysis
+
+extract burn data
+
+```{r}
+  vocs_samples <-
+    vocs_merged %>%
+    dplyr::filter(test_type == "test")
+```
+
+```{r}
+  vocs_samples <-
+    vocs_samples %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
+
+## plot: time series of burns
+
+burn concentrations (ug per meter cubed)
+
+* samples are not background corrected
+
+```{r vocs_samples_timeseries, echo=FALSE, fig.height = 30, fig.width = 16}
+ vocs_samples %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc), size = 4) +
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions:
+
+*
+
+## plot: comparing background and sample concentrations
+
+test and background concentrations (ug per meter cubed)
+
+```{r vocs_test_bg_val, echo=FALSE, fig.height = 50, fig.width = 16}
+  vocs_merged %>%
+  dplyr::filter(pol != "n_nonane") %>%
+    dplyr::group_by(id, pol, test_type) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 3) +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 20),
+            legend.position = "top") +
+      ylab("concentration") +
+      xlab("") + 
+      facet_wrap(~pol, ncol = 4, scales = "free")
+```
+
+conclusions: 
+
+* need to investigate ways to account for background measurements (for now, subtract the median)
+
+```{r}
+  vocs_samples <-
+    vocs_samples %>%
+    dplyr::mutate(val = val - median)
+```
+
+## table: measurements below the background median
+
+percentage of test concentrations below background concentration
+
+```{r, echo=FALSE}
+  vocs_samples %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## plot: concentrations by stove type
+
+concentrations (ug per meter cubed)
+
+* samples are background corrected
+
+```{r vocs_stovetype, echo=FALSE, fig.height = 70, fig.width = 16}
+  vocs_samples_p <-
+    vocs_samples %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id") %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    tolower %>%
+                    gsub(" [:(:].*[:):]", "", .) %>%
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in justa",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg"))
+
+  vocs_samples_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 2, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions:
+
+* 
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  vocs_samples_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+conclusions:
+
+* no repeat tests recommended
+
+## plot: concentrations by fuel type
+
+concentrations (ug per meter cubed):
+
+* samples are background corrected
+
+```{r vocs_fueltype, echo=FALSE, fig.height = 70, fig.width = 16}
+  vocs_samples_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 3,  width = 0.2) + 
+      scale_shape(solid = FALSE) +
+      guides(fill = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 2, scales = "free") +
+      ylab("") +
+      xlab("")
+```
+
+conclusions: 
+
+* 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  vocs_samples_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol, fuel) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+conclusions: 
+
+* 
+
+## table: burns with NA values
+
+percent of burn samples with NA values
+
+```{r, echo=FALSE}
+  vocs_samples %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::rename("voc type" = "pol") %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## save data
+
+```{r}
+  saveRDS(vocs_merged, file = "../../r_data/vocs_merged.RDS")
+```
+
+# conclusions
