@@ -56,6 +56,10 @@ load schemes
 
   ecoc$id[172] <- "11C"
   ecoc$id[173] <- "11C"
+
+  ecoc <-
+    ecoc %>%
+    dplyr::filter(grepl("^[0-9]|^B[0-9]|^G[0-9]",id))
 ```
 
 ## flags
@@ -101,6 +105,19 @@ define test type variable
     dplyr::filter(!grepl("MC", id))
 ```
 
+## calculate mass on filter
+
+```{r}
+  ecoc <- 
+    ecoc %>%
+      dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm,
+                    cassette, test_type, qc) %>%
+      tidyr::gather("pol", "val", ec_ug_sq_cm, oc_ug_sq_cm) %>%
+      dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
+                    pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
+                    val = val * filter_area)
+```
+
 # missing and bad data
 
 ## table: missing data
@@ -132,19 +149,6 @@ define test type variable
     dplyr::filter(qc != "bad")
 ```
 
-## reformat
-
-```{r}
-  ecoc_merged <- 
-    ecoc_merged %>%
-      dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm,
-                    cassette, test_type, qc) %>%
-      tidyr::gather("pol", "val", ec_ug_sq_cm, oc_ug_sq_cm) %>%
-      dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
-                    pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
-                    val = val * filter_area)
-```
-
 # blank analysis 
 
 ```{r}
@@ -167,7 +171,7 @@ outliers (z > 3) when blanks are grouped by pollutant
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+notes: not substantial - don't remove
 
 ## plot: time series of lab blanks
 
@@ -185,7 +189,7 @@ conclusions:
       ylab("mass (micrograms)")
 ```
 
-conclusions: 
+notes: no substantial outliers - proceed
 
 ## table: lab blanks with NA values
 
@@ -218,7 +222,7 @@ summary of lab blanks (ug)
 
 ```{r, echo=FALSE}
   blanks %>%
-    knitr::kable(digits = 2, align = 'c')
+    knitr::kable(digits = 3, align = 'c')
 ```
 
 ## save blanks
@@ -235,7 +239,9 @@ remove lab blanks from merged file
     dplyr::filter(test_type != "blank") # remove blanks
 ```
 
-add lod variable
+## lod
+
+add lod variable and replace values below lod with lod/sqrt(2)
 
 ```{r}
   ecoc_merged <-
@@ -247,7 +253,7 @@ add lod variable
     dplyr::select(-lod_val)
 ```
 
-# concentration calculations
+# calculate concentrations
 
 ## extract data
 
@@ -301,12 +307,10 @@ calculate concentrations
 
 # backgrounds
 
-extract background and remove any data with no cassette
-
 ```{r}
   bg <-
     ecoc_merged %>%
-    dplyr::filter(test_type == "bg", grepl("a|e", cassette))
+    dplyr::filter(test_type == "bg")
 ```
 
 ## table: lab background outliers
@@ -321,10 +325,10 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
-    knitr::kable("markdown", align = 'c')
+    knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+notes: not substantial - do not remove
 
 ## plot: time series of lab backgrounds
 
@@ -337,18 +341,16 @@ conclusions:
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
-conclusions: 
+notes: no subtantial outliers - proceed
 
-## table: lab backgrounds below lod for  analysis
-
-percent of lab backgrounds below the lod of chemical analysis
+## table: percent oflab backgrounds below lab lod
 
 ```{r, echo=FALSE}
   bg %>%
@@ -358,9 +360,7 @@ percent of lab backgrounds below the lod of chemical analysis
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: lab backgrounds with NA values
-
-percent of lab backgrounds with NA values
+## table: percent of lab backgrounds with NA values
 
 ```{r, echo=FALSE}
   bg %>%
@@ -403,39 +403,15 @@ percent of lab backgrounds with NA values
   saveRDS(bg, file = "../../r_data/ecoc_bg.RDS")
 ```
 
-# burn analysis
+## plot: background and burn concentrations
 
-remove bad tests
+remove bad tests (see comment below)
 
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::filter(!grepl("6D|8D", id))
 ```
-
-## plot: time series of burns
-
-```{r ecoc_burn_timeseries, echo=FALSE}
-  ecoc_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      labs(shape = "lod") +
-      facet_wrap(pol~cassette, scales = "free", ncol = 2) +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
-conclusions: 6D and 8D have very high values, remove for now
-
-## plot: background and burn concentrations
 
 ```{r ecoc_burn_bg_conc, echo=FALSE}
   ecoc_merged %>%
@@ -448,14 +424,14 @@ conclusions: 6D and 8D have very high values, remove for now
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       scale_y_log10() +
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
-conclusions:
+notes: some burns have low concentrations - opt to subtract median background from all burn data
 
 ## subtract background
 
@@ -482,12 +458,18 @@ conclusions:
 
 ```{r, echo=FALSE}
   ecoc_merged %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: these are four artifact filters - set values to zero
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val))
 ```
 
 ## subtract artifact filters
@@ -506,6 +488,42 @@ conclusions:
     dplyr::mutate(val = val - artifact) %>%
     dplyr::select(-artifact, -cassette)
 ```
+
+## table: percentage of measurements below zero when corrected for artifact
+
+```{r, echo=FALSE}
+  ecoc_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: negative outlier is from gasifier test that will be removed from analysis
+
+# burn analysis
+
+## plot: time series of burns
+
+```{r ecoc_burn_timeseries, echo=FALSE}
+  ecoc_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      facet_wrap(~pol, scales = "free", ncol = 1) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 6D and 8D were removed above due to impossibly high values
 
 ## plot: concentrations by stove type
 
@@ -531,7 +549,7 @@ conclusions:
       xlab("")
 ```
 
-conclusions: 
+notes: 
 
 ## table: outliers by stove type
 
@@ -549,7 +567,7 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions:
+notes:
 
 ## plot: concentrations by fuel type
 
@@ -570,7 +588,7 @@ conclusions:
       xlab("")
 ```
 
-conclusions: 
+notes: 
 
 ## table: outliers by fuel type
 
@@ -587,7 +605,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions: 
+notes: 
 
 ## table: burns below lod
 

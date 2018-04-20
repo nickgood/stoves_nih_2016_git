@@ -112,8 +112,8 @@ post-weights
     dplyr::summarise(wgt_post = mean(val))
 ```
 
-* merge weights and calculate difference
-* correct for blank filter weight
+* merge weights and calculate change in mass
+* correct for weigh room blank filter weight
 
 ```{r}
   grav <- 
@@ -141,7 +141,7 @@ post-weights
     xlab("")
 ```
 
-# plot: scale room blank by date
+## plot: scale room blank by date
 
 ```{r pm_wgtoom_filter_timeseries, echo=FALSE}
   grav %>%
@@ -218,7 +218,7 @@ outliers (z > 3) when blanks are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions:
+notes:
 
 ## plot: time series of lab blanks
 
@@ -236,7 +236,7 @@ conclusions:
       ylab("mass (micrograms)")
 ```
 
-conclusions:
+notes:
 
 ## table: lab blanks with NA values
 
@@ -283,7 +283,9 @@ remove lab blanks from merged file
     dplyr::filter(test_type != "blank") # remove blanks
 ```
 
-add lod variable
+## lod
+
+add lod variable and replace values below lod with lod/sqrt(2)
 
 ```{r}
   grav_merged <-
@@ -292,7 +294,7 @@ add lod variable
                   val = ifelse(val <= blanks$lod, blanks$lod / sqrt(2), val))
 ```
 
-# concentration calculations
+# calculate concentrations
 
 ## extract data
 
@@ -364,7 +366,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions: background to invesigate: G7 (filter weights possibly switched)
+notes: background to invesigate: G7 (filter weights possibly switched)
 
 ## plot: time series of lab backgrounds
 
@@ -383,9 +385,7 @@ conclusions: background to invesigate: G7 (filter weights possibly switched)
       xlab("")
 ```
 
-conclusions: Check G7 (filter out for now)
-
-remove G7
+notes: Check G7 (remove for now)
 
 ```{r}
   grav_merged <-
@@ -397,7 +397,7 @@ remove G7
     dplyr::filter(id != "G7")
 ```
 
-## table: percent of lab backgrounds below lod for chemical analysis
+## table: percent of lab backgrounds below study lod
 
 ```{r, echo=FALSE}
   bg %>%
@@ -446,36 +446,17 @@ summarize backgrounds
     knitr::kable(digits = 2, align = 'c')
 ```
 
+notes: reasonable levels for indoor air in a combustion lab
+
 ## save backgrounds
 
 ```{r}
   saveRDS(bg, file = "../../r_data/pm_bg.RDS")
 ```
 
-# burn analysis
-
-## plot: time series of burns
-
-```{r ecoc_burn_timeseries, echo=FALSE}
-  grav_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      labs(shape = "lod") +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
 ## plot: background and burn concentrations
 
-```{r ecoc_burn_bg_conc, echo=FALSE}
+```{r ecoc_burn_bg_conc, echo=FALSE, fig.height=4, fig.width=4}
   grav_merged %>%
     dplyr::group_by(id, test_type) %>%
     dplyr::filter(!is.na(val)) %>%
@@ -486,13 +467,15 @@ summarize backgrounds
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       scale_y_log10() +
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
-conclusions:
+notes: some burns have low concentrations - opt to subtract median background from all burn data
+
+## subtract background
 
 ```{r}
   grav_merged <-
@@ -525,9 +508,30 @@ conclusions:
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+# burn analysis
+
+## plot: time series of burns
+
+```{r ecoc_burn_timeseries, echo=FALSE}
+  grav_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
 ## plot: concentrations by stove type
 
-```{r pm_stovetype, echo=FALSE, fig.width=10}
+```{r pm_stovetype, echo=FALSE, fig.width=8, fig.height=4}
   grav_merged_p <-
     grav_merged %>%
     dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
@@ -548,7 +552,7 @@ conclusions:
       xlab("")
 ```
 
-conclusions: 
+notes: 
 
 ## table: outliers by stove type
 
@@ -565,11 +569,11 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions:
+notes:
 
 ## plot: concentrations by fuel type
 
-```{r pm_fueltype, echo=FALSE, fig.width=10}
+```{r pm_fueltype, echo=FALSE, fig.width=8, fig.height=4}
   grav_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
@@ -585,7 +589,7 @@ conclusions:
       xlab("")
 ```
 
-conclusions:
+notes:
 
 ## table: outliers by fuel type
 
@@ -602,9 +606,9 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions:
+notes:
 
-## table: percent of burns below lod for analysis
+## table: percent of burns below study lod
 
 ```{r, echo=FALSE}
   grav_merged %>%
