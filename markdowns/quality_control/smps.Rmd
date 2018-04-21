@@ -26,6 +26,7 @@ load scripts
 
 ```{r}
   source("../../scripts/tidy.R")
+  source("../../scripts/functions.R")
 ```
 
 load data
@@ -35,8 +36,7 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
   cal_2 <- readRDS("../../r_data/cal_2.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
-  test_times <- readRDS("../../r_data/test_times.RDS")
-  bg_times <- readRDS("../../r_data/smps_pax_bg_times.RDS")
+  times <- readRDS("../../r_data/smps_pax_times.RDS")
 ```
 
 load schemes
@@ -46,36 +46,22 @@ load schemes
   lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
-## flows
-
-extract measured flows
+## test type
 
 ```{r}
-  smps_flows <- tidy_date(cal_2, "^preflow_smps|^postflow_smps", "")
-
-  smps_flows <- split_flows(smps_flows)
-```
-
-average flows
-
-```{r}
-  smps_flows <- dplyr::arrange(dplyr::group_by(smps_flows, date, type), date) %>%
-                dplyr::mutate(mean = mean(value, na.rm = TRUE),
-                              sd = sd(value, na.rm = TRUE)) %>%
-                dplyr::filter(rep == 1) %>%
-                dplyr::select(-rep, -value) %>%
-                tidyr::gather(temp, val, mean, sd) %>%
-                tidyr::unite(temp1, type, temp, sep = "_") %>%
-                tidyr::spread(temp1, val)
-```
-
-merge
-
-```{r}
-  smps_merged <- 
+  smps <- 
     smps %>%
-    dplyr::left_join(smps_flows, "date") %>%
-    dplyr::mutate(sample = as.factor(sample))
+    dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
+                  type = ifelse(grepl("^G", id), "bg", type))
+```
+
+## fix id
+
+```{r}
+  smps <-
+    smps %>%
+    dplyr::mutate(id = as.character(id),
+                  id = ifelse(grepl("^29B", id), "29B", id))
 ```
 
 ## flags
@@ -103,77 +89,63 @@ add flag by id
 
 ```{r}
   smps_merged <-
-    smps_merged %>%
+    smps %>%
     dplyr::left_join(flags, by = "id") %>%
     dplyr::mutate(id = as.factor(id)) %>%
     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-## test type
+## flows
+
+extract and average flows
 
 ```{r}
-  smps_merged <- 
-    smps_merged %>%
-    dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
-                  type = ifelse(grepl("^G", id), "bg", type))
+  smps_flows <-
+    tidy_date(cal_2, "^preflow_smps|^postflow_smps", "")
+
+  smps_flows <-
+    split_flows(smps_flows)
+  
+  smps_flows <-
+    smps_flows %>%
+    dplyr::group_by(date, type) %>%
+    dplyr::summarise(val = mean(value, na.rm = TRUE))
 ```
 
-## add flag for instrument error
+## plot: smps flow rates
 
-```{r}
-  smps_merged <- 
-    smps_merged %>%
-    dplyr::mutate(qc = ifelse(grepl("^Normal Scan$", instrument_errors),
-                              as.character(qc),
-                              "maybe"))
+```{r smps_flows}
+  smps_flows %>%
+  ggplot(aes(x = date, y = val, colour = type)) +
+    geom_point(size = 2) +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    ylab("flow (liters per minute)")
 ```
+
+notes: look reasonable - proceed
 
 # missing and bad data
 
 ## table: missing data
 
-missing back pufs
-
 ```{r, echo = FALSE}
-  missing <-
-    dplyr::select(samples, id, stove, fuel) %>%
-    dplyr::anti_join(pah %>%
-                       dplyr::filter(test_type != "blank", filter_type == "back puf") %>%
-                       dplyr::select(id), by = "id") %>%
-    dplyr::mutate(filter_type = "back puf") %>%
-    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
-                       dplyr::anti_join(pah %>%
-                                          dplyr::filter(test_type != "blank", filter_type == "front puf") %>%
-                                          dplyr::select(id), by = "id") %>%
-                       dplyr::mutate(filter_type = "front puf")) %>%
-    dplyr::bind_rows(dplyr::select(samples, id, stove, fuel) %>%
-                       dplyr::anti_join(pah %>%
-                                          dplyr::filter(test_type != "blank", filter_type == "filter") %>%
-                                          dplyr::select(id), by = "id") %>%
-                       dplyr::mutate(filter_type = "filter"))
-
-  knitr::kable(missing, "markdown", align = 'c')
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(smps %>%
+                   dplyr::select(id) %>%
+                   dplyr::distinct(),
+                   by = "id") %>%
+  knitr::kable("markdown", align = 'c')
 ```
 
-notes: we have measurements labeled 10D-B and 8E-B, which don't match any test ids
+notes: data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19A, 28A, 29B
 
-## remove tests without front puf or filter
-
-```{r}
-  missing <- 
-    missing %>%
-    dplyr::filter(filter_type != "back puf") 
-
-  pah <-
-    pah %>%
-    dplyr::anti_join(missing, by = "id")
-```
-
-## table: tests with bad measurements
+## table: bad data
 
 ```{r, echo=FALSE}
   notes %>%
-    dplyr::filter(grepl("pah|all", inst) == TRUE,
+    dplyr::filter(grepl("smps|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
     knitr::kable("markdown", align = 'c')
@@ -182,174 +154,73 @@ notes: we have measurements labeled 10D-B and 8E-B, which don't match any test i
 ## remove bad tests
 
 ```{r}
-  pah_merged <-
-    pah %>% 
+  smps_merged <-
+    smps_merged %>% 
     dplyr::filter(qc != "bad")
 ```
 
-# Ultrafine number
+# calculate concentration
 
-## per scan 
+select sub-100nm data
 
-* select sub-100nm data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::select(smps_merged, id, value, size, time, sample, qc) %>%
-                    dplyr::filter(size <= 100)
+```{r}
+  smps_ultrafine <- 
+    smps_merged %>%
+    dplyr::select(id, value, size, time, sample, qc) %>%
+    dplyr::filter(size <= 100)
 ```
 
-* get timestamps
+get timestamps
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::filter(test_times, var == "start_1" | var == "shutdown") %>%
-           tidyr::spread(var, value) %>%
-           dplyr::select(-date) %>%
-           dplyr::rename(start = start_1, end = shutdown)
+```{r}
+  times <- 
+    times %>%
+    dplyr::filter(type == "sample") %>%
+    tidyr::spread(time_point, value) %>%
+    dplyr::select(-date)
 ```
 
-* filter by test time window
+filter by test time window
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- filter_times(times, smps_ultrafine)
+```{r}
+  smps_ultrafine <- 
+    filter_times(times, smps_ultrafine)
 ```
 
-* calculate number concentration over each scan
+## table: fraction of scans missing
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
-                    dplyr::summarise(number_conc = sum(value) * 0.015625355,
-                                     n_bad = sum(qc == "bad"),
-                                     qc = first(qc))
+```{r}
+  smps_ultrafine %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 75) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+    
 ```
 
-* plot timeseries for each experiment
+notes: 11A is missing approx. 88% of test - remove
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80} 
-  ggplot(smps_ultrafine, aes(sample, number_conc, colour = qc)) +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         scale_y_log10() +
-         theme_minimal() + 
-         ylab("number per cc") +
-         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-         theme(legend.position = "top") +
-         scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                        "maybe" = "mediumorchid",
-                                        "bad" = "mistyrose4"))
-         
+```{r}
+  smps_ultrafine <-
+    smps_ultrafine %>%
+    dplyr::filter(id != "11A")
 ```
 
-## test average
+## table: fraction of scans missing
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_avg <- dplyr::filter(smps_ultrafine) %>%
-                    dplyr::group_by(id) %>%
-                    dplyr::summarise(mean_number_conc = mean(number_conc),
-                                     qc = first(qc))
+```{r}
+  smps_ultrafine <- 
+    smps_ultrafine %>%
+    dplyr::group_by(id, sample) %>%
+    dplyr::summarise(val = sum(value) * 0.015625355,
+                     qc = first(qc))
 ```
 
-* plot test average
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8} 
-  ggplot(smps_ultrafine_avg, aes(id, mean_number_conc, colour = qc)) +
-         geom_point() +
-         scale_y_log10() +
-         theme_minimal() + 
-         ylab("sub 100 nm - mean number per cc") +
-         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-         theme(legend.position = "top") +
-         scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                        "maybe" = "mediumorchid",
-                                        "bad" = "mistyrose4"))
-```
-
-# Background (G tests)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <-  dplyr::filter(smps_merged, size <= 100, type == "bg") %>%
-                        dplyr::select(id, value, size, time, sample, qc, type)
-```
-
-* reformat time data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times_bg <- dplyr::filter(smps_pax_bg_times, grepl("^G", id), type == "sample") %>%
-              tidyr::spread(time_point, value) %>%
-              dplyr::select(-date)
-```
-
-* filter by test time window
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <- filter_times(times_bg, smps_ultrafine_bg)
-```
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <- dplyr::group_by(smps_ultrafine_bg, id, sample) %>%
-                       dplyr::summarise(number_conc = sum(value) * 0.015625355,
-                                        n_bad = sum(qc == "bad"),
-                                        qc = first(qc)) %>%
-                       dplyr::ungroup()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=10}
-  p_id <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = id)) +
-            geom_point() +
-            theme_minimal() +
-            scale_y_log10() +
-            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-            theme(legend.position = "top")
-
-  p_qc <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = qc)) +
-            geom_point() +
-            theme_minimal() +
-            scale_y_log10() +
-            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-            theme(legend.position = "top") +
-            scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                           "maybe" = "mediumorchid",
-                                           "bad" = "mistyrose4"))
-
-  grid.arrange(p_id, p_qc, ncol = 1)
-```
-
-# Save files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(smps_merged, file = "../r_files/smps_merged.Rda")
-
-  save(smps_ultrafine, file = "../r_files/smps_ultrafine.Rda")
-
-  save(smps_ultrafine_bg, file = "../r_files/smps_ultrafine_bg.Rda")
-```
-
-# Summary
-
-The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
-
-SMPS data is expected to be missing for: 
-13A, 17A, 18A, 19A, 20A, G3, G4. "no data" was noted on QC log for these tests. 
-
-G1, 23A: test date 1/7/2016: data lost from this day. 
-29B: test date 6/29/2016; for some reason there are 2 files, part 1 and 2, where file name is 20160622_29B(1)_SMPS and 20160622_29B(2)_SMPS. Part 1 only contains 24 scans, start times from 13:14 through 14:06. Part 2 starts at 14:22, only 8 scans through 14:45 start. Test start, according to log sheet, was 13:33 - electrical problem with stove at 14:14:00 forced test shutdown early. Need to combine files, or it's possible that this whole test should be scrapped? 
-
-28A: test date 6/23/2016; file is there with correct naming convention…only 9 scans from 9:46 through 10:13; log sheet says test time was from 10:02 through 11:28…suspect an issue occurred with SMPS?
-
-11A: test date 7/19/2016; file is there with correct naming convention…42 scans from 9:53 to 12:09 - but test time in log listed as 12:12 through 13:43…suspect an issue occurred with SMPS?
-
-# Plots
-
-## qc (optional)
-
-* all scans
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
-  ggplot(smps_merged, aes(size, value, group = sample, colour = qc)) +
-         geom_line() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         scale_x_log10() + scale_y_log10() +
-         ylab("dN/dlogDp") +
-         xlab("nm") +
-         theme(legend.position = "none")
-```
+# backgrounds
