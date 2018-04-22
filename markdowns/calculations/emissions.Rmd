@@ -29,6 +29,8 @@ pollutant data
   carbohydrates <- readRDS("../../r_data/carbohydrates_merged.RDS")
   ions <- readRDS("../../r_data/ions_merged.RDS")
   vocs <- readRDS("../../r_data/vocs_merged.RDS")
+  pahs <- readRDS("../../r_data/pah_merged.RDS")
+  ultrafines <- readRDS("../../r_data/ultrafines_merged.RDS")
 ```
 
 constants
@@ -44,7 +46,7 @@ constants
 ```{r}
   emissions <-
     ecoc %>%
-    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs)
+    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs, pahs)
     
 ```
 
@@ -57,12 +59,23 @@ constants
     dplyr::left_join(pol_properties, by = "pol") %>%
     dplyr::mutate(mass_emitted = conc * hood_flow * dur,
                   mass_carbon = mass_emitted * (num_c * mw_c / mw)) %>%
-    dplyr::select(id, pol, conc, mass_emitted, mass_carbon, lod, qc) %>%
-    tidyr::gather("metric", "val", 3:5) %>%
+    dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc) %>%
+    tidyr::gather("metric", "val", 4:6) %>%
+    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per cm cubed", "micrograms")) %>%
     dplyr::filter(!is.na(val))
 ```
 
-## save
+# add ultrafines
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::bind_rows(ultrafines %>%
+                      dplyr::mutate(metric = "num_conc",
+                                    units = "number per cm cubed"))
+```
+
+# save
 
 ```{r}
   saveRDS(emissions, file = "../../r_data/emissions.RDS")
