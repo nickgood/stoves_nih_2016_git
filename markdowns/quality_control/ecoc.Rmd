@@ -350,7 +350,7 @@ notes: not substantial - do not remove
 
 notes: no subtantial outliers - proceed
 
-## table: percent oflab backgrounds below lab lod
+## table: percent of lab backgrounds below lab lod
 
 ```{r, echo=FALSE}
   bg %>%
