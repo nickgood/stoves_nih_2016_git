@@ -539,7 +539,7 @@ Outlier 23A was a transcription error (AM vs PM) that was fixed on 2/18/17. G3 i
 
   smps_pax_bg_times <- split_times_smps_pax(smps_pax_bg_times)
 
-  saveRDS(smps_pax_bg_times, file = "../../r_data/smps_pax_bg_times.RDS")
+  saveRDS(smps_pax_bg_times, file = "../../r_data/smps_pax_times.RDS")
 ```
 
 * unexpected values:
