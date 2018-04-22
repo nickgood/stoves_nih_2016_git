@@ -23,6 +23,7 @@ output:
 pollutant data
 
 ```{r}
+  samples <- readRDS("../../r_data/samples.RDS")
   ecoc <- readRDS("../../r_data/ecoc_merged.RDS")
   pm <- readRDS("../../r_data/pm_merged.RDS")
   carbonyls <- readRDS("../../r_data/carbonyls_merged.RDS")
@@ -72,11 +73,58 @@ constants
     emissions %>%
     dplyr::bind_rows(ultrafines %>%
                       dplyr::mutate(metric = "num_conc",
-                                    units = "number per cm cubed"))
+                                    units = "number per cm cubed")) %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id))
 ```
 
 # save
 
 ```{r}
   saveRDS(emissions, file = "../../r_data/emissions.RDS")
+```
+
+# exploratory analysis
+
+## plot: gas composition
+
+```{r, echo=FALSE, fig.width=10}
+  emissions %>%
+  dplyr::filter(metric == "mass_emitted",
+                grepl("carbonyls|pahs|vocs", pol_category)) %>%
+  dplyr::mutate(val = val / 10e3) %>%
+  dplyr::group_by(id, pol_category) %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+  dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+  dplyr::group_by(stove, fuel, pol_category) %>%
+  dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+  ggplot(aes(x = stove, y = val, fill = fuel)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    coord_flip() +
+    theme_bw() +
+    theme(text = element_text(size = 16),
+          legend.position = "top") +
+    facet_wrap(~pol_category, scales = "free") +
+    ylab("mass emitted (miligrams)") +
+    xlab("")
+```
+
+## plot: particle composition
+
+```{r, echo=FALSE, fig.width=12, fig.height=10}
+  emissions %>%
+  dplyr::filter(metric == "mass_emitted",
+                grepl("ions|ecoc", pol_category)) %>%
+  dplyr::mutate(val = val / 10e3) %>%
+  dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+  dplyr::group_by(stove, fuel, pol) %>%
+  dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+  ggplot(aes(x = stove, y = val, fill = fuel)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    coord_flip() +
+    theme_bw() +
+    theme(text = element_text(size = 16),
+          legend.position = "top") +
+    facet_wrap(~pol, scales = "free") +
+    ylab("mass emitted (miligrams)") +
+    xlab("")
 ```
