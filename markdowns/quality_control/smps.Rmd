@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 
@@ -37,6 +36,7 @@ load data
   cal_2 <- readRDS("../../r_data/cal_2.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   times <- readRDS("../../r_data/smps_pax_times.RDS")
+  smps_constant <-readRDS("../../r_data/smps_constant.RdS")
 ```
 
 load schemes
@@ -51,8 +51,8 @@ load schemes
 ```{r}
   smps <- 
     smps %>%
-    dplyr::mutate(type = ifelse(grepl("^[0-9]", id), "test", NA),
-                  type = ifelse(grepl("^G", id), "bg", type))
+    dplyr::mutate(test_type = ifelse(grepl("^[0-9]", id), "test", NA),
+                  test_type = ifelse(grepl("^G", id), "bg", test_type))
 ```
 
 ## fix id
@@ -62,6 +62,58 @@ load schemes
     smps %>%
     dplyr::mutate(id = as.character(id),
                   id = ifelse(grepl("^29B", id), "29B", id))
+```
+
+## reformat
+
+rename columns
+
+```{r}
+  smps <-
+    smps %>%
+    dplyr::rename("temp" = "sample_temp_c",
+                  "pressure" = "sample_pressure_kpa",
+                  "humidity" = "relative_humidity",
+                  "scan" = "sample",
+                  "errors" = "instrument_errors",
+                  "val" = "value",
+                  "aerosol_flow" = "aerosol_flow_l_min",
+                  "bypass_flow" = "bypass_flow_l_min",
+                  "inlet_flow" = "detector_inlet_flow_(l/min)",
+                  "detector_flow" = "detector_sample_flow_(l/min)",
+                  "scan_time" = "scan_time_s",
+                  "retrace_time" = "retrace_time_s",
+                  "channel_decade" = "channels/decade")
+```
+
+remove extra columns
+
+```{r}
+  smps <-
+    smps %>%
+    dplyr::select(id, scan,  time, size, val, size, time, temp, pressure, humidity, errors, test_type,
+                  aerosol_flow, bypass_flow, inlet_flow, detector_flow, scan_time, retrace_time, channel_decade,
+                  multiple_charge_correction, diffusion_correction)
+```
+
+## extract sample time
+
+get timestamps
+
+```{r}
+  times <- 
+    times %>%
+    dplyr::filter(type == "sample") %>%
+    tidyr::spread(time_point, value) %>%
+    dplyr::select(-date)
+```
+
+
+filter times
+
+```{r}
+  smps <- 
+    filter_times(times, smps)
 ```
 
 ## flags
@@ -95,6 +147,8 @@ add flag by id
     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
+# quality control
+
 ## flows
 
 extract and average flows
@@ -112,9 +166,9 @@ extract and average flows
     dplyr::summarise(val = mean(value, na.rm = TRUE))
 ```
 
-## plot: smps flow rates
+## plot: smps flow rates - measured
 
-```{r smps_flows}
+```{r smps_flows_measured}
   smps_flows %>%
   ggplot(aes(x = date, y = val, colour = type)) +
     geom_point(size = 2) +
@@ -125,6 +179,151 @@ extract and average flows
 ```
 
 notes: look reasonable - proceed
+
+## plot: smps flow rates - instrument
+
+```{r smps_flows}
+  smps_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::select(date, aerosol_flow, bypass_flow, inlet_flow, detector_flow, qc) %>%
+    tidyr::gather("var", "val", 2:5) %>%
+    ggplot(aes(x = date, y = val, colour = qc)) +
+      geom_point(size = 2, shape = 1) +
+      theme_bw() +
+      facet_wrap(~var, scales = "free") +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("flow (liters per minute)")
+```
+
+notes: look reasonable - proceed
+
+## plot: scan parameters
+
+```{r smps_scan_parameters}
+  smps_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::select(date, multiple_charge_correction, diffusion_correction, channel_decade, retrace_time, scan_time, qc) %>%
+    tidyr::gather("var", "val", 2:6) %>%
+    ggplot(aes(x = date, y = val, colour = qc)) +
+      geom_point(size = 2, shape = 1) +
+      theme_bw() +
+      facet_wrap(~var, scales = "free") +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("flow (liters per minute)")
+```
+
+notes: look reasonable, except some data points did not have diffusion correction
+
+## table: diffusion correction
+
+```{r}
+  smps_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::select(date, id, diffusion_correction) %>%
+    dplyr::filter(diffusion_correction == "FALSE") %>%
+    dplyr::distinct()%>%
+    knitr::kable(digits = 2, align = 'c')
+    
+```
+
+notes: this setting corrects for diffusion of particles in the smps - big problem for particles less than 100 nm - remove these tests (note none of the scans during the above tests were diffusion corrected)
+
+```{r}
+ smps_merged <- 
+  smps_merged %>%
+  dplyr::mutate(qc = ifelse(grepl("TRUE", diffusion_correction), as.character(qc), "bad"))
+```
+
+## plot: temperature
+
+```{r, echo=FALSE}
+  smps_merged %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "temp")) +
+      geom_point(aes( color = qc), size = 2, shape = 1) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      ylab("temperature (degrees Celsius)") +
+      xlab("")
+```
+
+notes: all scans look within range (inst range: 10 - 35 C) - proceed
+
+## plot: pressure
+
+```{r, echo=FALSE}
+  smps_merged %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "pressure")) +
+      geom_point(aes( color = qc), size = 2, shape = 1) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      ylab("pressure (kilopascals)") +
+      xlab("")
+```
+
+notes: all scans look within range  (inst range: 75 - 105 kPa) - proceed
+
+## plot: humidity
+
+```{r, echo=FALSE}
+  smps_merged %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "humidity")) +
+      geom_point(aes( color = qc), size = 2, shape = 1) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "lod") +
+      ylab("relative humidity (%)") +
+      xlab("")
+```
+
+notes: all scans look within range (inst range: 0 - 90%) - proceed
+
+## Look at scan errors
+
+```{r, echo=FALSE}
+  smps_merged %>%
+    dplyr::select(id, scan, errors) %>%
+    dplyr::distinct() %>%
+  dplyr::mutate(bad_scan = ifelse(grepl("^Normal Scan$", errors), 0, 1),
+                scan_count = 1) %>%
+  dplyr::group_by(id) %>%
+  dplyr::summarise(bad_scan = sum(bad_scan),
+                   scan_count = sum(scan_count),
+                   errors = first(errors)) %>%
+  dplyr::mutate(prct_bad = (bad_scan / scan_count) * 100) %>%
+  dplyr::filter(!grepl("^Normal Scan$", errors)) %>%
+  knitr::kable(align = 'c', digits = 2)
+```
+
+notes:
+
+* sheath flow error: (possible causes - reading not stablilizing, flowmeter not functioning, blower not functioning)
+* sheath flow warning: sheath flow has been changed in last 30 seconds and is stabilizing
+* Detector laser error:
+* Detector growth tube temp error:
+
+all errors only happened for one or two scans - remove 
+
+```{r}
+ smps_merged <- 
+  smps_merged %>%
+  dplyr::mutate(qc = ifelse(grepl("^Normal Scan$", errors), as.character(qc), "bad"))
+```
 
 # missing and bad data
 
@@ -159,38 +358,10 @@ notes: data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19
     dplyr::filter(qc != "bad")
 ```
 
-# calculate concentration
-
-select sub-100nm data
-
-```{r}
-  smps_ultrafine <- 
-    smps_merged %>%
-    dplyr::select(id, value, size, time, sample, qc) %>%
-    dplyr::filter(size <= 100)
-```
-
-get timestamps
-
-```{r}
-  times <- 
-    times %>%
-    dplyr::filter(type == "sample") %>%
-    tidyr::spread(time_point, value) %>%
-    dplyr::select(-date)
-```
-
-filter by test time window
-
-```{r}
-  smps_ultrafine <- 
-    filter_times(times, smps_ultrafine)
-```
-
 ## table: fraction of scans missing
 
-```{r}
-  smps_ultrafine %>%
+```{r, echo=FALSE}
+  smps_merged %>%
     dplyr::select(id, time) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise(start = min(time),
@@ -208,19 +379,358 @@ filter by test time window
 notes: 11A is missing approx. 88% of test - remove
 
 ```{r}
-  smps_ultrafine <-
-    smps_ultrafine %>%
+  smps_merged <-
+    smps_merged %>%
     dplyr::filter(id != "11A")
 ```
 
-## table: fraction of scans missing
+# backgrounds
 
 ```{r}
-  smps_ultrafine <- 
-    smps_ultrafine %>%
-    dplyr::group_by(id, sample) %>%
-    dplyr::summarise(val = sum(value) * 0.015625355,
-                     qc = first(qc))
+  smps_merged <-
+    smps_merged %>%
+    dplyr::select(id, scan, size, val, qc, test_type)
 ```
 
-# backgrounds
+```{r}
+  bg <-
+    smps_merged %>%
+    dplyr::filter(test_type == "bg")
+```
+
+## plot: time series of lab backgrounds
+
+```{r smps_bg_conc, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::group_by(id, scan) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     date = first(date)) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc), size = 2, shape = 1) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("dN (# per cubic centimeter)") +
+      xlab("")
+```
+
+notes: scans with high number concentration - investigate
+
+## table: lab background outliers
+
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::group_by(id, scan) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     date = first(date)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: remove scan G6
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(!grepl("^G6$", id))
+```
+
+## summarize backgrounds
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(size) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+## plot: background summary
+
+* black - mean
+* blue - median
+
+```{r smps_bg_distribution, echo=FALSE}
+  bg %>%
+    ggplot(aes_string(x = "size", y = "mean")) +
+      geom_line(color = "blue") +
+      geom_line(aes_string(x = "size", y = "median")) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      scale_x_log10() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("dN/dlogDp (# per cubic centimeter)") +
+      xlab("")
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../r_data/smps_bg.RDS")
+```
+
+## plot: background and burn concentrations
+
+summed over each scan
+
+```{r smps_burn_bg_conc, echo=FALSE}
+  smps_merged %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::group_by(id, scan, test_type) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2, shape = 1) +
+      theme_bw() +
+      scale_color_manual(values = qc_colors) +
+      scale_y_log10() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("dN/dlogDp (# per cubic centimeter)") +
+      xlab("")
+```
+
+notes: some burns have low concentrations - opt to subtract median background from all burn data
+
+## subtract background
+
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::filter(test_type == "test")
+```
+
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::left_join(bg, by = c("size")) %>%
+    dplyr::mutate(median = ifelse(is.na(median), 0, median))
+```
+
+notes: a few size bins do not have background value - set these bins to zero based on median values of other bins in that size range 
+
+```{r}
+  smps_merged <-
+   smps_merged %>%
+    dplyr::mutate(val = val - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median
+
+```{r, echo=FALSE}
+  smps_merged %>%
+    dplyr::group_by(size) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: the negative concentration is small and mostly at large size bins that have low statistics - set these values to zero
+
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val))
+```
+
+# burn analysis for size distribution data
+
+## plot: size distribution by stove type
+
+```{r size_distribution_stovetype, echo=FALSE, fig.height=10, fig.width=10}
+  smps_merged_p <-
+    smps_merged %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
+
+ smps_merged_p %>%
+    ggplot(aes_string(x = "size", y = "val", group = c("scan"))) +
+      geom_point(aes(color = qc), alpha = 0.5, size = 0.25) + 
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      scale_x_log10() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~stove, scales = "free", nrow = 3) +
+      ylab("dN/dlogDp (# per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## plot: concentrations by fuel type
+
+```{r size_distribution_fueltype, echo=FALSE, fig.height=10, fig.width=10}
+  smps_merged_p %>%
+    ggplot(aes_string(x = "size", y = "val", group = c("scan"))) +
+      geom_point(aes(color = qc), alpha = 0.5, size = 0.25) + 
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      scale_x_log10() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~fuel, scales = "free", nrow = 3) +
+      ylab("dN/dlogDp (# per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## save data
+
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::mutate(pol = "size distribution") %>%
+    dplyr::select(id, scan, pol, size, val, qc) %>%
+    dplyr::mutate(pol_category = "smps")
+
+  saveRDS(smps, file = "../../r_data/smps_merged.RDS")
+```
+
+# burn analysis for ultrafines
+
+```{r}
+  ultrafines <-
+    smps_merged %>%
+    dplyr::filter(size <= 100) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val) * smps_constant,
+                     qc = first(qc)) 
+```
+
+## plot: time series of burns
+
+```{r ultrafines_burn_timeseries, echo=FALSE}
+  ultrafines %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc), size = 2) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      ylab("concentration number per meter cubed)") +
+      xlab("")
+```
+
+notes: seems reasonable
+
+## plot: concentrations by stove type
+
+```{r ultrafines_stovetype, echo=FALSE, fig.width=10}
+  ultrafines_p <-
+    ultrafines %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
+
+ ultrafines_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      scale_y_log10() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  ultrafines_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## plot: concentrations by fuel type
+
+```{r ultrafines_fueltype, echo=FALSE, fig.width=10}
+  ultrafines_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      scale_color_manual(values = qc_colors) +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  ultrafines_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+## save data
+
+```{r}
+  ultrafines <-
+    ultrafines %>%
+    dplyr::mutate(pol = "ultrafines") %>%
+    dplyr::select(id, pol, val, qc) %>%
+    dplyr::mutate(pol_category = "smps")
+
+  saveRDS(ultrafines, file = "../../r_data/ultrafines_merged.RDS")
+```
