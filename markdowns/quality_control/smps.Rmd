@@ -293,7 +293,7 @@ notes: all scans look within range  (inst range: 75 - 105 kPa) - proceed
 
 notes: all scans look within range (inst range: 0 - 90%) - proceed
 
-## Look at scan errors
+## look at scan errors
 
 ```{r, echo=FALSE}
   smps_merged %>%
