@@ -636,7 +636,7 @@ calculate mass concentrations
   fivegas_merged <-
     fivegas_merged %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
-    dplyr::mutate(val = convert_ppmv_ugpmc(val / 1000, mw, 25, 85),
+    dplyr::mutate(val = convert_ppmv_ugpmc(val, mw, 25, 85),
                   units = "ug per meter cubed") %>%
     dplyr::select(-mw)
 ```
