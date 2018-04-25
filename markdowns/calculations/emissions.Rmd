@@ -32,6 +32,7 @@ pollutant data
   vocs <- readRDS("../../r_data/vocs_merged.RDS")
   pahs <- readRDS("../../r_data/pah_merged.RDS")
   ultrafines <- readRDS("../../r_data/ultrafines_merged.RDS")
+  gases <- readRDS("../../r_data/fivegas_merged_avg.RDS")
 ```
 
 constants
@@ -47,8 +48,7 @@ constants
 ```{r}
   emissions <-
     ecoc %>%
-    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs, pahs)
-    
+    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs, pahs, gases)
 ```
 
 # calculate additional metrics
