@@ -30,16 +30,16 @@ output:
 # fuel properties
 
 ```{r}
-  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
-                                                 "Eucalyptus",
-                                                 "Oak",
-                                                 "Coconut Charcoal",
-                                                 "Lump Hardwood (Med.)",
-                                                 "Lump Hardwood (Sm.)",
-                                                 "Eucalyptus Pellets",
-                                                 "West Slope Pellets",
-                                                 "Kerosene",
-                                                 "Liquefied Petroleum Gas"),
+  fuel_properties <- tibble::data_frame(fuel = c("douglas fir",
+                                                 "eucalyptus",
+                                                 "oak",
+                                                 "coconut charcoal",
+                                                 "lump hardwood (med.)",
+                                                 "lump hardwood (sm.)",
+                                                 "eucalyptus pellets",
+                                                 "west slope pellets",
+                                                 "kerosene",
+                                                 "lpg"),
                                          lhv = c(18658, 19427, 18658, 16628,
                                                  28611, 28611, 17501, 17501,
                                                  43100, 46100),  # kJ/kg
