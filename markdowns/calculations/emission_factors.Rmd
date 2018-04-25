@@ -25,69 +25,44 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
   fuel <- readRDS("../../r_data/fuel_burnt.RDS")
   emissions <- readRDS("../../r_data/emissions.RDS")
-  energy <- readRDS("../r_files/energy.RDS")
+  fuel_properties <- readRDS("../../r_data/fuel_properties.RDS")
+  #energy <- readRDS("../r_files/energy.RDS")
 ```
 
-```{r,}
-  load("../r_files/hood_flow.Rda")
-  load("../r_files/pol_properties.Rda")
-  load("../r_files/inst_constants.Rda")
-  load("../r_files/calc_constants.Rda")
-  load("../r_files/fuel_properties.Rda")
-```
-
-# Mass carbon per test
+# mass carbon per test
 
 ```{r}
-  mass_fuel <- dplyr::filter(emissions_long, metric == "mass_carbon") %>%
-               dplyr::group_by(id) %>%
-               dplyr::filter(value >= 0) %>%  # ignore negatives
-               dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
-               dplyr::mutate(mass_carbon = 
-                               ifelse(grepl("^1A$|^2A$", id),
-                                      NA, mass_carbon))  # ignore tests with missing fivegas data
+  mass_carbon <-
+    emissions %>%
+    dplyr::filter(metric == "mass_carbon") %>%
+    dplyr::group_by(id) %>%
+    dplyr::filter(val >= 0, grepl("^co2$|^co$", pol)) %>% 
+    tidyr::spread("pol", "val") %>%
+    dplyr::summarise(mass_carbon = sum(val, na.rm = TRUE)) %>%
+    dplyr::mutate(mass_carbon =  ifelse(grepl("^1A$|^2A$", id), NA, mass_carbon))  # ignore tests with missing fivegas data
 ```
 
-# Merge with fuel properties
+# merge with fuel properties
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel,
-                                dplyr::select(samples, id, fuel),
-                                by = "id") %>%
-               dplyr::left_join(fuel_properties, by = "fuel")
+```{r} 
+  mass_fuel <-
+    fuel %>%
+    dplyr::left_join(dplyr::select(samples, id, fuel), by = "id") %>%
+    dplyr::left_join(fuel_properties, by = "fuel")
 ```
 
-# Carbon balance
+# carbon balance
 
-* Calculate fuel burned using carbon balance method
+* calculate fuel burned using carbon balance method
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  mass_fuel <- dplyr::left_join(mass_fuel, fuel_burnt, by = "id") %>%
+```{r, echo=TRUE} 
+  mass_fuel <- dplyr::left_join(mass_fuel, mass_carbon, by = "id") %>%
                dplyr::mutate(mass_fuel_c = mass_carbon * (1e-9) *
                                (1 / carbon_fraction)) %>%
                dplyr::mutate(mass_fuel_kg = mass_fuel * (1e-3))
 ```
 
-# Energy delivered
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  energy %<>% 
-    dplyr::filter(qc != "bad") %>%
-    dplyr::select(-qc)
-              
-```
-
-
-* Filter out bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=10, fig.height=40} 
-  # NG: are these still unrealistic?
-  emissions <- dplyr::filter(emissions_long, qc != "bad") %>%
-               dplyr::filter(grepl("^9B$|^6D$|^2A$|^8D", id) == FALSE) %>% # unrealistic values
-               dplyr::filter(value >= 0)  # ignore negatives
-```
-
-# Calculate emissions factors
+# calculate emissions factors
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emission_factors <- emissions %>%
