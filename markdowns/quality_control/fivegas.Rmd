@@ -669,7 +669,7 @@ notes: 23B is bad data - remove
 
 ```{r fivegas_trace_co, echo=FALSE, fig.height=40, fig.width=12}
  fivegas_merged_p %>%
-    dplyr::filter(grepl("co", pol)) %>%
+    dplyr::filter(grepl("^co$", pol)) %>%
     ggplot(aes_string(x = "datetime", y = "val")) +
       geom_point() + 
       theme_bw() +
@@ -700,7 +700,7 @@ notes: 23B is bad data - remove
 ```{r}
   fivegas_merged <-
     fivegas_merged %>%
-    dplyr::filter(grepl("23B", id))
+    dplyr::filter(!grepl("23B", id))
 ```
 
 ## save data
