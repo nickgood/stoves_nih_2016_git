@@ -49,19 +49,23 @@ output:
                       dplyr::mutate(id = as.factor(id))
 ```
 
-* fivegas background times
+* fivegas times
 
 ```{r}
   times_bg_fivegas <- dplyr::select(data_1, id, 
                                     time_start_fivegas_prebg,
                                     time_end_fivegas_prebg,
                                     time_start_fivegas_post_bg,
-                                    time_end_fivegas_post_bg) %>%
+                                    time_end_fivegas_post_bg,
+                                    time_start_fivegas_sample,
+                                    time_end_fivegas_sample) %>%
                       dplyr::rename(bg_pre_start_fivegas = time_start_fivegas_prebg,
                                     bg_pre_end_fivegas = time_end_fivegas_prebg,
                                     bg_post_start_fivegas = time_start_fivegas_post_bg,
-                                    bg_post_end_fivegas = time_end_fivegas_post_bg) %>%
-                      tidyr::gather("var", "value", 2:5) %>%
+                                    bg_post_end_fivegas = time_end_fivegas_post_bg,
+                                    sample_start_fivegas = time_start_fivegas_sample,
+                                    sample_end_fivegas = time_end_fivegas_sample) %>%
+                      tidyr::gather("var", "value", 2:7) %>%
                       dplyr::inner_join(dplyr::select(samples, id, date),
                                         by = "id") %>%
                       dplyr::filter(is.na(value) == FALSE) %>%
