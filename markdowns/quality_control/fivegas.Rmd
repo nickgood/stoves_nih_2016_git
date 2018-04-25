@@ -6,7 +6,6 @@ output:
     toc_float: true
 ---
 
-
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
   pacman::p_load(tidyverse, kableExtra)
@@ -14,92 +13,76 @@ output:
 
 ```{r global_options, echo=FALSE}
   knitr::opts_chunk$set(fig.path ='figures/', 
+                        fig.width = 8, fig.height = 5,
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# load data
+# tidy data
 
-* data logged in ppm units
+## load files
 
-```{r}
-  fivegas_conc <- readRDS("../r_files/fivegas_conc.RDS")    
-```
-
-* data logged in voltage units
+load scripts
 
 ```{r}
-  fivegas_volts <- readRDS("../r_files/fivegas_volts.RDS")
+  source("../../scripts/tidy.R")
+  source("../../scripts/functions.R")
 ```
 
-* voltage calibration
+load data
 
 ```{r}
-  fivegas_calibration <- readRDS("../r_files/fivegas_calibration.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  fivegas_conc <- readRDS("../../r_data/fivegas_conc.RDS") 
+  fivegas_volts <- readRDS("../../r_data/fivegas_volts.RDS")
+  fivegas_calibration <- readRDS("../../r_data/fivegas_calibration.RDS")
+  cal_1 <- readRDS("../../r_data/cal_1.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../r_data/pol_properties.RDS")
+  times <- readRDS("../../r_data/test_times.RDS")
 ```
 
-* calibration metadata
+load schemes
 
 ```{r}
-  cal_1 <- readRDS("../r_files/cal_1.RDS")
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
-* sample information
+## reformat data
+
+convert concentration data to longer format
 
 ```{r}
-  samples <- readRDS("../r_files/samples.RDS")
+  fivegas_conc <- 
+    fivegas_conc %>%
+    dplyr::select(-datetime_secs, -time_str) %>%
+    tidyr::gather("pol", "val", ch4:co)
 ```
 
-* notes
+convert voltage data to longer format
 
 ```{r}
-  notes <- readRDS("../r_files/notes.RDS")
+  fivegas_volts <- 
+    fivegas_volts %>%
+    tidyr::gather("pol", "volts", co2:ch4)
 ```
 
-# Reformat data
-
-## concentration
-
-Convert concentration data to longer format
+convert voltage calibration data to longer format
 
 ```{r}
-  fivegas_conc <- tibble::as_tibble(dplyr::select(fivegas_conc,
-                                                  -datetime_secs,
-                                                  -time_str) %>%
-                  tidyr::gather("pol", "ppm", ch4:co))
+  fivegas_calibration <- 
+    fivegas_calibration %>%
+    tidyr::gather("pol", "volts", co2:ch4)
 ```
 
-```{r}
-  head(fivegas_conc, 2)
-```
-
-## voltage
-
-Convert voltage data to longer format
-
-```{r}
-  fivegas_volts <- as_tibble(tidyr::gather(fivegas_volts, pol, volts, co2:ch4))
-```
-
-## voltage calibration
-
-Convert voltage calibration data to longer format
-
-```{r}
-  fivegas_calibration <- as_tibble(tidyr::gather(fivegas_calibration,
-                                                 pol,
-                                                 volts,
-                                                 co2:ch4))
-```
-
-# Wrangle data
-
-* calibration standard mixing ratios
+calibration standard mixing ratios
 
 ```{r}
   fivegas_cal_conc <- tidy_date(cal_1, "^conc_", "conc_")
 ```
 
-* calibration timestamps
+calibration timestamps
 
 ```{r}
   fivegas_cal_times <- tidy_date(cal_1, "^time_", "time_")
@@ -107,105 +90,80 @@ Convert voltage calibration data to longer format
   fivegas_cal_times <- split_fivegas_cal_times(fivegas_cal_times)
 ```
 
-# Calibration
+## calculate concentration from voltage data
 
-## calculate and organize
-
-* response to standard
-
-Calculate mean voltage over last 30 seconds of each calibration window
+calculate mean voltage over last 30 seconds of each calibration window
 
 ```{r}
-  fivegas_cal <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                 dplyr::filter(!is.na(start) & pol != "zero")  %>%
-                 dplyr::rowwise() %>%
-                 dplyr::mutate(v_mean = 
-                               time_window_stats(fivegas_calibration,
-                                                 date,
-                                                 start, end,
-                                                 pol_var = pol,
-                                                 val_var = "volts",
-                                                 stat_var = "mean")) %>%
-                 dplyr::mutate(v_sd =
-                               time_window_stats(fivegas_calibration,
-                                                 date,
-                                                 start, end,
-                                                 pol_var = pol,
-                                                 val_var = "volts",
-                                                 stat_var = "sd"))
+  fivegas_cal <- 
+    fivegas_cal_times %>%
+    tidyr::spread(type, value) %>%
+    dplyr::filter(!is.na(start) & pol != "zero")  %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(v_mean = 
+                    time_window_stats(fivegas_calibration, date, start, end,
+                                      pol_var = pol, val_var = "volts",  stat_var = "mean")) %>%
+    dplyr::mutate(v_sd =
+                    time_window_stats(fivegas_calibration, date, start, end, 
+                                      pol_var = pol, val_var = "volts", stat_var = "sd"))
 ```
 
-* zero time windows
-
-Extract zero time periods
+extract zero time periods
 
 ```{r}
-  fivegas_cal_zero <- tidyr::spread(fivegas_cal_times, type, value) %>%
-                      dplyr::filter(!is.na(start) & pol == "zero") %>%
-                      dplyr::select(-pol) %>%
-                      dplyr::rename(start_zero = start, end_zero = end)
+  fivegas_cal_zero <- 
+    fivegas_cal_times %>%
+    tidyr::spread(type, value) %>%
+    dplyr::filter(!is.na(start) & pol == "zero") %>%
+    dplyr::select(-pol) %>%
+    dplyr::rename(start_zero = start, end_zero = end)
 ```
 
-* merge standard and zero 
-
-Join zero time periods with the calibration data 
+join zero time periods with the calibration data 
 
 ```{r}
-  fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_zero, by = "date")
+  fivegas_cal <- 
+    fivegas_cal %>%
+    dplyr::left_join(fivegas_cal_zero, by = "date")
 ```
 
-* response to zero
-
-Calculate mean voltage during last 30 seconds of each zero calibration
+calculate mean voltage during last 30 seconds of each zero calibration
 
 ```{r}
-  fivegas_cal <- dplyr::mutate(fivegas_cal,
-                        v_zero_mean =
-                        time_window_stats(fivegas_calibration,
-                                          date,
-                                          start_zero, end_zero,
-                                          pol_var = pol,
-                                          val_var = "volts",
-                                          stat_var = "mean")) %>%
-                  dplyr::mutate(v_zero_sd =
-                         time_window_stats(fivegas_calibration,
-                                           date,
-                                           start_zero, end_zero,
-                                           pol_var = pol,
-                                           val_var = "volts",
-                                           stat_var = "sd"))
+  fivegas_cal <- 
+    fivegas_cal %>%
+    dplyr::mutate(v_zero_mean =
+                    time_window_stats(fivegas_calibration,
+                                      date, start_zero, end_zero,
+                                      pol_var = pol, val_var = "volts", stat_var = "mean")) %>%
+    dplyr::mutate(v_zero_sd =
+                    time_window_stats(fivegas_calibration,
+                                      date, start_zero, end_zero,
+                                       pol_var = pol, val_var = "volts", stat_var = "sd"))
 ```
 
-* remove NaNs
+merge measured voltage with standard mixing ratio
 
 ```{r}
-  fivegas_cal <- na.omit(fivegas_cal)
+  fivegas_cal_conc <-
+    fivegas_cal_conc %>%
+    dplyr::rename(pol = var, standard = value)
+
+  fivegas_cal <- 
+    fivegas_cal %>%
+    dplyr::left_join(fivegas_cal_conc, by = c("date", "pol"))
 ```
 
-* combine voltage and standard info
-
-Merge measured voltage with standard mixing ratio
+calibration coefficients
 
 ```{r}
-  fivegas_cal_conc <- dplyr::rename(fivegas_cal_conc,
-                                    pol = var,
-                                    standard = value)
-
-  fivegas_cal <- dplyr::left_join(fivegas_cal, fivegas_cal_conc,
-                                  by = c("date", "pol"))
+  fivegas_cal <- 
+    fivegas_cal %>%
+    dplyr::mutate(cal_beta = (standard / (v_mean - v_zero_mean))) %>%
+    dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
 ```
 
-* calibration coefficients
-
-```{r}
-  fivegas_cal <- dplyr::mutate(fivegas_cal,
-                        cal_beta = (standard / (v_mean - v_zero_mean))) %>%
-                 dplyr::mutate(cal_int = - (v_zero_mean * cal_beta))
-```
-
-* add calibration date
-
-Add calibration date to voltage data
+add calibration date
 
 ```{r}
   fivegas_volts <- add_caldate(fivegas_volts, fivegas_cal)
@@ -213,9 +171,9 @@ Add calibration date to voltage data
   fivegas_volts <- dplyr::mutate(fivegas_volts, pol = as.factor(pol))
 ```
 
-## plot span
+## plot: zero and span voltage
 
-```{r, fig.width=12, fig.height=6}
+```{r, echo=FALSE, fig.width=12, fig.height=6}
  p_df <- tidyr::gather(fivegas_cal,
                        "type", "volts",
                        v_mean, v_zero_mean) %>%
@@ -230,127 +188,631 @@ Add calibration date to voltage data
     geom_point() +
     geom_errorbar(v_limits, width = 0.2) +
     facet_wrap(~pol, 1, scales = "free") +
-    theme_minimal() +
+    theme_bw() +
     xlab("") +
     ylab("span") +
     theme(legend.position="top")
 
 ```
 
+notes: data look reasonable - proceed
+
 ## apply calibration
 
-Merge voltage data and calibration data, then apply calibration
+merge voltage data and calibration data, then apply calibration
 
 ```{r}
-  fivegas_volts <- dplyr::left_join(fivegas_volts, 
-                   dplyr::select(fivegas_cal, date, pol, cal_beta, cal_int),
-                                 by = c("cal_date" = "date", "pol" = "pol")) %>%
-                   dplyr::mutate(ppm = volts * cal_beta + cal_int) %>%
-                   dplyr::mutate(pol = as.factor(pol))
+  fivegas_volts <- 
+    fivegas_volts %>%
+    dplyr::left_join(dplyr::select(fivegas_cal, date, pol, cal_beta, cal_int),
+                     by = c("cal_date" = "date", "pol" = "pol")) %>%
+    dplyr::mutate(val = volts * cal_beta + cal_int) %>%
+    dplyr::mutate(pol = as.factor(pol))
 ```
 
-# Combine file types
+## combine file types
 
-Drop variables prior to merge with mixing ration data
+choose only important variables
 
 ```{r}
-  fivegas_volts <- dplyr::select(fivegas_volts,
-                                 datetime, date, time, id, pol, ppm)
+  fivegas_volts <- 
+    fivegas_volts %>%
+    dplyr::select(datetime, date, time, id, pol, val)
 ```
 
-Merge voltage and mixing ratio data
+merge voltage and mixing ratio data
 
 ```{r}
-  fivegas_merged <- dplyr::arrange(dplyr::bind_rows(fivegas_volts,
-                                                    fivegas_conc),
-                                   datetime)
+  fivegas <- 
+    dplyr::arrange(dplyr::bind_rows(fivegas_volts, fivegas_conc), datetime)
 ```
 
-Remove ozone and nox rows (channels not used during study)
+remove oxygen and nox rows (channels not used during study)
 
 ```{r}
-  fivegas_merged <- dplyr::filter(fivegas_merged, pol != "o2" & pol != "nox")
+  fivegas <- 
+    fivegas %>%
+    dplyr::filter(pol != "o2" & pol != "nox")
 ```
 
+## extract sample time
 
-# QC
-
-Extract notes relevant to  fivegas analyzer
+get timestamps
 
 ```{r}
-  notes <- dplyr::filter(notes, grepl("fivegas|all", inst) == TRUE)
+  sample_times <- 
+    times %>%
+    dplyr::filter(grepl("^sample$|shutdown|refuel_1", var)) %>%
+    dplyr::mutate(var = as.character(var),
+                  var = ifelse(var == "refuel_1", "sample", var)) %>%
+    tidyr::spread("var", "value") %>%
+    dplyr::select(-date) %>%
+    dplyr::rename("start" = "sample",
+                  "end" = "shutdown")
 ```
 
-Flag bad data from notes and plots
+notes: missing a substantial portion of five gas sample times so just use sample to shutdown time for batch stoves and refuel_1 to shutdown for wood stoves
+
+filter times
 
 ```{r}
-  notes$qc[33:35] <- "ok"
+  fivegas_merged <- 
+    filter_times(sample_times, fivegas)
 ```
 
-Make one flag per test precidented from bad to ok.
+## flags
+
+extract flags
 
 ```{r}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("fivegas|all", inst) == TRUE)
 ```
 
-Merge with data
+bad preceeds maybe preceeds good
 
 ```{r}
-  fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
-                    dplyr::mutate(id = as.factor(id),
-                                  qc = as.factor(ifelse(is.na(qc),
-                                                 "ok", as.character(qc))))
-
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
 ```
 
-Additional bad tests
+add flag by id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged$qc[fivegas_merged$id == "23B"] <- "bad"  # CO:CH4
-  fivegas_merged$qc[fivegas_merged$id == "17C"] <- "bad"  # CO2
-  fivegas_merged$qc[fivegas_merged$id == "4B"] <- "bad"   # CO2
-  fivegas_merged$qc[fivegas_merged$id == "18C"] <- "bad"  # CH4
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-# Save merged file
+# missing and bad data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(fivegas_merged, file = "../r_files/fivegas_merged.RDS")
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(fivegas_merged %>%
+                   dplyr::select(id) %>%
+                   dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(stove != "background") %>%
+  knitr::kable("markdown", align = 'c')
 ```
 
-# Summary
+notes: data is expected to be missing for: 2A, 4A, and 1B - look into 17C missing
 
-The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no $Fivegas$ data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
+## table: bad data
 
-$Fivegas$ data is expected to be missing for: 
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("fivegas|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    knitr::kable("markdown", align = 'c')
+```
 
-* all "G" tests: five gas not run during backgrounds.
+## remove bad tests and NAs
 
-* 1B, 2A: "no data" noted on QC log
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>% 
+    dplyr::filter(qc != "bad", !is.na(val))
+```
 
-* 4A: only calibration file for this test day was found (2/24/2016); five gas file is lost.
+## remove or replace negatives
 
-* calibration files for 2016/03/09 and 2016/04/01 missing (check)
+* several large negative values (approx. -150 ppm for ch4 in test 13A) - remove
+* small negative values (approx. 0 in test 13A and 23A) - set to zero
 
-# Plots
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::mutate(val = ifelse(val < -100, NA, val),
+                  val = ifelse(val < 0, 0, val))
+```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40, eval=TRUE}
-  df <- dplyr::mutate(fivegas_merged, id = as.character(id)) %>%
-        dplyr::arrange(id) %>%
-        dplyr::mutate(id = as.factor(id))
+## table: fraction of sample missing
 
-  ggplot(df, aes(datetime, ppm, colour = qc, group = pol)) + 
-    geom_line() +
-    scale_y_log10(limits = c(1, 10^5)) +
-    scale_colour_manual(values = 
-                        c("ok" = "mediumaquamarine",
-                          "maybe" = "mediumorchid1",
-                          "bad" = "darkorange1")) +
-    facet_wrap(~id, ncol = 3, scale = "free") +
-    theme_minimal() +
-    xlab("") +
-    theme(legend.position = "top")
+```{r, echo=FALSE}
+  fivegas_merged %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(sample_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 25) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: 11A is missing approx. 48% of test missing - remove
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::filter(id != "13B")
+```
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::select(id, datetime, pol, val, qc)
+```
+
+# background
+
+extract five gas background times - not including first and last minute of sample
+
+```{r}
+  times_pre <- 
+    times %>%
+    dplyr::filter(var == "bg_pre_start_fivegas" | var == "bg_pre_end_fivegas") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(start = bg_pre_start_fivegas,
+                  end = bg_pre_end_fivegas) %>%
+    dplyr::mutate(start = start + 60,
+                  end = end - 60)
+
+  times_post <- 
+    times %>%
+    dplyr::filter(var == "bg_post_start_fivegas" | var == "bg_post_end_fivegas") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(start = bg_post_start_fivegas,
+                  end = bg_post_end_fivegas) %>%
+    dplyr::mutate(start = start + 60,
+                  end = end - 60)
+```
+
+extract five minutes before and after start of test
+
+```{r}
+  times_pre_5 <- 
+    times %>%
+    dplyr::filter(var == "ignite") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(end = ignite) %>%
+    dplyr::mutate(start = end - 5*60)
+
+  times_post_5 <-
+    times %>%
+    dplyr::filter(var == "end") %>%
+    tidyr::spread(var, value) %>%
+    dplyr::select(-date) %>%
+    dplyr::rename(start = end) %>%
+    dplyr::mutate(end = start + 5*60)
+```
+
+join five minutes before start and stop of test with recorded background time - precedence to recorded times
+
+```{r}
+  times_pre <- 
+    times_pre_5 %>% 
+    dplyr::anti_join(times_pre, by = "id") %>%
+    dplyr::bind_rows(times_pre)
+
+  times_post <- 
+    times_post_5 %>%
+    dplyr::anti_join(times_post, by = "id") %>%
+    dplyr::bind_rows(times_post)
+```
+
+## extract pre and post backgrounds
+
+```{r}
+  pre_bg <- filter_times(times_pre, fivegas)
+  pre_bg <- dplyr::mutate(pre_bg, type = "pre_bg")
+
+  post_bg <- filter_times(times_post, fivegas)
+  post_bg <- dplyr::mutate(post_bg, type = "post_bg")
+```
+
+remove NAs are replace negatives with zero
+
+* notes: several small negative values in data set - set to zero
+
+```{r}
+  bg <-
+    pre_bg %>%
+    dplyr::bind_rows(post_bg) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(val = ifelse(val < 0, 0, val))
+```
+
+## plot: time series of lab backgrounds
+
+```{r fivegas_bg_ppm, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    ggplot(aes_string(x = "datetime", y = "val")) +
+      geom_point(aes(color = type), size = 2, shape = 1) +
+      theme_bw() +
+      facet_wrap(~pol, scales = "free", ncol = 1) +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("mixing ratio (ppm)") +
+      xlab("")
+```
+
+notes: remove unreasonable values including: 
+
+* when co2 is approximately equal to zero
+* when co2 is over 1000 ppm
+* when ch4 is greater than 40 ppm
+* when co is greater than 25 ppm
+
+```{r}
+  bg <- 
+    bg %>%
+    dplyr::filter(pol == "co2" & val > 250 & val < 1000) %>%
+    dplyr::bind_rows(bg %>%
+                       dplyr::filter(pol == "ch4" & val < 40),
+                     bg %>%
+                      dplyr::filter(pol == "co" & val  < 25))
+```
+
+## plot: averaged concentrations by date
+
+```{r fivegas_bg_ppm_avg, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(date, pol) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(size = 2, shape = 1) +
+      theme_bw() +
+      facet_wrap(~pol, scales = "free", ncol = 1) +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("mixing ratio (ppm)") +
+      xlab("")
+```
+
+## table: lab background outliers
+
+outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+
+```{r, echo=FALSE}
+  bg %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(date, pol) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::select(date, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: remove co data from this date
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(!(pol == "co" & grepl("2016-02-03", date)))
+```
+
+## summarize backgrounds
+
+```{r}
+  bg_summary <-
+    bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     count = n()) %>%
+    dplyr::mutate(mean = ifelse(is.nan(mean), NA, mean),
+                  median = ifelse(is.nan(median), NA, median),
+                  stdev = ifelse(is.nan(stdev), NA, stdev),
+                  min = ifelse(is.infinite(min), NA, min),
+                  max = ifelse(is.infinite(max), NA, max),
+                  count = ifelse(is.nan(count), NA, count))
+```
+
+## table: background summary
+
+summary of backgrounds (ppm)
+
+```{r, echo=FALSE}
+  bg_summary %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg_summary, file = "../../r_data/fivegas_bg.RDS")
+```
+
+## plot: background and burn concentrations
+
+averaged by date
+
+```{r fivegas_burn_bg_conc, echo=FALSE}
+  fivegas_merged %>%
+  dplyr::mutate(test_type = "test") %>%
+  dplyr::left_join(dplyr::select(samples, id, date), by = "id") %>%
+  dplyr::select(date, pol, val, qc, test_type) %>%
+  dplyr::bind_rows(bg %>%
+                     dplyr::mutate(test_type = "bg",
+                                   qc = "ok") %>%
+                     dplyr::select(date, pol, val, qc, test_type)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(date, pol, test_type) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    ggplot(aes_string(y = "val", x = "test_type")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(size = 2, shape = 1) +
+      theme_bw() +
+      scale_y_log10() +
+      facet_wrap(~pol, 1, scales = "free") +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("mixing ratio (ppm)") +
+      xlab("")
+```
+
+notes: some burns have low concentrations (especially methane) - opt to subtract median background from all burn data
+
+## subtract background
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::left_join(bg_summary, by = c("pol"))
+```
+
+notes: a few size bins do not have background value - set these bins to zero based on median values of other bins in that size range 
+
+```{r}
+  fivegas_merged <-
+   fivegas_merged %>%
+    dplyr::mutate(val = val - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median
+
+```{r, echo=FALSE}
+  fivegas_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## remove or replace negatives
+
+* several large negative values (approx. -150 ppm for ch4 in test 13A) - remove
+* small negative values (approx. 0 in test 13A and 23A) - set to zero
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::mutate(val = ifelse(val < -100, NA, val),
+                  val = ifelse(val < 0, 0, val))
+```
+
+# concentration calculations
+
+calculate mass concentrations
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
+    dplyr::mutate(val = convert_ppmv_ugpmc(val / 1000, mw, 25, 85),
+                  units = "ug per meter cubed") %>%
+    dplyr::select(-mw)
+```
+
+# burn analysis for real-time data
+
+## plot: carbon dioxide traces
+
+```{r fivegas_trace_co2, echo=FALSE, fig.height=40, fig.width=12}
+  fivegas_merged_p <-
+    fivegas_merged %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
+
+ fivegas_merged_p %>%
+    dplyr::filter(grepl("co2", pol)) %>%
+    ggplot(aes_string(x = "datetime", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(id~stove, scales = "free", ncol = 4) +
+      ylab("concentration (ug per meter cubed)") +
+      xlab("")
+```
+
+notes: 23B is bad data - remove
+
+## plot: carbon monoxide traces
+
+```{r fivegas_trace_co, echo=FALSE, fig.height=40, fig.width=12}
+ fivegas_merged_p %>%
+    dplyr::filter(grepl("co", pol)) %>%
+    ggplot(aes_string(x = "datetime", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(id~stove, scales = "free", ncol = 4) +
+      ylab("concentration (ug per meter cubed)") +
+      xlab("")
+```
+
+## plot: methane traces
+
+```{r fivegas_trace_ch4, echo=FALSE, fig.height=40, fig.width=12}
+ fivegas_merged_p %>%
+    dplyr::filter(grepl("ch4", pol)) %>%
+    ggplot(aes_string(x = "datetime", y = "val")) +
+      geom_point() + 
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(id~stove, scales = "free", ncol = 4) +
+      ylab("concentration (ug per meter cubed)") +
+      xlab("")
+```
+
+## filter out bad tests
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::filter(grepl("23B", id))
+```
+
+## save data
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::select(id, datetime, pol, val, qc, units) %>%
+    dplyr::mutate(pol_category = "five gas")
+
+  saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged.RDS")
+```
+
+# burn analysis for averaged data
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::group_by(id, pol) %>%
+    dplyr::summarise(val = mean(val),
+                     qc = first(qc)) 
+```
+
+## plot: concentrations by stove type
+
+```{r fivegas_stovetype_avg, echo=FALSE}
+  fivegas_merged_p <-
+    fivegas_merged %>%
+    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
+
+ fivegas_merged_p %>%
+    ggplot(aes_string(x = "stove", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by stove type
+
+outliers (z > 3) when samples are grouped by pollutant and stove type
+
+```{r, echo=FALSE}
+  fivegas_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+## plot: concentrations by fuel type
+
+```{r fivegas_merged_fueltype, echo=FALSE}
+  fivegas_merged_p %>%
+    ggplot(aes_string(x = "fuel", y = "val")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(aes(color = qc), size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      scale_color_manual(values = qc_colors) +
+      theme(text = element_text(size = 16),
+            axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
+            legend.position = "top") +
+      facet_grid(pol~fuelcat, scales = "free", space = "free_x") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+notes: 
+
+## table: outliers by fuel type
+
+outliers (z > 3) when samples are grouped by pollutant and fuel type
+
+```{r, echo=FALSE}
+  fivegas_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+## save data
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::left_join(sample_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::select(id, pol, val, dur, qc) %>%
+    dplyr::mutate(lod = NA,
+                  pol_category = "five gas")
+
+  saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged_avg.RDS")
 ```
