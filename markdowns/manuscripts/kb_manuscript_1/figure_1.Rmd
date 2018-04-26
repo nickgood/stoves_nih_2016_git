@@ -1,5 +1,5 @@
 ---
-title: "figure 1: emissions by category"
+title: "figure 1: emissions by pollutant by category"
 output:
   html_document:
     toc: true
@@ -16,11 +16,162 @@ output:
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# load files
+# tidy data
 
 load data
 
 ```{r}
-  emissions <- readRDS("../../r_data/emissions_factors.RDS")
-  samples <- readRDS("../../r_data/samples.RDS")
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+## format stove names
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    gsub(" ", "\n",.) %>% 
+                    forcats::fct_relevel("three\nstone\nfire",
+                                         "clay\nring",
+                                         "ceramic\n charcoal",
+                                         "rocket\nelbow",
+                                         "built-in\njusta",
+                                         "metal\n harcoal",
+                                         "fan\nrocket\nelbow",
+                                         "gasifier",
+                                         "wick\nkerosene",
+                                         "pressure\nkerosene",
+                                         "lpg"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat), by = "id")
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_category = ifelse(grepl("^oc$", pol_category), "organic carbon ", pol_category),
+                  pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon ", pol_category),
+                  pol_category = ifelse(grepl("ions", pol_category), "inorganic ions ", pol_category))
+```
+
+## select pollutants
+
+```{r}
+  ec_oc_ions <-
+    emissions %>%
+    dplyr::filter(grepl("inorganic ions|elemental carbon|organic carbon", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  pm_mass <-
+    emissions %>%
+    dplyr::filter(grepl("pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::mutate(pol_category = ifelse(grepl("pm_mass", pol_category), "total PM mass", pol_category))
+```
+
+## sum over pollutant category
+
+```{r}
+  ec_oc_ions <-
+    ec_oc_ions %>%
+    dplyr::group_by(pol_category, id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup()
+```
+
+## average by stove type
+
+```{r}
+  ec_oc_ions <-
+    ec_oc_ions %>%
+    dplyr::group_by(pol_category, stove, stovecat) %>%
+    dplyr::summarise(val = median(val, na.rm = TRUE))
+```
+
+## calculate error bars
+
+```{r}
+  q1 <-
+    pm_mass %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+```
+
+```{r}
+  q3 <-
+    pm_mass %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
+```
+
+```{r}
+  pm_mass <-
+    pm_mass %>%
+    dplyr::group_by(pol_category, stove, stovecat) %>%
+    dplyr::summarise(val = median(val, na.rm = TRUE))
+```
+
+```{r}
+  pm_mass <-
+    pm_mass %>%
+    dplyr::left_join(q1, by = "stove") %>%
+    dplyr::left_join(q3, by = "stove")
+```
+
+## plot: pollutant categories
+
+```{r figure_1, echo=FALSE, fig.width=12, fig.height=6}
+  pm_mass %>%
+  ggplot(aes(x = stove, y = val, fill = pol_category)) +
+    geom_histogram(stat = "identity") +
+    geom_histogram(data = ec_oc_ions, aes(x = stove, y = val, fill = pol_category), stat = "identity", width = 0.6) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
+    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("mg emitted pr MJ delivered") +
+    xlab("")
+```
+
+```{r figure_1b, echo=FALSE, fig.width=4, fig.height=3}
+  pm_mass %>%
+  dplyr::filter(grepl("liquid", stovecat)) %>%
+  ggplot(aes(x = stove, y = val, fill = pol_category)) +
+    geom_histogram(stat = "identity") +
+    geom_histogram(data = ec_oc_ions %>%
+                   dplyr::filter(grepl("liquid", stovecat)),
+                   aes(x = stove, y = val, fill = pol_category), stat = "identity", width = 0.6) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
+    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    ylab("") +
+    xlab("")
 ```
