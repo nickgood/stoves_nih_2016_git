@@ -4,7 +4,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
@@ -206,6 +205,15 @@ fix temp issues
   t_range$t_min[which(t_range$id == "1B" & t_range$rep == 2)] <- 20.18
 ```
 
+fix rep issue for back pot
+
+```{r}
+  t_range <- 
+    t_range %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(rep = ifelse(loc == "back", 2, rep))
+```
+
 ## merge data
 
 ```{r}
@@ -213,8 +221,7 @@ fix temp issues
     e_pot_water_mass %>%
     dplyr::left_join(e_pot, by = c("id", "rep")) %>%
     dplyr::left_join(e_pot_mass, by = c("id", "pot")) %>%
-    dplyr::left_join(t_range %>%
-                       dplyr::filter(loc == "front"), by = c("id", "rep"))
+    dplyr::left_join(t_range, by = c("id", "rep"))
 ```
 
 # calculate energy delivered
@@ -223,7 +230,7 @@ fix temp issues
   e_data <- 
     e_data %>%
     dplyr::mutate(mass_evap = mass_on - mass_off,
-                  mass_h2o = mass_on - mass_pot,
+                  mass_h2o = mass_on - pot_mass,
                   dt = t_max - t_min,
                   j_heat = mass_h2o * c_water * dt, # g * J/(g.oC) * oC
                   j_vap = mass_evap * hfg_water,
@@ -276,7 +283,7 @@ energy delivered per test
 ```{r, echo=FALSE, fig.width=12, fig.height=8}
   energy %>%
     dplyr::left_join(dplyr::filter(samples, type == "SF"), by = "id") %>%
-    ggplot(p_data, aes(id, joules, colour = qc)) +
+    ggplot(aes(id, joules, colour = stove)) +
     geom_point() +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
@@ -304,5 +311,5 @@ Conclusions: temperature data (and therefore energy data) is expected to be miss
 # save data
 
 ```{r}
-  saveRDS(energy, "../r_files/energy.RDS")
+  saveRDS(energy, "../../r_data/energy.RDS")
 ```
