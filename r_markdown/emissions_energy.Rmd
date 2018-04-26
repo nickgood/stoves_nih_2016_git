@@ -24,6 +24,7 @@ output:
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
   temp_merged <- readRDS("../r_files/temp_merged.RDS")
   mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
+  fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")
 ```
 
 * constants
@@ -76,27 +77,46 @@ pot_weights <- select(mc_test_log, wgt_pot_a, wgt_on_1, wgt_off_1, id, date) %>%
   e_temp <- dplyr::filter(temp_merged, grepl("stove", loc))
 
 
-  #e_temp <- filter_temp(times, e_temp)
+  e_temp <- filter_temp(times, e_temp)
 ```
 
 * temperature change
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  t_range <- dplyr::group_by(e_temp, id) %>%
+
+t_range <- dplyr::group_by(e_temp, id) %>%
             dplyr::summarise(t_min = min(t_oc, na.rm = TRUE),  
                              t_max = max(t_oc, na.rm = TRUE),
-                             t_med = median(t_oc))
+                             t_med = median(t_oc),
+                             t_high_avg = t_med + 0.5*(t_max - t_med))
 
-saveRDS(t_range, file = "../r_files/t_range.RDS")
+t_per_kg <- left_join(t_range, fuel_burnt, by = "id") %>%
+            left_join(mean_mc) %>%
+            mutate(kg_per_degree = mass_burned_correct/(t_max - t_min))
+
+ggplot(t_per_kg, aes(x = mean_mc, y = kg_per_degree)) +
+  geom_point() +
+  theme_bw()
+
+#saveRDS(t_range, file = "../r_files/t_range.RDS")
 ```
 
 ```{r}
 # plot temps
- mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
-
- temp_plot <- left_join(t_range, mean_mc, by = "id")
+e_temp1 <- dplyr::filter(temp_merged, grepl("pot", loc))  
+e_temp1 <- filter_temp(times, e_temp1)
  
- ggplot(data = temp_plot, aes(x = mean_mc)) +
+t_range1 <- dplyr::group_by(e_temp1, id) %>%
+            dplyr::summarise(t_min = min(t_oc, na.rm = TRUE),  
+                             t_max = max(t_oc, na.rm = TRUE),
+                             t_med = median(t_oc),
+                             t_high_avg = t_med + 0.5*(t_max - t_med))
+
+mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
+
+ temp_plot1 <- left_join(t_range1, mean_mc, by = "id")
+ 
+ ggplot(data = temp_plot1, aes(x = mean_mc)) +
    geom_point(aes(y = t_max), color = "darkblue") +
    #geom_point(aes(y = t_min, color= "blue")) +
    theme_bw() +
@@ -189,6 +209,13 @@ mj_delivered <- p_data %>%
                 select(joules, id, type, mc_level, mean_mc) %>%
                 mutate(joules = joules * 10^-6) %>%
                 distinct()
+
+mj_per_sec <- left_join(mj_delivered, times, by = "id") %>%
+              mutate(MW = joules/(end-start))
+
+ggplot(mj_per_sec, aes(x = mean_mc, y = MW)) +
+  geom_point() +
+  theme_bw()
 
 ggplot(mj_delivered, aes(x = mean_mc, y = joules, color = mc_level)) +
   geom_point(size = 3.5)
@@ -285,3 +312,56 @@ ggplot(ecoc_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shap
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape")
 ```
+
+# all pollutants one figure
+```{r fig.height=4, fig.width=7.48}
+all_energy <- p_data %>%
+          dplyr::filter(pol %in% c("grav", "ec", "oc", "formaldehyde", "acetaldehyde",
+                                   "benzene", "co", "ch4")) %>%
+          dplyr::select(-inst) %>%
+          left_join(temps, by = "id") %>%
+          mutate(pol = as.factor(pol)) %>%
+          mutate(pol = factor(pol,
+                levels = c("co", "grav","ec", "oc", "ch4",
+                           "formaldehyde", "acetaldehyde", "benzene"))) %>%
+          mutate(type = ifelse(type %in% "lab", "Milled", "Split"),
+                 mc_level = ifelse(mc_level %in% "med", "medium",
+                                   ifelse(mc_level %in% "high", "high", "low"))) %>%
+          mutate(mc_level = factor(mc_level, levels = c("low", "medium", "high")))
+
+
+
+ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(text = element_text(size=12), legend.position = "bottom") + #,
+  #strip.background = element_blank(),
+  #strip.text.x = element_blank()) +
+  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  facet_wrap(~pol, ncol = 4, scales = "free_y") +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape")
+```
+
+```{r}
+# anova tests for pollutants efs               
+df_anova <- dplyr::select(all_energy, mass_pol_energy, type, mc_level, pol, id) %>%
+       dplyr::mutate(type = as.factor(type),
+                     mc_level = as.factor(mc_level)) %>%
+       dplyr::filter(pol == "benzene") %>%
+       dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_"))
+                
+#TukeyHSD(aov(mass_pol_mass_fuel ~ test_fuel_type, df_anova))
+#TukeyHSD(aov(mass_pol_mass_fuel ~ mc_level, df_anova))
+pairwise.t.test(df_anova$mass_pol_energy, df_anova$test_fuel_type, p.adj = "none")
+pairwise.t.test(df_anova$mass_pol_energy, df_anova$test_fuel_type, p.adj = "holm")
+pairwise.t.test(df_anova$mass_pol_energy, df_anova$mc_level, p.adj = "none")
+pairwise.t.test(df_anova$mass_pol_energy, df_anova$mc_level, p.adj = "holm")
+```
+
+```{r}
+energy_means <- group_by(all_energy, mc_level, pol) %>%
+       summarise(mean_ef = mean(mass_pol_energy), sd_ef = sd(mass_pol_energy))
+```
+

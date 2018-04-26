@@ -197,6 +197,8 @@ ggplot(data = mce_plot, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `F
   theme(text = element_text(size=15)) +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25))
+
+saveRDS(mce_plot, file = "../r_files/mce_plot.RDS")
 ```
 
 ```{r}
@@ -205,9 +207,9 @@ mce_means <- ungroup(mce, `Fuel Shape`) %>%
        summarise(sd_mce = 1-median(mce))
 
 #inefficienies
-mce_plot <- mutate(mce_plot, mce = 100-mce)
+mce_plot2 <- mutate(mce_plot, mce = 100-mce)
 
-ggplot(data = mce_plot, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `Fuel Shape`)) +
+ggplot(data = mce_plot2, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `Fuel Shape`)) +
   #geom_boxplot(size = 1) +
   geom_point(size = 4) +
   theme_bw() +
