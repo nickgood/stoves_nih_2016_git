@@ -48,7 +48,7 @@ constants
 ```{r}
   emissions <-
     ecoc %>%
-    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs, pahs, gases)
+    dplyr::bind_rows(pm, carbonyls, carbohydrates, ions, vocs, pahs, gases, ultrafines)
 ```
 
 # calculate additional metrics
@@ -62,18 +62,10 @@ constants
                   mass_carbon = mass_emitted * (num_c * mw_c / mw)) %>%
     dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc) %>%
     tidyr::gather("metric", "val", 4:6) %>%
-    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per cm cubed", "micrograms")) %>%
-    dplyr::filter(!is.na(val))
-```
-
-# add ultrafines
-
-```{r}
-  emissions <-
-    emissions %>%
-    dplyr::bind_rows(ultrafines %>%
-                      dplyr::mutate(metric = "num_conc",
-                                    units = "number per cm cubed")) %>%
+    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per cm cubed", "micrograms"),
+                  units = ifelse(metric == "conc" & pol == "ultrafines", "number per cm cubed", units),
+                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per cm cubed", units)) %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::filter(!is.na(val), !grepl("27|28|29|30", id))
 ```
 
@@ -110,13 +102,13 @@ constants
 
 ## plot: particle composition
 
-```{r, echo=FALSE, fig.width=12, fig.height=10}
+```{r figure_3, echo=FALSE, fig.width=12, fig.height=10}
   emissions %>%
   dplyr::filter(metric == "mass_emitted",
-                grepl("ions|ecoc", pol_category)) %>%
+                grepl("ions|ec|oc", pol_category)) %>%
   dplyr::mutate(val = val / 10e3) %>%
   dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-  dplyr::group_by(stove, fuel, pol) %>%
+  dplyr::group_by(stove, fuel, pol_category) %>%
   dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
   ggplot(aes(x = stove, y = val, fill = fuel)) +
     geom_bar(stat = "identity", position = position_dodge()) +
@@ -124,7 +116,7 @@ constants
     theme_bw() +
     theme(text = element_text(size = 16),
           legend.position = "top") +
-    facet_wrap(~pol, scales = "free") +
+    facet_wrap(~pol_category, scales = "free") +
     ylab("mass emitted (miligrams)") +
     xlab("")
 ```
