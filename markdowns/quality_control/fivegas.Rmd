@@ -812,7 +812,7 @@ notes:
                      dplyr::select(id, dur), by = "id") %>%
     dplyr::select(id, pol, val, dur, qc) %>%
     dplyr::mutate(lod = NA,
-                  pol_category = "five gas")
+                  pol_category = pol)
 
   saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged_avg.RDS")
 ```
