@@ -36,10 +36,10 @@ load data
                     gsub(" ", "\n",.) %>% 
                     forcats::fct_relevel("three\nstone\nfire",
                                          "clay\nring",
-                                         "ceramic\n charcoal",
+                                         "ceramic\ncharcoal",
                                          "rocket\nelbow",
-                                         "built-in\njusta",
-                                         "metal\n harcoal",
+                                         "built-in\nplancha",
+                                         "metal\ncharcoal",
                                          "fan\nrocket\nelbow",
                                          "gasifier",
                                          "wick\nkerosene",
