@@ -81,6 +81,7 @@ define test type variable
 ```{r}
   grav <- 
     grav %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::mutate(test_type = ifelse(!grepl("^B|^G", id), "test", "bg"),
                   test_type = ifelse(grepl("^B", id), "blank", test_type)) %>%
     dplyr::filter(!grepl("MC", id))
@@ -174,6 +175,7 @@ add pollutant type
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -184,7 +186,41 @@ add pollutant type
     dplyr::filter(grepl("grav|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* 1A: filter ruptured, not sure which one - check if outlier
+* 2A: fire went out - check if outlier
+* 2C: filter switched but should be ok now, also had flow issues, also start up period twice - check if outlier
+* 2E: possible filter clog - check if outlier
+* 3A: white rotometer malfunctioning - check if outlier
+* 4C: flow problem at end of test - check if outlier
+* 7A: possible contamination - check if outlier
+* 8C: lots of test problems - check if outlier
+* 9A: possible transcription error - check if outlier
+* 14C: filter switched but should be ok now - check if outlier
+* 23A: fire went out - check if outlier
+* G2: filter ruptured, not sure which one - check if outlier - ok
+* G8: possibly switched - check if outlier - ok
+
+* 2D: filter contamination - mark as bad
+* 3A: flow unknown for most of test - mark as bad
+* 17A: filter ruptured - mark as bad
+* G5: filter contamination or switched - mark as bad
+* G7: unresolved transcription error - mark as bad
+* G14: filter contamination - mark as bad
+
+
+## mark additional tests as bad
+
+```{r}
+  grav <- 
+    grav %>%
+    dplyr::mutate(qc = as.character(qc),
+                  qc = ifelse(grepl("2D|3A|17A|G5|G14|G7", id), "bad", qc))
 ```
 
 ## remove bad tests
@@ -218,7 +254,7 @@ outliers (z > 3) when blanks are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c')
 ```
 
-notes:
+notes: not that much of an outlier - proceed
 
 ## plot: time series of lab blanks
 
@@ -296,9 +332,7 @@ add lod variable and replace values below lod with lod/sqrt(2)
 
 # calculate concentrations
 
-## extract data
-
-extract flow rate data and average
+## extract flow data
 
 ```{r}
   flows <- 
@@ -312,7 +346,9 @@ extract flow rate data and average
     dplyr::select(-colour)
 ```
 
-extract time data
+notes: no flow data appear to be missing
+
+## extract time data
 
 ```{r}
   times <-
@@ -323,9 +359,9 @@ extract time data
     dplyr::select(-color)
 ```
 
-## merge and calculate
+notes: no time data appear to be missing
 
-merge data with flows and times
+## merge data with flows and times
 
 ```{r}
   grav_merged <-
@@ -334,7 +370,9 @@ merge data with flows and times
     dplyr::left_join(times, by = "id")
 ```
 
-calculate concentrations
+notes: all weights matched up with times and flows - no data missing
+
+## calculate concentrations
 
 ```{r}
   grav_merged <-
@@ -366,7 +404,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant
     knitr::kable("markdown", align = 'c')
 ```
 
-notes: background to invesigate: G7 (filter weights possibly switched)
+notes: no outliers
 
 ## plot: time series of lab backgrounds
 
@@ -385,17 +423,7 @@ notes: background to invesigate: G7 (filter weights possibly switched)
       xlab("")
 ```
 
-notes: Check G7 (remove for now)
-
-```{r}
-  grav_merged <-
-    grav_merged %>%
-    dplyr::filter(id != "G7")
-
-  bg <-
-    bg %>%
-    dplyr::filter(id != "G7")
-```
+notes: G10 is high, but no notes regarding measurement - leave in background calculation
 
 ## table: percent of lab backgrounds below study lod
 
@@ -466,7 +494,7 @@ notes: reasonable levels for indoor air in a combustion lab
       theme_bw() +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
-      scale_y_log10() +
+      #scale_y_log10() +
       theme(text = element_text(size = 12),
             legend.position = "top") +
       ylab("concentration (microgram per meter cubed)") +
@@ -534,7 +562,6 @@ notes: some burns have low concentrations - opt to subtract median background fr
 ```{r pm_stovetype, echo=FALSE, fig.width=8, fig.height=4}
   grav_merged_p <-
     grav_merged %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
   grav_merged_p %>%
