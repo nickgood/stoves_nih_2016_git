@@ -60,7 +60,7 @@ load schemes
   ecoc <-
     ecoc %>%
     dplyr::filter(grepl("^[0-9]|^B[0-9]|^G[0-9]",id),
-                  grepl("^27|^28|^29|^30", id))
+                  !grepl("^27|^28|^29|^30", id))
 ```
 
 ## flags
