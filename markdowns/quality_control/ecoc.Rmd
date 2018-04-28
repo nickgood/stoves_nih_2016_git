@@ -56,12 +56,18 @@ load schemes
 
   ecoc$id[172] <- "11C"
   ecoc$id[173] <- "11C"
+  
+  ecoc <- ecoc[-130, ]
+  ecoc <- ecoc[-142, ]
+  ecoc$cassette[118] <- "a"
 
   ecoc <-
     ecoc %>%
     dplyr::filter(grepl("^[0-9]|^B[0-9]|^G[0-9]",id),
                   !grepl("^27|^28|^29|^30", id))
 ```
+
+notes: remove outrageously high value for 6D and 8D
 
 ## flags
 
@@ -121,15 +127,35 @@ define test type variable
 
 # missing and bad data
 
-## table: missing data
+## table: missing E filter data
 
 ```{r, echo = FALSE}
   dplyr::select(samples, id, stove, fuel) %>%
   dplyr::anti_join(ecoc %>%
-                     dplyr::select(id) %>%
+                     dplyr::select(id, cassette) %>%
+                     dplyr::filter(cassette == "e") %>%
                      dplyr::distinct(),
                    by = "id") %>%
-    knitr::kable("markdown", align = 'c')
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* 8D: removed as a bad test
+
+
+## table: missing A filter data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(ecoc %>%
+                     dplyr::select(id, cassette) %>%
+                     dplyr::filter(cassette == "a") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
 ```
 
 ## table: bad data
@@ -139,7 +165,35 @@ define test type variable
     dplyr::filter(grepl("ecoc|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
+```
+
+notes:
+
+* 3A: white/orange flow rates unknown for most of test, artifact filter blew out - remove test
+* 24A: E fiter ruptured - remove test
+
+* 1A: filter ruptured, not sure which one - check if outlier
+* 2A: fire went out, flow rate low - check if outlier
+* 4C: possible issues with flow rate, artifact filter blew out, possibly after test was over - check if outlier
+* 8A: filter ruptured, not sure which one - check if outlier
+* 8C: potential problems with whole test - check if outlier
+* 17A: quartz filter ruptured, not sure which one - check if outlier
+* 23A: fire relit with kerosene and match during refuel - check if outlier
+
+* 2C: artifact filter ruptured, start up period twice, post test flow issue - remove artifact filter
+* 2E: no post flow for white cartridge, artifact filter blew out - remove artifact filter
+
+## mark additional tests as bad
+
+```{r}
+  ecoc <- 
+    ecoc %>%
+    dplyr::mutate(qc = as.character(qc),
+                  qc = ifelse(grepl("24A|3A", id), "bad", qc),
+                  qc = ifelse(id == "2E" & cassette == "a", "bad", qc),
+                  qc = ifelse(id == "2C" & cassette == "a", "bad", qc))
 ```
 
 ## remove bad tests
@@ -204,9 +258,7 @@ percent of lab blanks with NA values
     knitr::kable("markdown", align = 'c')
 ```
 
-## table: blank summary
-
-summarize blanks
+## summarize blanks
 
 ```{r}
   blanks <-
@@ -219,7 +271,7 @@ summarize blanks
                      loq = stdev * 10 + mean)
 ```
 
-summary of lab blanks (ug)
+## table: blank summary (ug)
 
 ```{r, echo=FALSE}
   blanks %>%
@@ -254,11 +306,37 @@ add lod variable and replace values below lod with lod/sqrt(2)
     dplyr::select(-lod_val)
 ```
 
+# look at artifact filters
+
+```{r}
+  ecoc_artifact <-
+    ecoc_merged %>%
+    dplyr::filter(cassette == "a") %>%
+    dplyr::select(id, pol, val) %>%
+    dplyr::rename("artifact" = "val")
+```
+
+```{r, echo=FALSE, fig.width=12}
+  ecoc_artifact %>%
+    ggplot(aes(id, artifact)) + 
+      geom_point() +
+      facet_wrap(~pol, nrow = 2, scales = "free") +
+      theme_bw()
+```
+
+notes: no outliers, assume all ec added is due to breakthrough, since little ec is found on the blank filters - do not subtract ec artifacts
+
+## filter ec artifact filters
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::filter(!(cassette == "a" & pol == "ec"))
+```
+
 # calculate concentrations
 
-## extract data
-
-extract flow rate data and average
+## flow data
 
 ```{r}
  flows <- 
@@ -274,7 +352,9 @@ extract flow rate data and average
   dplyr::select(-colour)
 ```
 
-extract time data
+notes: no flow data is missing
+
+## time data
 
 ```{r}
   times <-
@@ -286,9 +366,9 @@ extract time data
     dplyr::select(-color)
 ```
 
-## merge and calculate
+notes: no time data is missing
 
-merge data with flows and times
+## merge flow and time data
 
 ```{r}
   ecoc_merged <-
@@ -297,13 +377,15 @@ merge data with flows and times
     dplyr::left_join(times, by = c("id", "cassette"))
 ```
 
-calculate concentrations
+notes: no NA data
+
+## calculate concentrations
 
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::mutate(dur = (end - start) / 60,
-                  val = val * 1000 / (flow * dur))
+                  val = (val * 1000) / (flow * dur))
 ```
 
 # backgrounds
@@ -316,12 +398,12 @@ calculate concentrations
 
 ## table: lab background outliers
 
-outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+outliers (z > 3) when backgrounds are grouped by pollutant and cassette
 
 ```{r, echo=FALSE}
   bg %>%
     dplyr::filter(!is.na(val)) %>%
-    dplyr::group_by(pol) %>%
+    dplyr::group_by(pol, cassette) %>%
     dplyr::mutate(z_score = (val- mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::select(id, pol, z_score) %>%
@@ -329,7 +411,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-notes: not substantial - do not remove
+notes: no outliers
 
 ## plot: time series of lab backgrounds
 
@@ -349,7 +431,7 @@ notes: not substantial - do not remove
       xlab("")
 ```
 
-notes: no subtantial outliers - proceed
+notes: no subtantial outliers, artifact is the same order of magnitude as sample - proceed
 
 ## table: percent of lab backgrounds below lab lod
 
@@ -371,12 +453,42 @@ notes: no subtantial outliers - proceed
     knitr::kable("markdown", align = 'c')
 ```
 
+## subtract background artifact
+
+extract artifact
+
+```{r}
+  bg_artifact <-
+    bg %>%
+    dplyr::filter(cassette == "a") %>%
+    dplyr::select(id, pol, val, lod) %>%
+    dplyr::rename("artifact" = "val",
+                  "lod_a" = "lod")
+```
+
+subtract artifact
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(cassette == "e") %>%
+    dplyr::left_join(bg_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(artifact = ifelse(pol == "ec", 0, artifact)) %>%
+    dplyr::mutate(val = val - artifact) %>%
+    dplyr::select(-artifact, -cassette)
+```
+
+note: several oc values are negative once corrected for artifact - leave for now
+
+* when backgrounds are below lod and negative - could be negative due to measurement uncertainty 
+* when backgrounds are above lod and negative - could be negative because quartz behind teflon filter method tends to over estimate positive absorption artifact due to volatilization of organic gas off of teflon filter
+
 ## summarize backgrounds
 
 ```{r}
   bg <-
     bg %>%
-    dplyr::group_by(pol, cassette) %>%
+    dplyr::group_by(pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
@@ -406,14 +518,6 @@ notes: no subtantial outliers - proceed
 
 ## plot: background and burn concentrations
 
-remove bad tests (see comment below)
-
-```{r}
-  ecoc_merged <-
-    ecoc_merged %>%
-    dplyr::filter(!grepl("6D|8D", id))
-```
-
 ```{r ecoc_burn_bg_conc, echo=FALSE}
   ecoc_merged %>%
     dplyr::group_by(id, test_type) %>%
@@ -424,7 +528,6 @@ remove bad tests (see comment below)
       theme_bw() +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
-      scale_y_log10() +
       theme(text = element_text(size = 12),
             legend.position = "top") +
       facet_wrap(pol~cassette, scales = "free", ncol = 2) +
@@ -434,7 +537,7 @@ remove bad tests (see comment below)
 
 notes: some burns have low concentrations - opt to subtract median background from all burn data
 
-## subtract background
+## subtract artifact filters for burn filters
 
 ```{r}
   ecoc_merged <-
@@ -442,10 +545,61 @@ notes: some burns have low concentrations - opt to subtract median background fr
     dplyr::filter(test_type == "test")
 ```
 
+extract artifact
+
+```{r}
+  ecoc_artifact <-
+    ecoc_merged %>%
+    dplyr::filter(cassette == "a") %>%
+    dplyr::select(id, pol, val, lod) %>%
+    dplyr::rename("artifact" = "val",
+                  "lod_a" = "lod")
+```
+
+## plot: ratio of sample to artifact filters
+
+```{r}
+    ecoc_merged %>%
+    dplyr::filter(cassette == "e" & pol == "oc") %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(ratio = artifact / val) %>%
+      ggplot(aes(id, ratio)) + 
+        geom_point() +
+        facet_wrap(~pol, nrow = 2) +
+        theme_bw()
+```
+
+## table: average ratio of artifact to loaded filter
+
+```{r}
+    ecoc_merged %>%
+    dplyr::filter(cassette == "e" & pol == "oc") %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(ratio = artifact / val) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE)) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+subtract artifact
+
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::left_join(bg, by = c("pol", "cassette"))
+    dplyr::filter(cassette == "e") %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(artifact = ifelse(pol == "ec", 0, artifact),
+                  artifact = ifelse(is.na(artifact), val * 0.26, artifact)) %>%
+    dplyr::mutate(val = val - artifact) %>%
+    dplyr::select(-artifact, -cassette) %>%
+    dplyr::select(-lod_a)
+```
+
+## subtract background
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
 ```
 
 ```{r}
@@ -465,42 +619,7 @@ notes: some burns have low concentrations - opt to subtract median background fr
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-notes: these are four artifact filters - set values to zero
-
-```{r}
-  ecoc_merged <-
-    ecoc_merged %>%
-    dplyr::mutate(val = ifelse(val < 0, 0, val))
-```
-
-## subtract artifact filters
-
-```{r}
-  ecoc_artifact <-
-    ecoc_merged %>%
-    dplyr::filter(cassette == "a") %>%
-    dplyr::select(id, pol, val) %>%
-    dplyr::rename("artifact" = "val")
-
-  ecoc_merged <-
-    ecoc_merged %>%
-    dplyr::filter(cassette == "e") %>%
-    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
-    dplyr::mutate(val = val - artifact) %>%
-    dplyr::select(-artifact, -cassette)
-```
-
-## table: percentage of measurements below zero when corrected for artifact
-
-```{r, echo=FALSE}
-  ecoc_merged %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    knitr::kable("markdown", align = 'c', digits = 2)
-```
-
-notes: negative outlier is from gasifier test that will be removed from analysis
+notes: one test 26A is below background, but above lod - need to decide what to do about this measurement
 
 # burn analysis
 
@@ -524,7 +643,7 @@ notes: negative outlier is from gasifier test that will be removed from analysis
       xlab("")
 ```
 
-notes: 6D and 8D were removed above due to impossibly high values
+notes: looks reasonable - proceed
 
 ## plot: concentrations by stove type
 
@@ -541,7 +660,7 @@ notes: 6D and 8D were removed above due to impossibly high values
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       theme(text = element_text(size = 16),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -578,7 +697,7 @@ notes:
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) + 
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme(text = element_text(size = 16),
