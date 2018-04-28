@@ -1,0 +1,268 @@
+---
+title: "figure 1: emissions by pollutant by category"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+## format stove names
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    gsub(" ", "\n",.) %>% 
+                    forcats::fct_relevel("three\nstone\nfire",
+                                         "clay\nring",
+                                         "ceramic\ncharcoal",
+                                         "rocket\nelbow",
+                                         "built-in\nplancha",
+                                         "metal\ncharcoal",
+                                         "fan\nrocket\nelbow",
+                                         "gasifier",
+                                         "wick\nkerosene",
+                                         "pressure\nkerosene",
+                                         "lpg"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat), by = "id")
+```
+
+```{r}
+  levoglucosan <-
+    emissions %>%
+    dplyr::filter(grepl("levoglucosan", pol)) %>%
+    dplyr::select(id, pol, stove, stovecat, val)
+    
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol = ifelse(grepl("ch4", pol), "methane", pol),
+                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                  pol = ifelse(grepl("co2", pol), "carbon dioxide", pol),
+                  pol = ifelse(grepl("pahs", pol), "polycyclic aromatic hydrocarbons", pol),
+                  pol = ifelse(grepl("vocs", pol), "volatile organic compounds", pol))
+```
+
+## select pollutants
+
+```{r}
+ emissions_s <-
+  emissions %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(id, pol_category, stove, stovecat) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(pol = pol_category) %>%
+  dplyr::filter(!grepl("ions|ec|^oc$|pm_mass|carbohydrates", pol)) %>%
+  dplyr::bind_rows(levoglucosan)
+```
+
+## calculate summary stats for gas phase carcinogens
+
+```{r}
+  q1 <-
+    emissions_s %>%
+    dplyr::group_by(stove, pol) %>%
+    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+```
+
+```{r}
+  q3 <-
+    emissions_s %>%
+    dplyr::group_by(stove, pol) %>%
+    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
+```
+
+```{r}
+  emissions_s <-
+    emissions_s %>%
+    dplyr::group_by(stove, stovecat, pol) %>%
+    dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
+    dplyr::left_join(q1, by = c("stove", "pol")) %>%
+    dplyr::left_join(q3, by = c("stove", "pol"))
+```
+
+```{r}
+ emissions <-
+  emissions %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::filter(!grepl("ions|ec|^oc$|pm_mass|carbohydrates", pol_category)) %>%
+  dplyr::bind_rows(levoglucosan) %>%
+  dplyr::group_by(pol, pol_category, stove, stovecat) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
+  dplyr::ungroup()
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol = ifelse(grepl("2_5_", pol), "2,5-dimethylbenzaldehyde", pol),
+                  pol = ifelse(grepl("o_", pol), "o-tolualdehyde", pol),
+                  pol = ifelse(grepl("m_", pol), "m,p-tolualdehyde", pol)) %>%
+    dplyr::mutate(pol = as_factor(pol))
+```
+
+## plot: pollutant categories
+
+```{r figure_2a, echo=FALSE, fig.width=14, fig.height=5}
+  emissions %>%
+  dplyr::filter(grepl("carbonyls", pol_category)) %>%
+  ggplot(aes(x = stove, y = val, fill = pol)) +
+    geom_histogram(stat = "identity") +
+    geom_errorbar(data = emissions_s %>%
+                  dplyr::filter(grepl("carbonyls", pol)) %>%
+                  dplyr::mutate(pol = NA),
+                  aes(x = stove, y = val, ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    scale_fill_manual(values = stepped(n = 17)) +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 12),
+          strip.text.x = element_blank(),
+          axis.title.y = element_text(size = 20),
+          legend.position = "right") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    scale_y_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
+    ylab("miligrams per MJ delivered") +
+    xlab("") #+
+    #ggtitle("carbonyls")
+```
+
+```{r figure_2c, echo=FALSE, fig.width=12, fig.height=5}
+  emissions %>%
+  dplyr::filter(grepl("carbon monoxide", pol)) %>%
+  dplyr::mutate(val = val / 1000) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(stat = "identity", fill = "#0072B2") +
+    geom_errorbar(data = emissions_s %>%
+                  dplyr::filter(grepl("^co$", pol)) %>%
+                  dplyr::mutate(pol = NA,
+                                val = val / 1000,
+                                q1 = q1 / 1000,
+                                q3 = q3 / 1000),
+                  aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("grams per MJ delivered") +
+    xlab("") +
+    ggtitle("carbon monoxide")
+```
+
+```{r figure_2d, echo=FALSE, fig.width=12, fig.height=5}
+  emissions %>%
+  dplyr::filter(grepl("methane", pol)) %>%
+  dplyr::mutate(val = val / 1000) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(stat = "identity", fill = "firebrick3") +
+    geom_errorbar(data = emissions_s %>%
+                  dplyr::filter(grepl("^ch4", pol)) %>%
+                  dplyr::mutate(pol = NA,
+                                val = val / 1000,
+                                q1 = q1 / 1000,
+                                q3 = q3 / 1000),
+                  aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("grams per MJ delivered") +
+    xlab("") +
+    ggtitle("methane")
+```
+
+```{r figure_2e, echo=FALSE, fig.width=12, fig.height=5}
+  emissions %>%
+  dplyr::filter(grepl("pahs", pol_category)) %>%
+  ggplot(aes(x = stove, y = val, fill = pol)) +
+    geom_histogram(stat = "identity") +
+    geom_errorbar(data = emissions_s %>%
+                  dplyr::filter(grepl("^pahs", pol)) %>%
+                  dplyr::mutate(pol = NA),
+                  aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 12),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "right") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("miligrams per MJ delivered") +
+    xlab("") +
+    ggtitle("polycyclic aromatic hydrocarbons")
+```
+
+```{r figure_2f, echo=FALSE, fig.width=12, fig.height=5}
+  emissions %>%
+  dplyr::filter(grepl("levoglucosan", pol)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(stat = "identity") +
+    geom_errorbar(data = emissions_s %>%
+                  dplyr::filter(grepl("^levoglucosan", pol)) %>%
+                  dplyr::mutate(pol = NA),
+                  aes(ymin = q1, ymax = q3), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("") +
+    ggtitle("levoglucosan")
+```

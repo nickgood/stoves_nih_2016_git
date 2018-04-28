@@ -1,0 +1,138 @@
+---
+title: "figure 4: correlation plots"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, corrplot, RColorBrewer)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+## select pollutants
+
+```{r}
+  carcinogens <-
+    emissions %>%
+    dplyr::filter(grepl("formaldehyde|^benzene$|acetaldehyde|b.a.pyrene", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(id, pol, val)
+```
+
+```{r}
+ emissions <-
+  emissions %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(id, pol_category) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(pol = pol_category) %>%
+  dplyr::bind_rows(carcinogens) %>%
+  tidyr::spread(pol, val)
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::rename("methane" = "ch4",
+                  "carbon monoxide" = "co",
+                  "carbon dioxide" = "co2",
+                  "organic carbon" = "oc",
+                  "total PAHs" = "pahs",
+                  "total PM mass" = "pm_mass",
+                  "total VOCs" = "vocs",
+                  "elemental carbon" = "ec",
+                  "inorganic ions" = "ions")
+```
+
+# all stoves
+
+```{r}
+  emissions_c <-
+    emissions %>%
+    dplyr::select(-id)
+
+  emissions_c <- round(cor(emissions_c, method = "spearman", use = "pairwise.complete.obs"), 2)
+```
+
+```{r}
+  corrplot(emissions_c, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
+           col = brewer.pal(n = 8, name = "PuOr"))
+```
+
+# traditional stoves
+
+```{r}
+  emissions_t <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stovecat), by = "id") %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+    dplyr::select(-id, -stovecat)
+```
+
+```{r}
+  emissions_t <- round(cor(emissions_t, method = "spearman", use = "pairwise.complete.obs"), 2)
+```
+
+```{r}
+  corrplot(emissions_t, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
+           col = brewer.pal(n = 8, name = "PuOr"))
+```
+
+# improved stoves
+
+```{r}
+  emissions_i <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stovecat), by = "id") %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+    dplyr::select(-id, -stovecat)
+```
+
+```{r}
+  emissions_i <- round(cor(emissions_i, method = "spearman", use = "pairwise.complete.obs"), 2)
+```
+
+```{r}
+  corrplot(emissions_i, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
+           col = brewer.pal(n = 8, name = "PuOr"))
+```
+
+# liquid-fueled stoves
+
+```{r}
+  emissions_l <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stovecat), by = "id") %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::select(-id, -stovecat)
+```
+
+```{r}
+  emissions_i <- round(cor(emissions_i, method = "spearman", use = "pairwise.complete.obs"), 2)
+```
+
+```{r}
+  corrplot(emissions_i, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
+           col = brewer.pal(n = 8, name = "PuOr"))
+```
