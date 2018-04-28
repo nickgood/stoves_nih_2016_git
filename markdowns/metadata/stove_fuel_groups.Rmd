@@ -42,6 +42,7 @@ output:
                                                    "pressurized kerosene",
                                                    "pressurized lpg") %>%
                                forcats::fct_recode("lpg" = "pressurized lpg") %>%
+                               forcats::fct_recode("built-in plancha" = "built-in justa") %>%
                                forcats::fct_recode("pressure kerosene" = "pressurized kerosene"))
 ```
 
@@ -96,7 +97,7 @@ output:
                                "improved stoves" = c("fan rocket elbow",
                                                                  "metal charcoal",
                                                                  "rocket elbow",
-                                                                 "built-in justa",
+                                                                 "built-in plancha",
                                                                  "gasifier"),
                                "liquid-fuel stoves" = c("lpg",
                                                         "wick kerosene",
