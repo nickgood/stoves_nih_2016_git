@@ -272,7 +272,8 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
 ```{r}
   bg <-
     bg %>%
-    dplyr::filter(id != "G13")
+    dplyr::filter(id != "G13") %>%
+    dplyr::filter(!(id == "G2" & pol == "nitrate"))
 ```
 
 ## plot: time series of lab backgrounds
@@ -353,7 +354,7 @@ summary of backgrounds (ug per meter cubed)
       geom_boxplot(outlier.colour = NA, alpha = 0.0) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
-      #scale_y_log10() +
+      scale_y_log10() +
       theme_bw() +
       facet_wrap(~pol, ncol = 3, scales = "free") +
       theme(text = element_text(size = 12),
@@ -442,7 +443,7 @@ notes:
 
 notes:
 
-## table: outliers by stove type
+## table: outliers by stove type (by pollutant)
 
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
@@ -458,6 +459,23 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
 ```
 
 notes: not an outlier of interst - proceed
+
+## table: outliers by stove type (summed ions)
+
+outliers (z > 3) when samples are summed and grouped by stove type
+
+```{r, echo=FALSE}
+  ions_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarize(val = sum(val)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
 
 ## plot: concentrations by fuel type
 
