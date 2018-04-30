@@ -50,7 +50,14 @@ load schemes
   carbohyrates <- 
     carbohyrates %>%
     dplyr::select(2:13, type, id) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::filter(type == "test" | type == "bg")
+```
+
+## remove empty measurement
+
+```{r}
+  carbohyrates <- carbohyrates[-39,]
 ```
 
 ## reformat
@@ -119,6 +126,7 @@ define test type variable
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -132,6 +140,19 @@ define test type variable
     knitr::kable("markdown", align = 'c')
 ```
 
+notes: 
+
+* 1A: filter ruptured, not sure which one - check if outlier
+* 2A: fire went out - check if outlier
+* 2C: start up period twice - check if outlier
+* 3A: filter ruptured, not sure which one - check if outlier
+* 8A: filter ruptured, not sure which one - check if outlier
+* 8C: many test problems - check if outlier
+* 17A: filter ruptured, not sure which one - check if outlier
+* 22C: possibly unequal filter loading - check if outlier
+* 23A: fire went out and relit with kerosene - check if outlier
+* G2: filter ruptured, not sure which one - check if outlier
+
 ## remove bad tests
 
 ```{r}
@@ -142,9 +163,7 @@ define test type variable
 
 # concentration calculations
 
-## extract data
-
-extract flow rate data and average
+## extract flow data
 
 ```{r}
   flows <- 
@@ -158,7 +177,9 @@ extract flow rate data and average
     dplyr::select(-colour)
 ```
 
-extract time data
+notes: no flow data missing
+
+## extract time data
 
 ```{r}
   times <- 
@@ -169,9 +190,9 @@ extract time data
     dplyr::select(-color)
 ```
 
-## merge and calculate
+notes: no time data missing
 
-merge data with flows and times
+## merge with flows and times
 
 ```{r}
   carbohyrates_merged <-
@@ -180,9 +201,7 @@ merge data with flows and times
     dplyr::left_join(times, by = "id")
 ```
 
-## flag filters below lod
-
-define lod
+## flag NA values as below lod
 
 ```{r}
   lod <- 0.0001 # micrograms per cubic meter
@@ -194,7 +213,7 @@ define lod
     dplyr::mutate(lod = ifelse(is.na(val), "below", "above"))
 ```
 
-calculate concentrations
+## calculate concentrations
 
 ```{r}
   carbohyrates_merged <-
@@ -203,7 +222,7 @@ calculate concentrations
                   val = val * 1000 / (flow * dur))
 ```
 
-replace NA values with lod / sqrt(2)
+## replace NA values with lod / sqrt(2)
 
 ```{r}
   carbohyrates_merged <- 
@@ -227,7 +246,7 @@ replace NA values with lod / sqrt(2)
 
 ## plot: lab background outliers
 
-outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+outliers (z > 3) when backgrounds are grouped by pollutant
 
 ```{r, echo=FALSE}
   bg %>%
@@ -241,7 +260,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: backgrounds look good - no backgrounds were outliers across pollutants
+notes: backgrounds look good - no backgrounds were outliers across multiple pollutants - proceed
 
 ## plot: time series of lab backgrounds
 
@@ -261,7 +280,7 @@ conclusions: backgrounds look good - no backgrounds were outliers across polluta
       xlab("")
 ```
 
-conclusions:
+notes: a few outliers - see how they impact background average
 
 ## table: percent of lab backgrounds with NA values
 
@@ -309,30 +328,6 @@ summary of backgrounds (ug per meter cubed)
   saveRDS(bg, file = "../../r_data/carbohydrates_bg.RDS")
 ```
 
-
-# burn analysis
-
-## plot: time series of burns
-
-```{r carbohyrates_samples_timeseries, echo=FALSE}
- carbohyrates_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(color = qc, shape = lod), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.position = "top") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("concentration (micrograms per cubic meter)") +
-      xlab("")
-```
-
-conclusions:
-
 ## plot: comparing background and sample concentrations
 
 ```{r carbohyrates_test_bg_conc, echo=FALSE}
@@ -352,9 +347,9 @@ conclusions:
       xlab("")
 ```
 
-conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
+notes: many backgrounds appear to be at the limit of detection
 
-extract burn data
+## subtract background
 
 ```{r}
   carbohyrates_merged <-
@@ -387,6 +382,29 @@ extract burn data
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+# burn analysis
+
+## plot: time series of burns
+
+```{r carbohyrates_samples_timeseries, echo=FALSE}
+ carbohyrates_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
+```
+
+notes:
+
 ## plot: concentrations by stove type
 
 ```{r carbohyrates_stovetype, echo=FALSE, fig.height=20}
@@ -409,11 +427,9 @@ extract burn data
       xlab("")
 ```
 
-conclusions:
+notes:
 
-* 
-
-## table: outliers by stove type
+## table: outliers by stove type (by pollutant)
 
 outliers (z > 3) when samples are grouped by pollutant and stove type
 
@@ -423,12 +439,29 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     dplyr::group_by(pol, stove) %>%
     dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::select(id, pol, stove, fuel, z_score) %>%
+    dplyr::select(id, pol, stove, z_score) %>%
     dplyr::filter(z_score > 3) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusion:
+notes: 2A was one of the outliers to look for, but since only one pollutant is an outlier, leave for now
+
+## table: outliers by stove type (summed)
+
+outliers (z > 3) when samples are summed and grouped by stove type
+
+```{r, echo=FALSE}
+  carbohyrates_merged_p %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarize(val = sum(val)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, stove, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
 
 ## plot: concentrations by fuel type
 
@@ -465,7 +498,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions:
+notes: 2A is an outlier again - fire went out for this test - leave for now
 
 ## table: percent of burns with NA values
 
