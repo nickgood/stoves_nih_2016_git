@@ -146,16 +146,12 @@ calc_mw <- function(pol_properties){
   ##________________________________________________________
 # convert ppmv to ug/m^3
 # mw = molecular weight g/mol
-# t = temperature oC
-# p = pressure kPa
-  convert_ppmv_ugpmc <- function(ppmv,mw,t,p){
+# t = in Kelvin
+# p = pressure pascals
+  convert_ppmv_ugpmc <- function(ppmv, MW, t, P){
 
-    ug <- (1 / (mw * ppmv)) * 8.3144 * (t + 273.15 ) / (p * 1000)
+    ((MW * 10e6 * P) / (8.3144 * t)) * (ppmv * 10e-6)
 
-    ug <- (1 / ug)
- 
-  # return
-    return(ug)
 }
 #________________________________________________________
 
