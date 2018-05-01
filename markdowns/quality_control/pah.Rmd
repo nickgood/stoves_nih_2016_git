@@ -38,18 +38,17 @@ load schemes
   lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
-## lod
-
-extract chemical analysis lod data
+## extract lod data
 
 ```{r}
   lod <-
     pah_bdl %>%
     dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-    dplyr::select(-val)
+    dplyr::select(-val) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
-replace values below the lod with lod/sqrt(2) 
+## replace with lod/sqrt(2) 
 
 ```{r}
   pah <- 
@@ -58,10 +57,23 @@ replace values below the lod with lod/sqrt(2)
     dplyr::left_join(lod, by = c("id_asu", "id", "filter_type", "pol")) %>%
     dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val),
                   val = as.numeric(val)) %>%
-    dplyr::select(-id_asu)
+    dplyr::select(-id_asu) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
-average in case there are duplicate measurements
+## update typos
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::mutate(id = as.character(id),
+                  id = ifelse(id == "10D", "1D", id),
+                  id = ifelse(id == "8E", "6E", id))
+```
+
+notes: email from Pierre saying 10D-B = 1D-B and 8E-B = 6E-B
+
+## consolidate duplicate measurements
 
 ```{r}
   pah <-
@@ -83,6 +95,14 @@ average in case there are duplicate measurements
                                         "front puf" = "f",
                                         "filter" = "ba",
                                         "filter" = "p"))
+```
+
+## ignore naphthalene
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::filter(pol != "napthalene")
 ```
 
 ## flags
@@ -150,23 +170,26 @@ missing back pufs
                                           dplyr::filter(test_type != "blank", filter_type == "filter") %>%
                                           dplyr::select(id), by = "id") %>%
                        dplyr::mutate(filter_type = "filter"))
-
-  knitr::kable(missing, "markdown", align = 'c')
+  missing %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
-notes: we have measurements labeled 10D-B and 8E-B, which don't match any test ids
+notes: Pierre has record of all missing samples except
 
-## remove tests without front puf or filter
+* 14C-P: contaiminated during processing
+* G6-B: lost somewhere along the line
+* one other, not sure which one?
+
+## remove tests with measurement missing
 
 ```{r}
-  missing <- 
-    missing %>%
-    dplyr::filter(filter_type != "back puf") 
-
   pah <-
     pah %>%
     dplyr::anti_join(missing, by = "id")
 ```
+
+notes: asking John which (if any) missing filter type would make a measurement bad
 
 ## table: tests with bad measurements
 
@@ -175,8 +198,22 @@ notes: we have measurements labeled 10D-B and 8E-B, which don't match any test i
     dplyr::filter(grepl("pah|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
+
+notes: 
+
+* 1A: filter ruptured, not sure which one - check if outlier
+* 2A: fire went out - check if outlier
+* 2C: start up period twice - check if outlier
+* 3A: filter ruptured, not sure which one - check if outlier
+* 8A: filter ruptured, not sure which one - check if outlier
+* 8C: many test problems - check if outlier
+* 17A: filter ruptured, not sure which one - check if outlier
+* 22C: possibly unequal filter loading - check if outlier
+* 23A: fire went out and relit with kerosene - check if outlier
+* G2: filter ruptured, not sure which one - check if outlier - removed
 
 ## remove bad tests
 
@@ -201,7 +238,6 @@ outliers (z > 3) when blanks are grouped by pollutant and filter type
 
 ```{r, echo=FALSE}
   blanks %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol, filter_type) %>%
     dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE))/ sd(val, na.rm = TRUE)) %>%
     dplyr::select(id, pol, filter_type, z_score) %>%
@@ -211,11 +247,11 @@ outliers (z > 3) when blanks are grouped by pollutant and filter type
 
 notes:
 
-## plot: time series of lab blanks
+## plot: time series of lab blanks (filters)
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.width=12}
  blanks %>%
-    dplyr::filter(!is.na(val)) %>%
+    filter(filter_type == "filter") %>%
     dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(shape = lod, color = qc), size = 2) +
@@ -225,11 +261,29 @@ notes:
       theme(text = element_text(size = 16),
             legend.position = "top") +
       labs(shape = "chemical analysis lod") +
-      facet_wrap(pol~filter_type, ncol = 4, scales = "free") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("mass (micrograms)")
 ```
 
-notes:
+## plot: time series of lab blanks (pufs)
+
+```{r, echo=FALSE, fig.width=12}
+ blanks %>%
+    filter(filter_type == "puf") %>%
+    dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      labs(shape = "chemical analysis lod") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("mass (micrograms)")
+```
+
+notes: a few outliers - proceed for now
 
 ## table: percent of lab blanks below lod for chemical analysis
 
@@ -255,6 +309,21 @@ percent of lab blanks with NA values
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+notes: lots of NAs - contacted Pierre regarding NAs they could be either
+
+* below LOD, no limit given
+* issues with column degredation
+
+for now, remove (there should be at least one value for background for each measurement)
+
+## remove NAs
+
+```{r}
+  blanks <-
+    blanks %>%
+    dplyr::filter(!is.na(val))
+```
+
 ## table: blank summary
 
 summarize blanks
@@ -270,7 +339,7 @@ summarize blanks
                      loq = stdev * 10 + mean)
 ```
 
-summary of lab blanks (ug)
+## table: summary of lab blanks (ug)
 
 ```{r, echo=FALSE}
   blanks %>%
@@ -283,6 +352,8 @@ summary of lab blanks (ug)
   saveRDS(blanks, file = "../../r_data/pah_lod.RDS")
 ```
 
+## lod
+
 remove lab blanks from pah_merged file
 
 ```{r}
@@ -291,7 +362,7 @@ remove lab blanks from pah_merged file
     dplyr::filter(test_type != "blank") # remove blanks
 ```
 
-add lod variable
+add lod variable and replace with lod/sqrt(2)
 
 ```{r}
   pah_merged <-
@@ -304,6 +375,16 @@ add lod variable
                   val = ifelse(val <= lod_val, lod_val / sqrt(2), val)) %>%
     dplyr::select(-lod_val, -filter_class)
 ```
+
+## remove NAs for now
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::filter(!is.na(val))
+```
+
+notes: knowing this is not the best way to deal with them - remove for now and assume they are equal to zero - in contact with Pierre regarding the best approach to deal with these data
 
 # concentration calculations
 
@@ -337,6 +418,8 @@ extract flow rate data and average
     tidyr::spread(type, mean)
 ```
 
+notes: no flow data appear to be missing
+
 extract time data
 
 ```{r}
@@ -352,6 +435,8 @@ extract time data
     tidyr::spread(type, value)
 ```
 
+notes: no time data appear to be missing
+
 ## merge and calculate
 
 merge data with flows and times
@@ -365,6 +450,8 @@ merge data with flows and times
     dplyr::rename(pre_flow = pre, post_flow = post) %>%
     dplyr::mutate(flow = (pre_flow + post_flow) / 2)
 ```
+
+notes: no flow or time data missing
 
 calculate concentrations
 
@@ -399,13 +486,19 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c')
 ```
 
-notes: 
+notes: remove G2 given that it was a suspect bad measurement
 
-## plot: time series of lab backgrounds
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(id != "G2")
+```
 
-```{r, echo=FALSE}
- bg %>%
-    dplyr::filter(!is.na(val)) %>%
+## plot: time series of lab backgrounds (back puf)
+
+```{r, echo=FALSE, fig.width=12}
+  bg %>%
+    dplyr::filter(filter_type == "back puf") %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(shape = lod, color = qc), size = 2) +
@@ -414,7 +507,43 @@ notes:
       theme_bw() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
-      facet_wrap(pol~filter_type, ncol = 3, scales = "free") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: time series of lab backgrounds (front puf)
+
+```{r, echo=FALSE, fig.width=12}
+  bg %>%
+    dplyr::filter(filter_type == "front puf") %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: time series of lab backgrounds (filter)
+
+```{r, echo=FALSE, fig.width=12}
+  bg %>%
+    dplyr::filter(filter_type == "filter") %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
@@ -432,6 +561,8 @@ notes:
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+notes: most backgrounds below lod
+
 ## table: percent of lab backgrounds with NA values
 
 ```{r, echo=FALSE}
@@ -443,12 +574,23 @@ notes:
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+## sum pollutants across filters
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(id, pol) %>%
+    dplyr::summarise(val = sum(val),
+                     qc = first(qc),
+                     lod = first(lod))
+```
+
 ## summarize backgrounds
 
 ```{r}
   bg <-
     bg %>%
-    dplyr::group_by(pol, filter_type) %>%
+    dplyr::group_by(pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
@@ -476,33 +618,14 @@ notes:
   saveRDS(bg, file = "../../r_data/pah_bg.RDS")
 ```
 
-# burn analysis
-
-## plot: time series of burns
-
-```{r pah_burn_timeseries, echo=FALSE}
-  pah_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(pol~filter_type, scales = "free", ncol = 3) +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
 ## plot: background and burn concentrations
 
-```{r pah_burn_bg_conc, echo=FALSE}
+```{r pah_burn_bg_conc, echo=FALSE, fig.width=12}
   pah_merged %>%
-    dplyr::group_by(id, test_type) %>%
-    dplyr::filter(!is.na(val)) %>%
+    dplyr::group_by(id, pol, test_type) %>%
+    dplyr::summarise(val = sum(val),
+                     qc = first(qc),
+                     lod = first(lod)) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) +
@@ -512,12 +635,71 @@ notes:
       scale_y_log10() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
-      facet_wrap(pol~filter_type, scales = "free", ncol = 2) +
+      facet_wrap(~pol, scales = "free", ncol = 4) +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
 
-## subtract background
+# burn analysis
+
+## plot: time series of burns (back puf)
+
+```{r pah_burn_timeseries_b, echo=FALSE, fig.width=12}
+  pah_merged %>%
+    dplyr::filter(filter_type == "back puf") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free", ncol = 4) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: time series of burns (front puf)
+
+```{r pah_burn_timeseries_f, echo=FALSE, fig.width=12}
+  pah_merged %>%
+    dplyr::filter(filter_type == "front puf") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free", ncol = 4) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: time series of burns (filter)
+
+```{r pah_burn_timeseries_p, echo=FALSE, fig.width=12}
+  pah_merged %>%
+    dplyr::filter(filter_type == "front puf") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free", ncol = 4) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## sum pollutants across filters
 
 ```{r}
   pah_merged <-
@@ -528,7 +710,18 @@ notes:
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::left_join(bg, by = c("pol", "filter_type"))
+    dplyr::group_by(id, pol) %>%
+    dplyr::summarise(val = sum(val),
+                     qc = first(qc),
+                     lod = first(lod))
+```
+
+## subtract background
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
 ```
 
 ```{r}
@@ -550,41 +743,11 @@ notes:
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-## replace low values with zero and sum all filters
-
-```{r, echo=FALSE}
-  pah_merged <-
-    pah_merged %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(val = ifelse(val < 0, 0, val)) %>%
-    dplyr::select(id, pol, dur, filter_type, val) %>%
-    tidyr::spread("filter_type", "val") %>%
-    dplyr::filter(!is.na("front puf"), !is.na("filter")) %>%
-    tidyr::gather("filter_type", "val", 4:6) %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE),
-                     dur = first(dur))
-```
-
-## add flags back
-
-add flag by id
-
-```{r}
-  pah_merged <-
-    pah_merged %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(flags, by = "id") %>%
-    dplyr::mutate(id = as.factor(id)) %>%
-    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
 ## plot: concentrations by stove type
 
 ```{r pah_stovetype, echo=FALSE, fig.height=30}
   pah_merged_p <-
     pah_merged %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  pah_merged_p %>%
@@ -593,7 +756,7 @@ add flag by id
       geom_jitter(aes(color = qc), size = 2) + 
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       theme(text = element_text(size = 16),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -627,7 +790,7 @@ notes:
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc), size = 2) + 
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       scale_color_manual(values = qc_colors) +
       theme(text = element_text(size = 16),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
@@ -654,7 +817,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c')
 ```
 
-notes:
+notes: both 8A and 3A were outliers of interest - look at these in emissions factor form
 
 ## table: burns with NA values
 
@@ -673,7 +836,9 @@ percent of burn samples with NA values
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::mutate(pol_category = "pahs", lod = NA) %>%
+    dplyr::left_join(times, by = "id") %>%
+    dplyr::mutate(dur = (end - start) / 60) %>%
+    dplyr::mutate(pol_category = "pahs") %>%
     dplyr::select(id, pol, val, dur, lod, qc, pol_category)
 
   saveRDS(pah_merged, file = "../../r_data/pah_merged.RDS")
