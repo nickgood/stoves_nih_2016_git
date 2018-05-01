@@ -82,7 +82,7 @@ output:
                                                 "3_methylheptane", "n_octane",
                                                 "ethylbenzene", "m_p_xylene",
                                                 "styrene", "o_xylene",
-                                                "n_no_8888ne", "i_propylbenzene",
+                                                "n_nonane", "i_propylbenzene",
                                                 "a_pinene", "n_propylbenzene",
                                                 "3_ethyltoluene", "4_ethyltoluene",
                                                 "1_3_5_trimethylbenzene",
