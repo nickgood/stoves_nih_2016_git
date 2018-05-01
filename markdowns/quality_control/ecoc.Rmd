@@ -306,7 +306,7 @@ add lod variable and replace values below lod with lod/sqrt(2)
     dplyr::select(-lod_val)
 ```
 
-# look at artifact filters
+## look at artifact filters
 
 ```{r}
   ecoc_artifact <-
