@@ -46,10 +46,17 @@ load schemes
 
 ## extract carbonyls 
 
+## remove empty measurement
+
+```{r}
+  carbonyls <- carbonyls[-46,]
+```
+
 ```{r}
   carbs <- 
     carbonyls %>%
     dplyr::select(27:42, type, id) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::filter(type == "test" | type == "bg")
 ```
 
@@ -119,6 +126,7 @@ define test type variable
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -129,16 +137,24 @@ define test type variable
     dplyr::filter(grepl("carb|carbonyl|carbonyls|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
 notes: 
 
-* 29A and 29B - no repeat
-* 16B - no repeat
-* 2B - repeated test twice (2D & 2E)
-* 1C - repeated test (1D)
-* 8C - repeated test (8D)
+* 1C: dilution line and carbonyl clogged - bad
+* 2B: ozone scrubber behind carbonyl - bad
+* 8C: clog in sample line - bad
+* 16B: flow issues - bad
+
+* G2: unclear notes - check if outlier
+* 2A: fire went out during test - check if outlier
+* 2C: start up period twice - check if outlier
+* 6B: possible clog in sample line - check if outlier
+* 6C: pumps may have turned off during test - check if outlier
+* 8A: possible flow issue - check if outlier
+* 23A: fire relit with kerosene and match during refuel - check if outlier
 
 ## remove bad tests
 
@@ -150,9 +166,7 @@ notes:
 
 # concentration calculations
 
-## extract data
-
-extract flow rate data and average
+## extract flow data and average
 
 ```{r}
   flows <- 
@@ -164,7 +178,9 @@ extract flow rate data and average
     dplyr::summarise(flow = mean(flow, na.rm = TRUE))
 ```
 
-extract time data
+notes: no flow data appear to be missing
+
+## extract time data
 
 ```{r}
   times <- 
@@ -172,6 +188,8 @@ extract time data
     dplyr::select(-date) %>%
     tidyr::spread(type, value)
 ```
+
+notes: no time data appear to be missing
 
 ## merge and calculate
 
@@ -198,7 +216,7 @@ define lod
     dplyr::mutate(lod = ifelse(is.na(val), "below", "above"))
 ```
 
-calculate concentrations
+## calculate concentrations
 
 ```{r}
   carbs_merged <-
@@ -207,7 +225,7 @@ calculate concentrations
                   val = val * 1000 / (flow * dur))
 ```
 
-replace NA values with lod / sqrt(2)
+## replace NA values with lod / sqrt(2)
 
 ```{r}
   carbs_merged <- 
@@ -245,7 +263,7 @@ outliers (z > 3) when backgrounds are grouped by pollutant
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions:
+notes: none are outliers of interest - proceed
 
 ## plot: time series of lab backgrounds
 
@@ -303,7 +321,7 @@ summarize backgrounds
                   count = ifelse(is.nan(count), NA, count))
 ```
 
-summary of backgrounds (ug per meter cubed)
+## table: summary of backgrounds (ug per meter cubed)
 
 ```{r, echo=FALSE}
   bg %>%
@@ -315,32 +333,6 @@ summary of backgrounds (ug per meter cubed)
 ```{r}
   saveRDS(bg, file = "../../r_data/carbonyls_bg.RDS")
 ```
-
-# burn analysis
-
-## plot: time series of burns
-
-```{r carbonyls_samples_timeseries, echo=FALSE}
- carbs_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(color = qc, shape = lod), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.position = "top") +
-      facet_wrap(~pol, ncol = 4, scales = "free") +
-      ylab("concentration (micrograms per cubic meter)") +
-      xlab("")
-```
-
-conclusions:
-
-* o_tolualdehyde trend?
-* acetalaldehyde trend?
 
 ## plot: background and burn concentrations
 
@@ -366,7 +358,7 @@ conclusions:
 * some overlap between burn and background concentrations
 * need to investigate ways to account for background measurements (for now, subtract the median)
 
-extract burn data
+## subract background
 
 ```{r}
   carbs_merged <-
@@ -399,6 +391,29 @@ extract burn data
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+# burn analysis
+
+## plot: time series of burns
+
+```{r carbonyls_samples_timeseries, echo=FALSE}
+ carbs_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
+```
+
+notes:
+
 ## plot: concentrations by stove type
 
 ```{r carbonyls_stovetype, echo=FALSE, fig.height=25}
@@ -413,7 +428,7 @@ extract burn data
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -422,7 +437,7 @@ extract burn data
       xlab("")
 ```
 
-conclusions:
+notes:
 
 ## table: outliers by stove type
 
@@ -439,7 +454,7 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+notes: not outlier of interest - proceed
 
 ## plot: concentrations by fuel type
 
@@ -451,7 +466,7 @@ conclusions:
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      scale_y_log10() +
+      #scale_y_log10() +
       theme(text = element_text(size = 12),
             axis.text.x = element_text(angle = 15, hjust = 1, vjust = 1),
             legend.position = "top") +
@@ -477,7 +492,10 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 1A seems to be a consistent outlier across pollutants
+notes: 
+
+* 1A seems to be a consistent outlier across pollutants - proceed for now
+* 8A appears to be an outlier as well - proceed for now
 
 ## table: percent of burns with NA values
 
