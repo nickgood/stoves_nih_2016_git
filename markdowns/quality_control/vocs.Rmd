@@ -77,6 +77,7 @@ fix transcription errors
   vocs <- 
     vocs %>%
     dplyr::select(id, type, 5:59) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::filter(type == "test" | type == "bg", id != "P8") %>%
     dplyr::rename("voc_n_nonane" = "voc_n_no_8888ne")
 ```
@@ -96,6 +97,16 @@ convert to long format
     dplyr::mutate(pol = gsub("voc_", "", pol))
         
 ```
+
+## assume any blank cells are below lod
+
+```{r}
+  vocs <-
+    vocs %>%
+    dplyr::mutate(val = ifelse(is.na(val), -8888, val))
+```
+
+notes: assume any blank values are below lod - email Arsineh to confirm
 
 ## lod
 
@@ -170,8 +181,17 @@ define test type variable
     dplyr::filter(grepl("voc|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
+
+notes: 
+
+* 2A: fire went out during test, flow may have been low on canister - check if outlier
+* 2C: start up period twice - check if outlier
+* 8C: many problems - check if outlier
+* 23A: fire relit with kerosene during reful - check if outlier
+* G8: possible leak problem - check if outlier
 
 ## remove bad tests
 
@@ -194,6 +214,8 @@ extract time data
     dplyr::select(id, dur)
 ```
 
+notes: no time data missing
+
 ## merge and calculate
 
 merge data with flows and times
@@ -208,10 +230,10 @@ merge data with flows and times
 calculate concentrations
 
 ```{r}
-  vocs_merged <-
+  test <-
     vocs_merged %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
-    dplyr::mutate(val = convert_ppmv_ugpmc(val / 1000, mw, 25, 85),
+    dplyr::mutate(val = convert_ppbv_ugpmc(val, mw),
                   units = "ug per meter cubed") %>%
     dplyr::select(-mw)
 ```
@@ -228,7 +250,7 @@ extract background
 
 ## table: lab background outliers
 
-outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+outliers (z > 3) when backgrounds are grouped by pollutant
 
 ```{r, echo=FALSE}
   bg %>%
@@ -242,14 +264,13 @@ outliers (z > 3) when backgrounds are grouped by pollutant and filter type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+notes: none are outliers across pollutants - proceed
 
 ## plot: time series of lab backgrounds
 
 
-```{r vocs_bg_timeseries, echo=FALSE}
+```{r vocs_bg_timeseries, echo=FALSE, fig.width=12, fig.height=20}
  bg %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(color = qc, shape = lod), size = 2) +
@@ -258,12 +279,12 @@ conclusions:
       theme_bw() +
       theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(~pol, ncol = 6, scales = "free") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
       ylab("concentration (micrograms per meters cubed)") +
       xlab("")
 ```
 
-conclusions: 
+notes: 
 
 ## table: percent of lab blanks below lod
 
@@ -309,7 +330,7 @@ summarize backgrounds
                   count = ifelse(is.nan(count), NA, count))
 ```
 
-summary of backgrounds (ug per meter cubed)
+## table: summary of backgrounds (ug per meter cubed)
 
 ```{r, echo=FALSE}
   bg %>%
@@ -322,32 +343,9 @@ summary of backgrounds (ug per meter cubed)
   saveRDS(bg, file = "../../r_data/vocs_bg.RDS")
 ```
 
-# burn analysis
-
-## plot: time series of burns
-
-```{r vocs_samples_timeseries, echo=FALSE}
- vocs_merged %>%
-    dplyr::filter(test_type == "test") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(color = qc, shape = lod), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.position = "top") +
-      facet_wrap(~pol, ncol = 6, scales = "free") +
-      ylab("concentration (micrograms per cubic meter)") +
-      xlab("")
-```
-
-conclusions:
-
 ## plot: comparing background and sample concentrations
 
-```{r ions_test_bg_conc, echo=FALSE}
+```{r ions_test_bg_conc, echo=FALSE, fig.width=12, fig.height=20}
   vocs_merged %>%
     dplyr::group_by(id, pol, test_type) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
@@ -355,16 +353,18 @@ conclusions:
       geom_boxplot(outlier.colour = NA, alpha = 0.0) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
-      #scale_y_log10() +
+      scale_y_log10() +
       theme_bw() +
-      facet_wrap(~pol, ncol = 6, scales = "free") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
       theme(text = element_text(size = 12),
             legend.position = "top") +
       ylab("concentration (micrograms per cubic meter)") +
       xlab("")
 ```
 
-conclusions: need to investigate ways to account for background measurements (for now, subtract the median)
+notes: need to investigate ways to account for background measurements (for now, subtract the median)
+
+## subtract background data
 
 extract burn data
 
@@ -380,6 +380,12 @@ extract burn data
     dplyr::left_join(bg, by = c("pol"))
 ```
 
+```{r}
+  vocs_merged <-
+    vocs_merged %>%
+    dplyr::mutate(val = val - median)
+```
+
 ## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
@@ -392,6 +398,29 @@ extract burn data
     dplyr::rename("voc type" = "pol") %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
+
+# burn analysis
+
+## plot: time series of burns
+
+```{r vocs_samples_timeseries, echo=FALSE, fig.width=12, fig.height=20}
+ vocs_merged %>%
+    dplyr::filter(test_type == "test") %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(color = qc, shape = lod), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, ncol = 4, scales = "free") +
+      ylab("concentration (micrograms per cubic meter)") +
+      xlab("")
+```
+
+notes:
 
 ## plot: concentrations by stove type
 
@@ -415,7 +444,7 @@ extract burn data
       xlab("")
 ```
 
-conclusions:
+notes:
 
 ## table: outliers by stove type
 
@@ -433,7 +462,7 @@ outliers (z > 3) when samples are grouped by pollutant and stove type
     knitr::kable("markdown", align = 'c')
 ```
 
-conclusions:
+notes: not an outlier of interest, proceed for now
 
 ## plot: concentrations by fuel type
 
@@ -453,7 +482,7 @@ conclusions:
       xlab("")
 ```
 
-conclusions:
+notes:
 
 ## table: outliers by fuel type
 
@@ -471,7 +500,7 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-conclusions: 
+notes: 2E seems to be appearing the most - proceed for now
 
 ## table: percent of burns with NA values
 
