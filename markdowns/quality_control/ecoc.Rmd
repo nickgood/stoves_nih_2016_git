@@ -144,7 +144,6 @@ notes:
 
 * 8D: removed as a bad test
 
-
 ## table: missing A filter data
 
 ```{r, echo = FALSE}
