@@ -245,10 +245,6 @@ load_fivegas_file <- function(file){
 
   df$id <- as.factor((strsplit(basename(file), "_")[[1]])[2])
 
-  # convert percents to ppm
-  df$co2 <- df$co2 * 10^4
-  df$o2 <- df$o2 * 10^4  
-
   return(df)
 }
 #________________________________________________________
