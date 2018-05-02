@@ -51,6 +51,7 @@ output:
   test_list <- dplyr::filter(samples, type == "SF") %>%
                dplyr::select(id, stove, fuel, type) %>%
                dplyr::group_by(stove, fuel) %>%
+               dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
                dplyr::summarise(id = paste(id, collapse = ","))
 
   ggplot(test_list, aes(y = stove, x = fuel)) + 
