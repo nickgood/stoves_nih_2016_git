@@ -24,6 +24,14 @@ output:
   temp <- readRDS("../../r_data/temp.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
+  times <- readRDS("../../r_data/test_times.RDS")
+```
+
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
 convert to long format
@@ -31,13 +39,8 @@ convert to long format
 ```{r}
   temp_merged <- tidyr::gather(temp, loc, t_oc,
                                t_1, t_2, t_3, t_4) %>%
-                 dplyr::arrange(id)
-```
-
-## filter NAs
-
-```{r}
-  temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
+                 dplyr::arrange(id) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
 ## fix probe locations
@@ -154,10 +157,12 @@ apply flags: bad preceeds maybe preceeds good
 merge flags with data
 
 ```{r}
-  temp_merged <- dplyr::left_join(temp_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+  temp_merged <- 
+    temp_merged %>%
+    dplyr::mutate(qc = "ok")
 ```
+
+notes: manual flag assignment
 
 # missing and bad data
 
@@ -170,10 +175,13 @@ merge flags with data
                      dplyr::distinct(),
                    by = "id") %>%
     dplyr::filter(!grepl("G", id)) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost
+notes: 
+
+* test data was lost for: 13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016)
 
 ## table: tests with bad measurements
 
@@ -182,8 +190,11 @@ Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (th
     dplyr::filter(grepl("temp|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
+
+notes: none affect temperature
 
 ## remove bad tests
 
@@ -193,7 +204,74 @@ Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (th
     dplyr::filter(qc != "bad")
 ```
 
-# data summary
+## mark unrealistic temperature spikes and negative data as NA
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::filter(t_oc > 0,
+                  !(loc != "flue" & t_oc > 100)) 
+```
+
+## table: fraction of sample missing
+
+get timestamps
+
+```{r}
+  sample_times <- 
+    times %>%
+    dplyr::filter(grepl("^sample$|shutdown|refuel_1", var)) %>%
+    dplyr::mutate(var = as.character(var),
+                  var = ifelse(var == "refuel_1", "sample", var)) %>%
+    tidyr::spread("var", "value") %>%
+    dplyr::select(-date) %>%
+    dplyr::rename("start" = "sample",
+                  "end" = "shutdown")
+```
+
+missing flue data
+
+```{r, echo=FALSE}
+  temp_merged %>%
+    dplyr::filter(loc == "flue") %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(sample_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 20) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+missing pot data
+
+```{r, echo=FALSE}
+  temp_merged %>%
+    dplyr::filter(loc == "front") %>%
+    dplyr::select(id, time) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(start = min(time),
+                     end = max(time)) %>%
+    dplyr::left_join(sample_times %>%
+                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
+    dplyr::filter(prct_missing >= 20) %>%
+    dplyr::select(id, prct_missing) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+notes: remove 10A, 75% of test is missing
+
+```{r}
+  temp_merged <-
+    temp_merged %>%
+    dplyr::filter(id != "10A")
+```
 
 ## plot: temperature flue data
 
@@ -201,9 +279,9 @@ Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (th
   temp_merged %>%
   dplyr::left_join(samples) %>%
   dplyr::filter(loc == "flue") %>%
-  ggplot(aes(datetime, t_oc, color = loc)) +
+  ggplot(aes(datetime, t_oc, color = qc)) +
     geom_point(size = 0.5) +
-    geom_line() +
+    scale_color_manual(values = qc_colors) +
     facet_wrap(id~stove, ncol = 6, scales = "free") +
     theme_bw() +
     theme(legend.position = "top") +
@@ -217,26 +295,10 @@ Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (th
   temp_merged %>%
   dplyr::left_join(samples) %>%
   dplyr::filter(loc != "flue") %>%
-  ggplot(aes(datetime, t_oc, color = loc)) +
+  ggplot(aes(datetime, t_oc, color = qc)) +
     geom_point(size = 0.5) +
-    geom_line() +
+    scale_color_manual(values = qc_colors) +
     facet_wrap(id~stove, ncol = 6, scales = "free") +
-    theme_bw() +
-    theme(legend.position = "top") +
-    ylab("temperature (degress celsius)") +
-    xlab("")
-```
-
-## plot: two pot stoves with data colored by pot number
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-  temp_merged %>%
-  dplyr::filter((loc == "front" | loc == "back") & (grepl("^10[A-Z]|^11[A-Z]|^12[A-Z]", id))) %>%
-  dplyr::left_join(samples) %>%
-  ggplot(aes(datetime, t_oc, color = loc)) +
-    geom_point(size = 0.5) +
-    geom_line() +
-    facet_wrap(id~stove, ncol = 3, scales = "free") +
     theme_bw() +
     theme(legend.position = "top") +
     ylab("temperature (degress celsius)") +
@@ -247,4 +309,32 @@ Conclusions: temperature data is expected to be missing for: 13A, 2A, and 6A (th
 
 ```{r}
   saveRDS(temp_merged, file = "../../r_data/temp_merged.RDS")
+```
+
+# table: missing data at end
+
+missing flue temperature data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(temp_merged %>%
+                     dplyr::filter(loc == "flue") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+missing pot temperature data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(temp_merged %>%
+                     dplyr::filter(loc == "front") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
 ```
