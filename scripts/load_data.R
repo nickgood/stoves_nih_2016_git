@@ -165,7 +165,7 @@ load_ecoc_file <- function(file){
 
 #________________________________________________________
 # load five gas file
-# file <- "../data/fivegas/20160105_13A_FIVEGAS_OLD.csv"    # voltage
+# file <- "../data/fivegas/20160203_20A_FIVEGAS_OLD.csv"    # voltage
 # file <- "../data/fivegas/20160811_25B_FIVEGAS_FIXED.csv"  # conc
 # df <- load_fivegas_file(file)
 load_fivegas_file <- function(file){
