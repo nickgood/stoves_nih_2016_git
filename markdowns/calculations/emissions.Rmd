@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse)
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -60,13 +60,11 @@ constants
     dplyr::left_join(pol_properties, by = "pol") %>%
     dplyr::mutate(mass_emitted = conc * hood_flow * dur,
                   mass_carbon = mass_emitted * (num_c * mw_c / mw)) %>%
-    dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc) %>%
+    dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg) %>%
     tidyr::gather("metric", "val", 4:6) %>%
-    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per cm cubed", "micrograms"),
-                  units = ifelse(metric == "conc" & pol == "ultrafines", "number per cm cubed", units),
-                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per cm cubed", units)) %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id))
+    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
+                  units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
+                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per meter cubed", units))
 ```
 
 # save
@@ -75,48 +73,55 @@ constants
   saveRDS(emissions, file = "../../r_data/emissions.RDS")
 ```
 
-# exploratory analysis
+## table: missing data
 
-## plot: gas composition
-
-```{r, echo=FALSE, fig.width=10}
-  emissions %>%
-  dplyr::filter(metric == "mass_emitted",
-                grepl("carbonyls|pahs|vocs", pol_category)) %>%
-  dplyr::mutate(val = val / 10e3) %>%
-  dplyr::group_by(id, pol_category) %>%
-  dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-  dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-  dplyr::group_by(stove, fuel, pol_category) %>%
-  dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
-  ggplot(aes(x = stove, y = val, fill = fuel)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    coord_flip() +
-    theme_bw() +
-    theme(text = element_text(size = 16),
-          legend.position = "top") +
-    facet_wrap(~pol_category, scales = "free") +
-    ylab("mass emitted (miligrams)") +
-    xlab("")
+```{r, echo = FALSE} 
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  dplyr::left_join(emissions %>%
+                     dplyr::select(id, pol_category) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::mutate(exists = "yes") %>%
+  tidyr::spread(pol_category, exists) %>%
+  knitr::kable("markdown", align = 'c')
 ```
 
-## plot: particle composition
+## table: percent of data below background (by pollutant)
 
-```{r figure_3, echo=FALSE, fig.width=12, fig.height=10}
+```{r, echo=FALSE}
   emissions %>%
-  dplyr::filter(metric == "mass_emitted",
-                grepl("ions|ec|oc", pol_category)) %>%
-  dplyr::mutate(val = val / 10e3) %>%
-  dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-  dplyr::group_by(stove, fuel, pol_category) %>%
-  dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
-  ggplot(aes(x = stove, y = val, fill = fuel)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    coord_flip() +
-    theme_bw() +
-    theme(text = element_text(size = 16),
-          legend.position = "top") +
-    facet_wrap(~pol_category, scales = "free") +
-    ylab("mass emitted (miligrams)") +
-    xlab("")
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background (by test)
+
+```{r, echo=FALSE}
+  emissions %>%
+    dplyr::group_by(id) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background (for study)
+
+```{r, echo=FALSE}
+  emissions %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## total number of pollutants (including pm mass)
+
+```{r, echo=FALSE}
+    emissions %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    nrow(.)
 ```
