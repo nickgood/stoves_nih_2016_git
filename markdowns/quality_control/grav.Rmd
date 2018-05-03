@@ -179,6 +179,8 @@ add pollutant type
     knitr::kable("markdown", align = 'c')
 ```
 
+notes: never post weighed, because filter ruptured
+
 ## table: bad data
 
 ```{r, echo=FALSE}
@@ -192,7 +194,6 @@ add pollutant type
 
 notes: 
 
-* 1A: filter ruptured, not sure which one - check if outlier
 * 2A: fire went out - check if outlier
 * 2C: filter switched but should be ok now, also had flow issues, also start up period twice - check if outlier
 * 2E: possible filter clog - check if outlier
@@ -213,6 +214,7 @@ notes:
 * G7: unresolved transcription error - mark as bad
 * G14: filter contamination - mark as bad
 
+* 1A: filter ruptured, not sure which one - ecoc artifact ruptured - ignore
 
 ## mark additional tests as bad
 
@@ -220,7 +222,7 @@ notes:
   grav <- 
     grav %>%
     dplyr::mutate(qc = as.character(qc),
-                  qc = ifelse(grepl("2D|3A|17A|G5|G14|G7", id), "bad", qc))
+                  qc = ifelse(grepl("^2D|^3A|^17A|G5|G14|G7", id), "bad", qc))
 ```
 
 ## remove bad tests
@@ -536,6 +538,15 @@ notes: some burns have low concentrations - opt to subtract median background fr
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+## create a new below background variable
+
+```{r}
+  grav_merged <-
+   grav_merged %>%
+    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
+```
+
 # burn analysis
 
 ## plot: time series of burns
@@ -660,8 +671,30 @@ notes:
 ```{r}
   grav_merged <-
     grav_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::select(id, pol, val, dur, lod, bg, qc) %>%
     dplyr::mutate(pol_category = "pm_mass")
 
   saveRDS(grav_merged, file = "../../r_data/pm_merged.RDS")
+```
+
+## table: missing data at end
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(grav_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  grav_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```
