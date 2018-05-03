@@ -257,12 +257,12 @@ couldn't find a reasonable calibration constant for 15A or 9A for methane
   fivegas_volts <-
     fivegas_volts %>%
     dplyr::filter(!(pol == "ch4" & id == "15A"),
-                  !(pol == "ch4" & id == "15A"))
+                  !(pol == "ch4" & id == "9A"))
 ```
 
 ## plot: carbon dioxide traces
 
-```{r fivegas_volts_trace_co2, echo=FALSE, fig.width=12}
+```{r fivegas_volts_trace_co2, eval=FALSE, echo=FALSE, fig.width=12}
  fivegas_volts %>%
     dplyr::filter(grepl("co2", pol)) %>%
     ggplot(aes_string(x = "datetime", y = "val")) +
@@ -277,7 +277,7 @@ couldn't find a reasonable calibration constant for 15A or 9A for methane
 
 ## plot: carbon monoxide traces
 
-```{r fivegas_volts_trace_co, echo=FALSE, fig.width=12}
+```{r fivegas_volts_trace_co, eval=FALSE, echo=FALSE, fig.width=12}
  fivegas_volts %>%
     dplyr::filter(grepl("co$", pol)) %>%
     ggplot(aes_string(x = "datetime", y = "val")) +
@@ -292,7 +292,7 @@ couldn't find a reasonable calibration constant for 15A or 9A for methane
 
 ## plot: methane traces
 
-```{r fivegas_volts_trace_ch4, echo=FALSE, fig.width=12}
+```{r fivegas_volts_trace_ch4, eval=FALSE, echo=FALSE, fig.width=12}
  fivegas_volts %>%
     dplyr::filter(grepl("ch4", pol)) %>%
     ggplot(aes_string(x = "datetime", y = "val")) +
@@ -465,9 +465,8 @@ notes:
 * 2C: start up period twice - check if outlier
 * 23A: fire relit with kerosene and match during refuel - check if outlier
 
-* 23A: signal is bad for all pollutants - remove
+* 23B: signal is bad for all pollutants - remove
 * 4B: signal is bad for co2 - remove
-* 13A: 
 
 ## mark additional tests as bad
 
@@ -475,7 +474,7 @@ notes:
   fivegas_merged <- 
     fivegas_merged %>%
     dplyr::mutate(qc = as.character(qc),
-                  qc = ifelse(grepl("23A", id), "bad", qc),
+                  qc = ifelse(grepl("23B", id), "bad", qc),
                   qc = ifelse(id == "4B" & pol == "co2", "bad", qc))
 ```
 
@@ -591,15 +590,10 @@ join five minutes before start and stop of test with recorded background time - 
   post_bg <- dplyr::mutate(post_bg, type = "post_bg")
 ```
 
-remove NAs are replace negatives with zero
-
-* notes: several small negative values in data set - set to zero
-
 ```{r}
   bg <-
     pre_bg %>%
-    dplyr::bind_rows(post_bg) %>%
-    dplyr::mutate(val = ifelse(val < 0, 0, val))
+    dplyr::bind_rows(post_bg)
 ```
 
 ## plot: time series of lab backgrounds
@@ -750,8 +744,6 @@ notes: some burns have low concentrations (especially methane) - opt to subtract
     dplyr::left_join(bg_summary, by = c("pol"))
 ```
 
-notes: a few size bins do not have background value - set these bins to zero based on median values of other bins in that size range 
-
 ```{r}
   fivegas_merged <-
    fivegas_merged %>%
@@ -769,26 +761,24 @@ notes: a few size bins do not have background value - set these bins to zero bas
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+## create a new below background variable
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
+```
+
 ## table: percentage of measurements below the background median (by test)
 
 ```{r, echo=FALSE}
   fivegas_merged %>%
     dplyr::group_by(id, pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     tidyr::spread(pol, val) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
-```
-
-## replace negatives with "BB" for below background
-
-* 23B and 4B have large negative values after subtracting background (> -100 ppm) - talk to John about what to do here
-* small negative values (approx. -10-0 ppm, mostly methane data) - set to zero
-
-```{r}
-  fivegas_merged <-
-    fivegas_merged %>%
-    dplyr::mutate(val = ifelse(val < 0, "BB", val))
 ```
 
 # concentration calculations
@@ -799,7 +789,7 @@ calculate mass concentrations
   fivegas_merged <-
     fivegas_merged %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
-    dplyr::mutate(val = convert_ppmv_ugpmc(val, mw, 25, 85),
+    dplyr::mutate(val = convert_ppmv_ugpmc(val, mw),
                   units = "ug per meter cubed") %>%
     dplyr::select(-mw)
 ```
@@ -815,8 +805,9 @@ calculate mass concentrations
 
  fivegas_merged_p %>%
     dplyr::filter(grepl("co2", pol)) %>%
-    ggplot(aes_string(x = "datetime", y = "val")) +
+    ggplot(aes_string(x = "datetime", y = "val", color = "qc")) +
       geom_point() + 
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
@@ -825,15 +816,14 @@ calculate mass concentrations
       xlab("")
 ```
 
-notes: 23B is bad data - remove
-
 ## plot: carbon monoxide traces
 
 ```{r fivegas_trace_co, echo=FALSE, fig.height=40, fig.width=12}
  fivegas_merged_p %>%
     dplyr::filter(grepl("^co$", pol)) %>%
-    ggplot(aes_string(x = "datetime", y = "val")) +
+    ggplot(aes_string(x = "datetime", y = "val", color = "qc")) +
       geom_point() + 
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
@@ -847,8 +837,9 @@ notes: 23B is bad data - remove
 ```{r fivegas_trace_ch4, echo=FALSE, fig.height=40, fig.width=12}
  fivegas_merged_p %>%
     dplyr::filter(grepl("ch4", pol)) %>%
-    ggplot(aes_string(x = "datetime", y = "val")) +
+    ggplot(aes_string(x = "datetime", y = "val", color = "qc")) +
       geom_point() + 
+      scale_color_manual(values = qc_colors) +
       theme_bw() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
@@ -857,20 +848,12 @@ notes: 23B is bad data - remove
       xlab("")
 ```
 
-## filter out bad tests
-
-```{r}
-  fivegas_merged <-
-    fivegas_merged %>%
-    dplyr::filter(!grepl("23B", id))
-```
-
 ## save data
 
 ```{r}
   fivegas_merged <-
     fivegas_merged %>%
-    dplyr::select(id, datetime, pol, val, qc, units) %>%
+    dplyr::select(id, datetime, pol, val, qc, bg, units) %>%
     dplyr::mutate(pol_category = "five gas")
 
   saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged.RDS")
@@ -878,12 +861,34 @@ notes: 23B is bad data - remove
 
 # burn analysis for averaged data
 
+remove test with more that 40% of data missing for below background
+
+```{r}
+  bb_tests <-
+  fivegas_merged %>%
+    dplyr::group_by(id, pol) %>%
+    dplyr::do(bb = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(bg = ifelse(bb > 40, "below", "above")) %>%
+    dplyr::select(-bb)
+```
+
+notes: background is below if more than 40% of data in the calculation is below background
+
 ```{r}
   fivegas_merged <-
     fivegas_merged %>%
     dplyr::group_by(id, pol) %>%
-    dplyr::summarise(val = mean(val),
-                     qc = first(qc)) 
+    dplyr::summarise(val = mean(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    dplyr::left_join(bb_tests, by = c("pol", "id"))
+```
+
+change below background values with NA
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::mutate(val = ifelse(bg == "below", NA, val))
 ```
 
 ## plot: concentrations by stove type
@@ -972,9 +977,60 @@ notes:
     dplyr::left_join(sample_times %>%
                      dplyr::mutate(dur = end - start) %>%
                      dplyr::select(id, dur), by = "id") %>%
-    dplyr::select(id, pol, val, dur, qc) %>%
+    dplyr::select(id, pol, val, dur, qc, bg) %>%
     dplyr::mutate(lod = NA,
                   pol_category = pol)
 
   saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged_avg.RDS")
+```
+
+## table: missing data at end
+
+missing carbon dioxide data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(fivegas_merged %>%
+                     dplyr::filter(pol == "co2") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+missing carbon monoxide data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(fivegas_merged %>%
+                     dplyr::filter(pol == "co") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+missing methane data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(fivegas_merged %>%
+                     dplyr::filter(pol == "ch4") %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  fivegas_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```
