@@ -35,7 +35,8 @@ load data
   samples <- readRDS("../../r_data/samples.RDS")
   cal_2 <- readRDS("../../r_data/cal_2.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
-  times <- readRDS("../../r_data/smps_pax_times.RDS")
+  smps_times <- readRDS("../../r_data/smps_pax_times.RDS")
+  test_times <- readRDS("../../r_data/test_times.RDS")
   smps_constant <-readRDS("../../r_data/smps_constant.RdS")
 ```
 
@@ -52,7 +53,7 @@ load schemes
   smps <- 
     smps %>%
     dplyr::mutate(test_type = ifelse(grepl("^[0-9]", id), "test", NA),
-                  test_type = ifelse(grepl("^G", id), "bg", test_type))
+                  test_type = ifelse(grepl("^G", id), "bg", test_type)) 
 ```
 
 ## fix id
@@ -61,7 +62,8 @@ load schemes
   smps <-
     smps %>%
     dplyr::mutate(id = as.character(id),
-                  id = ifelse(grepl("^29B", id), "29B", id))
+                  id = ifelse(grepl("^29B", id), "29B", id)) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
 ## reformat
@@ -98,22 +100,48 @@ remove extra columns
 
 ## extract sample time
 
-get timestamps
+get time stamps for smps
 
 ```{r}
-  times <- 
-    times %>%
+  smps_times <- 
+    smps_times %>%
     dplyr::filter(type == "sample") %>%
     tidyr::spread(time_point, value) %>%
-    dplyr::select(-date)
+    dplyr::select(-date, -type) %>%
+    dplyr::filter(!is.na(end), !is.na(start))
 ```
 
+get time stamps for smps burns
+
+```{r}
+  sample_times <- 
+    test_times %>%
+    dplyr::filter(grepl("^sample$|shutdown|refuel_1", var)) %>%
+    dplyr::mutate(var = as.character(var),
+                  var = ifelse(var == "refuel_1", "sample", var)) %>%
+    tidyr::spread("var", "value") %>%
+    dplyr::select(-date) %>%
+    dplyr::rename("start" = "sample",
+                  "end" = "shutdown")
+```
+
+join both time stamp sets priority to smps time stamps
+
+```{r}
+  sample_times <-
+    sample_times %>%
+    dplyr::anti_join(smps_times, by = "id")
+  
+  smps_times <-
+    smps_times %>%
+    dplyr::bind_rows(sample_times)
+```
 
 filter times
 
 ```{r}
   smps <- 
-    filter_times(times, smps)
+    filter_times(smps_times, smps)
 ```
 
 ## flags
@@ -225,7 +253,6 @@ notes: look reasonable, except some data points did not have diffusion correctio
     dplyr::filter(diffusion_correction == "FALSE") %>%
     dplyr::distinct()%>%
     knitr::kable(digits = 2, align = 'c')
-    
 ```
 
 notes: this setting corrects for diffusion of particles in the smps - big problem for particles less than 100 nm - remove these tests (note none of the scans during the above tests were diffusion corrected)
@@ -335,10 +362,14 @@ all errors only happened for one or two scans - remove
                    dplyr::select(id) %>%
                    dplyr::distinct(),
                    by = "id") %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
   knitr::kable("markdown", align = 'c')
 ```
 
-notes: data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19A, 28A, 29B
+notes: 
+
+* data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19A - lost data
+* data G17 & G18 have missing sample time data - ignore for now, not important
 
 ## table: bad data
 
@@ -347,8 +378,25 @@ notes: data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19
     dplyr::filter(grepl("smps|all", inst) == TRUE,
                   qc != "ok") %>%
     dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
+
+notes: 
+
+* 2A: fire went out during test - check if outlier
+* 2C: possible issues with dilution - check if outlier
+* 6B: unclear note - check if outlier
+* 6C: possibly lost data - check how much is missing and check if outlier - <20%
+* 8A: real-time pumps turned off during test - check if outlier
+* 21C: double check that time was fixed - check if outlier
+* 22B: may have lost some data - check how much was missing - <20%
+* 23A: fire relit with kerosene and match during refuel - check if outlier
+* 24A: check how much data is missing - 29% leave for now
+* G2: bleed flow closed completely, unclear comment - check if outlier
+
+* 8C: clog in sample line - bad
+* 1C: clog in real-time data - check if outlier - bad
 
 ## remove bad tests
 
@@ -366,11 +414,11 @@ notes: data is expected to be missing for 13A, 23A, G1, G3, 17A, 20A, G4 18A, 19
     dplyr::group_by(id) %>%
     dplyr::summarise(start = min(time),
                      end = max(time)) %>%
-    dplyr::left_join(times %>%
+    dplyr::left_join(smps_times %>%
                      dplyr::mutate(dur = end - start) %>%
                      dplyr::select(id, dur), by = "id") %>%
     dplyr::mutate(prct_missing = (100 - ((end - start) / dur) * 100)) %>%
-    dplyr::filter(prct_missing >= 75) %>%
+    dplyr::filter(prct_missing >= 20) %>%
     dplyr::select(id, prct_missing) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
     
@@ -402,7 +450,6 @@ notes: 11A is missing approx. 88% of test - remove
 
 ```{r smps_bg_conc, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     dplyr::group_by(id, scan) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
@@ -418,15 +465,14 @@ notes: 11A is missing approx. 88% of test - remove
       xlab("")
 ```
 
-notes: scans with high number concentration - investigate
+notes: scans with high number concentration - removed below
 
 ## table: lab background outliers
 
-outliers (z > 3) when backgrounds are grouped by pollutant and filter type
+outliers (z > 3) 
 
 ```{r, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     dplyr::group_by(id, scan) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
@@ -554,10 +600,13 @@ notes: a few size bins do not have background value - set these bins to zero bas
 
 notes: the negative concentration is small and mostly at large size bins that have low statistics - set these values to zero
 
+## create a new below background variable
+
 ```{r}
   smps_merged <-
     smps_merged %>%
-    dplyr::mutate(val = ifelse(val < 0, 0, val))
+    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
 ```
 
 # burn analysis for size distribution data
@@ -567,7 +616,6 @@ notes: the negative concentration is small and mostly at large size bins that ha
 ```{r size_distribution_stovetype, echo=FALSE, fig.height=10, fig.width=10}
   smps_merged_p <-
     smps_merged %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  smps_merged_p %>%
@@ -609,21 +657,48 @@ notes:
   smps_merged <-
     smps_merged %>%
     dplyr::mutate(pol = "size distribution") %>%
-    dplyr::select(id, scan, pol, size, val, qc) %>%
+    dplyr::select(id, scan, pol, size, val, qc, bg) %>%
     dplyr::mutate(pol_category = "smps")
 
   saveRDS(smps, file = "../../r_data/smps_merged.RDS")
 ```
 
+## table: missing data at end
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(smps_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
 # burn analysis for ultrafines
+
+remove test with more that 40% of data missing for below background
+
+```{r}
+  bb_tests <-
+  smps_merged %>%
+    dplyr::group_by(id) %>%
+    dplyr::do(bb = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(bg = ifelse(bb > 40, "below", "above")) %>%
+    dplyr::select(-bb)
+```
+
+notes: background is below if more than 40% of data in the calculation is below background - should be none
 
 ```{r}
   ultrafines <-
     smps_merged %>%
     dplyr::filter(size <= 100) %>%
     dplyr::group_by(id) %>%
-    dplyr::summarise(val = sum(val) * smps_constant,
-                     qc = first(qc)) 
+    dplyr::summarise(val = sum(val, na.rm = TRUE) * smps_constant,
+                     qc = first(qc)) %>%
+    dplyr::left_join(bb_tests, by = c("id")) %>%
+    dplyr::mutate(val = ifelse(bg == "below", NA, val))
 ```
 
 ## plot: time series of burns
@@ -649,7 +724,6 @@ notes: seems reasonable
 ```{r ultrafines_stovetype, echo=FALSE, fig.width=10}
   ultrafines_p <-
     ultrafines %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  ultrafines_p %>%
@@ -729,8 +803,30 @@ notes:
   ultrafines <-
     ultrafines %>%
     dplyr::mutate(pol = "ultrafines") %>%
-    dplyr::select(id, pol, val, qc) %>%
+    dplyr::select(id, pol, val, qc, bg) %>%
     dplyr::mutate(pol_category = "smps")
 
   saveRDS(ultrafines, file = "../../r_data/ultrafines_merged.RDS")
+```
+
+## table: missing data at end
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(smps_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  ultrafines %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```

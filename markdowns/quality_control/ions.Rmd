@@ -396,6 +396,15 @@ summary of backgrounds (ug per meter cubed)
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
+## create a new below background variable
+
+```{r}
+  ions_merged <-
+    ions_merged %>%
+    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
+```
+
 # burn analysis
 
 ## plot: time series of burns
@@ -531,8 +540,30 @@ percent of burn samples with NA values
 ```{r}
   ions_merged <-
     ions_merged %>%
-    dplyr::select(id, pol, val, dur, lod, qc) %>%
+    dplyr::select(id, pol, val, dur, lod, qc, bg) %>%
     dplyr::mutate(pol_category = "ions")
 
   saveRDS(ions_merged, file = "../../r_data/ions_merged.RDS")
+```
+
+## table: missing data at end
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(ions_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  ions_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```

@@ -189,7 +189,7 @@ notes: Pierre has record of all missing samples except
     dplyr::anti_join(missing, by = "id")
 ```
 
-notes: asking John which (if any) missing filter type would make a measurement bad
+notes: need to update this code to only remove pollutants depending on molecular weight - wait until Pierre sends next round of data
 
 ## table: tests with bad measurements
 
@@ -316,14 +316,6 @@ notes: lots of NAs - contacted Pierre regarding NAs they could be either
 
 for now, remove (there should be at least one value for background for each measurement)
 
-## remove NAs
-
-```{r}
-  blanks <-
-    blanks %>%
-    dplyr::filter(!is.na(val))
-```
-
 ## table: blank summary
 
 summarize blanks
@@ -375,16 +367,6 @@ add lod variable and replace with lod/sqrt(2)
                   val = ifelse(val <= lod_val, lod_val / sqrt(2), val)) %>%
     dplyr::select(-lod_val, -filter_class)
 ```
-
-## remove NAs for now
-
-```{r}
-  pah_merged <-
-    pah_merged %>%
-    dplyr::filter(!is.na(val))
-```
-
-notes: knowing this is not the best way to deal with them - remove for now and assume they are equal to zero - in contact with Pierre regarding the best approach to deal with these data
 
 # concentration calculations
 
@@ -574,23 +556,12 @@ notes: most backgrounds below lod
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-## sum pollutants across filters
-
-```{r}
-  bg <-
-    bg %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(val = sum(val),
-                     qc = first(qc),
-                     lod = first(lod))
-```
-
 ## summarize backgrounds
 
 ```{r}
   bg <-
     bg %>%
-    dplyr::group_by(pol) %>%
+    dplyr::group_by(pol, filter_type) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
@@ -640,65 +611,6 @@ notes: most backgrounds below lod
       xlab("")
 ```
 
-# burn analysis
-
-## plot: time series of burns (back puf)
-
-```{r pah_burn_timeseries_b, echo=FALSE, fig.width=12}
-  pah_merged %>%
-    dplyr::filter(filter_type == "back puf") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(~pol, scales = "free", ncol = 4) +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
-## plot: time series of burns (front puf)
-
-```{r pah_burn_timeseries_f, echo=FALSE, fig.width=12}
-  pah_merged %>%
-    dplyr::filter(filter_type == "front puf") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(~pol, scales = "free", ncol = 4) +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
-## plot: time series of burns (filter)
-
-```{r pah_burn_timeseries_p, echo=FALSE, fig.width=12}
-  pah_merged %>%
-    dplyr::filter(filter_type == "front puf") %>%
-    dplyr::filter(!is.na(val)) %>%
-    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
-    ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
-      scale_shape_manual(values = lod_shapes) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(~pol, scales = "free", ncol = 4) +
-      ylab("concentration (microgram per meter cubed)") +
-      xlab("")
-```
-
 ## sum pollutants across filters
 
 ```{r}
@@ -707,40 +619,77 @@ notes: most backgrounds below lod
     dplyr::filter(test_type == "test")
 ```
 
-```{r}
-  pah_merged <-
-    pah_merged %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(val = sum(val),
-                     qc = first(qc),
-                     lod = first(lod))
-```
-
 ## subtract background
 
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::left_join(bg, by = c("pol"))
+    dplyr::left_join(bg, by = c("pol", "filter_type"))
 ```
 
 ```{r}
   pah_merged <-
    pah_merged %>%
+    dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(val = val - median) %>%
     dplyr::select(-min, -max, -count, -mean, -median, -stdev)
 ```
+
+notes: remove NA values before subtracting background, because don't know how to deal with them yet
 
 ## table: percentage of measurements below the background median
 
 ```{r, echo=FALSE}
   pah_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## create a new below background variable
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
+```
+
+## sum pahs
+
+```{r}
+  pah_merged <-
+  test <-
+    pah_merged %>%
+    dplyr::group_by(id, pol) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     lod = first(lod)) %>%
+    dplyr::mutate(bg = ifelse(val == 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
+```
+
+note: for now, ignore NAs when summing - if all values are below bg then set bg equal to below
+
+# burn analysis
+
+## plot: time series of burns
+
+```{r pah_burn_timeseries, echo=FALSE, fig.width=12}
+  pah_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free", ncol = 4) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
 ```
 
 ## plot: concentrations by stove type
@@ -839,7 +788,31 @@ percent of burn samples with NA values
     dplyr::left_join(times, by = "id") %>%
     dplyr::mutate(dur = (end - start) / 60) %>%
     dplyr::mutate(pol_category = "pahs") %>%
-    dplyr::select(id, pol, val, dur, lod, qc, pol_category)
+    dplyr::select(id, pol, val, dur, lod, qc, bg, pol_category)
 
   saveRDS(pah_merged, file = "../../r_data/pah_merged.RDS")
+```
+
+## table: missing data at end
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(pah_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+notes: not double checked yet - missing too much data still
+
+## table: percent of data below background
+
+```{r, echo=FALSE}
+  pah_merged %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
 ```
