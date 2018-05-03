@@ -528,6 +528,7 @@ summarise_reps <- function(emission_factors, type){
                   dplyr::filter(grepl(measure_names, inst)) %>%
                   dplyr::group_by_(.dots = c("pol", "stove", "fuel", "fuelcat")) %>% 
                   dplyr::count() %>%
+                  dplyr::ungroup() %>%
                   tidyr::spread(pol, n) %>%
                   dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
                   tidyr::gather("pol", "n", 4:ncol(.)) %>%
@@ -540,6 +541,7 @@ summarise_reps <- function(emission_factors, type){
                   dplyr::summarise(conc = mean(conc)) %>%
                   dplyr::group_by_(.dots = c("inst", "stove", "fuel", "fuelcat")) %>% 
                   dplyr::count() %>%
+                  dplyr::ungroup() %>%
                   tidyr::spread(inst, n) %>%
                   dplyr::mutate_all(funs(replace(., is.na(.), 0))) %>%
                   tidyr::gather("pol", "n", 4:ncol(.)) %>%
