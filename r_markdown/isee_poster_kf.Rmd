@@ -21,7 +21,7 @@ output: html_document
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Load data and meta data
-  emission_factors <- readRDS("../r_files/emission_factors.RDS")
+  emissions_factors <- readRDS("../r_files/emissions_factors.RDS")
   load("../r_files/samples.Rda")
 ```
 
@@ -34,7 +34,7 @@ output: html_document
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   # Add stove/fuel information
   # Use carbon balance method for missing emissions factors
-  emissions <- dplyr::left_join(emission_factors, 
+  emissions_factors <- dplyr::left_join(emissions_factors, 
                                dplyr::select(samples,
                                              id,
                                              stove, stovecat,
@@ -50,9 +50,9 @@ output: html_document
 # Emissions Factors
 
 ```{r}
-  emissions_factors <- emissions %>% 
+  emissions_factors <- emissions_factors %>% 
                        dplyr::filter(pol == "grav" | pol == "voc_benzene" | pol == "co" |
-                                     pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene")
+                                     pol == "formaldehyde" | pol == "acetaldehyde" | pol == "voc_toluene", id != "1A")
 
   emissions_factors$pol <- forcats::fct_recode(emissions_factors$pol, PM2.5 = "grav",
                                                                   benzene = "voc_benzene",
@@ -79,36 +79,42 @@ output: html_document
                                                  "kerosene")
 ```
 
-```{r}
-  options(scipen = 999)
+* average emissions by stovecat and fuelcat
 
-  plot_ef <- ggplot(emissions_factors, aes(y = mass_ef_comb, x = stovecat, group = fuel, color = fuel)) +
-         geom_point(position = position_dodge(0.5), size = 2) +
+```{r}
+ avg <- emissions_factors %>%
+        dplyr::group_by(stovecat, fuelcat, pol) %>%
+        dplyr::summarise(mean = round(mean(energy_ef_comb, na.rm = TRUE), 1))
+```
+
+
+
+```{r}
+  #options(scipen = 999)
+
+  plot_ef <- ggplot(emissions_factors, aes(y = energy_ef_comb, x = stovecat)) +
+         geom_point(position = position_dodge(0.5), size = 2, aes(group = fuel, color = fuel)) +
+         geom_point(aes(y = mean, x = stovecat, group = fuelcat), data = avg, position = position_dodge(0.5), shape = 4, size = 2, stroke = 2) +
          facet_wrap(~pol, ncol = 2, scales = "free") +
          theme_bw() +
-         ylab("mg emitted /kg fuel") +
+         ylab("mg emitted per MJ delivered") +
          xlab("stove category") +
          theme(axis.text.x = element_text(angle = 15, hjust = 0.5, vjust = 0.55),
                text = element_text(size=20)) +
          theme(legend.position = "top") +
-         scale_color_hue(l = 55) 
+         scale_color_hue(l = 55) +
+         theme(legend.title=element_blank())
   plot_ef
 
 ```
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # Remove outliers
-  emission_factors <- dplyr::filter(emissions_factors, mass_ef_comb > 0) %>%
-                      dplyr::filter(energy_ef_comb > 0)
-```
-
 ```{r}
  # filter/setup for analysis
   ef_plotdata <- emissions_factors %>%
-                 dplyr::select(id, pol, mass_ef_comb, fuel, fuelcat, stove, stovecat) %>%
+                 dplyr::select(id, pol, energy_ef_comb, fuel, fuelcat, stove, stovecat) %>%
                  dplyr::distinct() %>%
-                 tidyr::spread(pol, mass_ef_comb)
+                 tidyr::spread(pol, energy_ef_comb)
 ```
 
 # Plot relationships 
@@ -116,7 +122,7 @@ output: html_document
 ```{r, echo=FALSE}
  # function for calculating  r2 value to add to plots
  # fit lm to formula
-  lm_mod = function(out = ef_plotdata, fm = "PM2.5 ~ CO"){
+  lm_mod = function(out = ef_plotdata, fm = "CO ~ PM2.5"){
     m = lm(fm, out)
     eq <- substitute(~~R^2~"="~r2, 
                      list(r2 = format(summary(m)$r.squared, digits = 2)))
@@ -131,19 +137,33 @@ output: html_document
  # r2 for all fuels combined
   r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ PM2.5")))
 
+# r2 for each task
+  eqns <- by(ef_plotdata, ef_plotdata$fuelcat, lm_mod)
+  r2_each <- data.frame(eq = unclass(eqns), fuelcat = as.factor(names(eqns)))
+
+
   PMCOplot <- ggplot(ef_plotdata, aes(x = PM2.5, y = CO)) + 
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 5000, y = 2.7e5, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("CO EF (mg/kg of fuel)") +
+      geom_text(data = r2_each, aes(x = 260, y = 15000, label = eq[1]),
+                       color = 'brown3',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 13000, label = eq[2]),
+                       color = 'chartreuse4',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 11000, label = eq[3]),
+                       color = 'turquoise4',  parse = TRUE,
+                       size = 8) +
+      geom_text(data = r2_each, aes(x = 260, y = 9000, label = eq[4]),
+                       color = 'purple3',  parse = TRUE,
+                       size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMCOplot
 ```
@@ -159,15 +179,15 @@ PMCOplot
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Benzene EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 5000, y = 2700, label = eq),
+                      #color = 'black',  parse = TRUE,
+                      #size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Benzene EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMbenz_plot
   
@@ -177,21 +197,21 @@ PMbenz_plot
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "benzene ~ CO")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~benzene")))
 
-  CObenz_plot <- ggplot(ef_plotdata, aes(x = CO, y = benzene)) + 
+  CObenz_plot <- ggplot(ef_plotdata, aes(x = benzene, y = CO)) + 
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      ylab("Benzene EF (mg/kg of fuel)") +
-      xlab("CO EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 2.3e5, y = 2700, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("Benzene EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 CObenz_plot
 ```
@@ -206,15 +226,15 @@ CObenz_plot
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      xlab("PM2.5 EF (mg/kg of fuel)") +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 5000, y = 1400, label = eq),
+       #               color = 'black',  parse = TRUE,
+        #              size = 8) +
+      xlab("PM2.5 EF (mg/MJ)") +
+      ylab("Formaldehyde EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 PMform_plot
 ```
@@ -223,21 +243,21 @@ PMform_plot
 
 ```{r}
  # r2 for all fuels combined
-  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "formaldehyde ~ CO")))
+  r2_data <- data.frame(eq = unclass(lm_mod(ef_plotdata, "CO ~ formaldehyde")))
 
-  COform_plot <- ggplot(ef_plotdata, aes(x = CO, y = formaldehyde)) + 
+  COform_plot <- ggplot(ef_plotdata, aes(y = CO, x = formaldehyde)) + 
       geom_point(size = 5, stroke = 1.5, aes(color = fuelcat, shape = stovecat)) +
       scale_color_hue(l = 55) +
       geom_smooth(method = "lm", se = FALSE, aes(group = fuelcat, color = fuelcat)) +
-      geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq, family = "Helvetica Neue"),
-                      color = 'black',  parse = TRUE,
-                      size = 8) +
-      ylab("Formaldehyde EF (mg/kg of fuel)") +
-      xlab("CO EF (mg/kg of fuel)") +
+      #geom_text(data = r2_data, aes(x = 2.0e5, y = 1400, label = eq),
+      #                color = 'black',  parse = TRUE,
+      #                size = 8) +
+      xlab("Formaldehyde EF (mg/MJ)") +
+      ylab("CO EF (mg/MJ)") +
       theme_bw() +
       theme(text = element_text(size = 27),
             legend.key = element_rect(fill = 'white'),
-            legend.position = "right",
+            legend.position = "none",
             legend.title = element_blank())
 COform_plot
 ```
