@@ -1,18 +1,19 @@
 ---
-title: "dilution"
+title: "Calculate dilution ratio"
 output:
   html_document:
     toc: true
     toc_float: true
-    theme: united
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_functions.R")
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/', 
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
 ## Load data
