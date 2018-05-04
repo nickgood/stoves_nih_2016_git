@@ -65,6 +65,14 @@ calculate fuel burned using carbon balance method
       xlab("mass of fuel (carbon balance)")
 ```
 
-
 notes: looks good! 
+
+```{r}
+  fuel_merged <-
+    mass_carbon %>%
+    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::select(-carbon)
+
+  saveRDS(fuel_merged, file = "../../r_data/fuel_merged.RDS")
+```
 
