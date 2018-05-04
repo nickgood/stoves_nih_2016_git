@@ -36,6 +36,7 @@ load data
   cal <- readRDS("../../r_data/cal_2.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../r_data/pol_properties.RDS")
   times <- readRDS("../../r_data/test_times.RDS")
 ```
 
@@ -336,6 +337,46 @@ notes: some data look strange - change these files to maybe and explore dilution
 
 ```{r}
   saveRDS(co2_merged, file = "../../r_data/co2_merged.RDS")
+```
+
+# calculate metrics for dilution ratio
+
+## calculate concentration
+
+calculate mass concentrations and average
+
+```{r}
+  co2_merged <-
+    co2_merged %>%
+    dplyr::group_by(id, loc) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    dplyr::mutate(pol = "co2") #%>%
+    #dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
+    #dplyr::mutate(val = convert_ppmv_ugpmc(val, mw)) %>%
+    #dplyr::select(-mw)
+```
+
+## plot: average mass concentration
+
+```{r, eval=FALSE}
+  co2_merged %>%
+    ggplot(aes(x = id, y = val)) + 
+      geom_point(aes(color = qc), size = 2) + 
+      theme_bw() +
+      scale_y_log10() +
+      scale_color_manual(values = qc_colors) +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~loc, ncol = 1) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## save merged file
+
+```{r}
+  saveRDS(co2_merged, file = "../../r_data/co2_merged_avg.RDS")
 ```
 
 ## table: missing data at end

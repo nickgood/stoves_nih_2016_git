@@ -741,6 +741,31 @@ notes: some burns have low concentrations (especially methane) - opt to subtract
 ```{r}
   fivegas_merged <-
     fivegas_merged %>%
+    dplyr::mutate(test_type = "test")
+```
+
+make dilution average variable
+
+```{r}
+  fivegas_dilution <-
+    fivegas_merged %>%
+    dplyr::filter(pol == "co2")
+
+  saveRDS(fivegas_dilution, file = "../../r_data/fivegas_dilution.RDS")
+
+  fivegas_dilution <-
+    fivegas_dilution %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE),
+                     qc = first(qc))
+
+  saveRDS(fivegas_dilution, file = "../../r_data/fivegas_dilution_avg.RDS")
+```
+
+```{r}
+  fivegas_merged <-
+    fivegas_merged %>%
+    dplyr::mutate(test_type = "test") %>%
     dplyr::left_join(bg_summary, by = c("pol"))
 ```
 
@@ -896,7 +921,6 @@ change below background values with NA
 ```{r fivegas_stovetype_avg, echo=FALSE}
   fivegas_merged_p <-
     fivegas_merged %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  fivegas_merged_p %>%
@@ -975,7 +999,7 @@ notes:
   fivegas_merged <-
     fivegas_merged %>%
     dplyr::left_join(sample_times %>%
-                     dplyr::mutate(dur = end - start) %>%
+                     dplyr::mutate(dur = (end - start) / 60) %>%
                      dplyr::select(id, dur), by = "id") %>%
     dplyr::select(id, pol, val, dur, qc, bg) %>%
     dplyr::mutate(lod = NA,
