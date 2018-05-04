@@ -71,7 +71,7 @@ notes: looks good!
   fuel_merged <-
     mass_carbon %>%
     dplyr::left_join(fuel, by = "id") %>%
-    dplyr::select(-carbon)
+    dplyr::select(-mass_carbon)
 
   saveRDS(fuel_merged, file = "../../r_data/fuel_merged.RDS")
 ```
