@@ -1,5 +1,5 @@
 ---
-title: "Fuel burned"
+title: "fuel burned"
 output:
   html_document:
     toc: true
@@ -35,12 +35,14 @@ fuel consumed
 ```{r}
   batch_mass <- dplyr::filter(batch, var == "fuel" |
                                      var == "refueled" |
-                                     var == "preshutdown") %>%
+                                     var == "ashpot" |
+                                     var == "ashandpot") %>%
                 tidyr::spread(var, value) %>%
                 dplyr::rename(wgt_fuel = fuel,
                               wgt_refuel = refueled,
-                              wgt_shutdown = preshutdown) %>%
-                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - wgt_shutdown)
+                              wgt_pot = ashpot,
+                              wgt_pot_ash = ashandpot) %>%
+                dplyr::mutate(mass_fuel = wgt_fuel + wgt_refuel - (wgt_pot_ash - wgt_pot))
 ```
 
 ## wood stoves
@@ -58,9 +60,8 @@ fuel consumed
                               wgt_pot_char_ash = ashpot_char_ash,
                               wgt_pot = ashpot_lid) %>%
                 dplyr::mutate(mass_fuel = wgt_fuel -
-                                          wgt_pot_unusedfuel -
-                                          wgt_pot_char_ash +
-                                          2 * wgt_pot)
+                                          (wgt_pot_unusedfuel - wgt_pot) - 
+                                          (wgt_pot_char_ash - wgt_pot))
 ```
 
 ## merge batch and wood fuel
@@ -69,7 +70,8 @@ fuel consumed
   fuel_burnt <- dplyr::bind_rows(dplyr::select(batch_mass, id, mass_fuel),
                                  dplyr::select(wood_mass, id, mass_fuel)) %>%
                 dplyr::mutate(id = as.factor(id)) %>%
-                dplyr::filter(grepl("^[0-9]", id) == TRUE)
+                dplyr::filter(grepl("^[0-9]", id) == TRUE) %>%
+                dplyr::filter(!grepl("^27|^28|^29|^30", id), !is.na(mass_fuel))
 ```
 
 # plot: fuel burnt
@@ -95,7 +97,7 @@ fuel consumed
                    dplyr::select(id) %>%
                    dplyr::distinct(),
                    by = "id") %>%
-    dplyr::filter(!grepl("G", id)) %>%
+    dplyr::filter(!grepl("^G|^27|^28|^29|^30", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
