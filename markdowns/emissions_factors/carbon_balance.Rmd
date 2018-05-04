@@ -38,7 +38,7 @@ check that co and co2 exist and sum carbon
     dplyr::filter(pol != "ultrafines", pol != "ions", !is.na(val)) %>%
     dplyr::select(id, pol, val) %>%
     tidyr::spread(pol, val) %>%
-    dplyr::filter(!is.na(co2), !is.na(co)) %>%
+    dplyr::filter(!is.na(co2)) %>%
     tidyr::gather(pol, val, 2:ncol(.)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise(mass_carbon = sum(val, na.rm = TRUE) * 1e-6) %>%
@@ -70,9 +70,24 @@ notes: looks good!
 ```{r}
   fuel_merged <-
     mass_carbon %>%
-    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::full_join(fuel, by = "id") %>%
+    dplyr::mutate(mass_fuel_comb = ifelse(is.na(mass_fuel), mass_fuel_c, mass_fuel)) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::select(-mass_carbon)
 
   saveRDS(fuel_merged, file = "../../r_data/fuel_merged.RDS")
 ```
 
+missing fuel data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+  dplyr::anti_join(fuel_merged %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+  dplyr::filter(!grepl("^G", id)) %>%
+  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  knitr::kable("markdown", align = 'c')
+```
+
+notes: 25C is missing co data - accept for now
