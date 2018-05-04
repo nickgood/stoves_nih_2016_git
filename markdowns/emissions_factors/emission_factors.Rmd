@@ -22,76 +22,40 @@ load data
 
 ```{r}
   samples <- readRDS("../../r_data/samples.RDS")
-  fuel <- readRDS("../../r_data/fuel_burnt.RDS")
+  fuel <- readRDS("../../r_data/fuel_merged.RDS")
   emissions <- readRDS("../../r_data/emissions.RDS")
-  fuel_properties <- readRDS("../../r_data/fuel_properties.RDS")
   energy <- readRDS("../../r_data/energy.RDS")
 ```
 
-remove unused tests
-
-```{r}
-  emissions <-
-    emissions %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id))
-
-  fuel <-
-    fuel %>%
-    dplyr::filter(!grepl("27|28|29|30", id))
-```
-
-# mass carbon per test
-
-```{r}
-  mass_carbon <-
-    emissions %>%
-    dplyr::filter(metric == "mass_carbon") %>%
-    dplyr::group_by(id) %>%
-    dplyr::filter(val >= 0) %>% 
-    dplyr::summarise(mass_carbon = sum(val, na.rm = TRUE),
-                     mass_carbon = mass_carbon  * 1e-6)
-```
-
-# carbon balance
-
-calculate fuel burned using carbon balance method
-
-```{r} 
-  mass_fuel <-
-    fuel %>%
-    dplyr::left_join(dplyr::select(samples, id, fuel), by = "id") %>%
-    dplyr::left_join(fuel_properties, by = "fuel") %>%
-    dplyr::left_join(mass_carbon, by = "id") %>%
-    dplyr::mutate(mass_fuel_c = mass_carbon * (1 / carbon_fraction))
-```
-
-# mass of fuel emissions factors
+# mass of fuel emissions factor
 
 ```{r, echo=TRUE} 
-  fuel_mass_factors <- 
+  mass_fuel <- 
     emissions %>%
     dplyr::filter(metric == "mass_emitted") %>%
-    dplyr::left_join(mass_fuel, by = "id") %>%
-    dplyr::mutate(val =  (val * 1e-3) / (mass_fuel * 1e-3)) %>%
+    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::mutate(val =  (val * 1e-3) / (mass_fuel_comb * 1e-3)) %>%
     dplyr::select(id, pol, pol_category, val, qc) %>%
-    dplyr::mutate(units = "miligrams per kilograms fuel",
+    dplyr::mutate(units = "miligrams per kilogram fuel",
+                  units = ifelse(pol == "ultrafines", "number per kilogram fuel", units),
                   metric = "mass_fuel_ef")
 ```
 
-# energy of fuel emissions factors
+# mass of fuel emissions factor
 
 ```{r, echo=TRUE} 
-  fuel_energy_factors <- 
+  energy_fuel <- 
     emissions %>%
     dplyr::filter(metric == "mass_emitted") %>%
-    dplyr::left_join(mass_fuel, by = "id") %>%
-    dplyr::mutate(val =  ((val * 1e-3) / (mass_fuel * 1e-3)) * (1 / lhv)) %>%
+    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (lhv * 1e-3))) %>%
     dplyr::select(id, pol, pol_category, val, qc) %>%
-    dplyr::mutate(units = "miligrams per kilojoule fuel",
+    dplyr::mutate(units = "miligrams per Megajoule fuel",
+                  units = ifelse(pol == "ultrafines", "number per Megajoule fuel", units),
                   metric = "energy_fuel_ef")
 ```
 
-# energy emissions factors
+# energy of fuel emissions factor
 
 ```{r}
   energy_factors <-
@@ -101,13 +65,14 @@ calculate fuel burned using carbon balance method
     dplyr::mutate(val =  (val * 1e-3) / (joules * 1e-6)) %>% 
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per Megajoule delivered",
+                  units = ifelse(pol == "ultrafines", "number per Megajoule delivered", units),
                   metric = "energy_delivered_ef")
 ```
 
 ```{r}
   emissions_factors <-
-    fuel_mass_factors %>%
-    dplyr::bind_rows(fuel_energy_factors) %>%
+    mass_fuel %>%
+    dplyr::bind_rows(energy_fuel) %>%
     dplyr::bind_rows(energy_factors)
 ```
 
@@ -115,17 +80,5 @@ calculate fuel burned using carbon balance method
 
 ```{r}
   saveRDS(emissions_factors, file = "../../r_data/emissions_factors.RDS")
-```
-
-# Plots
-
-## fuel burnt vs carbon
-
-```{r, fig.width=10}  
-  ggplot(mass_fuel, aes(x = mass_fuel, y = mass_fuel_c, color = fuel)) +
-    geom_point() +
-    theme_minimal() +
-    xlab("mass of fuel (measured) [kg]") +
-    ylab("mass of fuel (carbon balance) [kg]")
 ```
 
