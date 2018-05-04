@@ -77,7 +77,7 @@ remove redundant reps added for two pot stoves
     dplyr::group_by(id, start) %>% 
     dplyr::filter(row_number(rep) == 1) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(!grepl("27|28|29|30", id))
+    dplyr::filter(!grepl("27|28|29|30|G", id))
 ```
 
 create file with pot and rep identifiers
@@ -88,7 +88,7 @@ create file with pot and rep identifiers
     dplyr::select(-date) %>%
     dplyr::bind_rows(batch_pot %>%
                       dplyr::select(-date)) %>%
-    dplyr::filter(!grepl("27|28|29|30", id))
+    dplyr::filter(!grepl("27|28|29|30|G", id))
 ```
 
 create variable with pot mass data
@@ -109,7 +109,7 @@ create variable with pot mass data
                        dplyr::select(-var, -date) %>%
                        tidyr::spread(pot, value)) %>%
     tidyr::gather("pot", "pot_mass" , 2:3) %>%
-    dplyr::filter(!grepl("27|28|29|30", id))
+    dplyr::filter(!grepl("27|28|29|30|G", id))
 ```
 
 tidy pot mass + water mass data
@@ -131,7 +131,7 @@ tidy pot mass + water mass data
                       tidyr::spread(var, value) %>%
                       dplyr::select(-date) %>%
                       dplyr::rename(mass_on = on, mass_off = off)) %>%
-    dplyr::filter(!grepl("27|28|29|30", id))
+    dplyr::filter(!grepl("27|28|29|30|G", id))
 ```
 
 ## fix time issues
@@ -203,6 +203,22 @@ fix temp issues
 ```{r}
   # missing data from start of 2nd rep
   t_range$t_min[which(t_range$id == "1B" & t_range$rep == 2)] <- 20.18
+```
+
+manually put in data from 1A and 8A
+
+```{r}
+  t_range$t_min[which(t_range$id == "1A" & t_range$rep == 1)] <- 14.6
+  t_range$t_max[which(t_range$id == "1A" & t_range$rep == 1)] <- 82.8
+  
+  t_range$t_min[which(t_range$id == "1A" & t_range$rep == 2)] <- 11.6
+  t_range$t_max[which(t_range$id == "1A" & t_range$rep == 2)] <- 59.2
+
+  t_range$t_min[which(t_range$id == "8A" & t_range$rep == 1)] <- 19.9
+  t_range$t_max[which(t_range$id == "8A" & t_range$rep == 1)] <- 86.6
+  
+  t_range$t_min[which(t_range$id == "8A" & t_range$rep == 2)] <- 19.7
+  t_range$t_max[which(t_range$id == "8A" & t_range$rep == 2 )] <- 55
 ```
 
 fix rep issue for back pot
@@ -302,7 +318,7 @@ energy delivered per test
                      dplyr::select(id) %>%
                      dplyr::distinct(),
                    by = "id") %>%
-    dplyr::filter(!grepl("^G", id)) %>%
+    dplyr::filter(!grepl("27|28|29|30|G", id)) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
