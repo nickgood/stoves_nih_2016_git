@@ -1,0 +1,70 @@
+---
+title: "Check carbon balance"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  samples <- readRDS("../../r_data/samples.RDS")
+  fuel <- readRDS("../../r_data/fuel_burnt.RDS")
+  emissions <- readRDS("../../r_data/emissions.RDS")
+  fuel_properties <- readRDS("../../r_data/fuel_properties.RDS")
+```
+
+# mass fuel per test (carbon calculated)
+
+check that co and co2 exist and sum carbon
+
+```{r}
+  mass_carbon <-
+    emissions %>%
+    dplyr::filter(metric == "mass_carbon") %>%
+    dplyr::filter(pol != "ultrafines", pol != "ions", !is.na(val)) %>%
+    dplyr::select(id, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::filter(!is.na(co2), !is.na(co)) %>%
+    tidyr::gather(pol, val, 2:ncol(.)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(mass_carbon = sum(val, na.rm = TRUE) * 1e-6) %>%
+    dplyr::left_join(dplyr::select(samples, id, fuel), by = "id") %>%
+    dplyr::left_join(fuel_properties, by = "fuel") %>%
+    dplyr::mutate(mass_fuel_c = mass_carbon * (1 / carbon_fraction))
+```
+
+# plot: fuel burnt vs. fuel calculated from carbon
+
+calculate fuel burned using carbon balance method
+
+```{r} 
+  mass_carbon %>%
+    dplyr::left_join(fuel, by = "id") %>%
+      ggplot(aes(x = mass_fuel_c, y = mass_fuel)) +
+      geom_point() +
+      geom_text(aes(label = id), hjust = 0, vjust = 0) +
+      geom_smooth(method = 'lm', formula = y ~ x, se = FALSE) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      ylab("mass of fuel (measured)") +
+      xlab("mass of fuel (carbon balance)")
+```
+
+
+notes: looks good! 
+
