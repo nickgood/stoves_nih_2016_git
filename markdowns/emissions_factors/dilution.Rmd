@@ -23,14 +23,14 @@ averaged data
 ```{r}
   samples <- readRDS("../../r_data/samples.RDS")  # sample info
   co2 <- readRDS("../../r_data/co2_merged_avg.RDS")
-  fivegas <- readRDS("../../r_data/fivegas_dilution.RDS")
+  fivegas <- readRDS("../../r_data/fivegas_dilution_avg.RDS")
 ```
 
 real-time data
 
 ```{r}
   co2_rt <- readRDS("../../r_data/co2_merged.RDS")
-  fivegas_rt <- readRDS("../../r_data/fivegas_merged.RDS")
+  fivegas_rt <- readRDS("../../r_data/fivegas_dilution.RDS")
 ```
 
 load schemes
@@ -51,6 +51,7 @@ load schemes
                        dplyr::select(id, datetime, loc, val, qc)) %>%
     ggplot(aes(x = datetime, y = val, color = loc)) + 
       geom_point() +
+      scale_y_log10() +
       facet_wrap(~id, ncol = 4) +
       theme_bw() +
       theme(text = element_text(size = 12),
@@ -72,14 +73,26 @@ combine data
   dilution <-
     co2 %>%
     tidyr::spread("loc", "val") %>%
-    dplyr::filter(qc == "ok") %>%
     dplyr::select(id, lab, sample) %>%
     dplyr::rename("dilution" = "sample") %>%
     dplyr::left_join(fivegas %>%
                        dplyr::select(id, val) %>%
                        dplyr::rename("sample" = "val"), by = "id") %>%
-    dplyr::filter(id != "13A") %>%
+    dplyr::filter(id != "13A", id != "8A", id != "15C", id != "25A", id != "2E") %>%
     na.omit()
+```
+
+# plot: averages
+
+```{r}
+  dilution %>%
+    tidyr::gather(loc, val, 2:4) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    ggplot(aes(x = id, y = val, color = loc)) +
+    geom_point(size = 2) +
+    theme_bw() +
+    xlab("") +
+    ylab("co2 mixing ratio (ppm)")
 ```
 
 calculate dilution ratio
@@ -90,7 +103,7 @@ calculate dilution ratio
     dplyr::mutate(ratio = (dilution - lab) / (sample - lab))
 ```
 
-# plot: dilution ratio
+# plot: dilution ratio chronologically
 
 ```{r}
   dilution %>%
@@ -102,3 +115,75 @@ calculate dilution ratio
     ylab("dilution ratio")
 ```
 
+notes: if ratio is less than 0.01 remove
+
+```{r}
+  dilution <-
+    dilution %>%
+    dplyr::filter(ratio > 0.01) %>%
+    dplyr::select(id, ratio)
+```
+
+# fix missing values
+
+select tests with missing dilution data
+
+```{r}
+  dilution_missing <-
+    dilution %>%
+    dplyr::full_join(dplyr::select(samples, id, date), by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30|^G", id)) %>%
+    dplyr::mutate(week = strftime(date, format = "%V")) %>%
+    dplyr::filter(is.na(ratio)) %>%
+    dplyr::select(id, week)
+```
+
+average the dilution over the course of the week
+
+```{r}
+  dilution_avg <-
+    dilution %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = "id") %>%
+    dplyr::mutate(week = strftime(date, format = "%V")) %>%
+    dplyr::group_by(week) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE))
+```
+
+combine data
+
+```{r}
+  dilution_merged <-
+    dilution_missing %>%
+    dplyr::left_join(dilution_avg, by = "week") %>%
+    dplyr::bind_rows(dilution)
+```
+
+select nearest neighbor average for missing data
+
+```{r}
+  dilution_merged$ratio[6] <- mean(c(dilution_avg$ratio[3], dilution_avg$ratio[4]))
+
+  dilution_merged$ratio[10:13] <- mean(c(dilution_avg$ratio[9], dilution_avg$ratio[10]))
+
+  dilution_merged$ratio[24] <- mean(c(dilution_avg$ratio[15], dilution_avg$ratio[16]))
+```
+
+```{r}
+  dilution_merged <-
+    dilution_merged %>%
+    dplyr::select(-week)
+
+  saveRDS(dilution_merged, file = "../../r_data/dilution_merged.RDS")
+```
+
+# plot: dilution ratio chronologically
+
+```{r}
+  dilution_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = "id") %>%
+    ggplot(aes(x = date, y = ratio)) +
+    geom_point(size = 2) +
+    theme_bw() +
+    xlab("") +
+    ylab("dilution ratio")
+```
