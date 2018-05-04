@@ -59,7 +59,8 @@ constants
     dplyr::rename("conc" = "val") %>%
     dplyr::left_join(pol_properties, by = "pol") %>%
     dplyr::mutate(mass_emitted = conc * hood_flow * dur,
-                  mass_carbon = mass_emitted * (num_c * mw_c / mw)) %>%
+                  carbon_fraction = num_c * mw_c / mw,
+                  mass_carbon = mass_emitted * carbon_fraction) %>%
     dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg) %>%
     tidyr::gather("metric", "val", 4:6) %>%
     dplyr::mutate(units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
