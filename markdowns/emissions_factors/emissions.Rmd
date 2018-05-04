@@ -32,6 +32,7 @@ pollutant data
   vocs <- readRDS("../../r_data/vocs_merged.RDS")
   pahs <- readRDS("../../r_data/pah_merged.RDS")
   ultrafines <- readRDS("../../r_data/ultrafines_merged.RDS")
+  dilution <- readRDS("../../r_data/dilution_merged.RDS")
   gases <- readRDS("../../r_data/fivegas_merged_avg.RDS")
 ```
 
@@ -53,6 +54,8 @@ constants
 
 # calculate additional metrics
 
+* correct for dilution
+
 ```{r}
   emissions <- 
     emissions %>%
@@ -63,9 +66,12 @@ constants
                   mass_carbon = mass_emitted * carbon_fraction) %>%
     dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg) %>%
     tidyr::gather("metric", "val", 4:6) %>%
-    dplyr::mutate(units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
+    dplyr::left_join(dilution, by = "id") %>%
+    dplyr::mutate(val = ifelse(pol == "ultrafines", val * (1 / ratio), val),
+                  units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
                   units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
-                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per meter cubed", units))
+                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per meter cubed", units)) %>%
+    dplyr::select(-ratio)
 ```
 
 # save
