@@ -108,6 +108,14 @@ output:
   saveRDS(temp_merged, file = "../r_files/temp_merged.RDS")
 ```
 
+```{r}
+min_pot_temp <- select(temp_merged, id, loc, t_oc) %>%
+                filter(grepl("stove", loc)) %>%
+                group_by(id) %>%
+                summarise(min = min(t_oc))
+ 
+```
+
 # Summary
 
 Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.

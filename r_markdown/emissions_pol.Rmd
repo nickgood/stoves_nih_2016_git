@@ -99,6 +99,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
   test_times <- readRDS("../r_files/test_times_all.RDS")
+  mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
 ```
 
 # timestamps
@@ -228,6 +229,8 @@ Concentration is corrected for background by removing background test average co
   co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
                 dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
+
+ co_co2_ch4_ppm <- co_co2_ch4
 ```
 
 * convert mixing ratio to mass (assuming constant T and P)
@@ -271,13 +274,18 @@ Concentration is corrected for background by removing background test average co
 
   bg <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4) %>%
         dplyr::select(-ppm, -conc)
+  
+  bg_ppm <- dplyr::bind_rows(bg_co, bg_co2, bg_ch4)
    
 ```
 
 * merge background with fivegas data
 
 ```{r}
-  co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
+co_co2_ch4_ppm <-   dplyr::left_join(co_co2_ch4, 
+                dplyr::select(bg, id, pol, ppm_bg), by = c("id", "pol"))
+
+co_co2_ch4 <- dplyr::left_join(co_co2_ch4, 
                 dplyr::select(bg, id, pol, conc_bg), by = c("id", "pol"))
 ```
 
@@ -302,6 +310,24 @@ rates_gases <- mutate(co_co2_ch4, rate = (conc-conc_bg)*hood_flow/(10^6))
 
 ```{r}
   head(co_co2_ch4, 2)
+```
+
+```{r}
+# calculate firepower
+
+firepower <- select(co_co2_ch4_ppm, id, pol, ppm, ppm_bg) %>%
+             mutate(ppm_corrected = ppm - ppm_bg) %>%
+             filter(!grepl("^BG|FH2", id), !grepl("ch4", pol)) %>%
+             select(id, pol, ppm_corrected) %>%
+             spread(key = pol, value = ppm_corrected) %>%
+             left_join(mean_mc, by = "id") %>%
+             mutate(firepower = (19000 * mw_c * hood_flow/(60*1000*0.5))* #LHV [kJ/kg_fuel*mw_c [g/mol]*hood_flow[m3/min]*(1/fuel_c_frac)[g_wood/g_carbon]
+                   ((1.784 * co2/(1000*44.0094)) + (1.14 * co/(1000*28.0100)))) # density_co2 [kg/m3] * conc_co2 [ppmv] * (1/mw_co2) [mol/g] + density_co [kg/m3] * conc_co [ppmv]*(1/mw_co) [mol/g]
+
+ggplot(firepower, aes(x = mean_mc, y = firepower)) +
+  geom_point() +
+  labs(x = "Mean Moisture Content [%]", y = "Firepower [kW]") +
+  theme_bw()
 ```
 
 ---
