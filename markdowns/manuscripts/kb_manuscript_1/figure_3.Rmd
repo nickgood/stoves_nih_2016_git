@@ -75,70 +75,118 @@ load data
   dplyr::filter(metric == "energy_delivered_ef")
 ```
 
+# check for outliers
+
+## formaldehyde
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  carcinogens %>%
+    dplyr::filter(pol == "formaldehyde") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+notes: looks good
+
+## acetaldehyde
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  carcinogens %>%
+    dplyr::filter(pol == "acetaldehyde ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## benzene
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  carcinogens %>%
+    dplyr::filter(pol == "benzene ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## b[a]pyrene
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  carcinogens %>%
+    dplyr::filter(pol == "b[a]pyrene ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
 ## calculate summary stats for gas phase carcinogens
 
 ```{r}
-  q1 <-
+  range <-
     carcinogens %>%
+    dplyr::select(-pol_category) %>%
+    dplyr::filter(!grepl("b.a.pyrene", pol)) %>%
+    tidyr::spread(pol, val) %>%
+    na.omit %>%
+    tidyr::gather(pol, val, 8:10) %>%
     dplyr::group_by(stove, id) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
 ```
 
 ```{r}
-  q3 <-
-    carcinogens %>%
-    dplyr::group_by(stove, id) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
-```
-
-```{r}
-  carcinogens_g <-
+  carcinogens <-
     carcinogens %>%
     dplyr::group_by(stove, stovecat, pol) %>%
     dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
-    dplyr::left_join(q1, by = "stove") %>%
-    dplyr::left_join(q3, by = c("stove"))
+    dplyr::left_join(range, by = "stove")
 ```
 
 ## calculate summary stats for bap
 
 ```{r}
-  q1 <-
+  range_bap <-
     bap %>%
+    na.omit %>%
+    dplyr::group_by(stove, id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
 ```
 
 ```{r}
-  q3 <-
-    bap %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
-```
-
-```{r}
-  carcinogens_p <-
+  bap <-
     bap %>%
     dplyr::group_by(stove, stovecat, pol) %>%
     dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
-    dplyr::left_join(q1, by = "stove") %>%
-    dplyr::left_join(q3, by = c("stove"))
+    dplyr::left_join(range_bap, by = "stove")
 ```
 
 ## plot: pollutant categories
 
 ```{r figure_3, echo=FALSE, fig.width=12, fig.height=5}
-  carcinogens_g %>%
+  carcinogens %>%
   ggplot(aes(x = stove, y = val, fill = pol)) +
     geom_histogram(stat = "identity") +
-    scale_fill_manual(values = c("#CCC999", "#999999", "#9999CC", "#66CC99")) +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    scale_fill_manual(values = c("#CCC999", "#2c7fb8", "#9999CC", "#66CC99")) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
     theme_bw() +
     theme(text = element_text(size = 18),
           legend.title = element_blank(),
@@ -149,16 +197,16 @@ load data
           legend.position = "top") +
     guides(fill = guide_legend(title = NULL)) +
     facet_grid(~stovecat, scales = "free", space = "free_x") +
-    ylab("mg emitted pr MJ delivered") +
+    ylab("mg emitted per MJ delivered") +
     xlab("")
 ```
 
 ```{r figure_3b, echo=FALSE, fig.width=12, fig.height=3}
-  carcinogens_p %>%
+  bap %>%
   ggplot(aes(x = stove, y = val, fill = pol)) +
     geom_histogram(stat = "identity") +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
-    scale_fill_manual(values = c("#999999")) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
+    scale_fill_manual(values = c("#2c7fb8")) +
     theme_bw() +
     theme(text = element_text(size = 18),
           legend.title = element_blank(),
@@ -173,12 +221,12 @@ load data
 ```
 
 ```{r figure_3c, echo=FALSE, fig.width=4, fig.height=3}
-  carcinogens_g %>%
+  carcinogens %>%
   dplyr::filter(grepl("liquid", stovecat), !grepl("wick", stove)) %>%
   ggplot(aes(x = stove, y = val, fill = pol)) +
     geom_histogram(stat = "identity") +
-    scale_fill_manual(values = c("#CCC999", "#999999", "#9999CC", "#66CC99")) +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    scale_fill_manual(values = c("#CCC999", "#2c7fb8", "#9999CC", "#66CC99")) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
     theme_bw() +
     theme(text = element_text(size = 18),
           legend.title = element_blank(),
@@ -193,12 +241,12 @@ load data
 ```
 
 ```{r figure_3d, echo=FALSE, fig.width=4, fig.height=3}
-  carcinogens_p %>%
-  dplyr::filter(grepl("pressure|lpg", stove)) %>%
+  bap %>%
+  dplyr::filter(grepl("liquid", stovecat), !grepl("wick", stove)) %>%
   ggplot(aes(x = stove, y = val, fill = pol)) +
     geom_histogram(stat = "identity") +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
-    scale_fill_manual(values = c("#999999")) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
+    scale_fill_manual(values = c("#2c7fb8")) +
     theme_bw() +
     theme(text = element_text(size = 18),
           legend.title = element_blank(),
