@@ -208,17 +208,15 @@ fix temp issues
 manually put in data from 1A and 8A
 
 ```{r}
-  t_range$t_min[which(t_range$id == "1A" & t_range$rep == 1)] <- 14.6
-  t_range$t_max[which(t_range$id == "1A" & t_range$rep == 1)] <- 82.8
-  
-  t_range$t_min[which(t_range$id == "1A" & t_range$rep == 2)] <- 11.6
-  t_range$t_max[which(t_range$id == "1A" & t_range$rep == 2)] <- 59.2
+  test_1A_8A <- tibble::data_frame(id = c("1A", "1A",  "8A", "8A"),
+                                   rep = c("1", "2", "1", "2"),
+                                   loc = c("front", "front", "front", "front"),
+                                   t_min = c(14.6, 11.6, 19.9, 19.7),
+                                   t_max = c(82.8, 59.2, 86.6, 55))
 
-  t_range$t_min[which(t_range$id == "8A" & t_range$rep == 1)] <- 19.9
-  t_range$t_max[which(t_range$id == "8A" & t_range$rep == 1)] <- 86.6
-  
-  t_range$t_min[which(t_range$id == "8A" & t_range$rep == 2)] <- 19.7
-  t_range$t_max[which(t_range$id == "8A" & t_range$rep == 2 )] <- 55
+  t_range <-
+    t_range %>%
+    dplyr::bind_rows(test_1A_8A)
 ```
 
 fix rep issue for back pot
@@ -322,7 +320,15 @@ energy delivered per test
     knitr::kable("markdown", align = 'c')
 ```
 
-Conclusions: temperature data (and therefore energy data) is expected to be missing for: 13A, 2A, and 6A (the three tests conducted on 1/5/2016), 18B, 21A (conducted on 2/10/2016), 22A (conducted on 1/13/2016), and 3A, and 7A (conducted on 2/26/2016): test data was lost
+notes: temperature data (and therefore energy data) is expected to be missing for: 
+
+* 13A, 2A, and 6A (the three tests conducted on 1/5/2016)
+* 18B, 21A (conducted on 2/10/2016)
+* 22A (conducted on 1/13/2016)
+* 3A, and 7A (conducted on 2/26/2016)
+* 10A was missing substantial portion of test data - removed
+
+* 1A is missing a pot weight - tracking down
 
 # save data
 
