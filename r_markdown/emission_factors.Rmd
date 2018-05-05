@@ -594,7 +594,7 @@ ggplot(carb_plot, aes(x = mc_level, y = mass_pol_mass_fuel, color = mc_level, sh
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme(text = element_text(size = 12)) + 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
+  ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free_y", ncol = 3) +
   scale_x_discrete(labels = c("low", "med", "high"))
 ```

@@ -138,7 +138,7 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
 
 ```{r}
   carbonyls <- dplyr::mutate(carbonyls, 
-                             mass_emitted = (conc - conc_bg) * hood_flow * dur,
+                             mass_emitted = (conc - conc_bg) * hood_flow * dur/60,
                              mass_carbon = mass_emitted * (num_c * mw_c / mw),
                              inst = "carbs")
 ```
