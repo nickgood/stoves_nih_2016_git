@@ -102,10 +102,12 @@ output:
 * load and save pah data
 
 ```{r}
-  pah <- load_singlefiles("pah")
+  pah <- load_multifile(fldr = "../data/pah",
+                        pattern = "^PAH_.*[0-9].csv$", inst = "pah") 
   saveRDS(pah, file = "../r_data/pah.RDS")
 
-  pah_bdl <- load_singlefiles("pah_lod")
+  pah_bdl <- load_multifile(fldr = "../data/pah",
+                            pattern = "BDL", inst = "pah_bdl") 
   saveRDS(pah_bdl, file = "../r_data/pah_bdl.RDS")
 ```
 

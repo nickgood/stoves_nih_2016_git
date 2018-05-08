@@ -710,18 +710,6 @@ load_singlefiles <- function(log){
     out <- load_ions_file(filelist[1])
   }
 
- # pahs
-  if(log == "pah"){
-    filelist <- list.files("../data/pah", "^PAH_.*[0-9].csv$", full.names = TRUE)
-    out <- load_pah_file(filelist[1])
-  }
-
-  # pahs lod
-  if(log == "pah_lod"){
-    filelist <- list.files("../data/pah", "^PAH_.*_BDL.csv$", full.names = TRUE)
-    out <- load_pah_file(filelist[1])
-  }
-
  # transmissometer
   if(log == "trans"){
     filelist <- list.files("../data/trans", "^Transmissometer Log.xlsx$", full.names = TRUE)
@@ -819,6 +807,16 @@ load_multifile <- function(fldr, pattern, inst){
     # smps
     if(inst == "ecoc"){
       ifelse(i==1, out <- load_ecoc_file(filelist[i]), out <- rbind(out, load_ecoc_file(filelist[i])))
+    }
+
+    # pahs
+    if(inst == "pah"){
+      ifelse(i==1, out <- load_pah_file(filelist[i]), out <- rbind(out, load_pah_file(filelist[i])))
+    }
+    
+    # pahs bdl
+    if(inst == "pah_bdl"){
+      ifelse(i==1, out <- load_pah_file(filelist[i]), out <- rbind(out, load_pah_file(filelist[i])))
     }
 
     # end for loop
