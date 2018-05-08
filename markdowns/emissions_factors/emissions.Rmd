@@ -132,3 +132,53 @@ constants
     dplyr::distinct() %>%
     nrow(.)
 ```
+
+## plot: aerosol mass balance
+
+add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, date), by = "id")
+```
+
+select pollutants
+
+```{r}
+  ec_oc_ions <-
+    emissions %>%
+    dplyr::filter(grepl("ions|ec|^oc$|pm", pol_category)) %>%
+    dplyr::filter(metric == "conc", id != "14C")
+```
+
+```{r}
+  ec_oc_ions <-
+    ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, stove, date) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 4:7)
+```
+
+```{r figure_1, echo=FALSE, fig.width=16, fig.height=8}
+  ec_oc_ions %>%
+  dplyr::filter(pol_category == "pm_mass") %>%
+  ggplot(aes(x = id, y = val, fill = pol_category)) +
+    geom_histogram(stat = "identity") +
+    geom_histogram(data = ec_oc_ions %>%
+                   dplyr::filter(pol_category != "pm_mass"),
+                   aes(x = id, y = val, fill = pol_category), stat = "identity", width = 0.6) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stove, scales = "free")
+```
