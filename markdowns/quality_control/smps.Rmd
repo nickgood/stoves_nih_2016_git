@@ -803,7 +803,9 @@ notes:
   ultrafines <-
     ultrafines %>%
     dplyr::mutate(pol = "ultrafines") %>%
-    dplyr::select(id, pol, val, qc, bg) %>%
+    dplyr::left_join(smps_times, by = "id") %>%
+    dplyr::mutate(dur = (end - start) / 60) %>%
+    dplyr::select(id, pol, val, dur, qc, bg) %>%
     dplyr::mutate(pol_category = "smps")
 
   saveRDS(ultrafines, file = "../../r_data/ultrafines_merged.RDS")
