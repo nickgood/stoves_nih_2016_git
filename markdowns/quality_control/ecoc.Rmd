@@ -121,8 +121,7 @@ define test type variable
                     cassette, test_type, oc_unc, ec_unc, fid2, qc) %>%
       tidyr::gather("pol", "val", ec_ug_sq_cm, oc_ug_sq_cm, oc_unc, ec_unc) %>%
       dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
-                    pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol),
-                    val = val * filter_area)
+                    pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol))
 ```
 
 # missing and bad data
@@ -142,8 +141,8 @@ define test type variable
 
 notes: 
 
-* 8D: removed as a bad test - going to analyze filter again
-* 6A: removed originally for too high of loading - going to analyze filter again
+* G5: ignore
+* 6A: removed originally for too high of loading - going to analyze filter again (couldn't get to work with half punch)
 * 1A: removed for too high of loading
 * 2A: removed for too high of loading
 
@@ -194,7 +193,7 @@ notes:
   ecoc <- 
     ecoc %>%
     dplyr::mutate(qc = as.character(qc),
-                  qc = ifelse(grepl("24A|^3A", id), "bad", qc),
+                  qc = ifelse(grepl("24A|^3A|G5", id), "bad", qc),
                   qc = ifelse(id == "2E" & cassette == "a", "bad", qc),
                   qc = ifelse(id == "2C" & cassette == "a", "bad", qc),
                   qc = ifelse(id == "1A" & cassette == "a", "bad", qc),
@@ -224,36 +223,80 @@ notes:
     dplyr::select(-fid2)
 ```
 
-## plot: plot oc and ec uncertainty
-
-```{r}
-  ecoc %>%
-  dplyr::filter(grepl("unc", pol)) %>%
-    ggplot(aes(x = id, y = val)) +
-      geom_point(aes(color = qc), size = 2) +
-      scale_color_manual(values = qc_colors) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(~pol, scales = "free", ncol = 1) +
-      ylab("uncertainty") +
-      xlab("")
-```
-
-notes: bad values already marked bad
-
-```{r}
-  ecoc <-
-    ecoc %>%
-    dplyr::filter(!grepl("unc", pol))
-```
-
 ## remove bad tests
 
 ```{r}
-  ecoc_merged <-
+  ecoc <-
     ecoc %>% 
     dplyr::filter(qc != "bad")
+```
+
+## take only last value for each id chronologically
+
+```{r}
+  ecoc_merged <-
+    ecoc %>%
+    dplyr::group_by(id, cassette, pol, test_type) %>%
+    dplyr::summarise(val = last(val),
+                     qc = last(qc))
+```
+
+# uncertainty
+
+## plot: ratio of uncertainty to value
+
+elemental carbon
+
+```{r, echo=FALSE, fig.width=12, fig.height=5}
+  ecoc_merged %>%
+    dplyr::filter(test_type == "test", grepl("ec", pol), cassette == "e") %>%
+    dplyr::select(id, cassette, qc, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(ratio = ec_unc / ec) %>%
+    dplyr::left_join(samples %>%
+                     dplyr::select(id, stove, fuel, fuelcat, date), by = "id") %>%
+      dplyr::filter(fuelcat == "wood") %>%
+      ggplot(aes_string(x = "id", y = "ratio")) +
+      geom_point(size = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(stove~fuel, scales = "free", ncol = 5)
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=5}
+  ecoc_merged %>%
+    dplyr::filter(test_type == "test", grepl("oc", pol), cassette == "e") %>%
+    dplyr::select(id, cassette, qc, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(ratio = oc_unc / oc) %>%
+    dplyr::left_join(samples %>%
+                     dplyr::select(id, stove, fuel, fuelcat, date), by = "id") %>%
+      dplyr::filter(fuelcat == "wood") %>%
+      ggplot(aes_string(x = "id", y = "ratio")) +
+      geom_point(size = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(stove~fuel, scales = "free", ncol = 5)
+```
+
+notes: all less than 1% uncertainty
+
+filter out uncertainty 
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::filter(!grepl("unc", pol))
+```
+
+## calculate mass on filter
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::mutate(val = val * filter_area)
 ```
 
 # blank analysis 
@@ -270,7 +313,6 @@ outliers (z > 3) when blanks are grouped by pollutant
 
 ```{r, echo=FALSE}
   blanks %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(pol) %>%
     dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
     dplyr::select(id, pol, z_score) %>%
@@ -278,7 +320,13 @@ outliers (z > 3) when blanks are grouped by pollutant
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-notes: not substantial - don't remove
+## remove B18
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::filter(id != "B18")
+```
 
 ## plot: time series of lab blanks
 
@@ -351,14 +399,15 @@ add lod variable and replace values below lod with lod/sqrt(2)
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::left_join(dplyr::select(blanks, pol, lod) %>%
                      dplyr::rename("lod_val" = "lod"), by = "pol") %>%
     dplyr::mutate(lod = ifelse(val <= lod_val, "below", "above"),
-                  val = ifelse(val <= lod_val, lod_val / sqrt(2), val)) %>%
+                  val = ifelse(lod == "below", lod_val / sqrt(2), val)) %>%
     dplyr::select(-lod_val)
 ```
 
-## look at artifact filters
+# artifact filters
 
 ```{r}
   ecoc_artifact <-
@@ -376,7 +425,26 @@ add lod variable and replace values below lod with lod/sqrt(2)
       theme_bw()
 ```
 
-notes: no outliers, assume all ec added is due to breakthrough, since little ec is found on the blank filters - do not subtract ec artifacts
+## plot: ratio of ec on artifact filters to front filters
+
+```{r, echo = FALSE}
+  ecoc_merged %>%
+    dplyr::filter(cassette == "e", pol == "ec", test_type == "test") %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(ratio = artifact / val) %>%
+    dplyr::filter(ratio > 0.03) %>%
+    ggplot(aes_string(x = "id", y = "ratio")) +
+      geom_point(aes(color = qc), size = 2) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 10),
+            axis.text.x = element_text(angle = 45, hjust=1),
+            legend.position = "top") +
+      facet_wrap(~test_type, scales = "free", ncol = 1) +
+      ylab("ratio (artifact to loaded filter)")
+```
+
+notes: high ratios imply break through - all these tests are 
 
 ## replace ec artifacts with zero
 
@@ -465,11 +533,10 @@ outliers (z > 3) when backgrounds are grouped by pollutant and cassette
 
 notes: no outliers
 
-## plot: time series of lab backgrounds
+## plot: time series of lab backgrounds (by filter type)
 
-```{r ecoc_bg_timeseries, echo=FALSE}
+```{r ecoc_bg_timeseries_byfilter, echo=FALSE}
   bg %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(shape = lod, color = qc), size = 2) +
@@ -490,6 +557,7 @@ notes: no subtantial outliers, artifact is the same order of magnitude as sample
 ```{r, echo=FALSE}
   bg %>%
     dplyr::group_by(pol, cassette) %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c')
@@ -505,12 +573,75 @@ notes: no subtantial outliers, artifact is the same order of magnitude as sample
     knitr::kable("markdown", align = 'c')
 ```
 
+## subtract artifacts
+
+extract artifact
+
+```{r}
+  bg_artifact <-
+    bg %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(cassette == "a") %>%
+    dplyr::select(id, pol, val) %>%
+    dplyr::rename("artifact" = "val")
+```
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(cassette == "e") %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-cassette) %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(val = val - artifact, 
+                  val = ifelse(val < 0, 0, val))
+```
+
+## plot: time series of lab backgrounds
+
+```{r ecoc_bg_timeseries, echo=FALSE}
+  bg %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "val")) +
+      geom_point(aes(shape = lod, color = qc), size = 2) +
+      scale_shape_manual(values = lod_shapes) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free", ncol = 1) +
+      ylab("concentration (microgram per meter cubed)") +
+      xlab("")
+```
+
+## plot: background trend
+
+elemental carbon
+
+```{r, echo=FALSE}
+  ec_bg <-
+    bg %>%
+    dplyr::filter(pol == "ec")
+
+    acf(ec_bg$val)
+```
+
+```{r, echo=FALSE}
+  oc_bg <-
+    bg %>%
+    dplyr::filter(pol == "oc")
+
+    acf(oc_bg$val)
+```
+
+note: no trends in time
+
 ## summarize backgrounds
 
 ```{r}
   bg <-
     bg %>%
-    dplyr::group_by(pol, cassette) %>%
+    dplyr::group_by(pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
@@ -542,6 +673,7 @@ notes: no subtantial outliers, artifact is the same order of magnitude as sample
 
 ```{r ecoc_burn_bg_conc, echo=FALSE}
   ecoc_merged %>%
+    dplyr::filter(cassette != "a") %>%
     dplyr::group_by(id, test_type) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
@@ -551,7 +683,7 @@ notes: no subtantial outliers, artifact is the same order of magnitude as sample
       scale_color_manual(values = qc_colors) +
       theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(pol~cassette, scales = "free", ncol = 2) +
+      facet_wrap(~pol, scales = "free", ncol = 2) +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
@@ -571,17 +703,17 @@ extract artifact
 ```{r}
   ecoc_artifact <-
     ecoc_merged %>%
+    dplyr::ungroup() %>%
     dplyr::filter(cassette == "a") %>%
-    dplyr::select(id, pol, val, lod) %>%
-    dplyr::rename("artifact" = "val",
-                  "lod_a" = "lod")
+    dplyr::select(id, pol, val) %>%
+    dplyr::rename("artifact" = "val")
 ```
 
 ## plot: ratio of sample to artifact filters
 
 ```{r}
   ecoc_merged %>%
-    dplyr::filter(cassette == "e") %>%
+    dplyr::filter(cassette == "e" & pol == "oc") %>%
     dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
     dplyr::mutate(ratio = artifact / val) %>%
       ggplot(aes(id, ratio)) + 
@@ -612,12 +744,25 @@ extract artifact
     dplyr::summarise(ratio = mean(ratio, na.rm = TRUE))
 ```
 
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::filter(cassette == "e") %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-cassette) %>%
+    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::mutate(artifact = ifelse(is.na(artifact) & pol == "ec", 0, artifact),
+                  artifact = ifelse(is.na(artifact) & pol == "oc", val * oc_ratio$ratio[2], artifact),
+                  val = val - artifact) %>%
+    dplyr::select(-artifact)
+```
+
 ## subtract background
 
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::left_join(bg, by = c("pol", "cassette"))
+    dplyr::left_join(bg, by = c("pol"))
 ```
 
 ```{r}
@@ -637,7 +782,7 @@ extract artifact
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-notes: one test 25A and 25B (artifact filters) were below background - need to decide if whole measurement is thrown out or not
+notes: two tests 26A and 25B were below background for oc
 
 ## create a new below background variable
 
@@ -647,44 +792,6 @@ notes: one test 25A and 25B (artifact filters) were below background - need to d
     dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
-
-```{r}
-  ecoc_artifact <-
-    ecoc_merged %>%
-    dplyr::filter(cassette == "a") %>%
-    dplyr::select(-cassette) %>%
-    dplyr::rename("artifact" = "val") %>%
-    dplyr::select(id, pol, artifact, bg)
-```
-
-```{r}
-  ecoc_merged <-
-    ecoc_merged %>%
-    dplyr::filter(cassette == "e") %>%
-    dplyr::select(-cassette, -bg) %>%
-    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
-    dplyr::mutate(bg = ifelse(is.na(bg), "above", bg),
-                  artifact = ifelse(is.na(artifact) & pol == "ec" & bg == "above", 0, artifact),
-                  artifact = ifelse(is.na(artifact) & pol == "oc" & bg == "above", val * oc_ratio$ratio[2], artifact),
-                  val = val - artifact)
-```
-
-notes: 
-
-* replace missing artifact filters with average ratio between sample and artifact
-* select artifact background (above/below) keyword, because it is more stringent - check with John
-
-## table: percentage of measurements below artifact
-
-```{r, echo=FALSE}
-  ecoc_merged %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
-    knitr::kable("markdown", align = 'c', digits = 2)
-```
-
-notes: yes!!!!!!!!
 
 # burn analysis
 
@@ -715,7 +822,6 @@ notes: looks reasonable - proceed
 ```{r ecoc_stovetype, echo=FALSE, fig.width=10}
   ecoc_merged_p <-
     ecoc_merged %>%
-    dplyr::filter(!is.na(val), !grepl("27|28|29|30", id)) %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
 
  ecoc_merged_p %>%
@@ -781,11 +887,10 @@ outliers (z > 3) when samples are grouped by pollutant and fuel type
 
 ```{r, echo=FALSE}
   ecoc_merged_p %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::group_by(fuel, pol) %>%
     dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::select(id, stove, fuel, z_score) %>%
+    dplyr::select(id, stove, fuel, pol, z_score) %>%
     dplyr::filter(z_score > 3) %>%
     knitr::kable("markdown", align = 'c')
 ```
@@ -798,6 +903,7 @@ percent of burn samples below the lod
 
 ```{r, echo=FALSE}
   ecoc_merged %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., lod == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
@@ -838,6 +944,10 @@ percent of burn samples with NA values
   dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
   knitr::kable("markdown", align = 'c')
 ```
+
+* 1A: removed for too high of loading
+* 24A: possibly ruptured - check this
+* 3A: flow measurements unknown
 
 ## table: percent of data below background
 
