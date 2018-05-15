@@ -57,14 +57,6 @@ load data
 ```
 
 ```{r}
-  levoglucosan <-
-    emissions %>%
-    dplyr::filter(grepl("levoglucosan", pol)) %>%
-    dplyr::select(id, pol, stove, stovecat, val)
-    
-```
-
-```{r}
   emissions <-
     emissions %>%
     dplyr::mutate(pol = ifelse(grepl("ch4", pol), "methane", pol),
@@ -85,45 +77,41 @@ load data
   dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
   dplyr::ungroup() %>%
   dplyr::rename(pol = pol_category) %>%
-  dplyr::filter(!grepl("ions|ec|^oc$|pm_mass|carbohydrates", pol)) %>%
-  dplyr::bind_rows(levoglucosan)
+  dplyr::filter(!grepl("ions|ec|^oc$|pm_mass|carbohydrates", pol))
 ```
 
-## calculate summary stats for gas phase carcinogens
+# carbon monoxide
 
 ```{r}
-  q1 <-
-    emissions_s %>%
-    dplyr::group_by(stove, pol) %>%
-    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
+  carbon_monoxide <-
+    emissions %>%
+    dplyr::filter(grepl("carbon monoxide", pol)) %>%
+    na.omit %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     median = mean(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
 ```
 
-```{r}
-  q3 <-
-    emissions_s %>%
-    dplyr::group_by(stove, pol) %>%
-    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
-```
-
-```{r}
-  emissions_s <-
-    emissions_s %>%
-    dplyr::group_by(stove, stovecat, pol) %>%
-    dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
-    dplyr::left_join(q1, by = c("stove", "pol")) %>%
-    dplyr::left_join(q3, by = c("stove", "pol"))
-```
-
-```{r}
- emissions <-
-  emissions %>%
-  dplyr::filter(metric == "energy_delivered_ef") %>%
-  dplyr::filter(!grepl("ions|ec|^oc$|pm_mass|carbohydrates", pol_category)) %>%
-  dplyr::bind_rows(levoglucosan) %>%
-  dplyr::group_by(pol, pol_category, stove, stovecat) %>%
-  dplyr::distinct() %>%
-  dplyr::summarise(val = median(val, na.rm = TRUE)) %>%
-  dplyr::ungroup()
+```{r figure_2c, echo=FALSE, fig.width=12, fig.height=5}
+  carbon_monoxide %>%
+  ggplot(aes(x = stove, y = median)) +
+    geom_histogram(stat = "identity", fill = "#0072B2") +
+    geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("grams per MJ delivered") +
+    xlab("") +
+    ggtitle("carbon monoxide")
 ```
 
 ```{r}
@@ -163,33 +151,7 @@ load data
     #ggtitle("carbonyls")
 ```
 
-```{r figure_2c, echo=FALSE, fig.width=12, fig.height=5}
-  emissions %>%
-  dplyr::filter(grepl("carbon monoxide", pol)) %>%
-  dplyr::mutate(val = val / 1000) %>%
-  ggplot(aes(x = stove, y = val)) +
-    geom_histogram(stat = "identity", fill = "#0072B2") +
-    geom_errorbar(data = emissions_s %>%
-                  dplyr::filter(grepl("^co$", pol)) %>%
-                  dplyr::mutate(pol = NA,
-                                val = val / 1000,
-                                q1 = q1 / 1000,
-                                q3 = q3 / 1000),
-                  aes(ymin = q1, ymax = q3), width = .2) +
-    theme_bw() +
-    theme(text = element_text(size = 18),
-          legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          legend.text = element_text(size = 20),
-          strip.text.x = element_text(size = 20),
-          axis.title.y = element_text(size = 20),
-          legend.position = "top") +
-    guides(fill = guide_legend(title = NULL)) +
-    facet_grid(~stovecat, scales = "free", space = "free_x") +
-    ylab("grams per MJ delivered") +
-    xlab("") +
-    ggtitle("carbon monoxide")
-```
+
 
 ```{r figure_2d, echo=FALSE, fig.width=12, fig.height=5}
   emissions %>%

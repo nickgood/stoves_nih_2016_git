@@ -1,5 +1,5 @@
 ---
-title: "figure 1: emissions by pollutant by category"
+title: "figure 1: particle emissions"
 output:
   html_document:
     toc: true
@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse)
+  pacman::p_load(tidyverse, pals)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -72,7 +72,7 @@ load data
   ec_oc_ions <-
     emissions %>%
     dplyr::filter(grepl("inorganic ions|elemental carbon|organic carbon", pol_category)) %>%
-    dplyr::filter(metric == "energy_delivered_ef")
+    dplyr::filter(metric == "mass_fuel_ef", id != "14C")
 ```
 
 ```{r}
@@ -83,39 +83,103 @@ load data
     dplyr::mutate(pol_category = ifelse(grepl("pm_mass", pol_category), "total PM mass", pol_category))
 ```
 
-## sum over pollutant category
+# check for outliers
+
+## elemental carbon
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  ec_oc_ions %>%
+    dplyr::filter(pol_category == "elemental carbon ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## organic carbon
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  ec_oc_ions %>%
+    dplyr::filter(pol_category == "organic carbon ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## pm mass
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  pm_mass %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## ions
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  ec_oc_ions %>%
+    dplyr::filter(pol_category == "inorganic ions ") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## average ec, oc, and ions by stove type
+
+multiply by 1.9 to convert organic carbon to organic matter
 
 ```{r}
   ec_oc_ions <-
     ec_oc_ions %>%
-    dplyr::group_by(pol_category, id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::ungroup()
+    #dplyr::mutate(val = ifelse(pol_category == "organic carbon ", val * 1.3, val)) %>%
+    dplyr::group_by(id, pol_category, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) #%>%
+    #dplyr::ungroup() %>%
+    #dplyr::group_by(pol_category, stove, stovecat) %>%
+    #dplyr::summarise(val = median(val, na.rm = TRUE))
 ```
 
-## average by stove type
-
-```{r}
-  ec_oc_ions <-
-    ec_oc_ions %>%
-    dplyr::group_by(pol_category, stove, stovecat) %>%
-    dplyr::summarise(val = median(val, na.rm = TRUE))
+```{r figure_1, echo=FALSE, fig.width=16, fig.height=8}
+  pm_mass %>%
+  dplyr::left_join(range_pm, by = "stove") %>%
+  ggplot(aes(x = id, y = val, fill = pol_category)) +
+    geom_histogram(stat = "identity") +
+    geom_histogram(data = ec_oc_ions, aes(x = id, y = val, fill = pol_category), stat = "identity", width = 0.6) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
+    theme_bw() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "top") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stove, scales = "free", nrow = 3) +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
 ```
 
-## calculate error bars
+## calculate range of pm mass
 
 ```{r}
-  q1 <-
+  range_pm <-
     pm_mass %>%
+    na.omit %>%
     dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q1 = quantile), probs = 0.25, na.rm = TRUE)
-```
-
-```{r}
-  q3 <-
-    pm_mass %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise_if(is.numeric, funs(q3 = quantile), probs = 0.75, na.rm = TRUE)
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
 ```
 
 ```{r}
@@ -125,22 +189,16 @@ load data
     dplyr::summarise(val = median(val, na.rm = TRUE))
 ```
 
-```{r}
-  pm_mass <-
-    pm_mass %>%
-    dplyr::left_join(q1, by = "stove") %>%
-    dplyr::left_join(q3, by = "stove")
-```
-
-## plot: pollutant categories
+# figure 1a: particle mass balance
 
 ```{r figure_1, echo=FALSE, fig.width=12, fig.height=6}
   pm_mass %>%
+  dplyr::left_join(range_pm, by = "stove") %>%
   ggplot(aes(x = stove, y = val, fill = pol_category)) +
     geom_histogram(stat = "identity") +
-    geom_histogram(data = ec_oc_ions, aes(x = stove, y = val, fill = pol_category), stat = "identity", width = 0.6) +
+    geom_histogram(data = ec_oc_ions, aes(x = stove, y = val, fill = pol_category), stat = "identity", width = 0.8) +
     scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
     theme_bw() +
     theme(text = element_text(size = 18),
           legend.title = element_blank(),
@@ -150,12 +208,13 @@ load data
           legend.position = "top") +
     guides(fill = guide_legend(title = NULL)) +
     facet_grid(~stovecat, scales = "free", space = "free_x") +
-    ylab("mg emitted pr MJ delivered") +
+    ylab("mg emitted per MJ delivered") +
     xlab("")
 ```
 
 ```{r figure_1b, echo=FALSE, fig.width=4, fig.height=3}
   pm_mass %>%
+  dplyr::left_join(range_pm, by = "stove") %>%
   dplyr::filter(grepl("liquid", stovecat)) %>%
   ggplot(aes(x = stove, y = val, fill = pol_category)) +
     geom_histogram(stat = "identity") +
@@ -163,7 +222,79 @@ load data
                    dplyr::filter(grepl("liquid", stovecat)),
                    aes(x = stove, y = val, fill = pol_category), stat = "identity", width = 0.6) +
     scale_fill_manual(values = c("gray30", "#E69F00", "#56B4E9", "#999999")) +
-    geom_errorbar(aes(ymin = q1, ymax = q3), width = .2) +
+    geom_errorbar(aes(ymin = min, ymax = max), width = .2) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 20),
+          strip.text.x = element_text(size = 20),
+          axis.title.y = element_text(size = 22),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    ylab("") +
+    xlab("")
+```
+
+# figure 1b: ultrafines
+
+```{r}
+  ultrafines <-
+    emissions %>%
+    dplyr::filter(grepl("ultrafines", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+## check for outliers
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  ultrafines %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## calculate summary metrics
+
+```{r}
+  ultrafines_avg <-
+    ultrafines %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(median = median(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE))
+```
+
+```{r figure_1, echo=FALSE, fig.width=14, fig.height=4}
+  ultrafines %>%
+  ggplot(aes(x = stove, y = val, color = fuel)) +
+    geom_jitter(shape = 1, stroke = 1.5, size = 2, width = 0.1) +
+    geom_point(data = ultrafines_avg, aes(x = stove, y = median), color = "black", size = 4, shape = 4, stroke = 2) +
+    scale_color_manual(values = brewer.paired(n = 10)) +
+    theme_bw() +
+    scale_y_log10() +
+    theme(text = element_text(size = 18),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12),
+          strip.text.x = element_blank(),
+          axis.title.y = element_text(size = 22),
+          legend.position = "right") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(~stovecat, scales = "free", space = "free_x") +
+    ylab("") +
+    xlab("")
+```
+
+```{r figure_1, echo=FALSE, fig.width=4, fig.height=2}
+  ultrafines %>%
+  dplyr::filter(grepl("liquid", stovecat)) %>%
+  ggplot(aes(x = stove, y = val, color = fuel)) +
+    geom_jitter(shape = 1, stroke = 1.5, size = 2, width = 0.1) +
+    geom_point(data = ultrafines_avg %>%
+               dplyr::filter(grepl("liquid", stovecat)),
+               aes(x = stove, y = median), color = "black", size = 4, shape = 4, stroke = 2) +
+    scale_color_manual(values = brewer.paired(n = 10)) +
     theme_bw() +
     theme(text = element_text(size = 20),
           legend.title = element_blank(),
