@@ -207,6 +207,7 @@ notes:
 * G2: filter ruptured, not sure which one - check if outlier - ok
 * G8: possibly switched - check if outlier - ok
 
+* 15A: contaminated - mark as bad
 * 2D: filter contamination - mark as bad
 * 3A: flow unknown for most of test - mark as bad
 * 17A: filter ruptured - mark as bad
@@ -222,7 +223,7 @@ notes:
   grav <- 
     grav %>%
     dplyr::mutate(qc = as.character(qc),
-                  qc = ifelse(grepl("^2D|^3A|^17A|G5|G14|G7", id), "bad", qc))
+                  qc = ifelse(grepl("^2D|^3A|^17A|G5|G14|G7|^15A", id), "bad", qc))
 ```
 
 ## remove bad tests
@@ -262,7 +263,6 @@ notes: not that much of an outlier - proceed
 
 ```{r pm_blank_timeseries, echo=FALSE}
  blanks %>%
-    dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, blank, date), by = c('id' = 'blank')) %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(color = qc), size = 2) +
@@ -272,6 +272,10 @@ notes: not that much of an outlier - proceed
       theme(text = element_text(size = 12),
             legend.position = "top") +
       ylab("mass (micrograms)")
+```
+
+```{r, echo=FALSE}
+  acf(blanks$val)
 ```
 
 notes:
@@ -425,7 +429,19 @@ notes: no outliers
       xlab("")
 ```
 
-notes: G10 is high, but no notes regarding measurement - leave in background calculation
+notes: G10 is high, but no notes regarding measurement - remove
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::filter(id != "G10")
+```
+
+```{r, echo=FALSE}
+  acf(bg$val)
+```
+
+notes: no trend in time
 
 ## table: percent of lab backgrounds below study lod
 
