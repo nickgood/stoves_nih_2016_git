@@ -700,7 +700,7 @@ load_singlefiles <- function(log){
 
  # grav
   if(log == "grav"){
-    filelist <- list.files("../data/grav", "^Teflon Filter Weight Log.xlsx$", full.names = TRUE)
+    filelist <- list.files("../data/grav", "Teflon Filter Weight Log.xlsx$", full.names = TRUE)
     out <- load_grav_file(filelist[1])
   }
 
