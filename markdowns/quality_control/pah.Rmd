@@ -38,11 +38,24 @@ load schemes
   lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
+## remove typos and bad runs
+
+```{r}
+  pah_raw <-
+    pah_raw %>%
+    dplyr::mutate(id = as.character(id)) %>%
+    dplyr::filter(id != "10D", id != "8E", !(id == "4C" & filter_type == "f"),
+                  !grepl("x", id_asu))
+```
+
 ## extract lod data
 
 ```{r}
   lod <-
     pah_bdl %>%
+    dplyr::mutate(id = as.character(id)) %>%
+    dplyr::filter(id != "10D", id != "8E", !(id == "4C" & filter_type == "f"),
+                  !grepl("x", id_asu)) %>%
     dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
     dplyr::select(-val) %>%
     dplyr::filter(!grepl("^27|^28|^29|^30", id))
@@ -61,25 +74,13 @@ load schemes
     dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
-## update typos
-
-```{r}
-  pah <-
-    pah %>%
-    dplyr::mutate(id = as.character(id),
-                  id = ifelse(id == "10D", "1D", id),
-                  id = ifelse(id == "8E", "6E", id))
-```
-
-notes: email from Pierre saying 10D-B = 1D-B and 8E-B = 6E-B
-
 ## consolidate duplicate measurements
 
 ```{r}
   pah <-
     pah %>%
     dplyr::group_by(pol, id, filter_type) %>%
-    dplyr::summarise(val = mean(val, na.rm = TRUE),
+    dplyr::summarise(val = last(val),
                      lod = last(lod)) %>%
     dplyr::ungroup()
 ```
@@ -178,18 +179,7 @@ missing back pufs
 notes: Pierre has record of all missing samples except
 
 * 14C-P: contaiminated during processing
-* G6-B: lost somewhere along the line
-* one other, not sure which one?
-
-## remove tests with measurement missing
-
-```{r}
-  pah <-
-    pah %>%
-    dplyr::anti_join(missing, by = "id")
-```
-
-notes: need to update this code to only remove pollutants depending on molecular weight - wait until Pierre sends next round of data
+* G6-B: lost somewhere along the line - Pierre does not have a record of this sample
 
 ## table: tests with bad measurements
 
@@ -221,6 +211,72 @@ notes:
   pah_merged <-
     pah %>% 
     dplyr::filter(qc != "bad")
+```
+
+# manually fix NAs based on Pierre's email
+
+```{r}
+  pah_merged <-
+    pah_merged %>%
+    dplyr::mutate(val = ifelse(id == "18B" & filter_type == "filter" & pol == "fluorene", 0.07 / sqrt(2), val),
+                  val = ifelse(id == "19A" & filter_type == "filter" & pol == "fluorene", 0.145 / sqrt(2), val),
+                  val = ifelse(id == "9A" & filter_type == "filter" & pol == "fluorene", 0.215 / sqrt(2), val))
+```
+
+# samples to rerun
+
+filters
+
+```{r}
+  pah_merged %>%
+    dplyr::filter(is.na(val), test_type == "test", filter_type == "filter") %>%
+    dplyr::select(pol, id) %>%
+    dplyr::arrange(id) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+front pufs
+
+```{r}
+  missing_front_puf <-
+    pah_merged %>%
+    dplyr::filter(is.na(val), test_type == "test", filter_type == "front puf") %>%
+    dplyr::select(pol, id) %>%
+    dplyr::arrange(id)
+
+  write_csv(missing_front_puf, "../../missing_data/missing_front_puf.csv")
+```
+
+back pufs
+
+```{r}
+  missing_back_puf <-
+    pah_merged %>%
+    dplyr::filter(is.na(val), test_type == "test", filter_type == "back puf") %>%
+    dplyr::select(pol, id) %>%
+    dplyr::arrange(id)
+
+  write_csv(missing_back_puf, "../../missing_data/missing_back_puf.csv")
+```
+
+```{r}
+  missing_backgrounds <-
+    pah_merged %>%
+    dplyr::filter(is.na(val), test_type == "bg") %>%
+    dplyr::select(pol, id, filter_type) %>%
+    dplyr::arrange(id)
+
+  write_csv(missing_backgrounds, "../../missing_data/missing_backgrounds.csv")
+```
+
+```{r}
+  missing_blanks <-
+    pah_merged %>%
+    dplyr::filter(is.na(val), test_type == "blank") %>%
+    dplyr::select(pol, id, filter_type) %>%
+    dplyr::arrange(id)
+
+  write_csv(missing_blanks, "../../missing_data/missing_blanks.csv")
 ```
 
 # blank analysis 
