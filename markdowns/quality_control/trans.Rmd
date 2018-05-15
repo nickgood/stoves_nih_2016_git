@@ -1,70 +1,74 @@
 ---
-title: "trans"
-author: "Nicholas Good"
-date: "11/21/2016"
-output: html_document
+title: "Process transmissometer data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  library(tidyverse)
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_tidy.R")
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/samples.Rda")
+# tidy data
+
+## load files
+
+load scripts
+
+```{r}
+  source("../../scripts/tidy.R")
 ```
 
-## Load transmissometer data
+load data
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/trans.Rda")
+```{r}
+  grav <- readRDS("../../r_data/grav.RDS")
+  filter_area <- readRDS("../../r_data/filter_area.RDS")
+  trans <- readRDS("../../r_data/trans.RDS")
+  times <- readRDS("../../r_data/filter_times.RDS")
+  flows <- readRDS("../../r_data/filter_flows.RDS")
+  notes <- readRDS("../../r_data/notes.RDS")
+  samples <- readRDS("../../r_data/samples.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(trans)
+load schemes
+
+```{r}
+  qc_colors <- readRDS("../../r_data/qc_colors.RDS")
+  lod_shapes <- readRDS("../../r_data/lod_shapes.RDS")
 ```
 
-## Load filter id numbers
+## get filter id numbers
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/grav.Rda") 
-
-  filter_info <- dplyr::select(grav, id, id_filter)
+```{r}
+  filter_ids <- dplyr::select(grav, id, id_filter)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(filter_info, 2)
-```
+# merge data with id
 
-## Merge data with id
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans, filter_info, "id_filter") %>%
+```{r}
+  trans_merged <- dplyr::left_join(trans, filter_ids, "id_filter") %>%
                   dplyr::mutate(id = as.factor(id))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(trans_merged, 2)
-```
+## filters without matches
 
-## Filters without matches
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, id_filter),
+```{r}
+  trans_no_match <- dplyr::anti_join(dplyr::select(filter_ids, id_filter),
                                      dplyr::select(trans, id_filter),
                                      by = "id_filter")
-
-  save(trans_no_match, file = "../r_files/trans_no_match.Rda")
 ```
 
-## Melt
+## long format
 
-Make longer and remove missing values
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   trans_merged <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
                   tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
                   dplyr::mutate(lamda = sub("_.*", "", var)) %>%
@@ -72,47 +76,58 @@ Make longer and remove missing values
                   dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
 ```
 
-## QC
+## flags
 
-Load notes
+extract flags
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/notes.Rda")
-
-  notes <- dplyr::filter(notes, grepl("trans|all", inst) == TRUE)
+```{r}
+  notes <- 
+    notes %>%
+    dplyr::filter(grepl("ecoc|all", inst) == TRUE)
 ```
 
-Set one flag per test
+bad preceeds maybe preceeds good
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
+```{r}
+  flags <-
+    notes %>%
+    dplyr::select(id, qc) %>%
+    dplyr::group_by(id) %>%
+    dplyr::arrange(qc) %>%
+    dplyr::summarise(qc = first(qc))
 ```
 
-Merge with data
+add flag by id
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans_merged, flags, by = "id") %>%
-                  dplyr::mutate(id = as.factor(id)) %>%
-                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::left_join(flags, by = "id") %>%
+    dplyr::mutate(id = as.factor(id)) %>%
+    dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-Additional bad tests
+# save
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # trans_merged$qc[trans_merged$id == ""] <- "bad"
+```{r}
+  saveRDS(trans_merged, file = "../../r_data/trans_merged.Rda")
 ```
 
-## Save merged file
+## plot: time series of lab blanks
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  save(trans_merged, file = "../r_files/trans_merged.Rda")
+```{r, echo=FALSE, fig.width=12, fig.height=8}
+ trans_merged %>%
+    dplyr::filter(var == "ir_front_sample_post", !grepl("G", id)) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
+    dplyr::filter(fuelcat == "wood") %>%
+    ggplot(aes_string(x = "id", y = "val")) +
+      geom_point(aes(color = qc), size = 2) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top") +
+      facet_wrap(stove~fuel, scales = "free", ncol = 4) +
+      ylab("atn")
 ```
 
-## Data summary
-
-Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
-
-$transmissometer$ data is expected to be missing for: 17A only. This filter ruptured during the test so was not able to be transmissometer-ed.
+notes: data is expected to be missing for: 17A only. This filter ruptured during the test so was not able to be transmissometer-ed.
