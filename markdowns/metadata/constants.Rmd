@@ -180,7 +180,7 @@ output:
 # instrument constants
 
 ```{r}
-  filter_area <- 11.79  # cm^2
+  filter_area <- 11.34  # cm^2 (updated on 5/15/2018 by KB)
   voc_flow <- 0.0135  # L/min
   smps_dlogdp <- 0.015625355  # dlogDp
 
