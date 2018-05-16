@@ -1,0 +1,94 @@
+---
+title: "Pollutant groupings"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, knitr, forcats)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# load data
+
+```{r load_files}
+  emissions_factors <- readRDS("../../r_data/emissions_factors.RDS")
+```
+
+# pol categories
+
+```{r}
+  emissions_factors <- 
+    emissions_factors %>%
+    dplyr::mutate(pol_subcategory =
+                    forcats::fct_collapse(pol,
+                                          "co2" = c("co2"),
+                                          "co" = c("co"),
+                                          "ch4" = c("ch4"),
+                                          "ec" = c("ec"),
+                                          "ec" = c("oc"),
+                                          "pm_mass" = c("pm_mass"),
+                                          "ultrafines" = c("ultrafines"),
+                                          "alkanes" = c("ethane", "propane",
+                                                        "i_butane", "n_butane",
+                                                        "i_pentane", "n_pentane",
+                                                        "n_hexane", "2_4_dimethylpentane",
+                                                        "n_heptane", "3_methylpentane",
+                                                        "2_3_dimethylpentane", "2_methylhexane",
+                                                        "3_methylhexane", "2_2_4_trimethylpentane",
+                                                        "2_3_4_trimethylpentane",
+                                                        "2_methylheptane", "3_methylheptane",
+                                                        "n_octane", "n_nonane", "n_decane"),
+                                          "alkenes" = c("ethene", "propene",
+                                                        "t_2_butene", "1_butene",
+                                                        "i_butene", "c_2_butene",
+                                                        "t_2_pentene", "2_methyl_2_butene",
+                                                        "1_pentene", "c_2_pentene",
+                                                        "isoprene", "1_hexene",
+                                                        "c_2_hexene", "a_pinene"),
+                                          "alkynes" = c("ethyne"),
+                                          "aromatics" = c("cyclopentane", "cyclohexane",
+                                                          "methylcyclohexane", "benzene",
+                                                          "toluene", "ethylbenzene",
+                                                          "m_p_xylene", "styrene",
+                                                          "o_xylene", "i_propylbenzene",
+                                                          "n_propylbenzene", "3_ethyltoluene",
+                                                          "4_ethyltoluene", "1_3_5_trimethylbenzene",
+                                                          "2_ethyltoluene", "1_2_4_trimethylbenzene",
+                                                          "1_2_3_trimethylbenzene",
+                                                          "1_3_diethylbenzene",
+                                                          "1_4_diethylbenzene",
+                                                          "1_2_diethylbenzene"),
+                                          "carbohydrates" = c("levoglucosan", "mannosan",
+                                                              "galactosan", "galactose",
+                                                              "glucose", "mannose",
+                                                              "glycerol", "threitol",
+                                                              "mannitol", "arabinose",
+                                                              "xylose"),
+                                          "ions" = c("sodium", "ammonium",
+                                                     "potassium", "magnesium",
+                                                     "calcium", "chloride",
+                                                     "nitrite", "nitrate", "sulfate"),
+                                          "carbonyls" = c("formaldehyde",
+                                                          "acetaldehyde",
+                                                          "acetone", "acrolein",
+                                                          "propionaldehyde",
+                                                          "crotonaldehyde",
+                                                          "butanone", "methacrolein",
+                                                          "butyraldehyde", "benzaldehyde",
+                                                          "isovaleraldehyde", "valeraldehyde",
+                                                          "o_tolualdehyde", "m_p_tolualdehyde",
+                                                          "hexaldehyde", "2_5_dimethylbenzaldehyde")))
+```
+
+# save
+
+```{r}
+  saveRDS(emissions_factors, "../../r_data/emissions_factors.RDS")
+```
