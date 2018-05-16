@@ -84,7 +84,19 @@ output:
                                                           "butyraldehyde", "benzaldehyde",
                                                           "isovaleraldehyde", "valeraldehyde",
                                                           "o_tolualdehyde", "m_p_tolualdehyde",
-                                                          "hexaldehyde", "2_5_dimethylbenzaldehyde")))
+                                                          "hexaldehyde", "2_5_dimethylbenzaldehyde"),
+                                          "three rings" = c("anthracene", "fluorene",
+                                                            "phenanthene"),
+                                          "four rings" = c("acephenanthrylene", "b[a]pyrene",
+                                                           "benz[a]anthracene", "benzo[c]phenanthrene",
+                                                           "chrysene and triphenylene",
+                                                           "cyclopenta[ce]phenanthrylene", "pyrene",
+                                                           "fluoranthene"),
+                                          "five rings" = c("b[b]fluoranthene", "b[e]pyrene",
+                                                           "b[j]fluoranthene", "benzo[ghi]fluoranthene",
+                                                           "cyclopenta[cd]pyrene", "dibenzo(ah)anthracene",
+                                                           "perylene"),
+                                          "six rings" = c("benzo(ghi)perylene", "indeno(1,2,3) cd pyrene")))
 ```
 
 # save
