@@ -1,0 +1,532 @@
+---
+title: "figure 1: gas emissions"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, RColorBrewer)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
+```
+
+## format stove names
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    gsub(" ", "\n",.) %>% 
+                    forcats::fct_relevel("three\nstone\nfire",
+                                         "clay\nring",
+                                         "ceramic\ncharcoal",
+                                         "rocket\nelbow",
+                                         "built-in\nplancha",
+                                         "metal\ncharcoal",
+                                         "fan\nrocket\nelbow",
+                                         "gasifier",
+                                         "wick\nkerosene",
+                                         "pressure\nkerosene",
+                                         "lpg"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol = ifelse(grepl("ch4", pol), "methane", pol),
+                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                  pol = ifelse(grepl("co2", pol), "carbon dioxide", pol),
+                  pol_category = ifelse(grepl("vocs", pol_category), "volatile organic compounds", pol_category))
+```
+
+## select pollutants
+
+```{r}
+  carbonyls <-
+    emissions %>%
+    dplyr::filter(grepl("carbonyls", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  vocs <-
+    emissions %>%
+    dplyr::filter(grepl("volatile organic compounds", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  co_ch4 <-
+    emissions %>%
+    dplyr::filter(grepl("monoxide|methane", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  btex <-
+    vocs %>%
+    dplyr::filter(grepl("^benzene|^toluene|^ethylbenzene|xylene", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(xylenes = m_p_xylene + o_xylene) %>%
+    dplyr::select(-m_p_xylene, -o_xylene) %>%
+    tidyr::gather("pol", "val", benzene, toluene, ethylbenzene, xylenes)
+```
+
+# check for outliers
+
+## carbon monoxide
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  co_ch4 %>%
+    dplyr::filter(grepl("monoxide", pol)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# methane
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  co_ch4 %>%
+    dplyr::filter(grepl("methane", pol)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  btex %>%
+    dplyr::group_by(id) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## carbonyls
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  carbonyls %>%
+    dplyr::group_by(id) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## vocs
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  vocs %>%
+    dplyr::group_by(id) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## remove tests
+
+```{r}
+  vocs <- 
+    vocs %>%
+    dplyr::filter(id != "5A", id != "9A")
+
+  btex <- 
+    btex %>%
+    dplyr::filter(id != "5A", id != "9A")
+```
+
+## calculate stats
+
+```{r}
+  stats_carbs <-
+    carbonyls %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  stat_vocs <-
+    vocs %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  co_ch4 <-
+    co_ch4 %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
+```
+
+```{r}
+  btex <-
+    btex %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE))
+```
+
+## calculate means by pollutant
+
+```{r}
+  carbonyls <-
+    carbonyls %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol = ifelse(grepl("2_5_", pol), "2,5-dimethylbenzaldehyde", pol),
+                  pol = ifelse(grepl("o_", pol), "o-tolualdehyde", pol),
+                  pol = ifelse(grepl("m_", pol), "m,p-tolualdehyde", pol))
+```
+
+```{r}
+  vocs <-
+    vocs %>%
+    dplyr::group_by(id, pol_subcategory, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(pol_subcategory, stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_subcategory = 
+                    pol_subcategory %>% 
+                    factor %>% 
+                    forcats::fct_relevel("alkanes",
+                                         "alkenes",
+                                         "alkynes",
+                                         "aromatics") %>%
+                    forcats::fct_rev())
+```
+
+# figures
+
+```{r, echo=FALSE}
+  col_vector = c("slateblue1",
+                 "slateblue4",
+                 "grey",
+                 "gray36",
+                 "khaki",
+                 "khaki4",
+                 "cornflowerblue",
+                 "dodgerblue4",
+                 "indianred1",
+                 "indianred4",
+                 "seagreen1",
+                 "seagreen4",
+                 "plum1",
+                 "plum4",
+                 "yellowgreen",
+                 "forestgreen")
+
+  p1 <-
+  carbonyls %>%
+  dplyr::filter(grepl("traditional", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
+    geom_text(data = stats_carbs %>%
+              dplyr::filter(grepl("traditional", stovecat)),
+              aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+    scale_y_continuous(limits = c(0, 250)) +
+    scale_fill_manual(values = col_vector) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.text.x = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+
+  p2 <-
+  carbonyls %>%
+  dplyr::filter(grepl("improved", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
+    geom_text(data = stats_carbs %>%
+              dplyr::filter(grepl("improved", stovecat)),
+              aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+    theme_bw() +
+    scale_fill_manual(values = col_vector) +
+    theme(text = element_text(size = 20),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+  
+  p3 <-
+  carbonyls %>%
+  dplyr::filter(grepl("liquid", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
+    geom_text(data = stats_carbs %>%
+              dplyr::filter(grepl("liquid", stovecat)),
+              aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+    theme_bw() +
+    scale_fill_manual(values = col_vector) +
+    scale_y_continuous(limits = c(0, 100)) +
+    theme(text = element_text(size = 20),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          legend.position = "right",
+          legend.text = element_text(size = 12)) +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+```
+
+```{r figure_2a, echo=FALSE, fig.width=15, fig.height=5}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+```{r, echo=FALSE}
+  p1 <- 
+    co_ch4 %>%
+    dplyr::filter(grepl("monoxide", pol)) %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean)) +
+        geom_point(aes(shape = pol), size = 3) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+        scale_shape_manual(values = c(8)) +
+        scale_y_continuous(limits = c(0, 30)) +
+        theme_bw() +
+        theme(text = element_text(size = 17),
+              strip.text.x = element_blank(),
+              legend.position = "none") +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("") +
+        ylab("g emitted per MJ delivered")
+
+  p2 <- 
+    co_ch4 %>%
+    dplyr::filter(grepl("monoxide", pol)) %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean)) +
+        geom_point(aes(shape = pol), size = 3) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+        scale_shape_manual(values = c(8)) +
+        theme_bw() +
+        scale_y_continuous(limits = c(0, 30)) +
+        theme(text = element_text(size = 18),
+              strip.text.x = element_blank(),
+              axis.title.y = element_blank(),
+              legend.position = "none") +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("")
+  
+  p3 <- 
+    co_ch4 %>%
+    dplyr::filter(grepl("monoxide", pol)) %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean)) +
+        geom_point(aes(shape = pol), size = 3) +
+        scale_shape_manual(values = c(8)) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+        scale_y_continuous(limits = c(0, 4)) +
+        theme_bw() +
+        theme(text = element_text(size = 18),
+              strip.text.x = element_blank(),
+              legend.title = element_blank(),
+              axis.title.y = element_blank(),
+              legend.position = "right",
+              legend.text = element_text(size = 12)) +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("")
+```
+
+```{r figure_2b, echo=FALSE, fig.width=15, fig.height=4.5}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+```{r, echo=FALSE}
+  p1 <-
+  vocs %>%
+  dplyr::filter(grepl("traditional", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+    geom_text(data = stat_vocs %>%
+              dplyr::filter(grepl("traditional", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    scale_fill_manual(values = c("#66c2a5", "#fc8d62", "slategray2", "#0072B2")) +
+    scale_y_continuous(limits = c(0, 3500)) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.text.x = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+
+  p2 <-
+  vocs %>%
+  dplyr::filter(grepl("improved", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+    geom_text(data = stat_vocs %>%
+              dplyr::filter(grepl("improved", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    scale_fill_manual(values = c("#66c2a5", "#fc8d62", "slategray2", "#0072B2")) +
+    scale_y_continuous(limits = c(0, 1000)) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+  
+  p3 <-
+  vocs %>%
+  dplyr::filter(grepl("liquid", stovecat)) %>%
+  ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+    geom_text(data = stat_vocs %>%
+              dplyr::filter(grepl("liquid", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    scale_fill_manual(values = c("#66c2a5", "#fc8d62", "slategray2", "#0072B2")) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          legend.position = "right",
+          legend.text = element_text(size = 12)) +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_wrap(~stovecat, scales = "free") +
+    ylab("mg emitted per MJ delivered") +
+    xlab("")
+```
+
+```{r figure_2c, echo=FALSE, fig.width=15, fig.height=5}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+```{r, echo=FALSE}
+  p1 <- 
+    btex %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean, shape = pol)) +
+        geom_point(size = 3,  position = position_dodge(width = 0.5)) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0, position = position_dodge(width = 0.5)) +
+        theme_bw() +
+        scale_y_continuous(trans = "log10", breaks = c(0.01, 1.0, 10, 100, 1000)) +
+        theme(text = element_text(size = 18),
+              strip.text.x = element_blank(),
+              legend.position = "none") +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("") +
+        ylab("mg emitted per MJ delivered")
+
+  p2 <- 
+    btex %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean, shape = pol)) +
+        geom_point(size = 3, position = position_dodge(width = 0.5)) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0, position = position_dodge(width = 0.5)) +
+        scale_y_continuous(trans = "log10", breaks = c(0.1, 1.0, 10, 100)) +
+        theme_bw() +
+        theme(text = element_text(size = 18),
+              strip.text.x = element_blank(),
+              axis.title.y = element_blank(),
+              legend.position = "none") +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("")
+  
+  p3 <- 
+    btex %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+      ggplot(aes(x = stove, y = mean, shape = pol)) +
+        geom_point(size = 3, position = position_dodge(width = 0.5)) +
+        geom_errorbar(aes(ymin = min, ymax = max), width = 0, position = position_dodge(width = 0.5)) +
+        theme_bw() +
+        scale_y_continuous(trans = "log10", breaks = c(0.001, 0.01, 0.1, 1.0, 10), labels = c(0.001, 0.01, 0.1, 1.0, 10)) +
+        theme(text = element_text(size = 18),
+              strip.text.x = element_blank(),
+              legend.title = element_blank(),
+              axis.title.y = element_blank(),
+              legend.position = "right",
+              legend.text = element_text(size = 12)) +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(~stovecat, scales = "free") +
+        xlab("")
+```
+
+```{r figure_2d, echo=FALSE, fig.width=15, fig.height=4.5}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
