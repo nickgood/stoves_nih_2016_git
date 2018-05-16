@@ -33,7 +33,8 @@ load data
   mass_fuel <- 
     emissions %>%
     dplyr::filter(metric == "mass_emitted") %>%
-    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::inner_join(fuel %>%
+                        dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (mass_fuel_comb * 1e-3)) %>%
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per kilogram fuel",
@@ -47,7 +48,8 @@ load data
   energy_fuel <- 
     emissions %>%
     dplyr::filter(metric == "mass_emitted") %>%
-    dplyr::left_join(fuel, by = "id") %>%
+    dplyr::inner_join(fuel %>%
+                       dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (lhv * 1e-3))) %>%
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per Megajoule fuel",
@@ -61,7 +63,8 @@ load data
   energy_factors <-
     emissions %>%
     dplyr::filter(metric == "mass_emitted") %>%
-    dplyr::left_join(energy, by = "id") %>%
+    dplyr::inner_join(energy %>%
+                        dplyr::filter(!is.na(joules)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (joules * 1e-6)) %>% 
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per Megajoule delivered",
