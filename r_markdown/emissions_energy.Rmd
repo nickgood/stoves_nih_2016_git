@@ -259,12 +259,19 @@ ggplot(gas_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape
   labs(color = "MC Level", shape = "Fuel Shape")
 ```
 
-```{r}
+```{r fig.height=6}
 
 voc_energy <- p_data %>%
-          dplyr::filter(pol %in% c("benzene", "toluene", "ethylbenzene")) %>%
+          dplyr::filter(pol %in% c("benzene", "toluene", "ethylbenzene",
+                                   "m+p-xylene", "o-xylene")) %>%
           dplyr::select(-inst) %>%
-          left_join(temps, by = "id")
+          left_join(temps, by = "id") %>%
+          mutate(pol = as.factor(pol)) %>%
+          mutate(pol = forcats::fct_relevel(pol, "benzene",
+                                                      "toluene",
+                                                      "ethylbenzene",
+                                                      "m+p-xylene",
+                                                      "o-xylene"))
 
 ggplot(voc_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
   geom_point(size = 3.5) +
@@ -327,21 +334,24 @@ all_energy <- p_data %>%
           mutate(type = ifelse(type %in% "lab", "Milled", "Split"),
                  mc_level = ifelse(mc_level %in% "med", "medium",
                                    ifelse(mc_level %in% "high", "high", "low"))) %>%
-          mutate(mc_level = factor(mc_level, levels = c("low", "medium", "high")))
+          mutate(mc_level = factor(mc_level, levels = c("low", "medium", "high"))) %>%
+          mutate(mass_pol_energy_mg = mass_pol_energy *1000)
 
 
 
-ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, color = mc_level, shape = type)) +
   geom_point(size = 2) +
   theme_bw() +
-  theme(text = element_text(size=12), legend.position = "bottom") + #,
-  #strip.background = element_blank(),
-  #strip.text.x = element_blank()) +
-  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, ncol = 4, scales = "free_y") +
+  theme(text = element_text(size=12), legend.position = "bottom",
+  strip.background = element_blank(),
+  strip.text.x = element_blank()) +
+  ylab("EF [mg / MJ Delivered]") + xlab("Moisture Content (%)") +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
-  labs(color = "MC Level", shape = "Fuel Shape")
+  labs(color = "MC Level", shape = "Fuel Shape") +
+  geom_hline(aes(yintercept = 20), data=subset(all_energy, pol == "grav"), color = "red") +
+  geom_hline(aes(yintercept = 20), data=subset(all_energy, pol == "co"), color = "red") +
+  facet_wrap(~pol, ncol = 4, scales = "free_y") #dummy value for now to fix panel issue
 ```
 
 ```{r}

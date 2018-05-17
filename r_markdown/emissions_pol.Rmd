@@ -111,6 +111,8 @@ carbonyls_merged <- readRDS("../r_files/carbonyls_merged.RDS")
            tidyr::spread(var, value) %>%
            dplyr::select(-date) %>%
            dplyr::rename(start = start_filters, end = end_filters)
+
+saveRDS(times, file = "../r_files/times.RDS")
 ```
 
 ---

@@ -92,7 +92,7 @@ t_range <- readRDS("../r_files/t_range.RDS")
                     dplyr::filter(!is.na(fuel)) %>%
                     dplyr::mutate(mass_fuel_from_carbon_balance_kg =
                                   mass_carbon * (1e-9) * (1/carbon_fraction),
-                                  mass_fuel_scale_kg = mass_burned_correct * (1e-3)) %>%
+                                  mass_fuel_scale_kg = mass_burned_correct * (1e-3)) %>% # the 1e-3 accounts for both the ug to g for pol AND the g to kg for fuel
                     dplyr::select(-mass_burned_correct)
                     # dplyr::filter(id != "FH2", id != "FL4", id != "LM4")
 ```
@@ -515,7 +515,7 @@ p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenze
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme(text = element_text(size = 15)) + 
-  ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
+  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free_y") +
   scale_x_continuous(breaks = c(5, 15, 25))
 
