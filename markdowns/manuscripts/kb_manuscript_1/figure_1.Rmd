@@ -272,11 +272,11 @@ multiply by 1.8 to convert organic carbon to organic matter
           axis.title.y = element_text(size = 14),
           axis.text.y = element_text(size = 18),
           axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
           legend.position = "none") +
     guides(fill = guide_legend(title = NULL)) +
     facet_wrap(~stovecat, scales = "free") +
-    ylab("mg emitted per MJ delivered") +
-    xlab("")
+    ylab("mg emitted per MJ delivered")
 
   p2 <-
     pm_mass %>%
@@ -296,10 +296,10 @@ multiply by 1.8 to convert organic carbon to organic matter
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             axis.text.x = element_blank(),
+            axis.title.x = element_blank(),
             legend.position = "none") +
       guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free") +
-      xlab("")
+      facet_wrap(~stovecat, scales = "free")
   
   p3 <-
     pm_mass %>%
@@ -321,11 +321,11 @@ multiply by 1.8 to convert organic carbon to organic matter
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             axis.text.x = element_blank(),
+            axis.title.x = element_blank(),
             legend.position = "right",
             legend.text = element_text(size = 12)) +
       guides(fill = guide_legend(title = NULL)) +
-      facet_grid(pol_category~stovecat, scales = "free") +
-      xlab("")
+      facet_grid(pol_category~stovecat, scales = "free")
 ```
 
 ```{r, echo=FALSE}
@@ -343,10 +343,10 @@ multiply by 1.8 to convert organic carbon to organic matter
               axis.title.y = element_text(size = 14),
               axis.text.x = element_blank(),
               strip.text.x = element_blank(),
+              axis.title.x = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
         facet_wrap(~stovecat, scales = "free") +
-        xlab("") +
         ylab("num. emitted per MJ delivered")
 
   p5 <- 
@@ -363,10 +363,10 @@ multiply by 1.8 to convert organic carbon to organic matter
               axis.text.x = element_blank(),
               strip.text.x = element_blank(),
               axis.title.y = element_blank(),
+              axis.title.x = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
-        facet_wrap(~stovecat, scales = "free") +
-        xlab("")
+        facet_wrap(~stovecat, scales = "free")
   p6 <- 
     ultrafines %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
@@ -382,11 +382,11 @@ multiply by 1.8 to convert organic carbon to organic matter
               axis.text.x = element_blank(),
               legend.title = element_blank(),
               axis.title.y = element_blank(),
+              axis.title.x = element_blank(),
               legend.position = "none",
               legend.text = element_text(size = 12)) +
         guides(fill = guide_legend(title = NULL)) +
-        facet_grid(pol_category~stovecat, scales = "free") +
-        xlab("")
+        facet_grid(pol_category~stovecat, scales = "free")
 ```
 
 ```{r, echo=FALSE}
@@ -402,11 +402,11 @@ multiply by 1.8 to convert organic carbon to organic matter
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               axis.title.y = element_text(size = 14),
+              axis.title.x = element_blank(),
               strip.text.x = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
         facet_wrap(~stovecat, scales = "free") +
-        xlab("") +
         ylab("g emitted per MJ delivered")
 
   p8 <- 
@@ -420,12 +420,12 @@ multiply by 1.8 to convert organic carbon to organic matter
         scale_y_continuous(limits = c(0, 30)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
+              axis.title.x = element_blank(),
               strip.text.x = element_blank(),
               axis.title.y = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
-        facet_wrap(~stovecat, scales = "free") +
-        xlab("")
+        facet_wrap(~stovecat, scales = "free")
   
   p9 <- 
     co %>%
@@ -438,14 +438,14 @@ multiply by 1.8 to convert organic carbon to organic matter
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
+              axis.title.x = element_blank(),
               strip.text.x = element_blank(),
               legend.title = element_blank(),
               axis.title.y = element_blank(),
               legend.position = "none",
               legend.text = element_text(size = 12)) +
         guides(fill = guide_legend(title = NULL)) +
-        facet_grid(pol~stovecat, scales = "free") +
-        xlab("")
+        facet_grid(pol~stovecat, scales = "free")
 ```
 
 ```{r figure_1b, echo=FALSE, fig.width=16, fig.height=10}
