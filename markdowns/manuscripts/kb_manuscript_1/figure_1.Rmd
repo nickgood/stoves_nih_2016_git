@@ -17,7 +17,9 @@ output:
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# tidy data
+# figure 1
+
+## tidy data
 
 load data
 
@@ -188,8 +190,6 @@ load data
     dplyr::filter(id != "6E")
 ```
 
-## average pm, ec, oc, and ions by stove type
-
 ## calculate range of pm mass
 
 ```{r}
@@ -203,8 +203,10 @@ load data
     dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
 ```
 
+## average pm mass by stove type
+
 ```{r}
-  pm_mass <-
+  pm_mass_p <-
     pm_mass %>%
     dplyr::group_by(pol_category, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
@@ -213,12 +215,12 @@ load data
                   pol_category = "PM2.5 mass")
 ```
 
-multiply by 1.8 to convert organic carbon to organic matter
+## average ec, oc, and ion mass by stove type
 
 ```{r}
-  ec_oc_ions <-
+  ec_oc_ions_p <-
     ec_oc_ions %>%
-    dplyr::mutate(val = ifelse(pol_category == "organic carbon", val * 1.8, val)) %>%
+    #dplyr::mutate(val = ifelse(pol_category == "organic carbon", val * 1.8, val)) %>%
     dplyr::group_by(id, pol_category, stove, fuel, stovecat, fuelcat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     tidyr::spread(pol_category, val) %>%
@@ -228,11 +230,20 @@ multiply by 1.8 to convert organic carbon to organic matter
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(pol = pol_category,
+                  pol = 
+                    pol %>% 
+                    factor %>% 
+                    forcats::fct_relevel("organic carbon",
+                                         "elemental carbon",
+                                         "inorganic ions") %>%
+                    forcats::fct_rev(),
                   pol_category = "PM2.5 mass")
 ```
 
+## average ultrafines by stove type
+
 ```{r}
-  ultrafines <-
+  ultrafines_p <-
     ultrafines %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
@@ -241,8 +252,10 @@ multiply by 1.8 to convert organic carbon to organic matter
     dplyr::mutate(pol_category = "ultrafine particles")
 ```
 
+## average carbon monoxide by stove type
+
 ```{r}
-  co <-
+  co_p <-
     co %>%
     dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::mutate(val = val / 1000) %>%
@@ -251,18 +264,17 @@ multiply by 1.8 to convert organic carbon to organic matter
                      max = max(val, na.rm = TRUE))
 ```
 
-# figure 1a: particle mass balance
+## figure 1
 
 ```{r, echo=FALSE}
   p1 <-
-    pm_mass  %>%
+    pm_mass_p  %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
     geom_histogram(aes(fill = pol), stat = "identity") +
-    geom_histogram(data = ec_oc_ions %>%
+    geom_histogram(data = ec_oc_ions_p %>%
                    dplyr::filter(grepl("traditional", stovecat)),
-                   aes(x = stove, y = val, fill = pol), stat = "identity", width = 0.75) +
-    #scale_fill_discrete(breaks = c("organic carbon", "elemental carbon", "inorganic ions", "total PM mass"))
+                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
     scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
     geom_text(data = range_pm %>%
               dplyr::filter(grepl("traditional", stovecat)),
@@ -279,13 +291,13 @@ multiply by 1.8 to convert organic carbon to organic matter
     ylab("mg emitted per MJ delivered")
 
   p2 <-
-    pm_mass %>%
+    pm_mass_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol), stat = "identity") +
-      geom_histogram(data = ec_oc_ions %>%
+      geom_histogram(data = ec_oc_ions_p %>%
                      dplyr::filter(grepl("improved", stovecat)),
-                     aes(x = stove, y = val, fill = pol), stat = "identity", width = 0.75) +
+                     aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
       scale_y_continuous(limits = c(0, 1000)) +
       geom_text(data = range_pm %>%
@@ -302,13 +314,13 @@ multiply by 1.8 to convert organic carbon to organic matter
       facet_wrap(~stovecat, scales = "free")
   
   p3 <-
-    pm_mass %>%
+    pm_mass_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol), stat = "identity") +
-      geom_histogram(data = ec_oc_ions %>%
+      geom_histogram(data = ec_oc_ions_p %>%
                        dplyr::filter(grepl("liquid", stovecat)),
-                     aes(x = stove, y = val, fill = pol),
+                     aes(x = stove, y = val, fill = pol, order = pol),
                      stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
       geom_text(data = range_pm %>%
@@ -330,7 +342,7 @@ multiply by 1.8 to convert organic carbon to organic matter
 
 ```{r, echo=FALSE}
   p4 <- 
-    ultrafines %>%
+    ultrafines_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
@@ -350,7 +362,7 @@ multiply by 1.8 to convert organic carbon to organic matter
         ylab("num. emitted per MJ delivered")
 
   p5 <- 
-    ultrafines %>%
+    ultrafines_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
@@ -368,7 +380,7 @@ multiply by 1.8 to convert organic carbon to organic matter
         guides(fill = guide_legend(title = NULL)) +
         facet_wrap(~stovecat, scales = "free")
   p6 <- 
-    ultrafines %>%
+    ultrafines_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
@@ -391,13 +403,13 @@ multiply by 1.8 to convert organic carbon to organic matter
 
 ```{r, echo=FALSE}
   p7 <- 
-    co %>%
+    co_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "#009E73") +
-        scale_shape_manual(values = c(19)) +
-        scale_y_continuous(limits = c(0, 30)) +
+        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
+        scale_shape_manual(values = c(8)) +
+        scale_y_continuous(limits = c(0, 40)) +
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
@@ -410,14 +422,14 @@ multiply by 1.8 to convert organic carbon to organic matter
         ylab("g emitted per MJ delivered")
 
   p8 <- 
-    co %>%
+    co_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "#009E73") +
-        scale_shape_manual(values = c(19)) +
+        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
+        scale_shape_manual(values = c(8)) +
         theme_bw() +
-        scale_y_continuous(limits = c(0, 30)) +
+        scale_y_continuous(limits = c(0, 40)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               axis.title.x = element_blank(),
@@ -428,12 +440,12 @@ multiply by 1.8 to convert organic carbon to organic matter
         facet_wrap(~stovecat, scales = "free")
   
   p9 <- 
-    co %>%
+    co_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
         geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "#009E73") +
-        scale_shape_manual(values = c(19)) +
+        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
+        scale_shape_manual(values = c(8)) +
         scale_y_continuous(limits = c(0, 4)) +
         theme_bw() +
         theme(text = element_text(size = 20),
@@ -448,6 +460,220 @@ multiply by 1.8 to convert organic carbon to organic matter
         facet_grid(pol~stovecat, scales = "free")
 ```
 
-```{r figure_1b, echo=FALSE, fig.width=16, fig.height=10}
+```{r figure_1, echo=FALSE, fig.width=16, fig.height=10}
  (p1 + p2 + p3) + p4 + p5 + p6 + p7 + p8 + p9 + plot_layout(ncol = 3, widths = c(1, 1.5, 1), heights = c(1.25, 1, 1))
+```
+
+# summary tables
+
+## carbon monoxide
+
+average carbon monoxide by stove type
+
+```{r, echo=FALSE}
+  co %>%
+    dplyr::group_by(stove) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average carbon monoxide by stovecat
+
+```{r, echo=FALSE}
+  co %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average carbon monoxide by fuel type
+
+```{r, echo=FALSE}
+  co %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average carbon monoxide by fuelcat
+
+```{r, echo=FALSE}
+  co %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+## ultrafines
+
+average ultrafines by stove type
+
+```{r, echo=FALSE}
+  ultrafines %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average ultrafines by stovecat
+
+```{r, echo=FALSE}
+  ultrafines %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average ultrafines by fuel type
+
+```{r, echo=FALSE}
+  ultrafines %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average ultrafines by fuelcat
+
+```{r, echo=FALSE}
+  ultrafines %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+## pm mass
+
+average pm mass by stove type
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm mass by stovecat
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm mass by fuel type
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm mass by fuelcat
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+## pm composition
+
+average pm composition by stove type
+
+```{r, echo=FALSE}
+  ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, stove) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 3:5) %>%
+    dplyr::group_by(pol_category, stove) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm composition by stovecat
+
+```{r, echo=FALSE}
+  ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 3:5) %>%
+    dplyr::group_by(pol_category, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm composition by fuel type
+
+```{r, echo=FALSE}
+  ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 3:5) %>%
+    dplyr::group_by(pol_category, fuel) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average pm composition by fuelcat
+
+```{r, echo=FALSE}
+  ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 3:5) %>%
+    dplyr::group_by(pol_category, fuelcat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
