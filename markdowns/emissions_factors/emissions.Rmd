@@ -66,7 +66,7 @@ constants
                   mass_carbon = mass_emitted * carbon_fraction) %>%
     dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg) %>%
     tidyr::gather("metric", "val", 4:6) %>%
-    dplyr::left_join(dilution, by = "id") %>%
+    dplyr::inner_join(dilution, by = "id") %>%
     dplyr::mutate(val = ifelse(pol == "ultrafines", val * (1 / ratio), val),
                   units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
                   units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
@@ -137,6 +137,18 @@ select pollutants
   knitr::kable("markdown", align = 'c')
 ```
 
+## table: number of data points (by pollutant)
+
+```{r, echo=FALSE}
+  emissions %>%
+    dplyr::filter(metric == "conc") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = nrow(.)) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
 ## table: percent of data below background (by pollutant)
 
 ```{r, echo=FALSE}
@@ -144,6 +156,7 @@ select pollutants
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
@@ -154,6 +167,7 @@ select pollutants
     dplyr::group_by(id) %>%
     dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
     knitr::kable("markdown", align = 'c')
 ```
 
