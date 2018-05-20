@@ -693,13 +693,18 @@ notes: background is below if more than 40% of data in the calculation is below 
 ```{r}
   ultrafines <-
     smps_merged %>%
-    dplyr::filter(size <= 100) %>%
+    dplyr::filter(size < 105) %>%
     dplyr::group_by(id) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE) * smps_constant,
+    dplyr::summarise(val = sum(val, na.rm = TRUE) * smps_constant * 1e6,
                      qc = first(qc)) %>%
     dplyr::left_join(bb_tests, by = c("id")) %>%
     dplyr::mutate(val = ifelse(bg == "below", NA, val))
 ```
+
+notes:
+* select size bins less than 100, including size bin with median of 101
+* convert from dN/dlogDp to dN
+* convert from cm3 to m3
 
 ## plot: time series of burns
 
