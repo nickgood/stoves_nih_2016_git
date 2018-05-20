@@ -39,6 +39,7 @@ load data
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per kilogram fuel",
                   units = ifelse(pol == "ultrafines", "number per kilogram fuel", units),
+                  val = ifelse(pol == "ultrafines", val * 1e3, val),
                   metric = "mass_fuel_ef")
 ```
 
@@ -54,6 +55,7 @@ load data
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per Megajoule fuel",
                   units = ifelse(pol == "ultrafines", "number per Megajoule fuel", units),
+                  val = ifelse(pol == "ultrafines", val * 1e3, val),
                   metric = "energy_fuel_ef")
 ```
 
@@ -69,6 +71,7 @@ load data
     dplyr::select(id, pol, pol_category, val, qc) %>%
     dplyr::mutate(units = "miligrams per Megajoule delivered",
                   units = ifelse(pol == "ultrafines", "number per Megajoule delivered", units),
+                  val = ifelse(pol == "ultrafines", val * 1e3, val),
                   metric = "energy_delivered_ef")
 ```
 
