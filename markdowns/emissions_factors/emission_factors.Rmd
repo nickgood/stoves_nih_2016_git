@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse)
+  pacman::p_load(tidyverse, kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -70,6 +70,18 @@ load data
     dplyr::mutate(units = "miligrams per Megajoule delivered",
                   units = ifelse(pol == "ultrafines", "number per Megajoule delivered", units),
                   metric = "energy_delivered_ef")
+```
+
+## table: number of data points (by pollutant)
+
+```{r, echo=FALSE}
+  energy_factors %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = nrow(.)) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 10, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
 ```{r}
