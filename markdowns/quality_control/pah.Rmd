@@ -26,6 +26,7 @@ load data
 ```{r}
   pah_raw <- readRDS("../../r_data/pah.RDS")    # pah dataset
   pah_bdl <- readRDS("../../r_data/pah_bdl.RDS")    # pah lod dataset
+  pah_add <- readRDS("../../r_data/pah_add.RDS")    # pah dataset
   data_1 <- readRDS("../../r_data/data_1.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
@@ -45,7 +46,10 @@ load schemes
     pah_raw %>%
     dplyr::mutate(id = as.character(id)) %>%
     dplyr::filter(id != "10D", id != "8E", !(id == "4C" & filter_type == "f"),
-                  !grepl("x", id_asu))
+                  !grepl("x", id_asu),
+                  !(filter_type == "f" & grepl("16C|23B", id) & pol == "anthracene"),
+                  !(filter_type == "f" & grepl("24A", id) & pol == "fluorene"),
+                  !(filter_type == "f" & grepl("16C|23B", id) & pol == "phenanthene"))
 ```
 
 ## extract lod data
@@ -54,8 +58,12 @@ load schemes
   lod <-
     pah_bdl %>%
     dplyr::mutate(id = as.character(id)) %>%
-    dplyr::filter(id != "10D", id != "8E", !(id == "4C" & filter_type == "f"),
-                  !grepl("x", id_asu)) %>%
+    dplyr::filter(id != "10D", id != "8E",
+                  !(id == "4C" & filter_type == "f"),
+                  !grepl("x", id_asu),
+                  !(filter_type == "f" & grepl("16C|23B", id) & pol == "anthracene"),
+                  !(filter_type == "f" & grepl("24A", id) & pol == "fluorene"),
+                  !(filter_type == "f" & grepl("16C|23B", id) & pol == "phenanthene")) %>%
     dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
     dplyr::select(-val) %>%
     dplyr::filter(!grepl("^27|^28|^29|^30", id))
@@ -68,9 +76,10 @@ load schemes
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
     dplyr::left_join(lod, by = c("id_asu", "id", "filter_type", "pol")) %>%
+    dplyr::select(-id_asu) %>%
+    dplyr::bind_rows(pah_add) %>%
     dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val),
                   val = as.numeric(val)) %>%
-    dplyr::select(-id_asu) %>%
     dplyr::filter(!grepl("^27|^28|^29|^30", id))
 ```
 
@@ -285,6 +294,7 @@ back pufs
   blanks <-
     pah_merged %>%
     dplyr::filter(test_type == "blank") %>%
+    na.omit %>%
     dplyr::mutate(filter_type = gsub("back |front ", "", filter_type))
 ```
 
@@ -507,7 +517,8 @@ extract background data
 ```{r}
   bg <-
     pah_merged %>%
-    dplyr::filter(test_type == "bg")
+    dplyr::filter(test_type == "bg") %>%
+    na.omit
 ```
 
 ## plot: lab background outliers
@@ -617,7 +628,9 @@ notes: most backgrounds below lod
 ```{r}
   bg <-
     bg %>%
-    dplyr::group_by(pol, filter_type) %>%
+    dplyr::group_by(pol, id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
@@ -672,7 +685,11 @@ notes: most backgrounds below lod
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::filter(test_type == "test")
+    dplyr::filter(test_type == "test") %>%
+    dplyr::group_by(id, pol)  %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     lod = first(lod))
 ```
 
 ## subtract background
@@ -680,7 +697,7 @@ notes: most backgrounds below lod
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::left_join(bg, by = c("pol", "filter_type"))
+    dplyr::left_join(bg, by = c("pol"))
 ```
 
 ```{r}
@@ -712,22 +729,6 @@ notes: remove NA values before subtracting background, because don't know how to
     dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
-
-## sum pahs
-
-```{r}
-  pah_merged <-
-  test <-
-    pah_merged %>%
-    dplyr::group_by(id, pol) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE),
-                     qc = first(qc),
-                     lod = first(lod)) %>%
-    dplyr::mutate(bg = ifelse(val == 0, "below", "above"),
-                  val = ifelse(bg == "below", NA, val))
-```
-
-note: for now, ignore NAs when summing - if all values are below bg then set bg equal to below
 
 # burn analysis
 
