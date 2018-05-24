@@ -1008,6 +1008,23 @@ notes:
   saveRDS(fivegas_merged, file = "../../r_data/fivegas_merged_avg.RDS")
 ```
 
+## calculate mce
+
+```{r}
+  mce <-
+    fivegas_merged %>%
+    dplyr::filter(grepl("co", pol)) %>%
+    dplyr::select(id, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(mce = co2 / (co + co2)) %>%
+    dplyr::left_join(sample_times %>%
+                     dplyr::mutate(dur = (end - start) / 60) %>%
+                     dplyr::select(id, dur), by = "id") %>%
+    dplyr::select(id, mce, dur)
+
+  saveRDS(mce, file = "../../r_data/mce_avg.RDS")
+```
+
 ## table: missing data at end
 
 missing carbon dioxide data
