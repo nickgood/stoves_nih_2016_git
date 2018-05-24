@@ -1,0 +1,424 @@
+---
+title: "figure 2: gas emissions"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, RColorBrewer)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
+```
+
+## format stove names
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    gsub(" ", "\n",.) %>% 
+                    forcats::fct_relevel("three\nstone\nfire",
+                                         "clay\nring",
+                                         "ceramic\ncharcoal",
+                                         "rocket\nelbow",
+                                         "built-in\nplancha",
+                                         "metal\ncharcoal",
+                                         "fan\nrocket\nelbow",
+                                         "gasifier",
+                                         "wick\nkerosene",
+                                         "pressure\nkerosene",
+                                         "lpg"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id") %>%
+    dplyr::filter(!is.na(val))
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_category = ifelse(grepl("vocs", pol_category), "volatile organic compounds", pol_category))
+```
+
+## select pollutants
+
+```{r}
+  carbonyls <-
+    emissions %>%
+    dplyr::filter(grepl("carbonyls", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  vocs <-
+    emissions %>%
+    dplyr::filter(grepl("volatile organic compounds", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+# check for outliers
+
+## carbonyls
+
+```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
+  carbonyls %>%
+    dplyr::group_by(id) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## vocs
+
+```{r, echo=FALSE, eval=FALSE,fig.width=10, fig.height=8}
+  vocs %>%
+    dplyr::group_by(id) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## remove tests
+
+```{r}
+  vocs <- 
+    vocs %>%
+    dplyr::filter(id != "5A", id != "9A")
+```
+
+## calculate stats
+
+```{r}
+  stats_carbs <-
+    carbonyls %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  stat_vocs <-
+    vocs %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+## calculate means by pollutant
+
+```{r}
+  formaldehyde <-
+    carbonyls %>%
+    dplyr::filter(pol == "formaldehyde") %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "formaldeyde")
+
+  formaldehyde_p <-
+    carbonyls %>%
+    dplyr::filter(pol != "formaldehyde") %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "all other carbonyls") %>%
+    dplyr::bind_rows(formaldehyde)
+```
+
+```{r}
+  benzene <-
+    vocs %>%
+    dplyr::filter(pol == "benzene") %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "benzene")
+
+  benzene_p <-
+    vocs %>%
+    dplyr::filter(pol != "benzene") %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "all other vocs") %>%
+    dplyr::bind_rows(benzene)
+```
+
+```{r}
+  btex <-
+    vocs %>%
+    dplyr::filter(grepl("^benzene$|^toluene$|xylene|^ethylbenzene$", pol)) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "btex")
+
+  btex_p <-
+    vocs %>%
+    dplyr::filter(!grepl("^benzene$|^toluene$|xylene|^ethylbenzene$", pol)) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_category = "all other vocs") %>%
+    dplyr::bind_rows(btex)
+```
+
+# figures
+
+```{r, echo=FALSE}
+  col_vector = c("aquamarine1",
+                 "aquamarine4")
+
+  p1 <-
+    formaldehyde_p %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stats_carbs %>%
+                dplyr::filter(grepl("traditional", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      scale_y_continuous(limits = c(0, 300)) +
+      scale_fill_manual(values = col_vector) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free") +
+      ylab("mg per MJ delivered")
+
+  p2 <-
+    formaldehyde_p %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stats_carbs %>%
+                dplyr::filter(grepl("improved", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+  
+  p3 <-
+    formaldehyde_p %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stats_carbs %>%
+                dplyr::filter(grepl("liquid", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      scale_y_continuous(limits = c(0, 100)) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "right",
+            legend.text = element_text(size = 12)) +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+```
+
+```{r, echo=FALSE, fig.width=16, fig.height=4}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+```{r, echo=FALSE}
+  col_vector = c("darkgray",
+                 "darkmagenta")
+
+  p1 <-
+    benzene_p %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("traditional", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      #scale_y_continuous(limits = c(0, 300)) +
+      scale_fill_manual(values = col_vector) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free") +
+      ylab("mg per MJ delivered")
+
+  p2 <-
+    benzene_p %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("improved", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+  
+  p3 <-
+    benzene_p %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("liquid", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      #scale_y_continuous(limits = c(0, 100)) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "right",
+            legend.text = element_text(size = 12)) +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+```
+
+```{r, echo=FALSE, fig.width=16, fig.height=4}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+```{r, echo=FALSE}
+  col_vector = c("yellowgreen",
+                 "steelblue4")
+
+  p1 <-
+    btex_p %>%
+    dplyr::filter(grepl("traditional", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("traditional", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      #scale_y_continuous(limits = c(0, 300)) +
+      scale_fill_manual(values = col_vector) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free") +
+      ylab("mg per MJ delivered")
+
+  p2 <-
+    btex_p %>%
+    dplyr::filter(grepl("improved", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("improved", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "none") +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+  
+  p3 <-
+    btex_p %>%
+    dplyr::filter(grepl("liquid", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_category, order = pol_category), stat = "identity") +
+      geom_text(data = stat_vocs %>%
+                dplyr::filter(grepl("liquid", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_bw() +
+      scale_fill_manual(values = col_vector) +
+      #scale_y_continuous(limits = c(0, 100)) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "right",
+            legend.text = element_text(size = 12)) +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+```
+
+```{r, echo=FALSE, fig.width=16, fig.height=4}
+ (p1 + p2 + p3) + plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
