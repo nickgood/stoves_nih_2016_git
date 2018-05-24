@@ -109,3 +109,14 @@ output:
 ```{r}
   saveRDS(samples, "../../r_data/samples.RDS")
 ```
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::filter(fuelcat != "background") %>%
+    dplyr::select(id, stove, fuel, fuelcat) %>%
+    dplyr::arrange(id)
+
+  readr::write_csv(samples, "../../qaqc_files/test_ids.csv")
+```
+
