@@ -564,6 +564,25 @@ summed over each scan
 
 notes: some burns have low concentrations - opt to subtract median background from all burn data
 
+```{r smps_burn_bg_conc, echo=FALSE}
+  smps_merged %>%
+    dplyr::filter(grepl("24|25|26" ,id)) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    dplyr::group_by(id, scan, test_type) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    ggplot(aes_string(y = "val", x = "scan")) +
+      geom_point(aes(color = qc), size = 2, shape = 1) +
+      theme_bw() +
+      scale_color_manual(values = qc_colors) +
+      facet_wrap(~id, scales = "free") +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("dN/dlogDp (# per cubic centimeter)")
+      
+```
+
 ## subtract background
 
 ```{r}
@@ -661,6 +680,17 @@ notes:
     dplyr::mutate(pol_category = "smps")
 
   saveRDS(smps, file = "../../r_data/smps_merged.RDS")
+```
+
+```{r}
+  smps_merged <-
+    smps_merged %>%
+    dplyr::group_by(id, pol, po_category, size) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE),
+                     qc = last(qc),
+                     bg = last(bg))
+
+  saveRDS(smps, file = "../../r_data/smps_merged_avg.RDS")
 ```
 
 ## table: missing data at end
