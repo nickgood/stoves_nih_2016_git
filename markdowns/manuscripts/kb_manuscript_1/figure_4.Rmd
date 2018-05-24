@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, corrplot, RColorBrewer)
+  pacman::p_load(tidyverse, lme4, kableExtra)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -25,114 +25,278 @@ load data
   samples <- readRDS("../../../r_data/samples.RDS")
 ```
 
-## select pollutants
-
-```{r}
-  carcinogens <-
-    emissions %>%
-    dplyr::filter(grepl("formaldehyde|^benzene$|acetaldehyde|b.a.pyrene", pol)) %>%
-    dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(id, pol, val)
-```
-
-```{r}
- emissions <-
-  emissions %>%
-  dplyr::filter(metric == "energy_delivered_ef") %>%
-  dplyr::group_by(id, pol_category) %>%
-  dplyr::distinct() %>%
-  dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-  dplyr::ungroup() %>%
-  dplyr::rename(pol = pol_category) %>%
-  dplyr::bind_rows(carcinogens) %>%
-  tidyr::spread(pol, val)
-```
+## add stove fuel info
 
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::rename("methane" = "ch4",
-                  "carbon monoxide" = "co",
-                  "carbon dioxide" = "co2",
-                  "organic carbon" = "oc",
-                  "total PAHs" = "pahs",
-                  "total PM mass" = "pm_mass",
-                  "total VOCs" = "vocs",
-                  "elemental carbon" = "ec",
-                  "inorganic ions" = "ions")
-```
-
-# all stoves
-
-```{r}
-  emissions_c <-
-    emissions %>%
-    dplyr::select(-id)
-
-  emissions_c <- round(cor(emissions_c, method = "spearman", use = "pairwise.complete.obs"), 2)
-```
-
-```{r}
-  corrplot(emissions_c, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
-           col = brewer.pal(n = 8, name = "PuOr"))
-```
-
-# traditional stoves
-
-```{r}
-  emissions_t <-
-    emissions %>%
     dplyr::left_join(samples %>%
-                       dplyr::select(id, stovecat), by = "id") %>%
-    dplyr::filter(grepl("traditional", stovecat)) %>%
-    dplyr::select(-id, -stovecat)
-```
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 
-```{r}
-  emissions_t <- round(cor(emissions_t, method = "spearman", use = "pairwise.complete.obs"), 2)
-```
-
-```{r}
-  corrplot(emissions_t, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
-           col = brewer.pal(n = 8, name = "PuOr"))
-```
-
-# improved stoves
-
-```{r}
-  emissions_i <-
+  polcat <-
     emissions %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stovecat), by = "id") %>%
-    dplyr::filter(grepl("improved", stovecat)) %>%
-    dplyr::select(-id, -stovecat)
+    dplyr::select(pol, pol_category)
 ```
 
-```{r}
-  emissions_i <- round(cor(emissions_i, method = "spearman", use = "pairwise.complete.obs"), 2)
-```
+## rename pollutants
 
 ```{r}
-  corrplot(emissions_i, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
-           col = brewer.pal(n = 8, name = "PuOr"))
-```
-
-# liquid-fueled stoves
-
-```{r}
-  emissions_l <-
+  emissions <-
     emissions %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stovecat), by = "id") %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
-    dplyr::select(-id, -stovecat)
+    dplyr::mutate(pol_category = ifelse(grepl("^oc$", pol_category), "particle-phase organic carbon", pol_category),
+                  pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon", pol_category),
+                  pol_category = ifelse(grepl("ions", pol_category), "inorganic ions", pol_category),
+                  pol_category = ifelse(grepl("^co$", pol_category), "carbon monoxide", pol_category),
+                  pol_category = ifelse(grepl("^ch4$", pol_category), "methane", pol_category),
+                  pol_category = ifelse(grepl("ultrafines", pol_category), "ultrafine particles (< 100 nm)", pol_category),
+                  pol_category = ifelse(grepl("alkanes", pol_category), "gas-phase alkanes", pol_category),
+                  pol_category = ifelse(grepl("alkenes", pol_category), "gas-phase alkenes", pol_category),
+                  pol_category = ifelse(grepl("alkynes", pol_category), "gas-phase alkynes", pol_category),
+                  pol_category = ifelse(grepl("aromatics", pol_category), "gas-phase aromatics", pol_category))
 ```
 
-```{r}
-  emissions_i <- round(cor(emissions_i, method = "spearman", use = "pairwise.complete.obs"), 2)
-```
+## filter out NAs
 
 ```{r}
-  corrplot(emissions_i, method = "circle", type = "upper", tl.col = "black", diag = FALSE,
-           col = brewer.pal(n = 8, name = "PuOr"))
+  emissions <-
+    emissions %>%
+    dplyr::filter(!is.na(val), val > 0)
+```
+
+notes: double check where zeros are coming from - rounding?
+
+## check number of data points
+
+```{r, echo=FALSE}
+  emissions %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::group_by(pol) %>% 
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 20, "blue", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* total number of burn tests were 87
+* temperature data missing for 10 tests - brings total down to 77
+
+## number of data points for liquid-fuel stoves (only three replicates of each test)
+
+```{r, echo=FALSE}
+  emissions %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val <= 2, "red", "blue"))) %>%
+    dplyr::arrange(val) %>%
+    tidyr::spread(stove, val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* the smallest number of total data points is 19 which seems like enough to run a regression analysis
+* should there be a minimum number by stove type?
+
+## log transform pollutants
+
+```{r}
+  all <-
+    emissions %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(id, pol, val, stove) %>%
+    tidyr::spread(pol, val) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
+                  co = log(co),
+                  val = log(val)) %>%
+    na.omit
+```
+
+notes:
+
+* only complete observations retained
+
+## check number of data points
+
+```{r, echo=FALSE}
+  liquid_num <-
+    all %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::mutate(val = as.numeric(val)) %>%
+    tidyr::spread(stove, val)
+
+  num_data_points <-
+    all %>%
+    dplyr::group_by(pol) %>% 
+    dplyr::count() %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(liquid_num, by = "pol") %>%
+    dplyr::arrange(n) %>%
+    dplyr::rename("pol" = "pol",
+                  "all stoves" = "n")
+
+  readr::write_csv(num_data_points,
+                   "../../../qaqc_files/num_data_points_all.csv",
+                   append = FALSE)
+```
+
+## subset
+
+```{r}
+  gases <-
+    emissions %>%
+    dplyr::filter(grepl("^benzene|formaldehyde|styrene|acetaldehyde|isoprene", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(id, pol, val, stove)
+
+  particles <-
+    emissions %>%
+    dplyr::filter(grepl("b.a.pyrene|dibenzo.*anthracene|cyclopenta.*pyrene|b.*anthracene|b...fluoranthene|indeno", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
+                  pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol)) %>%
+    dplyr::select(id, pol, val, stove)
+
+  subcat <-
+    emissions %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(id, pol_subcategory, val, stove) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(id, pol_subcategory) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::rename("pol" = "pol_subcategory") %>%
+    dplyr::distinct() %>%
+    dplyr::bind_rows(gases) %>%
+    dplyr::bind_rows(particles) %>%
+    tidyr::spread(pol, val) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
+                  co = log(co),
+                  val = log(val)) %>%
+    na.omit
+```
+
+```{r, echo=FALSE}
+  liquid_num <-
+    subcat %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::mutate(val = as.numeric(val)) %>%
+    tidyr::spread(stove, val)
+
+  num_data_points <-
+    subcat %>%
+    dplyr::group_by(pol) %>% 
+    dplyr::count() %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(liquid_num, by = "pol") %>%
+    dplyr::arrange(n) %>%
+    dplyr::rename("pol" = "pol",
+                  "all stoves" = "n")
+
+  readr::write_csv(num_data_points,
+                   "../../../qaqc_files/num_data_points_subcat.csv",
+                   append = FALSE)
+```
+
+# subcat models
+
+## run
+
+```{r}
+  subcat_m <-
+    subcat %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(mod_1 = lm(val ~ stove, data = .),
+              mod_2 = lm(val ~ pm_mass, data = .),
+              mod_3 = lm(val ~ co, data = .),
+              mod_4 = lm(val ~ pm_mass + co, data = .),
+              mod_5 = lm(val ~ pm_mass + stove, data = .),
+              mod_6 = lm(val ~ co + stove, data = .),
+              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
+    dplyr::mutate("stove type only" = summary(mod_1)$r.squared,
+                  "pm only" = summary(mod_2)$r.squared,
+                  "co only" = summary(mod_3)$r.squared,
+                  "pm and co" = summary(mod_4)$r.squared,
+                  "pm and stove type" = summary(mod_5)$r.squared,
+                  "co and stove type" = summary(mod_6)$r.squared,
+                  "pm, co, and stove type" = summary(mod_7)$r.squared) %>%
+    tidyr::gather("model", "val", -pol) %>%
+    dplyr::filter(!grepl("mod", model)) %>%
+    dplyr::mutate(val = as.numeric(val))
+```
+
+## plot
+
+* plot is sorted by R2-value of top model
+* pollutants are colored by pollutant cateogry
+
+```{r, echo=FALSE, fig.height=8}
+  subcat_m %>%
+    ggplot(aes(x = reorder(pol, val, max), y = val)) +
+      geom_point(aes(color = model), shape = 8) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00")) +
+      coord_flip() +
+      theme_bw() +
+    scale_y_continuous(limits = c(0, 1)) +
+    theme(axis.title.y = element_blank(),
+          legend.position = "top",
+          legend.title = element_blank()) +
+    ylab("R-squared value")
+```
+
+
+# full models
+
+## run
+
+```{r, eval=FALSE}
+  emissions_m <-
+    emissions %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(mod_1 = lm(val ~ stove, data = .),
+              mod_2 = lm(val ~ pm_mass, data = .),
+              mod_3 = lm(val ~ co, data = .),
+              mod_4 = lm(val ~ pm_mass + co, data = .),
+              mod_5 = lm(val ~ pm_mass + stove, data = .),
+              mod_6 = lm(val ~ co + stove, data = .),
+              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
+    dplyr::mutate("stove type only" = summary(mod_1)$r.squared,
+                  "pm only" = summary(mod_2)$r.squared,
+                  "co only" = summary(mod_3)$r.squared,
+                  "pm and co" = summary(mod_4)$r.squared,
+                  "pm and stove type" = summary(mod_5)$r.squared,
+                  "co and stove type" = summary(mod_6)$r.squared,
+                  "pm, co, and stove type" = summary(mod_7)$r.squared) %>%
+    tidyr::gather("model", "val", -pol) %>%
+    dplyr::filter(!grepl("mod", model)) %>%
+    dplyr::mutate(val = as.numeric(val))
+```
+
+## plot
+
+* plot is sorted by R2-value of top model
+* pollutants are colored by pollutant cateogry
+
+```{r, echo=FALSE, fig.height=20, eval=FALSE}
+  emissions_m %>%
+    ggplot(aes(x = reorder(pol, val, max), y = val)) +
+      geom_point(aes(color = model), shape = 8) +
+      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00")) +
+      coord_flip() +
+      theme_bw() +
+    scale_y_continuous(limits = c(0, 1)) +
+    theme(axis.title.y = element_blank(),
+          legend.position = "top",
+          legend.title = element_blank()) +
+    ylab("R-squared value")
 ```
