@@ -109,6 +109,10 @@ output:
   pah_bdl <- load_multifile(fldr = "../data/pah",
                             pattern = "BDL", inst = "pah_bdl") 
   saveRDS(pah_bdl, file = "../r_data/pah_bdl.RDS")
+
+  pah_add <- readr::read_csv(file = "../data/pah/add_on_20180521.csv")
+
+  saveRDS(pah_add, file = "../r_data/pah_add.RDS")
 ```
 
 ## pax
