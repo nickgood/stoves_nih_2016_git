@@ -237,35 +237,34 @@ notes:
 filters
 
 ```{r}
-  pah_merged %>%
+  missing_filters <-
+    pah_merged %>%
     dplyr::filter(is.na(val), test_type == "test", filter_type == "filter") %>%
     dplyr::select(pol, id) %>%
     dplyr::arrange(id) %>%
-    knitr::kable("markdown", align = 'c', digits = 2)
+    dplyr::mutate(id = gsub("$", "-P", id))
 ```
 
-front pufs
+pufs
 
 ```{r}
-  missing_front_puf <-
+  missing_front_pufs <-
     pah_merged %>%
     dplyr::filter(is.na(val), test_type == "test", filter_type == "front puf") %>%
     dplyr::select(pol, id) %>%
-    dplyr::arrange(id)
+    dplyr::arrange(id) %>%
+    dplyr::mutate(id = gsub("$", "-F", id))
 
-  write_csv(missing_front_puf, "../../missing_data/missing_front_puf.csv")
-```
-
-back pufs
-
-```{r}
-  missing_back_puf <-
+  missing_back_pufs <-
     pah_merged %>%
-    dplyr::filter(is.na(val), test_type == "test", filter_type == "back puf") %>%
+    dplyr::filter(is.na(val), test_type == "test", filter_type == "front puf") %>%
     dplyr::select(pol, id) %>%
-    dplyr::arrange(id)
-
-  write_csv(missing_back_puf, "../../missing_data/missing_back_puf.csv")
+    dplyr::arrange(id) %>%
+    dplyr::mutate(id = gsub("$", "-B", id))
+  
+  readr::write_csv(missing_filters %>%
+              dplyr::bind_rows(missing_front_pufs) %>%
+              dplyr::bind_rows(missing_back_pufs), "../../qaqc_files/na_test_filters.csv")
 ```
 
 ```{r}
@@ -275,7 +274,7 @@ back pufs
     dplyr::select(pol, id, filter_type) %>%
     dplyr::arrange(id)
 
-  write_csv(missing_backgrounds, "../../missing_data/missing_backgrounds.csv")
+  readr::write_csv(missing_backgrounds, "../../qaqc_files/missing_backgrounds.csv")
 ```
 
 ```{r}
@@ -285,7 +284,7 @@ back pufs
     dplyr::select(pol, id, filter_type) %>%
     dplyr::arrange(id)
 
-  write_csv(missing_blanks, "../../missing_data/missing_blanks.csv")
+  readr::write_csv(missing_blanks, "../../qaqc_files/missing_blanks.csv")
 ```
 
 # blank analysis 
