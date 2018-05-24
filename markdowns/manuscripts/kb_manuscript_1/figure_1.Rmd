@@ -109,7 +109,7 @@ load data
 
 ## carbon monoxide
 
-```{r, echo=FALSE, fig.width=10, fig.height=8}
+```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
   co %>%
     ggplot(aes(x = id, y = val, color = fuel)) +
     geom_point() +
@@ -203,6 +203,30 @@ load data
     dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
 ```
 
+```{r}
+  range_ultrafines <-
+    ultrafines %>%
+    na.omit %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  range_co <-
+    co %>%
+    na.omit %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+
 ## average pm mass by stove type
 
 ```{r}
@@ -246,9 +270,7 @@ load data
   ultrafines_p <-
     ultrafines %>%
     dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
     dplyr::mutate(pol_category = "ultrafine particles")
 ```
 
@@ -259,9 +281,8 @@ load data
     co %>%
     dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::mutate(val = val / 1000) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE))
+    dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::mutate(pol_category = "carbon monoxide")
 ```
 
 ## figure 1
@@ -276,19 +297,21 @@ load data
                    dplyr::filter(grepl("traditional", stovecat)),
                    aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
     scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
+    scale_y_continuous(limits = c(0, 1000)) +
+    annotate("text", x = 1, y = 1000, label = "XXX", size = 5) +
+    annotate("text", x = 2, y = 1000, label = "XXX", size = 5) +
     geom_text(data = range_pm %>%
               dplyr::filter(grepl("traditional", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
     theme_bw() +
     theme(text = element_text(size = 20),
-          axis.title.y = element_text(size = 14),
           axis.text.y = element_text(size = 18),
           axis.text.x = element_blank(),
           axis.title.x = element_blank(),
           legend.position = "none") +
     guides(fill = guide_legend(title = NULL)) +
-    facet_wrap(~stovecat, scales = "free") +
-    ylab("mg emitted per MJ delivered")
+    facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
+    ylab("mg per MJ delivered")
 
   p2 <-
     pm_mass_p %>%
@@ -299,7 +322,9 @@ load data
                      dplyr::filter(grepl("improved", stovecat)),
                      aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-      scale_y_continuous(limits = c(0, 1000)) +
+      annotate("text", x = 1, y = 500, label = "XXX", size = 5) +
+      annotate("text", x = 2, y = 500, label = "XXX", size = 5) +
+      scale_y_continuous(limits = c(0, 500)) +
       geom_text(data = range_pm %>%
                 dplyr::filter(grepl("improved", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.04) +
@@ -323,12 +348,13 @@ load data
                      aes(x = stove, y = val, fill = pol, order = pol),
                      stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
+      annotate("text", x = 1, y = 10, label = "XXX", size = 5) +
       geom_text(data = range_pm %>%
                   dplyr::filter(grepl("liquid", stovecat)),
                 aes(x = stove, y = val, label = sym),
                 stroke = 2, size = 10, angle = 90, nudge_x = -0.02) +
       theme_bw() +
-      scale_y_continuous(limits = c(0, 25)) +
+      scale_y_continuous(limits = c(0, 10)) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
@@ -337,7 +363,7 @@ load data
             legend.position = "right",
             legend.text = element_text(size = 12)) +
       guides(fill = guide_legend(title = NULL)) +
-      facet_grid(pol_category~stovecat, scales = "free")
+      facet_wrap(~stovecat, scales = "free")
 ```
 
 ```{r, echo=FALSE}
@@ -345,31 +371,32 @@ load data
     ultrafines_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol_category), size = 5, stroke = 2, color = "#56B4E9") +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "#56B4E9") +
+      geom_text(data = range_ultrafines %>%
+                dplyr::filter(grepl("traditional", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_bw() +
-        scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
+        #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
-              axis.title.y = element_text(size = 14),
               axis.text.x = element_blank(),
               strip.text.x = element_blank(),
               axis.title.x = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
-        facet_wrap(~stovecat, scales = "free") +
-        ylab("num. emitted per MJ delivered")
+        facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
+        ylab("num. per MJ delivered")
 
   p5 <- 
     ultrafines_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol_category), size = 5, stroke = 2, color = "#56B4E9") +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "#56B4E9") +
+      geom_text(data = range_ultrafines %>%
+                dplyr::filter(grepl("improved", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_bw() +
-        scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
+        #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               axis.text.x = element_blank(),
@@ -383,11 +410,12 @@ load data
     ultrafines_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol_category), size = 5, stroke = 2, color = "#56B4E9") +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "#56B4E9") +
+      geom_text(data = range_ultrafines %>%
+                dplyr::filter(grepl("liquid", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_bw() +
-        scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
+        #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               strip.text.x = element_blank(),
@@ -398,7 +426,7 @@ load data
               legend.position = "none",
               legend.text = element_text(size = 12)) +
         guides(fill = guide_legend(title = NULL)) +
-        facet_grid(pol_category~stovecat, scales = "free")
+        facet_wrap(~stovecat, scales = "free")
 ```
 
 ```{r, echo=FALSE}
@@ -406,32 +434,35 @@ load data
     co_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "mediumslateblue") +
+      geom_text(data = range_co %>%
+                dplyr::filter(grepl("traditional", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         scale_y_continuous(limits = c(0, 40)) +
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
-              axis.title.y = element_text(size = 14),
+              axis.text.x = element_blank(),
               axis.title.x = element_blank(),
               strip.text.x = element_blank(),
               legend.position = "none") +
         guides(fill = guide_legend(title = NULL)) +
-        facet_wrap(~stovecat, scales = "free") +
-        ylab("g emitted per MJ delivered")
+        facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
+        ylab("grams per MJ delivered")
 
   p8 <- 
     co_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "mediumslateblue") +
+      geom_text(data = range_co %>%
+                dplyr::filter(grepl("improved", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_bw() +
         scale_y_continuous(limits = c(0, 40)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
+              axis.text.x = element_blank(),
               axis.title.x = element_blank(),
               strip.text.x = element_blank(),
               axis.title.y = element_blank(),
@@ -443,25 +474,27 @@ load data
     co_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
-        geom_errorbar(aes(ymin = min, ymax = max), width = 0, size = 1) +
-        geom_point(aes(shape = pol), size = 5, color = "chocolate1", stroke = 2) +
-        scale_shape_manual(values = c(8)) +
+      geom_histogram(stat = "identity", fill = "mediumslateblue") +
+      geom_text(data = range_co %>%
+                dplyr::filter(grepl("liquid", stovecat)),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         scale_y_continuous(limits = c(0, 4)) +
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               axis.title.x = element_blank(),
               strip.text.x = element_blank(),
+              axis.text.x = element_blank(),
               legend.title = element_blank(),
               axis.title.y = element_blank(),
               legend.position = "none",
               legend.text = element_text(size = 12)) +
         guides(fill = guide_legend(title = NULL)) +
-        facet_grid(pol~stovecat, scales = "free")
+        facet_wrap(~stovecat, scales = "free")
 ```
 
 ```{r figure_1, echo=FALSE, fig.width=16, fig.height=10}
- (p1 + p2 + p3) + p4 + p5 + p6 + p7 + p8 + p9 + plot_layout(ncol = 3, widths = c(1, 1.5, 1), heights = c(1.25, 1, 1))
+ (p1 + p2 + p3) + p7 + p8 + p9 + p4 + p5 + p6 + plot_layout(ncol = 3, widths = c(1, 1.5, 1), heights = c(1.25, 1, 1))
 ```
 
 # summary tables
@@ -477,7 +510,8 @@ average carbon monoxide by stove type
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+      dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -490,6 +524,7 @@ average carbon monoxide by stovecat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+      dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -502,6 +537,7 @@ average carbon monoxide by fuel type
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+      dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -514,6 +550,7 @@ average carbon monoxide by fuelcat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+      dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -527,7 +564,9 @@ average ultrafines by stove type
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -539,6 +578,8 @@ average ultrafines by stovecat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -550,6 +591,8 @@ average ultrafines by fuel type
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -561,6 +604,8 @@ average ultrafines by fuelcat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -627,6 +672,7 @@ average pm composition by stove type
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
+    dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -643,6 +689,7 @@ average pm composition by stovecat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -659,6 +706,7 @@ average pm composition by fuel type
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -675,5 +723,6 @@ average pm composition by fuelcat
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
