@@ -137,51 +137,50 @@ load data
 ## calculate means by pollutant
 
 ```{r}
-  gases <-
+  gases_p <-
     gases %>%
     dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(pol_category = "gas phase emissions")
+    dplyr::mutate(pol_category = "gas-phase carcinogens")
 ```
 
 ```{r}
-  particles <-
+  particles_p <-
     particles %>%
     dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(pol_category = "particle phase emissions")
+    dplyr::mutate(pol_category = "particle-phase carcinogens")
 ```
 
 # figures
 
 ```{r, echo=FALSE}
   p1 <-
-    gases %>%
+    gases_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
       geom_text(data = stats_gases %>%
                 dplyr::filter(grepl("traditional", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue4")) +
+      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
       scale_y_continuous(limits = c(0, 400)) +
       theme_bw() +
       theme(text = element_text(size = 20),
-            axis.title.y = element_text(size = 16),
             axis.text.y = element_text(size = 18),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
             legend.position = "none") +
       guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free") +
-      ylab("mg emitted per MJ delivered")
+      facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
+      ylab("mg per MJ delivered")
 
   p2 <-
-    gases %>%
+    gases_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
@@ -189,7 +188,8 @@ load data
                 dplyr::filter(grepl("improved", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_bw() +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue4")) +
+      scale_y_continuous(limits = c(0, 200)) +
+      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
@@ -200,7 +200,7 @@ load data
       facet_wrap(~stovecat, scales = "free")
   
   p3 <-
-    gases %>%
+    gases_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
@@ -208,7 +208,7 @@ load data
                 dplyr::filter(grepl("liquid", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_bw() +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue4")) +
+      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
@@ -217,12 +217,12 @@ load data
             legend.position = "right",
             legend.text = element_text(size = 12)) +
       guides(fill = guide_legend(title = NULL)) +
-      facet_grid(pol_category~stovecat, scales = "free")
+      facet_wrap(~stovecat, scales = "free")
 ```
 
 ```{r, echo=FALSE}
   p4 <-
-    particles %>%
+    particles_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
@@ -230,20 +230,23 @@ load data
                 dplyr::filter(grepl("traditional", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
-      scale_y_continuous(limits = c(0, 12)) +
+      scale_y_continuous(limits = c(0, 5)) +
+      annotate("text", x = 1, y = 5, label = "7.1", size = 5) +
+      annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
       theme_bw() +
       theme(text = element_text(size = 20),
-            axis.title.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.y = element_text(size = 18),
+            axis.text.x = element_blank(),
             strip.text.x = element_blank(),
             legend.position = "none") +
       guides(fill = guide_legend(title = NULL)) +
       facet_wrap(~stovecat, scales = "free") +
-      ylab("mg emitted per MJ delivered")
+      ylab("mg per MJ delivered") +
+      facet_grid(pol_category~stovecat, scales = "free", switch = "y")
 
   p5 <-
-    particles %>%
+    particles_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
@@ -251,9 +254,12 @@ load data
                 dplyr::filter(grepl("improved", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
+      scale_y_continuous(limits = c(0, 5)) +
+      annotate("text", x = 1, y = 5, label = "14.8", size = 5) +
       theme_bw() +
       theme(text = element_text(size = 20),
             axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             strip.text.x = element_blank(),
@@ -262,7 +268,7 @@ load data
       facet_wrap(~stovecat, scales = "free")
   
   p6 <-
-    particles %>%
+    particles_p %>%
     dplyr::filter(grepl("liquid", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
@@ -271,18 +277,351 @@ load data
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
       theme_bw() +
+      scale_y_continuous(limits = c(0, 0.4)) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
+            axis.text.x = element_blank(),
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
             strip.text.x = element_blank(),
             legend.position = "right",
             legend.text = element_text(size = 12)) +
       guides(fill = guide_legend(title = NULL)) +
-      facet_grid(pol_category~stovecat, scales = "free")
+      facet_wrap(~stovecat, scales = "free")
 ```
 
 ```{r figure_1b, echo=FALSE, fig.width=16, fig.height=8}
  (p1 + p2 + p3) +
   p4 + p5 + p6 +  plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```
+
+# tables
+
+##  gas-phase carcinogens 
+
+average gas-phase carcinogens by stove type (total)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average benzene by stove type
+
+```{r, echo=FALSE}
+  gases %>%
+      dplyr::filter(grepl("benzene", pol)) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by stove type (by pollutant)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(stove, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by stovecat (total)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+fraction of total carcinogenic emissions made up of formaldehyde
+
+```{r, echo=FALSE}
+  formaldehyde <-
+    gases %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::filter(grepl("form", pol)) %>%
+    dplyr::summarise(form_mean = mean(val, na.rm = TRUE))
+
+  gases %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(formaldehyde, by = "stovecat") %>%
+    dplyr::mutate(ratio = form_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+fraction of total emissions made up of benzene
+
+```{r, echo=FALSE}
+  benzene <-
+    gases %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::filter(grepl("benzene", pol)) %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(benzene_mean = mean(val, na.rm = TRUE))
+
+  gases %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(benzene, by = "stovecat") %>%
+    dplyr::mutate(ratio = benzene_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by stove type (by pollutant)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(stovecat, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(stovecat, mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by fuel type (total)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(id, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by fuelcat
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(id, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average gas-phase carcinogens by fuelcat (by pollutant)
+
+```{r, echo=FALSE}
+  gases %>%
+    dplyr::group_by(fuelcat, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(fuelcat, mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+##  particle-phase carcinogens 
+
+average particle-phase carcinogens by stove type (total)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average bap by stove type
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+fraction of total carcinogenic emissions made up of bap
+
+```{r, echo=FALSE}
+  bap <-
+    particles %>%
+    dplyr::group_by(stovecat, stove) %>%
+    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
+    dplyr::summarise(bap_mean = mean(val, na.rm = TRUE))
+
+  particles %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(bap, by = "stovecat") %>%
+    dplyr::mutate(ratio = bap_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+        dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average particle-phase carcinogens by stove type (by pollutant)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(stove, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average particle-phase carcinogens by stovecat (total)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+fraction of total carcinogenic emissions made up of bap
+
+```{r, echo=FALSE}
+  bap <-
+    particles %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
+    dplyr::summarise(bap_mean = mean(val, na.rm = TRUE))
+
+  particles %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(bap, by = "stovecat") %>%
+    dplyr::mutate(ratio = bap_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+
+average particle-phase carcinogens by stove type (by pollutant)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(stovecat, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(stovecat, mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average particle-phase carcinogens by fuel type (total)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(id, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(fuel) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average particles-phase carcinogens by fuelcat
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(id, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average particle-phase carcinogens by fuelcat (by pollutant)
+
+```{r, echo=FALSE}
+  particles %>%
+    dplyr::group_by(fuelcat, pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(fuelcat, mean) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
