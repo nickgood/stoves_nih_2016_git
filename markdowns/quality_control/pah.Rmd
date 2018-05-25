@@ -64,9 +64,9 @@ load schemes
                   !(filter_type == "f" & grepl("16C|23B", id) & pol == "anthracene"),
                   !(filter_type == "f" & grepl("24A", id) & pol == "fluorene"),
                   !(filter_type == "f" & grepl("16C|23B", id) & pol == "phenanthene")) %>%
-    dplyr::mutate(lod = ifelse(val == "BDL", "below", "above")) %>%
-    dplyr::select(-val) %>%
-    dplyr::filter(!grepl("^27|^28|^29|^30", id))
+    dplyr::filter(val == "BDL", !grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::mutate(lod = "below") %>%
+    dplyr::select(id, pol, filter_type, lod)
 ```
 
 ## replace with lod/sqrt(2) 
@@ -75,12 +75,54 @@ load schemes
   pah <- 
     pah_raw %>% 
     dplyr::mutate(val = as.numeric(val)) %>%
-    dplyr::left_join(lod, by = c("id_asu", "id", "filter_type", "pol")) %>%
     dplyr::select(-id_asu) %>%
+    dplyr::left_join(lod, by = c("id", "filter_type", "pol")) %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(lod = ifelse(is.na(lod), "above", lod)) %>%
     dplyr::bind_rows(pah_add) %>%
     dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val),
                   val = as.numeric(val)) %>%
-    dplyr::filter(!grepl("^27|^28|^29|^30", id))
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::mutate(id = ifelse(id == "10D", "1D", id),
+                  id = ifelse(id == "8E", "6E", id)) %>%
+    dplyr::distinct()
+```
+
+## look at duplicates
+
+```{r}
+  duplicates <-
+    pah %>%
+      dplyr::group_by(id, pol, filter_type) %>%
+      dplyr::summarise(n = n()) %>%
+      dplyr::filter(n > 1) %>%
+      dplyr::select(-n)
+```
+
+```{r}
+  duplicate_vals <-
+    pah %>%
+      dplyr::inner_join(duplicates, by = c("id", "pol", "filter_type")) %>%
+      dplyr::arrange(id, pol)
+
+  readr::write_csv(duplicate_vals, "../../qaqc_files/duplicate_vals.csv")
+```
+
+```{r}
+  zero_vals <-
+    pah %>%
+      dplyr::filter(val == 0) %>%
+      dplyr::arrange(id, pol)
+
+  readr::write_csv(zero_vals, "../../qaqc_files/zero_vals.csv")
+```
+
+## filter out zeros and NAs
+
+```{r}
+  pah <- 
+    pah %>%
+    dplyr::filter(val != 0, !is.na(val))
 ```
 
 ## consolidate duplicate measurements
@@ -110,9 +152,9 @@ load schemes
 ## ignore naphthalene
 
 ```{r}
-  pah <-
-    pah %>%
-    dplyr::filter(pol != "napthalene")
+  # pah <-
+  #   pah %>%
+  #   dplyr::filter(pol != "napthalene")
 ```
 
 ## flags
@@ -225,23 +267,42 @@ notes:
 # manually fix NAs based on Pierre's email
 
 ```{r}
+  manual_vals <-
+    tibble::data_frame(pol = c("fluorene", "fluorene", "fluorene"),
+                       id = c("18B", "19A", "9A"),
+                       filter_type = c("filter", "filter", "filter"),
+                       val = c(0.07 / sqrt(2), 0.145 / sqrt(2), 0.215 / sqrt(2)),
+                       lod = c("below", "below", "below"),
+                       qc = c("ok", "ok", "ok"),
+                       test_type = c("test", "test", "test"))
+
+
   pah_merged <-
     pah_merged %>%
-    dplyr::mutate(val = ifelse(id == "18B" & filter_type == "filter" & pol == "fluorene", 0.07 / sqrt(2), val),
-                  val = ifelse(id == "19A" & filter_type == "filter" & pol == "fluorene", 0.145 / sqrt(2), val),
-                  val = ifelse(id == "9A" & filter_type == "filter" & pol == "fluorene", 0.215 / sqrt(2), val))
+    dplyr::bind_rows(manual_vals)
 ```
 
 # samples to rerun
+
+```{r}
+  all_vals <-
+    pah_merged %>%
+    dplyr::select(id, pol) %>%
+    dplyr::full_join(dplyr::select(samples, id), by = "id") %>%
+    dplyr::filter(!grepl("^G", id), !grepl("^B", id), !grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::distinct() %>%
+    tidyr::expand(id, pol)
+```
 
 filters
 
 ```{r}
   missing_filters <-
-    pah_merged %>%
-    dplyr::filter(is.na(val), test_type == "test", filter_type == "filter") %>%
-    dplyr::select(pol, id) %>%
-    dplyr::arrange(id) %>%
+    all_vals %>%
+    dplyr::anti_join(pah_merged %>%
+    dplyr::filter(!grepl("^G", id), !grepl("^B", id), !grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::filter(filter_type == "filter"), by = c("id", "pol")) %>%
+    dplyr::filter(!grepl("14C|21A", id)) %>%
     dplyr::mutate(id = gsub("$", "-P", id))
 ```
 
@@ -249,22 +310,24 @@ pufs
 
 ```{r}
   missing_front_pufs <-
-    pah_merged %>%
-    dplyr::filter(is.na(val), test_type == "test", filter_type == "front puf") %>%
-    dplyr::select(pol, id) %>%
-    dplyr::arrange(id) %>%
+    all_vals %>%
+    dplyr::anti_join(pah_merged %>%
+    dplyr::filter(!grepl("^G", id), !grepl("^B", id), !grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::filter(filter_type == "front puf"), by = c("id", "pol")) %>%
     dplyr::mutate(id = gsub("$", "-F", id))
 
   missing_back_pufs <-
-    pah_merged %>%
-    dplyr::filter(is.na(val), test_type == "test", filter_type == "front puf") %>%
-    dplyr::select(pol, id) %>%
-    dplyr::arrange(id) %>%
+    all_vals %>%
+    dplyr::anti_join(pah_merged %>%
+    dplyr::filter(!grepl("^G", id), !grepl("^B", id), !grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::filter(filter_type == "back puf"), by = c("id", "pol")) %>%
     dplyr::mutate(id = gsub("$", "-B", id))
   
   readr::write_csv(missing_filters %>%
-              dplyr::bind_rows(missing_front_pufs) %>%
-              dplyr::bind_rows(missing_back_pufs), "../../qaqc_files/na_test_filters.csv")
+                     dplyr::bind_rows(missing_front_pufs) %>%
+                     dplyr::bind_rows(missing_back_pufs) %>%
+                     dplyr::arrange(id, pol),
+                   "../../qaqc_files/missing_test_filters.csv")
 ```
 
 ```{r}
