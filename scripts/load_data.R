@@ -349,7 +349,7 @@ load_ions_file <- function(file, sheet = "ug"){
 
 #________________________________________________________
 # load pah file
-# file <- "data/pah/PAH_20171004.csv"
+# file <- "data/pah/PAH_20180525.csv"
 # file <- "data/pah/PAH_20171004_BDL.csv"
 load_pah_file <- function(file){
 
@@ -369,7 +369,33 @@ load_pah_file <- function(file){
                             x1 = ifelse(x1 == "68-P", "G8-P", x1),
                             x1 = ifelse(x1 == "GB-B", "G13-B", x1))
 
-  raw_data <- raw_data[-133, ]
+  # filter out bad duplicates
+  if(grepl("20180525", file)) {
+    raw_data <- raw_data[-133, ]
+    raw_data <- raw_data[-234, ]
+    
+    raw_data <-
+      raw_data %>%
+      dplyr::filter(x1 != "13A-P",
+                    x1 != "15A-P",
+                    x1 != "16A-P",
+                    x1 != "16C-P",
+                    x1 != "18A-P",
+                    x1 != "18A-F",
+                    x1 != "18B-P",
+                    x1 != "19A-P",
+                    x1 != "21A-P",
+                    x1 != "22A-P",
+                    x1 != "23A-P",
+                    x1 != "24A-P",
+                    x1 != "2A-P",
+                    x1 != "4A-P",
+                    x1 != "6A-F",
+                    x1 != "6A-P",
+                    x1 != "6A-B",
+                    x1 != "9A-P",
+                    x1 != "9B-P")
+  }
 
   # organize
   out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
