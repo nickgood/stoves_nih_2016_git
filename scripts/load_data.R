@@ -369,6 +369,8 @@ load_pah_file <- function(file){
                             x1 = ifelse(x1 == "68-P", "G8-P", x1),
                             x1 = ifelse(x1 == "GB-B", "G13-B", x1))
 
+  raw_data <- raw_data[-133, ]
+
   # organize
   out <- raw_data %>% dplyr::rename(id_asu = "x1") %>%
          tidyr::gather(pol, val, -id_asu) %>%
