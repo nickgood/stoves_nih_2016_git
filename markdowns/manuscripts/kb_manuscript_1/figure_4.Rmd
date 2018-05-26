@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, lme4, kableExtra)
+  pacman::p_load(tidyverse, lme4, kableExtra, stats4)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -32,10 +32,6 @@ load data
     emissions %>%
     dplyr::left_join(samples %>%
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
-
-  polcat <-
-    emissions %>%
-    dplyr::select(pol, pol_category)
 ```
 
 ## rename pollutants
@@ -43,16 +39,19 @@ load data
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::mutate(pol_category = ifelse(grepl("^oc$", pol_category), "particle-phase organic carbon", pol_category),
-                  pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon", pol_category),
-                  pol_category = ifelse(grepl("ions", pol_category), "inorganic ions", pol_category),
-                  pol_category = ifelse(grepl("^co$", pol_category), "carbon monoxide", pol_category),
-                  pol_category = ifelse(grepl("^ch4$", pol_category), "methane", pol_category),
-                  pol_category = ifelse(grepl("ultrafines", pol_category), "ultrafine particles (< 100 nm)", pol_category),
-                  pol_category = ifelse(grepl("alkanes", pol_category), "gas-phase alkanes", pol_category),
-                  pol_category = ifelse(grepl("alkenes", pol_category), "gas-phase alkenes", pol_category),
-                  pol_category = ifelse(grepl("alkynes", pol_category), "gas-phase alkynes", pol_category),
-                  pol_category = ifelse(grepl("aromatics", pol_category), "gas-phase aromatics", pol_category))
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                  pol_subcategory = ifelse(grepl("organic carbon", pol_subcategory), "particle-phase organic carbon", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ions", pol_subcategory), "inorganic ions", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "ultrafine particles", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkanes", pol_subcategory), "gas-phase alkanes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkenes", pol_subcategory), "gas-phase alkenes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkynes", pol_subcategory), "gas-phase alkynes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
+                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("carbohydrates", pol_subcategory), "total carbohydrates", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("carbonyls", pol_subcategory), "total carbonyls", pol_subcategory))
 ```
 
 ## filter out NAs
@@ -67,7 +66,7 @@ notes: double check where zeros are coming from - rounding?
 
 ## check number of data points
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   emissions %>%
     dplyr::filter(metric == "energy_delivered_ef") %>%
     dplyr::group_by(pol) %>% 
@@ -84,7 +83,7 @@ notes:
 
 ## number of data points for liquid-fuel stoves (only three replicates of each test)
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   emissions %>%
     dplyr::filter(metric == "energy_delivered_ef") %>%
     dplyr::group_by(pol, stove) %>%
@@ -153,7 +152,7 @@ notes:
     emissions %>%
     dplyr::filter(grepl("^benzene|formaldehyde|styrene|acetaldehyde|isoprene", pol)) %>%
     dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(id, pol, val, stove)
+    dplyr::select(id, pol, val, stove, stovecat)
 
   particles <-
     emissions %>%
@@ -162,13 +161,14 @@ notes:
     dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
                   pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
                   pol = gsub("b\\[",  "benzo\\[", pol),
-                  pol = gsub("b\\[",  "benzo\\[", pol)) %>%
-    dplyr::select(id, pol, val, stove)
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("benz\\[",  "benzo\\[", pol)) %>%
+    dplyr::select(id, pol, val, stove, stovecat)
 
   subcat <-
     emissions %>%
     dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(id, pol_subcategory, val, stove) %>%
+    dplyr::select(id, pol_subcategory, val, stove, stovecat) %>%
     dplyr::ungroup() %>%
     dplyr::group_by(id, pol_subcategory) %>%
     dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
@@ -177,7 +177,7 @@ notes:
     dplyr::bind_rows(gases) %>%
     dplyr::bind_rows(particles) %>%
     tidyr::spread(pol, val) %>%
-    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -stovecat) %>%
     dplyr::mutate(pm_mass = log(pm_mass),
                   co = log(co),
                   val = log(val)) %>%
@@ -240,20 +240,180 @@ notes:
 * plot is sorted by R2-value of top model
 * pollutants are colored by pollutant cateogry
 
-```{r, echo=FALSE, fig.height=8}
+```{r models_r2, echo=FALSE, fig.height=6, fig.width=10}
   subcat_m %>%
+  dplyr::mutate(model = 
+                  model %>%
+                  factor %>%
+                  forcats::fct_relevel("stove type only",
+                                       "pm only",
+                                       "co only",
+                                       "pm and co",
+                                       "pm and stove type",
+                                       "co and stove type",
+                                       "pm, co, and stove type")) %>%
     ggplot(aes(x = reorder(pol, val, max), y = val)) +
-      geom_point(aes(color = model), shape = 8) +
-      scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00")) +
+      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
+      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
+                                    "turquoise3", "turquoise3", "turquoise3")) +
+      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4)) +
       coord_flip() +
       theme_bw() +
     scale_y_continuous(limits = c(0, 1)) +
-    theme(axis.title.y = element_blank(),
-          legend.position = "top",
+    theme(text = element_text(size = 12),
+          axis.title.y = element_blank(),
+          legend.position = "right",
           legend.title = element_blank()) +
     ylab("R-squared value")
 ```
 
+# subcat models
+
+## run
+
+```{r}
+  subcat_npk_m <-
+    subcat %>%
+    dplyr::filter(!grepl("pressure", stove)) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(mod_1 = lm(val ~ stove, data = .),
+              mod_2 = lm(val ~ pm_mass, data = .),
+              mod_3 = lm(val ~ co, data = .),
+              mod_4 = lm(val ~ pm_mass + co, data = .),
+              mod_5 = lm(val ~ pm_mass + stove, data = .),
+              mod_6 = lm(val ~ co + stove, data = .),
+              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
+    dplyr::mutate("stove type only" = summary(mod_1)$r.squared,
+                  "pm only" = summary(mod_2)$r.squared,
+                  "co only" = summary(mod_3)$r.squared,
+                  "pm and co" = summary(mod_4)$r.squared,
+                  "pm and stove type" = summary(mod_5)$r.squared,
+                  "co and stove type" = summary(mod_6)$r.squared,
+                  "pm, co, and stove type" = summary(mod_7)$r.squared) %>%
+    tidyr::gather("model", "val", -pol) %>%
+    dplyr::filter(!grepl("mod", model)) %>%
+    dplyr::mutate(npk_val = as.numeric(val)) %>%
+    dplyr::select(-val) %>%
+    dplyr::left_join(subcat_m, by = c("pol", "model")) %>%
+    dplyr::mutate(ratio = npk_val / val)
+```
+
+## plot
+
+* plot is sorted by R2-value of top model
+* pollutants are colored by pollutant cateogry
+
+```{r models_ratio, echo=FALSE, fig.height=6, fig.width=10}
+  subcat_npk_m %>%
+  dplyr::mutate(model = 
+                  model %>%
+                  factor %>%
+                  forcats::fct_relevel("stove type only",
+                                       "pm only",
+                                       "co only",
+                                       "pm and co",
+                                       "pm and stove type",
+                                       "co and stove type",
+                                       "pm, co, and stove type")) %>%
+    ggplot(aes(x = reorder(pol, val, max), y = ratio)) +
+      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
+      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
+                                    "turquoise3", "turquoise3", "turquoise3")) +
+      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4)) +
+      coord_flip() +
+      theme_bw() +
+    scale_y_continuous(limits = c(0, 1)) +
+    theme(text = element_text(size = 12),
+          axis.title.y = element_blank(),
+          legend.position = "right",
+          legend.title = element_blank()) +
+    ylab("R-squared without pressure kerosene/R-squared with pressure kerosene")
+```
+
+```{r models_npk, echo=FALSE, fig.height=6, fig.width=10}
+  subcat_npk_m %>%
+  dplyr::mutate(model = 
+                  model %>%
+                  factor %>%
+                  forcats::fct_relevel("stove type only",
+                                       "pm only",
+                                       "co only",
+                                       "pm and co",
+                                       "pm and stove type",
+                                       "co and stove type",
+                                       "pm, co, and stove type")) %>%
+    ggplot(aes(x = reorder(pol, val, max), y = npk_val)) +
+      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
+      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
+                                    "turquoise3", "turquoise3", "turquoise3")) +
+      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4)) +
+      coord_flip() +
+      theme_bw() +
+    scale_y_continuous(limits = c(0, 1)) +
+    theme(text = element_text(size = 12),
+          axis.title.y = element_blank(),
+          legend.position = "right",
+          legend.title = element_blank()) +
+    ylab("R-squared (without pressure kerosene stove)")
+```
+
+# BIC plot
+
+## run
+
+```{r}
+  subcat_bic <-
+    subcat %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(mod_1 = lm(val ~ stove, data = .),
+              mod_2 = lm(val ~ pm_mass, data = .),
+              mod_3 = lm(val ~ co, data = .),
+              mod_4 = lm(val ~ pm_mass + co, data = .),
+              mod_5 = lm(val ~ pm_mass + stove, data = .),
+              mod_6 = lm(val ~ co + stove, data = .),
+              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
+    dplyr::mutate("stove type only" = stats4::BIC(mod_1),
+                  "pm only" = stats4::BIC(mod_2),
+                  "co only" = stats4::BIC(mod_3),
+                  "pm and co" = stats4::BIC(mod_4),
+                  "pm and stove type" = stats4::BIC(mod_5),
+                  "co and stove type" = stats4::BIC(mod_6),
+                  "pm, co, and stove type" = stats4::BIC(mod_7)) %>%
+    tidyr::gather("model", "val", -pol) %>%
+    dplyr::filter(!grepl("mod", model)) %>%
+    dplyr::mutate(val = as.numeric(val))
+```
+
+## plot
+
+* plot is sorted by R2-value of top model
+* pollutants are colored by pollutant cateogry
+
+```{r models_bic, echo=FALSE, fig.height=6, fig.width=10}
+  subcat_bic %>%
+  dplyr::mutate(model = 
+                  model %>%
+                  factor %>%
+                  forcats::fct_relevel("stove type only",
+                                       "pm only",
+                                       "co only",
+                                       "pm and co",
+                                       "pm and stove type",
+                                       "co and stove type",
+                                       "pm, co, and stove type")) %>%
+    ggplot(aes(x = reorder(pol, val, max), y = val)) +
+      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
+      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
+                                    "turquoise3", "turquoise3", "turquoise3")) +
+      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4)) +
+      coord_flip() +
+      theme_bw() +
+    theme(text = element_text(size = 12),
+          axis.title.y = element_blank(),
+          legend.position = "right",
+          legend.title = element_blank()) +
+    ylab("BIC")
+```
 
 # full models
 
@@ -287,16 +447,28 @@ notes:
 * plot is sorted by R2-value of top model
 * pollutants are colored by pollutant cateogry
 
-```{r, echo=FALSE, fig.height=20, eval=FALSE}
+```{r, echo=FALSE, fig.height=20, eval=FALSE, fig.width=12}
   emissions_m %>%
+  dplyr::mutate(model = 
+                  model %>%
+                  factor %>%
+                  forcats::fct_relevel("stove type only",
+                                       "pm only",
+                                       "co only",
+                                       "pm and co",
+                                       "pm and stove type",
+                                       "co and stove type",
+                                       "pm, co, and stove type") %>%
+                  forcats::fct_rev()) %>%
     ggplot(aes(x = reorder(pol, val, max), y = val)) +
       geom_point(aes(color = model), shape = 8) +
       scale_color_manual(values = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00")) +
       coord_flip() +
       theme_bw() +
     scale_y_continuous(limits = c(0, 1)) +
-    theme(axis.title.y = element_blank(),
-          legend.position = "top",
+    theme(text = element_text(size = 16),
+          axis.title.y = element_blank(),
+          legend.position = "right",
           legend.title = element_blank()) +
     ylab("R-squared value")
 ```
