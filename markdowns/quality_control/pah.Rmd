@@ -99,6 +99,7 @@ load schemes
       dplyr::select(-n)
 ```
 
+
 ```{r}
   duplicate_vals <-
     pah %>%
@@ -300,10 +301,12 @@ filters
   missing_filters <-
     all_vals %>%
     dplyr::anti_join(pah_merged %>%
-    dplyr::filter(!grepl("^G", id), !grepl("^B", id), !grepl("^27|^28|^29|^30", id)) %>%
-    dplyr::filter(filter_type == "filter"), by = c("id", "pol")) %>%
-    dplyr::filter(!grepl("14C|21A", id)) %>%
-    dplyr::mutate(id = gsub("$", "-P", id))
+                       dplyr::filter(!grepl("^G", id),
+                                     !grepl("^B", id),
+                                     !grepl("^27|^28|^29|^30", id)) %>%
+                       dplyr::filter(filter_type == "filter"), by = c("id", "pol")) %>%
+  dplyr::filter(!grepl("14C|21A", id)) %>%
+  dplyr::mutate(id = gsub("$", "-P", id))
 ```
 
 pufs
