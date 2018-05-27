@@ -887,3 +887,64 @@ load_fivegas <- function(fldr = "../data/fivegas",
   return(out)
 }
 #________________________________________________________
+
+#________________________________________________________
+# load jetter data and convert each column to appropriate R class
+#file <- "../data/other_studies/jetter_data.csv"
+load_wbt_data <- function(){
+  readr::read_csv("../data/literature/wbt_data.csv",
+                  col_names = c("id", "study", "var", "value", "units",
+                                "n_test", "pol", "stove", "fuel",
+                                "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
+                  skip = 1,
+                  col_types = 
+                    cols(
+                      id = col_character(),
+                      study = col_character(),
+                      var = col_character(),
+                      value = col_number(),
+                      units = col_character(),
+                      n_test = col_integer(),
+                      pol = col_character(),
+                      stove = col_character(),
+                      fuel = col_character(),
+                      fuel_notes = col_character(),
+                      protocol = col_character(),
+                      protocol_notes = col_character(),
+                      ref = col_character(),
+                      notes = col_character()),
+                  na = c("")
+  )
+}
+#________________________________________________________
+
+#________________________________________________________
+# load jetter data and convert each column to appropriate R class
+#file <- "../data/other_studies/roden_data.csv"
+load_field_data <- function(){
+  readr::read_csv("../data/literature/field_data.csv",
+                  col_names = c("study", "id", "var", "value", "units",
+                                "pol", "stove", "stove_code", "fuel",
+                                "fuel_notes", "protocol", "protocol_notes", "ref", "notes"),
+                  skip = 1,
+                  col_types = 
+                    cols(
+                      study = col_character(),
+                      id = col_character(),
+                      var = col_character(),
+                      value = col_double(),
+                      units = col_character(),
+                      pol = col_character(),
+                      stove = col_character(),
+                      stove_code = col_character(),
+                      fuel = col_character(),
+                      fuel_notes = col_character(),
+                      protocol = col_character(),
+                      protocol_notes = col_character(),
+                      ref = col_character(),
+                      notes = col_character()
+                    ),
+                  na = c("")
+  )
+}
+#________________________________________________________

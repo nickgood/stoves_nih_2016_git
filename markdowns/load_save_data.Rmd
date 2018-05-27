@@ -284,3 +284,13 @@ output:
 
   saveRDS(data_2, file = "../r_data/data_2.RDS")
 ```
+
+## other studies
+
+```{r}
+  saveRDS(load_wbt_data(), file = "../r_data/wbt_data.RDS")
+```
+
+```{r}
+  saveRDS(load_field_data(), file = "../r_data/field_data.RDS")
+```
