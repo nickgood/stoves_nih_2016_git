@@ -51,6 +51,35 @@ output:
   saveRDS(fuel_properties, file = "../../r_data/fuel_properties.RDS")
 ```
 
+# oc:om
+
+```{r}
+  oc_om <- tibble::data_frame(stove = c("three stone fire",
+                                        "clay ring",
+                                        "ceramic charcoal",
+                                        "rocket elbow",
+                                        "built-in plancha",
+                                        "metal charcoal",
+                                        "fan rocket elbow",
+                                        "gasifier",
+                                        "wick kerosene",
+                                        "pressure kerosene",
+                                        "lpg"),
+                              ratio = c(1.5,
+                                        1.5,
+                                        1.5,
+                                        1.9,
+                                        1.9,
+                                        1.5,
+                                        2.8,
+                                        2.8,
+                                        1.5,
+                                        1.5,
+                                        1.5))
+
+  saveRDS(oc_om, file = "../../r_data/oc_om.RDS")
+```
+
 # molecular formula and weight 
 
 ```{r}
