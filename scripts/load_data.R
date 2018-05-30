@@ -948,3 +948,28 @@ load_field_data <- function(){
   )
 }
 #________________________________________________________
+
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/field/rose_field_data.csv"
+load_rose_data <- function(){
+  #test <-
+  readr::read_csv("../data/literature/rose_data.csv",
+                  col_names = c("field_site", "hh_id", "stove", "fuel",
+                                "pm_ef", "bc_ef", "co_ef", "notes"),
+                  skip = 1,
+                  cols(
+                    field_site = col_character(),
+                    hh_id = col_character(),
+                    stove = col_character(),
+                    fuel = col_character(),
+                    pm_ef = col_double(),
+                    bc_ef = col_double(),
+                    co_ef = col_double(),
+                    notes = col_character()
+                  ),
+                  na = c("")
+  )
+}
+#________________________________________________________
+

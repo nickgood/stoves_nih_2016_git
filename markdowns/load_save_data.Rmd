@@ -294,3 +294,7 @@ output:
 ```{r}
   saveRDS(load_field_data(), file = "../r_data/field_data.RDS")
 ```
+
+```{r} 
+  saveRDS(load_rose_data(), file = "../r_data/rose_field_data.RDS")
+```
