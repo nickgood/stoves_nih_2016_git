@@ -1,0 +1,135 @@
+---
+title: "figure 2: pm and co emissoins"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, RColorBrewer)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r load_data}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+  wbt <- readRDS("../../../r_data/wbt_data_merged.RDS")
+  field <- readRDS("../../../r_data/field_data_merged.RDS")
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+```{r}
+  plot_1 <-
+    emissions %>%
+    dplyr::filter(metric == "mass_fuel_ef", grepl("pm_mass|^co$|^ec$", pol)) %>%
+    dplyr::mutate(fuel = as.character(fuel),
+                  fuel = ifelse(grepl("hardwood", fuel), "lump hardwood", fuel),
+                  val = val * 1e-3) %>%
+    dplyr::select(id, pol, val, stove, fuel) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm_mass", "bc_ef" = "ec") %>%
+    dplyr::mutate(test_type = "FST")
+```
+
+```{r}
+  plot_2 <-
+    field %>%
+    dplyr::filter(grepl("co|pm|ec", pol),
+                  grepl("mean", var),
+                  grepl("ceramic plancha|rocket elbow|three stone fire|^gasifier", stove)) %>%
+    dplyr::select(id, stove, fuel, pol, value) %>%
+    tidyr::spread(pol, value) %>%
+    dplyr::rename("co_ef" = "co", "pm_ef" = "pm", "bc_ef" = "ec") %>%
+    dplyr::mutate(test_type = "Field",
+                  stove = ifelse(stove == "forced-draft gasifier", "gasifier", stove))
+```
+
+```{r}
+  plot_3 <-
+    wbt %>%
+    dplyr::filter(grepl("pm|pm2.5", pol), grepl("grams per kilogram", units),
+                  var == "mean", fuel_notes == "dry") %>%
+    dplyr::select(id, stove, fuel,  var, value, protocol, protocol_notes, test_type) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::rename("pm_ef" = "mean") %>%
+    dplyr::left_join(wbt %>%
+                     dplyr::filter(grepl("co", pol), grepl("grams per kilogram", units),
+                     var == "mean", fuel_notes == "dry") %>%
+                     dplyr::select(id, stove, fuel, var, value, protocol, protocol_notes,
+                                   test_type) %>%
+                     tidyr::spread(var, value) %>%
+                     dplyr::rename("co_ef" = "mean"),
+                     by = c("id", "protocol", "stove", "fuel", "protocol_notes", "test_type")) %>%
+    dplyr::mutate(test_type = "WBT") %>%
+    dplyr::select(stove, fuel, co_ef, pm_ef, test_type)
+```
+
+```{r}
+  plot <-
+    plot_1 %>%
+    dplyr::bind_rows(plot_2) %>%
+    dplyr::bind_rows(plot_3) %>%
+    dplyr::filter(grepl("three|ceramic charcoal|gasifier|^rocket elbow", stove)) %>%
+    dplyr::mutate(stove = forcats::fct_relevel(stove,
+                                               "three stone fire",
+                                               "rocket elbow",
+                                               "ceramic charcoal",
+                                               "gasifier"))
+```
+
+```{r}
+p1 <-
+    plot %>%
+      ggplot(aes(x = test_type, y = pm_ef)) +
+        geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +
+        #scale_color_manual(values = c("#999999", "#E69F00",
+        #                              "#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb9a99")) +
+        guides(color = guide_legend(override.aes = list(size = 3,
+                                                        shape = 16, linetype = 0))) +
+        theme_bw() +
+        theme(text = element_text(size = 14),
+              strip.text.x = element_text(size = 11),
+              strip.background = element_rect(fill = "white"),
+              plot.title = element_text(hjust = 0.5),
+              legend.position = "top") +
+          facet_wrap(~ stove, nrow = 1, scales = "free") +
+          xlab("") +
+          ylab(expression(paste(PM[2.5], " Emissions Factors (g/kg-fuel)"))) +
+          labs(shape = "", color = "")
+
+p2 <-
+    plot %>%
+      ggplot(aes(x = test_type, y = co_ef)) +
+        geom_jitter(aes(color = fuel), shape = 16, size = 2, width = 0.15) +
+        #scale_color_manual(values = c("#999999", "#E69F00",
+                                      #"#7b3294", "#c2a5cf", "#a6dba0", "#008837", "#fb9a99")) +
+        guides(color = guide_legend(override.aes = list(size = 2, alpha = 0.5,
+                                                        shape = 16, linetype = 0))) +
+        theme_bw() +
+        theme(text = element_text(size = 14),
+              strip.text.x = element_text(size = 11),
+              strip.background = element_rect(fill = "white"),
+              plot.title = element_text(hjust = 0.5),
+              legend.position = "none") +
+          facet_wrap(~ stove, nrow = 1, scales = "free") +
+          xlab("") +
+          ylab("CO Emissions Factors (g/kg-fuel)") +
+          labs(shape = "", color = "")
+```
+
+```{r SI, echo=FALSE, fig.width=12, fig.height=8}
+  p1 + p2  + plot_layout(ncol = 1)
+```
