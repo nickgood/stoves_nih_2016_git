@@ -1,0 +1,59 @@
+---
+title: "External data groupings"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  library(tidyverse)
+  library(forcats) #meow!
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path='figures/', warning=FALSE, message=FALSE, cache=FALSE)
+```
+
+```{r load_data}
+  wbt_data <- readRDS("../../r_data/wbt_data.RDS")
+  field_data <- readRDS("../../r_data/field_data.RDS")
+```
+
+# wbt data
+
+```{r}
+  wbt_data <- 
+    wbt_data %>%
+    dplyr::mutate(stove = 
+                    stove %>%
+                    forcats::fct_recode("rocket elbow" = "envirofit g3300",
+                                        "ceramic charcoal" = "ceramic charcoal",
+                                        "gasifier" = "philips fan",
+                                        "three stone fire" = "traditional"),
+                  fuel = 
+                    fuel %>%
+                    forcats::fct_recode("oak" = "red oak",
+                                        "oak" = "white oak")) %>%
+    dplyr::filter(grepl("rocket elbow|ceramic charcoal|gasifier|three stone fire", stove),
+                  study == "Jetter_2012") %>%
+    dplyr::mutate(test_type = "WBT")
+```
+
+# field data
+
+```{r}
+  field_data <- 
+    field_data %>%
+    dplyr::mutate(stove = gsub(".*philips.*", "gasifier", stove),
+                  stove = gsub(".*ace.*", "forced-draft gasifier", stove),
+                  fuel = gsub(".charcoal.*", "charcoal (local)", fuel),
+                  fuel = gsub(".*wood.*", "wood (collected)", fuel)) %>%
+    dplyr::filter(grepl("rocket elbow|^gasifier|three stone fire", stove)) %>%
+    dplyr::mutate(test_type = "Field")
+```
+
+```{r}
+  saveRDS(wbt_data, "../../r_data/wbt_data_merged.RDS")
+  saveRDS(field_data, "../../r_data/field_data_merged.RDS")
+```
