@@ -114,9 +114,15 @@ output:
 
   pah_add2 <- readr::read_csv(file = "../data/pah/add_on_20180525.csv")
   
+  pah_add3 <- readr::read_csv(file = "../data/pah/add_on_20180531.csv")
+
+  pah_add4 <- readr::read_csv(file = "../data/pah/add_on_20180531_2.csv")
+
   pah_add <-
     pah_add1 %>%
-    dplyr::bind_rows(pah_add2)
+    dplyr::bind_rows(pah_add2) %>%
+    dplyr::bind_rows(pah_add3) %>%
+    dplyr::bind_rows(pah_add4)
 
   saveRDS(pah_add, file = "../r_data/pah_add.RDS")
 ```
