@@ -27,28 +27,6 @@ load data
   pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
 ```
 
-## format stove names
-
-```{r}
-  samples <-
-    samples %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    factor %>% 
-                    gsub(" ", "\n",.) %>% 
-                    forcats::fct_relevel("three\nstone\nfire",
-                                         "clay\nring",
-                                         "ceramic\ncharcoal",
-                                         "rocket\nelbow",
-                                         "built-in\nplancha",
-                                         "metal\ncharcoal",
-                                         "fan\nrocket\nelbow",
-                                         "gasifier",
-                                         "wick\nkerosene",
-                                         "pressure\nkerosene",
-                                         "lpg"))
-```
-
 ## add stove fuel info
 
 ```{r}
@@ -89,7 +67,7 @@ load data
 ```{r}
   pahs <-
     emissions %>%
-    dplyr::filter(grepl("aromatic", pol_category)) %>%
+    dplyr::filter(grepl("aromatic", pol_category), pol != "napthalene") %>%
     dplyr::filter(metric == "energy_delivered_ef")
 ```
 
@@ -828,6 +806,52 @@ ratio of total to aromatics
 
 ## pahs
 
+ratio of three and four ring pahs to total
+
+```{r, echo=FALSE}
+  low_mw <-
+    pahs %>%
+      dplyr::filter(grepl("three|four", pol_subcategory)) %>%
+      dplyr::group_by(id, stovecat) %>%
+      dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+      dplyr::group_by(stovecat) %>%
+      dplyr::summarise(mean_low_mw_pahs = mean(val, na.rm = TRUE))
+
+  pahs %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(low_mw, by = "stovecat") %>%
+    dplyr::mutate(ratio = mean_low_mw_pahs / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+ratio of bap to total
+
+```{r, echo=FALSE}
+  bap <-
+    pahs %>%
+      dplyr::filter(grepl("b.a.pyrene", pol)) %>%
+      dplyr::group_by(id, stovecat) %>%
+      dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+      dplyr::group_by(stovecat) %>%
+      dplyr::summarise(bap_mean = mean(val, na.rm = TRUE))
+
+  pahs %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(bap, by = "stovecat") %>%
+    dplyr::mutate(ratio = bap_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
 average pahs by stove type (total)
 
 ```{r, echo=FALSE}
@@ -848,7 +872,7 @@ average pahs by stove type (by pollutant)
 
 ```{r, echo=FALSE}
   pahs %>%
-    dplyr::group_by(stove, pol) %>%
+    dplyr::group_by(stove, pol_subcategory) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -877,7 +901,7 @@ average pahs by stove type (by pollutant)
 
 ```{r, echo=FALSE}
   pahs %>%
-    dplyr::group_by(stovecat, pol) %>%
+    dplyr::group_by(stovecat, pol_subcategory) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -920,7 +944,7 @@ average pahs by fuelcat (by pollutant)
 
 ```{r, echo=FALSE}
   pahs %>%
-    dplyr::group_by(fuelcat, pol) %>%
+    dplyr::group_by(fuelcat, pol_subcategory) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
