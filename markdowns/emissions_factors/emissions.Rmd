@@ -24,6 +24,7 @@ pollutant data
 
 ```{r}
   samples <- readRDS("../../r_data/samples.RDS")
+  oc_om <- readRDS("../../r_data/oc_om.RDS")
   ecoc <- readRDS("../../r_data/ecoc_merged.RDS")
   pm <- readRDS("../../r_data/pm_merged.RDS")
   carbonyls <- readRDS("../../r_data/carbonyls_merged.RDS")
@@ -72,6 +73,24 @@ constants
                   units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
                   units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per meter cubed", units)) %>%
     dplyr::select(-ratio)
+```
+
+```{r}
+  om <- 
+    emissions %>%
+    dplyr::filter(pol == "oc") %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove), by = "id") %>%
+    dplyr::left_join(oc_om , by = "stove") %>%
+    dplyr::mutate(val = val * ratio,
+                  pol_category = "organic matter") %>%
+    dplyr::select(-ratio, -stove)
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::bind_rows(om)
 ```
 
 # save
