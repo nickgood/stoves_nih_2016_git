@@ -91,25 +91,6 @@ load schemes
 ## look at duplicates
 
 ```{r}
-  duplicates <-
-    pah %>%
-      dplyr::group_by(id, pol, filter_type) %>%
-      dplyr::summarise(n = n()) %>%
-      dplyr::filter(n > 1) %>%
-      dplyr::select(-n)
-```
-
-
-```{r}
-  duplicate_vals <-
-    pah %>%
-      dplyr::inner_join(duplicates, by = c("id", "pol", "filter_type")) %>%
-      dplyr::arrange(id, pol)
-
-  readr::write_csv(duplicate_vals, "../../qaqc_files/duplicate_vals.csv")
-```
-
-```{r}
   zero_vals <-
     pah %>%
       dplyr::filter(val == 0) %>%
@@ -124,6 +105,30 @@ load schemes
   pah <- 
     pah %>%
     dplyr::filter(val != 0, !is.na(val))
+```
+
+```{r}
+  duplicates <-
+    pah %>%
+      dplyr::group_by(id, pol, filter_type) %>%
+      dplyr::summarise(n = n()) %>%
+      dplyr::filter(n > 1) %>%
+      dplyr::select(-n)
+```
+
+
+```{r}
+  duplicate_vals <-
+    pah %>%
+      dplyr::inner_join(duplicates, by = c("id", "pol", "filter_type")) %>%
+      dplyr::group_by(id, pol, filter_type) %>%
+      dplyr::summarise(prct_change = (max(val) - min(val) / max(val)) * 100) %>%
+      dplyr::filter(prct_change > 5 | prct_change < -5) %>%
+      dplyr::select(-prct_change) %>%
+      dplyr::distinct() %>%
+      dplyr::inner_join(pah, by = c("id", "pol", "filter_type"))
+
+  readr::write_csv(duplicate_vals, "../../qaqc_files/duplicate_vals.csv")
 ```
 
 ## consolidate duplicate measurements
