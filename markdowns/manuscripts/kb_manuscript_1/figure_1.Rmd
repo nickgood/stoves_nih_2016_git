@@ -28,28 +28,6 @@ load data
   samples <- readRDS("../../../r_data/samples.RDS")
 ```
 
-## format stove names
-
-```{r}
-  samples <-
-    samples %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    factor %>% 
-                    gsub(" ", "\n",.) %>% 
-                    forcats::fct_relevel("three\nstone\nfire",
-                                         "clay\nring",
-                                         "ceramic\ncharcoal",
-                                         "rocket\nelbow",
-                                         "built-in\nplancha",
-                                         "metal\ncharcoal",
-                                         "fan\nrocket\nelbow",
-                                         "gasifier",
-                                         "wick\nkerosene",
-                                         "pressure\nkerosene",
-                                         "lpg"))
-```
-
 ## add stove fuel info
 
 ```{r}
@@ -64,8 +42,7 @@ load data
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::mutate(pol_category = ifelse(grepl("^oc$", pol_category), "organic carbon", pol_category),
-                  pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon", pol_category),
+    dplyr::mutate(pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon", pol_category),
                   pol_category = ifelse(grepl("ions", pol_category), "inorganic ions", pol_category),
                   pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol))
 ```
@@ -84,7 +61,7 @@ load data
 ```{r}
   ec_oc_ions <-
     emissions %>%
-    dplyr::filter(grepl("inorganic ions|elemental carbon|organic carbon", pol_category)) %>%
+    dplyr::filter(grepl("inorganic ions|elemental carbon|organic matter", pol_category)) %>%
     dplyr::filter(metric == "energy_delivered_ef")
 ```
 
@@ -257,7 +234,7 @@ load data
                   pol = 
                     pol %>% 
                     factor %>% 
-                    forcats::fct_relevel("organic carbon",
+                    forcats::fct_relevel("organic matter",
                                          "elemental carbon",
                                          "inorganic ions") %>%
                     forcats::fct_rev(),
@@ -610,6 +587,28 @@ average ultrafines by fuelcat
 ```
 
 ## pm mass
+
+pm mass in natural-draft improved stoves
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::filter(grepl("^rocket elbow|plancha|metal charcoal", stove)) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+pm mass in forced-draft improved stoves
+
+```{r, echo=FALSE}
+  pm_mass %>%
+    dplyr::filter(grepl("gasifier|fan rocket elbow", stove)) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
 
 average pm mass by stove type
 
