@@ -27,6 +27,7 @@ load data
   pah_raw <- readRDS("../../r_data/pah.RDS")    # pah dataset
   pah_bdl <- readRDS("../../r_data/pah_bdl.RDS")    # pah lod dataset
   pah_add <- readRDS("../../r_data/pah_add.RDS")    # pah dataset
+  pah_duplicates <- readRDS("../../r_data/pah_duplicates.RDS")    # pah dataset
   data_1 <- readRDS("../../r_data/data_1.RDS")
   notes <- readRDS("../../r_data/notes.RDS")
   samples <- readRDS("../../r_data/samples.RDS")
@@ -109,26 +110,20 @@ load schemes
 
 ```{r}
   duplicates <-
-    pah %>%
-      dplyr::group_by(id, pol, filter_type) %>%
-      dplyr::summarise(n = n()) %>%
-      dplyr::filter(n > 1) %>%
-      dplyr::select(-n)
+    pah_duplicates %>%
+      dplyr::select(id, pol, filter_type) %>%
+      dplyr::distinct()
 ```
 
 
 ```{r}
-  duplicate_vals <-
+  pah <-
     pah %>%
-      dplyr::inner_join(duplicates, by = c("id", "pol", "filter_type")) %>%
-      dplyr::group_by(id, pol, filter_type) %>%
-      dplyr::summarise(prct_change = (max(val) - min(val) / max(val)) * 100) %>%
-      dplyr::filter(prct_change > 5 | prct_change < -5) %>%
-      dplyr::select(-prct_change) %>%
-      dplyr::distinct() %>%
-      dplyr::inner_join(pah, by = c("id", "pol", "filter_type"))
-
-  readr::write_csv(duplicate_vals, "../../qaqc_files/duplicate_vals.csv")
+    dplyr::anti_join(duplicates,
+                     by = c("id", "pol", "filter_type")) %>%
+    dplyr::bind_rows(pah_duplicates %>%
+                       dplyr::mutate(id = ifelse(id == "10D", "1D", id),
+                                     id = ifelse(id == "8E", "6E", id)))
 ```
 
 ## consolidate duplicate measurements
@@ -137,7 +132,7 @@ load schemes
   pah <-
     pah %>%
     dplyr::group_by(pol, id, filter_type) %>%
-    dplyr::summarise(val = last(val),
+    dplyr::summarise(val = mean(val),
                      lod = last(lod)) %>%
     dplyr::ungroup()
 ```
@@ -155,13 +150,15 @@ load schemes
                                         "filter" = "p"))
 ```
 
-## ignore naphthalene
+## remove 24A-P
 
 ```{r}
   # pah <-
   #   pah %>%
   #   dplyr::filter(pol != "napthalene")
 ```
+
+notes: Pierre would like to re-run remove for now
 
 ## flags
 
@@ -267,8 +264,13 @@ notes:
 ```{r}
   pah_merged <-
     pah %>% 
-    dplyr::filter(qc != "bad")
+    dplyr::filter(qc != "bad") %>%
+    dplyr::filter(id != "14C", id != "24A") 
 ```
+
+notes: 
+- remove 14C - quartz filter missing (experimental contamination)
+- remove 24A - quartz filter had bad run (Pierre plans to rerun)
 
 # manually fix NAs based on Pierre's email
 
@@ -931,8 +933,6 @@ percent of burn samples with NA values
   dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
   knitr::kable("markdown", align = 'c')
 ```
-
-notes: not double checked yet - missing too much data still
 
 ## table: percent of data below background
 
