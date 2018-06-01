@@ -110,13 +110,33 @@ output:
                             pattern = "BDL", inst = "pah_bdl") 
   saveRDS(pah_bdl, file = "../r_data/pah_bdl.RDS")
 
-  pah_add1 <- readr::read_csv(file = "../data/pah/add_on_20180521.csv")
+  pah_add1 <- readr::read_csv(file = "../data/pah/add_on_20180521.csv",
+                              col_types = cols(pol = col_character(),
+                                               id = col_character(),
+                                               filter_type = col_character(),
+                                               val = col_double(),
+                                               lod = col_character()))
 
-  pah_add2 <- readr::read_csv(file = "../data/pah/add_on_20180525.csv")
+  pah_add2 <- readr::read_csv(file = "../data/pah/add_on_20180525.csv",
+                              col_types = cols(pol = col_character(),
+                                               id = col_character(),
+                                               filter_type = col_character(),
+                                               val = col_double(),
+                                               lod = col_character()))
   
-  pah_add3 <- readr::read_csv(file = "../data/pah/add_on_20180531.csv")
+  pah_add3 <- readr::read_csv(file = "../data/pah/add_on_20180531.csv",
+                              col_types = cols(pol = col_character(),
+                                               id = col_character(),
+                                               filter_type = col_character(),
+                                               val = col_double(),
+                                               lod = col_character()))
 
-  pah_add4 <- readr::read_csv(file = "../data/pah/add_on_20180531_2.csv")
+  pah_add4 <- readr::read_csv(file = "../data/pah/add_on_20180531_2.csv", 
+                              col_types = cols(pol = col_character(),
+                                               id = col_character(),
+                                               filter_type = col_character(),
+                                               val = col_double(),
+                                               lod = col_character()))
 
   pah_add <-
     pah_add1 %>%
@@ -125,6 +145,15 @@ output:
     dplyr::bind_rows(pah_add4)
 
   saveRDS(pah_add, file = "../r_data/pah_add.RDS")
+
+  duplicates <- readr::read_csv(file = "../data/pah/duplicates_20180601.csv",
+                                col_types = cols(id = col_character(),
+                                                 pol = col_character(),
+                                                 filter_type = col_character(),
+                                                 val = col_double(),
+                                                 lod = col_character()))
+  
+  saveRDS(duplicates, file = "../r_data/pah_duplicates.RDS")
 ```
 
 ## pax
