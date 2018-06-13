@@ -698,6 +698,19 @@ notes: some burns have low concentrations - opt to subtract median background fr
     dplyr::filter(test_type == "test")
 ```
 
+## save data for volatility (Shantanu)
+
+```{r}
+  readr::write_csv(ecoc_merged %>%
+                     dplyr::filter(pol == "oc") %>%
+                     dplyr::select(id, cassette, val, qc, lod) %>%
+                     tidyr::spread(cassette, val) %>%
+                     dplyr::rename("qbt" = "a",
+                                   "bq" = "e") %>%
+                     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id"),
+                   "../../exported_data/oc.csv")
+```
+
 extract artifact
 
 ```{r}
@@ -931,6 +944,16 @@ percent of burn samples with NA values
     dplyr::mutate(pol_category = pol)
 
   saveRDS(ecoc_merged, file = "../../r_data/ecoc_merged.RDS")
+```
+
+```{r}
+  ecoc_merged %>%
+    dplyr::select(id, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(ratio = oc / ec) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    dplyr::filter(stove == "three stone fire")
+
 ```
 
 ## table: missing data at end
