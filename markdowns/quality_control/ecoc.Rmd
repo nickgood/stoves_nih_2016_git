@@ -690,25 +690,26 @@ note: no trends in time
 
 notes: some burns have low concentrations - opt to subtract median background from all burn data
 
+## save data for volatility (Shantanu)
+
+```{r}
+  readr::write_csv(ecoc_merged %>%
+                     dplyr::ungroup() %>%
+                     dplyr::filter(pol == "oc") %>%
+                     dplyr::select(id, test_type, cassette, val, qc, lod) %>%
+                     tidyr::spread(cassette, val) %>%
+                     dplyr::rename("qbt" = "a",
+                                   "bq" = "e") %>%
+                     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id"),
+                   "../../exported_data/oc.csv")
+```
+
 ## subtract artifact filters for burn filters
 
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::filter(test_type == "test")
-```
-
-## save data for volatility (Shantanu)
-
-```{r}
-  readr::write_csv(ecoc_merged %>%
-                     dplyr::filter(pol == "oc") %>%
-                     dplyr::select(id, cassette, val, qc, lod) %>%
-                     tidyr::spread(cassette, val) %>%
-                     dplyr::rename("qbt" = "a",
-                                   "bq" = "e") %>%
-                     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id"),
-                   "../../exported_data/oc.csv")
 ```
 
 extract artifact
