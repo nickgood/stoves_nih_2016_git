@@ -145,7 +145,7 @@ mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
                           joules = j_heat + j_vap)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval = FALSE}
   kable(dplyr::slice(e_data, 1:5),
         align = 'c', caption = "Energy Numbers")
 ```
@@ -339,19 +339,33 @@ all_energy <- p_data %>%
 
 
 
-ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, color = mc_level, shape = type)) +
+ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) + #color = mc_level, 
   geom_point(size = 2) +
   theme_bw() +
-  theme(text = element_text(size=12), legend.position = "bottom",
+  theme(text = element_text(size=12), legend.position = "top",
   strip.background = element_blank(),
   strip.text.x = element_blank()) +
   ylab("EF [mg / MJ Delivered]") + xlab("Moisture Content (%)") +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  #scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape") +
-  geom_hline(aes(yintercept = 20), data=subset(all_energy, pol == "grav"), color = "red") +
-  geom_hline(aes(yintercept = 20), data=subset(all_energy, pol == "co"), color = "red") +
-  facet_wrap(~pol, ncol = 4, scales = "free_y") #dummy value for now to fix panel issue
+  geom_hline(aes(yintercept = 979), size = 1, data=subset(all_energy, pol == "grav"), color = "#FF3366") +
+  geom_hline(aes(yintercept = 386), size = 1,data=subset(all_energy, pol == "grav"), color = "#330099") +
+  geom_hline(aes(yintercept = 168), size = 1,data=subset(all_energy, pol == "grav"), color = "yellow") +
+  geom_hline(aes(yintercept = 41), size = 1,data=subset(all_energy, pol == "grav"), color = "green") +
+  geom_hline(aes(yintercept = 16000), size = 1,data=subset(all_energy, pol == "co"), color = "red") +
+  geom_hline(aes(yintercept = 11000), size = 1,data=subset(all_energy, pol == "co"), color = "orange") +
+  geom_hline(aes(yintercept = 9000), size = 1,data=subset(all_energy, pol == "co"), color = "yellow") +
+  geom_hline(aes(yintercept = 8000), size = 1,data=subset(all_energy, pol == "co"), color = "green") +
+  facet_wrap(~pol, ncol = 4, scales = "free_y") + #dummy value for now to fix panel issue
+  geom_text(aes(label = "CO", x = 25, y = 3800), colour = "black", data=subset(all_energy, pol == "co")) +
+  geom_text(aes(label = "PM2.5", x = 25, y = 150), colour = "black", data=subset(all_energy, pol == "grav")) +
+  geom_text(aes(label = "EC", x = 8, y = 40), colour = "black", data=subset(all_energy, pol == "ec")) +
+  geom_text(aes(label = "OC", x = 25, y = 130), colour = "black", data=subset(all_energy, pol == "oc")) +
+  geom_text(aes(label = "CH4", x = 25, y = 400), colour = "black", data=subset(all_energy, pol == "ch4")) +
+  geom_text(aes(label = "CH2O", x = 25, y = 45), colour = "black", data=subset(all_energy, pol == "formaldehyde")) +
+  geom_text(aes(label = "C2H4O", x = 25, y = 15), colour = "black", data=subset(all_energy, pol == "acetaldehyde")) +
+  geom_text(aes(label = "C6H6", x = 25, y = 5), colour = "black", data=subset(all_energy, pol == "benzene"))
 ```
 
 ```{r}

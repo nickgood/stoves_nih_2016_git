@@ -232,6 +232,8 @@ Concentration is corrected for background by removing background test average co
                 dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
                 dplyr::ungroup()
 
+saveRDS(co_co2_ch4, "../r_files/co_co2_ch4.RDS")
+
  co_co2_ch4_ppm <- co_co2_ch4
 ```
 

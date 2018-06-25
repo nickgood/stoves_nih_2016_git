@@ -33,6 +33,7 @@ output:
   notes <- readRDS("../r_files/notes.RDS")
   test_times <- readRDS("../r_files/test_times.RDS")
   smps_pax_bg_times <- readRDS("../r_files/smps_pax_bg_times.RDS")
+  dilution <- readRDS("../r_files/dilution.RDS")
 ```
 
 ```{r}
@@ -100,7 +101,7 @@ const <- 0.015625355
   notes <- dplyr::filter(notes, grepl("smps|all", inst))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval = FALSE}
   knitr::kable(dplyr::filter(notes, grepl(".*smps.*", inst)) %>%
                dplyr::select(-inst, -date),
                "markdown", digits = 2)
@@ -145,6 +146,29 @@ const <- 0.015625355
 ```{r}
 types <- readRDS("../r_files/samples.RDS") %>%
          select(id, type, mc_level)
+
+smps_dilution <- select(smps_merged, id, size_nm, dw) %>%
+                 filter(!is.na(size_nm)) %>%
+                 mutate(dw = as.numeric(dw)) %>%
+                 group_by(id, size_nm) %>%
+                 summarise(avg_val = mean(dw)) %>%
+                 ungroup() %>%
+                 left_join(types, by = "id") %>%
+                 left_join(dilution, by = "id") %>%
+                 mutate(dil_num = avg_val*median_dilution) %>%
+                 group_by(mc_level,size_nm) %>%
+                 summarise(avg_num = mean(dil_num), sd_num = sd(dil_num))
+
+ggplot(smps_dilution, aes(x = size_nm, y = avg_num, color = mc_level)) +
+  geom_line(size = 1) +
+  #scale_y_log10() +
+  geom_errorbar(aes(ymin = avg_num-sd_num, ymax = avg_num+sd_num), width = 0.2, alpha =0.5) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  theme_bw() +
+  labs(color = "MC Level", x = "Particle Size [nm]", y = "dN/dlog(Dp)")
+```
+
+``` {r}
 
 smps_conc <- select(smps_merged, id, size_nm, dw) %>%
                  filter(!is.na(size_nm)) %>%

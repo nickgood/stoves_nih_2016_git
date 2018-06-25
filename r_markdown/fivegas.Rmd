@@ -180,7 +180,7 @@ TukeyHSD(aov(mce ~ mc_level, df_anova))
 pairwise.t.test(df_anova$mce, df_anova$test_fuel_type, p.adj = "none")
 ```
 
-```{r}
+```{r fig.height=3, fig.width=4}
        
 mce_plot <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", "med", "high")) %>%
        dplyr::mutate(mc_level = forcats::fct_recode(mc_level, "medium" = "med")) %>%
@@ -190,13 +190,13 @@ mce_plot <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", 
        dplyr::group_by(mc_level, type) %>%
        dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type)
 
-ggplot(data = mce_plot, aes(x = mean_mc, y = mce, color = `MC Level`, shape = `Fuel Shape`)) +
+ggplot(data = mce_plot, aes(x = mean_mc, y = mce, shape = `Fuel Shape`)) + #, color = `MC Level`
   #geom_boxplot(size = 1) +
-  geom_point(size = 4) +
+  geom_point(size = 3) +
   theme_bw() +
   labs(x = "Moisture Content (%)", y = "Modified Combustion Efficiency (%)") +
-  theme(text = element_text(size=15)) +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  theme(text = element_text(size=10), legend.position = "right") +
+  #scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25))
 
 saveRDS(mce_plot, file = "../r_files/mce_plot.RDS")
@@ -205,7 +205,7 @@ saveRDS(mce_plot, file = "../r_files/mce_plot.RDS")
 ```{r}
 mce_means <- ungroup(mce, `Fuel Shape`) %>%
        group_by(mc_level) %>%
-       summarise(sd_mce = 1-median(mce))
+       summarise(sd_mce = sd(mce), mean_mce = mean(mce))
 
 #inefficienies
 mce_plot2 <- mutate(mce_plot, mce = 100-mce)
