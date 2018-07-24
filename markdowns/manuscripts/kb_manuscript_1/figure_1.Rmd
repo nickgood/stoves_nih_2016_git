@@ -261,7 +261,8 @@ load data
                   pol = 
                     pol %>% 
                     factor %>% 
-                    forcats::fct_relevel("organic matter",
+                    forcats::fct_relevel("PM2.5 mass",
+                                         "organic matter",
                                          "elemental carbon",
                                          "inorganic ions") %>%
                     forcats::fct_rev(),
@@ -294,13 +295,16 @@ load data
 ```{r, echo=FALSE}
   p1 <-
     pm_mass_p %>%
-      dplyr::mutate(pol_category = "PM2.5 composition") %>%
+    dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
       ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol), stat = "identity") +
       geom_histogram(data = ec_oc_ions_p %>%
-                     dplyr::mutate(pol_category = "PM2.5 composition"),
+                       dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')"),
                      aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
-      scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999"), name = expression(paste(PM[2.5], ' composition'))) +
+      scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999"),
+                        name = expression(paste(PM[2.5], ' composition')),
+                        labels = c("elemental carbon", "inorganic ions",
+                                   "organic carbon", expression(paste(PM[2.5], ' mass')))) +
       scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
       annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
       annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
@@ -308,11 +312,13 @@ load data
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       theme_bw() +
       theme(text = element_text(size = 20),
+            legend.text.align = 0,
             axis.text.y = element_text(size = 18),
+            strip.text.x = element_text(size = 20),
             axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             legend.position = "right") +
-      facet_grid(.~pol_category, scales = "free") +
+      facet_grid(.~pol_category, scales = "free", labeller = label_parsed) +
       ylab("miligrams per MJ delivered")
 ```
 
@@ -327,6 +333,7 @@ load data
         #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
+              strip.text.x = element_text(size = 20),
               axis.text.x = element_blank(),
               legend.title = element_blank(),
               axis.title.x = element_blank(),
@@ -349,6 +356,7 @@ load data
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
               axis.title.x = element_blank(),
+              strip.text.x = element_text(size = 20),
               axis.text.x = element_blank(),
               legend.title = element_blank(),
               legend.position = "none",
@@ -359,10 +367,10 @@ load data
 ```
 
 ```{r figure_1, echo=FALSE, fig.width=16, fig.height=12}
- (p1 + plot_spacer() + p2 + plot_spacer() + p3) + plot_layout(nrow = 3, heights = c(1.25, 1, 1))
+  p1 + p2 + p3 + plot_layout(nrow = 3, heights = c(1.25, 1, 1))
 ```
 
-```{r, fig.width=4, fig.height=3, echo=FALSE}
+```{r, fig.width=4, fig.height=2.5, echo=FALSE}
   pm_mass_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
@@ -378,7 +386,6 @@ load data
     theme_bw() +
     theme(text = element_text(size = 20),
           axis.text.y = element_text(size = 18),
-          strip.text.x = element_text(size = 24),
           axis.text.x = element_blank(),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
@@ -387,15 +394,12 @@ load data
     facet_grid(.~stovecat, scales = "free", switch = "y")
 ```
 
-```{r, fig.width=4, fig.height=3, echo=FALSE}
+```{r, fig.width=4, fig.height=2.5, echo=FALSE}
   co_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
+    ggplot(aes(x = stove, y = mean)) +
     geom_histogram(fill = "mediumslateblue", stat = "identity") +
-    geom_histogram(data = ec_oc_ions_p %>%
-                   dplyr::filter(grepl("fossil", stovecat)),
-                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
-    geom_text(data = range_pm %>%
+    geom_text(data = range_co %>%
               dplyr::filter(grepl("fossil", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
     theme_bw() +
@@ -409,15 +413,12 @@ load data
     facet_grid(.~stovecat, scales = "free", switch = "y")
 ```
 
-```{r, fig.width=4, fig.height=3, echo=FALSE}
+```{r, fig.width=4, fig.height=2.5, echo=FALSE}
   ultrafines_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
+    ggplot(aes(x = stove, y = mean)) +
     geom_histogram(fill = "#56B4E9", stat = "identity") +
-    geom_histogram(data = ec_oc_ions_p %>%
-                   dplyr::filter(grepl("fossil", stovecat)),
-                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
-    geom_text(data = range_pm %>%
+    geom_text(data = range_ultrafines %>%
               dplyr::filter(grepl("fossil", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
     theme_bw() +
