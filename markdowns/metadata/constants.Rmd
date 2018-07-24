@@ -43,10 +43,10 @@ output:
                                          lhv = c(18658, 19427, 18658, 16628,
                                                  28611, 28611, 17501, 17501,
                                                  43100, 46100),  # kJ/kg
-                                         carbon_fraction = c(0.497733333, 0.521166667,
-                                                             0.5, 0.488, 0.840833333,
-                                                             0.840833333, 0.4852,
-                                                             0.4852, 0.82, 0.82))  # kg_C/kg_fuel
+                                         carbon_fraction = c(0.4977, 0.5212,
+                                                             0.4712, 0.488, 0.8408,
+                                                             0.8408, 0.4852,
+                                                             0.4949, 0.82, 0.82))  # kg_C/kg_fuel
 
   saveRDS(fuel_properties, file = "../../r_data/fuel_properties.RDS")
 ```
@@ -141,7 +141,18 @@ output:
                                                 "butyraldehyde", "benzaldehyde",
                                                 "isovaleraldehyde", "valeraldehyde",
                                                 "o_tolualdehyde", "m_p_tolualdehyde",
-                                                "hexaldehyde", "2_5_dimethylbenzaldehyde"),
+                                                "hexaldehyde", "2_5_dimethylbenzaldehyde",
+                                                "acephenanthrylene", "anthracene",
+                                                "b[a]pyrene", "b[b]fluoranthene",
+                                                "b[e]pyrene", "b[j]fluoranthene",
+                                                "b[k]fluoranthene", "benz[a]anthracene",
+                                                "benzo(ghi)perylene", "benzo[c]phenanthrene",
+                                                "benzo[ghi]fluoranthene", "chrysene and triphenylene",
+                                                "cyclopenta[cd]pyrene", "cyclopenta[ce]phenanthrylene",
+                                                "dibenzo(ah)anthracene", "fluoranthene",
+                                                "fluorene", "indeno(1,2,3) cd pyrene",
+                                                "napthalene", "perylene",
+                                                "phenanthene", "pyrene"),
                                        num_c = c(1, 1, 1, NA, NA, NA, NA, NA,
                                                  2, 2, 3, 3, 4, 4, 2,
                                                  4, 4, 4, 4, 5, 5, 5, 5, 5,
@@ -153,7 +164,11 @@ output:
                                                  6, 6, 3, 4, 6, 5, 5, NA, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0, 1,
                                                  2, 3, 3, 3, 4, 4, 4, 4, 7,
-                                                 5, 5, 8, 8, 6, 9),
+                                                 5, 5, 8, 8, 6, 9,
+                                                 16, 14, 20, 20, 20, 20,
+                                                 20, 18, 22, 18, 18, 18,
+                                                 18, NA, 22, 16, 13, 22,
+                                                 10, 20, 14, 16),
                                        num_h = c(0, 0, 4, NA, NA, NA, NA, NA,
                                                  6, 4, 8, 6, 10, 10,
                                                  2, 8, 8, 8, 8, 10, 12, 12,
@@ -168,7 +183,11 @@ output:
                                                  14, 10, 10, NA, 0, 4,
                                                  0, 0, 0, 0, 0, 0, 0, 2,
                                                  4, 6, 4, 6, 6, 8, 6, 8,
-                                                 6, 10, 10, 8, 8, 12, 10),
+                                                 6, 10, 10, 8, 8, 12, 10,
+                                                 10, 10, 12, 12, 12, 12,
+                                                 12, 12, 12, 12, 12, 12,
+                                                 10, NA, 12, 10, 10, 12,
+                                                 8, 12, 10, 10),
                                        num_o = c(2, 1, 0, NA, NA, NA,
                                                  NA, NA, 0, 0, 0, 0, 0,
                                                  0, 0, 0, 0, 0, 0, 0, 0,
@@ -181,7 +200,11 @@ output:
                                                  3, 4, 6, 5, 5, NA, 0,
                                                  0, 0, 0, 0, 0, 2, 3, 4,
                                                  1, 1, 1, 1, 1, 1, 1, 1,
-                                                 1, 1, 1, 1, 1, 1, 1, 1),
+                                                 1, 1, 1, 1, 1, 1, 1, 1,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0),
                                        ions = c(NA, NA, NA, NA, NA, NA,
                                                  NA, NA, NA, NA, NA, NA, NA,
                                                  NA, NA, NA, NA, NA, NA, NA, NA,
@@ -195,7 +218,11 @@ output:
                                                  "N", "K", "Mg", "Ca", "Cl",
                                                  "N", "N", "S", NA, NA, NA, NA,
                                                  NA, NA, NA, NA, NA, NA, NA,
-                                                 NA, NA, NA, NA, NA))
+                                                 NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA, NA, NA,
+                                                 NA, NA, NA, NA))
 
   pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties)) %>%
                     dplyr::select(pol, mw, num_c)
