@@ -27,6 +27,24 @@ load data
   pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
 ```
 
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in plancha",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
+                                         "gasifier",
+                                         "wick kerosene",
+                                         "pressure kerosene"))
+```
+
 ## add stove fuel info
 
 ```{r}
@@ -77,8 +95,8 @@ load data
 
 ```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
   carbonyls %>%
-    dplyr::group_by(id) %>%
-    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(id, stove, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     ggplot(aes(x = id, y = val, color = fuel)) +
     geom_point() +
     theme_bw() +
@@ -91,8 +109,8 @@ load data
 
 ```{r, echo=FALSE, eval=FALSE,fig.width=10, fig.height=8}
   vocs %>%
-    dplyr::group_by(id) %>%
-    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(id, stove, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     ggplot(aes(x = id, y = val, color = fuel)) +
     geom_point() +
     theme_bw() +
@@ -105,8 +123,8 @@ load data
 
 ```{r, echo=FALSE, eval=FALSE, fig.width=10, fig.height=8}
   pahs %>%
-    dplyr::group_by(id) %>%
-    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(id, stove, fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     ggplot(aes(x = id, y = val, color = fuel)) +
     geom_point() +
     theme_bw() +
@@ -122,6 +140,8 @@ load data
     vocs %>%
     dplyr::filter(id != "5A", id != "9A")
 ```
+
+notes: need to look at these tests still
 
 ## calculate stats
 
@@ -237,7 +257,7 @@ load data
                 dplyr::filter(grepl("traditional", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       scale_y_continuous(limits = c(0, 200)) +
-      annotate("text", x = 2, y = 200, label = "XXX", size = 5) +
+      annotate("text", x = 2, y = 200, label = "221", size = 5) +
       scale_fill_manual(values = col_vector) +
       theme_bw() +
       theme(text = element_text(size = 20),
@@ -253,14 +273,14 @@ load data
   p2 <-
     carbonyls_p %>%
     dplyr::filter(grepl("improved", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
+    ggplot(aes(x = stove, y = val, order = stove)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stats_carbs %>%
                 dplyr::filter(grepl("improved", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       scale_y_continuous(limits = c(0, 200)) +
-      annotate("text", x = 2, y = 200, label = "XXX", size = 5) +
-      annotate("text", x = 4, y = 200, label = "XXX", size = 5) +
+      annotate("text", x = 2, y = 200, label = "292", size = 5) +
+      annotate("text", x = 4, y = 200, label = "248", size = 5) +
       theme_bw() +
       scale_fill_manual(values = col_vector) +
       theme(text = element_text(size = 20),
@@ -274,11 +294,11 @@ load data
   
   p3 <-
     carbonyls_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stats_carbs %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_bw() +
       scale_fill_manual(values = col_vector) +
@@ -305,8 +325,8 @@ load data
                   aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
         scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2")) +
         scale_y_continuous(limits = c(0, 2000)) +
-        annotate("text", x = 1, y = 2000, label = "XXX", size = 5) +
-        annotate("text", x = 2, y = 2000, label = "XXX", size = 5) +
+        annotate("text", x = 1, y = 2000, label = "2251", size = 5) +
+        annotate("text", x = 2, y = 2000, label = "3254", size = 5) +
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.title.y = element_text(size = 16),
@@ -330,7 +350,7 @@ load data
                   aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
         scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2")) +
         scale_y_continuous(limits = c(0, 600)) +
-        annotate("text", x = 1, y = 600, label = "XXX", size = 5) +
+        annotate("text", x = 1, y = 600, label = "944", size = 5) +
         theme_bw() +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
@@ -344,11 +364,11 @@ load data
   
   p6 <-
     vocs_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stat_vocs %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2")) +
       theme_bw() +
@@ -375,7 +395,7 @@ load data
                 dplyr::filter(grepl("traditional", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_y_continuous(limits = c(0, 40)) +
-      annotate("text", x = 2, y = 40, label = "XXX", size = 5) +
+      annotate("text", x = 2, y = 40, label = "56.3", size = 5) +
       scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
       theme_bw() +
       theme(text = element_text(size = 20),
@@ -384,7 +404,7 @@ load data
             axis.title.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.y = element_text(size = 18),
-            strip.text.x = element_blank(),
+            #strip.text.x = element_blank(),
             legend.position = "none") +
       guides(fill = guide_legend(title = NULL)) +
       facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
@@ -400,36 +420,36 @@ load data
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
       scale_y_continuous(limits = c(0, 20)) +
-      annotate("text", x = 1, y = 20, label = "XXX", size = 5) +
+      annotate("text", x = 1, y = 20, label = "73.6", size = 5) +
       theme_bw() +
       theme(text = element_text(size = 20),
             axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
-            strip.text.x = element_blank(),
+            #strip.text.x = element_blank(),
             legend.position = "none") +
       guides(fill = guide_legend(title = NULL)) +
       facet_wrap(~stovecat, scales = "free")
   
   p9 <-
     pahs_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stats_pahs %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
-      scale_y_continuous(limits = c(0, 2)) +
-      annotate("text", x = 1, y = 2, label = "XXX", size = 5) +
+      scale_y_continuous(limits = c(0, 2.5)) +
+      annotate("text", x = 1, y = 2.5, label = "3.1", size = 5) +
       theme_bw() +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             axis.text.x = element_blank(),
             axis.title.x = element_blank(),
-            strip.text.x = element_blank(),
+            #strip.text.x = element_blank(),
             legend.position = "right",
             legend.text = element_text(size = 12)) +
       guides(fill = guide_legend(title = NULL)) +
