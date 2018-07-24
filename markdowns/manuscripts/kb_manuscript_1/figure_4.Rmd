@@ -40,7 +40,7 @@ load data
   emissions <-
     emissions %>%
     dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
-                  pol_subcategory = ifelse(grepl("organic carbon", pol_subcategory), "particle-phase organic carbon", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("organic matter", pol_subcategory), "particle-phase organic matter", pol_subcategory),
                   pol_subcategory = ifelse(grepl("ions", pol_subcategory), "inorganic ions", pol_subcategory),
                   pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
                   pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
@@ -51,7 +51,8 @@ load data
                   pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
                   pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory),
                   pol_subcategory = ifelse(grepl("carbohydrates", pol_subcategory), "total carbohydrates", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("carbonyls", pol_subcategory), "total carbonyls", pol_subcategory))
+                  pol_subcategory = ifelse(grepl("carbonyls", pol_subcategory), "total carbonyls", pol_subcategory)) %>%
+    dplyr::filter(!grepl("^oc$", pol))
 ```
 
 ## filter out NAs
