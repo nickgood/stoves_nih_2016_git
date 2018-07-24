@@ -41,6 +41,8 @@ output:
                                                    "wick kerosene",
                                                    "pressurized kerosene",
                                                    "pressurized lpg") %>%
+                               forcats::fct_recode("three-stone fire" = "three stone fire") %>%
+                               forcats::fct_recode("fan rocket-elbow" = "fan rocket elbow") %>%
                                forcats::fct_recode("lpg" = "pressurized lpg") %>%
                                forcats::fct_recode("built-in plancha" = "built-in justa") %>%
                                forcats::fct_recode("pressure kerosene" = "pressurized kerosene"))
@@ -73,16 +75,16 @@ output:
   samples <- dplyr::mutate(samples,
                            fuelcat =
                              forcats::fct_collapse(fuel,
-                               "wood" = c("oak",
-                                          "eucalyptus",
-                                          "douglas fir"),
+                               "unprocessed wood" = c("oak",
+                                                      "eucalyptus",
+                                                      "douglas fir"),
                                "charcoal" = c("coconut charcoal",
                                               "lump hardwood (med.)", 
                                               "lump hardwood (sm.)"),
-                               "pellets" = c("eucalyptus pellets",
-                                             "west slope pellets"),
-                               "liquids" = c("kerosene",
-                                             "lpg")))
+                               "processed wood" = c("eucalyptus pellets",
+                                                    "west slope pellets"),
+                               "kerosene" = c("kerosene"),
+                               "lpg" = c("lpg")))
 ```
 
 # stove categories
@@ -91,17 +93,17 @@ output:
   samples <- dplyr::mutate(samples,
                            stovecat =
                             forcats::fct_collapse(stove,
-                               "traditional stoves" = c("clay ring",
-                                                        "three stone fire",
-                                                        "ceramic charcoal"),
-                               "improved stoves" = c("fan rocket elbow",
-                                                                 "metal charcoal",
-                                                                 "rocket elbow",
-                                                                 "built-in plancha",
-                                                                 "gasifier"),
-                               "liquid-fuel stoves" = c("lpg",
-                                                        "wick kerosene",
-                                                        "pressure kerosene")))
+                               "wood" = c("three-stone fire",
+                                          "clay ring",
+                                          "rocket elbow",
+                                          "built-in plancha",
+                                          "fan rocket-elbow",
+                                          "gasifier"),
+                               "charcoal" = c("ceramic charcoal",
+                                              "metal charcoal"),
+                               "fossil fuel stoves" = c("wick kerosene",
+                                                        "pressure kerosene",
+                                                        "lpg")))
 ```
 
 * save info
