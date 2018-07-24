@@ -28,6 +28,25 @@ load data
   samples <- readRDS("../../../r_data/samples.RDS")
 ```
 
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    forcats::fct_relevel("three-stone fire",
+                                         "clay ring",
+                                         "rocket elbow",
+                                         "built-in plancha",
+                                         "fan rocket-elbow",
+                                         "gasifier",
+                                         "ceramic charcoal",
+                                         "metal charcoal",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg"))
+```
+
 ## add stove fuel info
 
 ```{r}
@@ -35,6 +54,14 @@ load data
     emissions %>%
     dplyr::left_join(samples %>%
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(bg != "below")
 ```
 
 ## rename pollutants
@@ -264,21 +291,21 @@ load data
 
 ## figure 1
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   p1 <-
     pm_mass_p  %>%
-    dplyr::filter(grepl("traditional", stovecat)) %>%
+    dplyr::filter(grepl("wood", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
     geom_histogram(aes(fill = pol), stat = "identity") +
     geom_histogram(data = ec_oc_ions_p %>%
-                   dplyr::filter(grepl("traditional", stovecat)),
+                   dplyr::filter(grepl("wood", stovecat)),
                    aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
     scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-    scale_y_continuous(limits = c(0, 1000)) +
-    annotate("text", x = 1, y = 1000, label = "XXX", size = 5) +
-    annotate("text", x = 2, y = 1000, label = "XXX", size = 5) +
+    #scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+    #annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
+    #annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
     geom_text(data = range_pm %>%
-              dplyr::filter(grepl("traditional", stovecat)),
+              dplyr::filter(grepl("wood", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
     theme_bw() +
     theme(text = element_text(size = 20),
@@ -291,19 +318,43 @@ load data
     ylab("mg per MJ delivered")
 
   p2 <-
+    pm_mass_p  %>%
+    dplyr::filter(grepl("pellet", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = pol), stat = "identity") +
+    geom_histogram(data = ec_oc_ions_p %>%
+                   dplyr::filter(grepl("pellet", stovecat)),
+                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
+    #scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+    geom_text(data = range_pm %>%
+              dplyr::filter(grepl("pellet", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
+    ylab("mg per MJ delivered")
+
+  p3 <-
     pm_mass_p %>%
-    dplyr::filter(grepl("improved", stovecat)) %>%
+    dplyr::filter(grepl("charcoal", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol), stat = "identity") +
       geom_histogram(data = ec_oc_ions_p %>%
-                     dplyr::filter(grepl("improved", stovecat)),
+                     dplyr::filter(grepl("charcoal", stovecat)),
                      aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-      annotate("text", x = 1, y = 500, label = "XXX", size = 5) +
-      annotate("text", x = 2, y = 500, label = "XXX", size = 5) +
-      scale_y_continuous(limits = c(0, 500)) +
+      #annotate("text", x = 1, y = 400, label = "888", size = 5) +
+      #annotate("text", x = 2, y = 400, label = "527", size = 5) +
+      #scale_y_continuous(limits = c(0, 400)) +
       geom_text(data = range_pm %>%
-                dplyr::filter(grepl("improved", stovecat)),
+                dplyr::filter(grepl("charcoal", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.04) +
       theme_bw() +
       theme(text = element_text(size = 20),
@@ -315,23 +366,50 @@ load data
       guides(fill = guide_legend(title = NULL)) +
       facet_wrap(~stovecat, scales = "free")
   
-  p3 <-
+  p4 <-
     pm_mass_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("kerosene", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol), stat = "identity") +
       geom_histogram(data = ec_oc_ions_p %>%
-                       dplyr::filter(grepl("liquid", stovecat)),
+                       dplyr::filter(grepl("kerosene", stovecat)),
                      aes(x = stove, y = val, fill = pol, order = pol),
                      stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-      annotate("text", x = 1, y = 10, label = "XXX", size = 5) +
+      #annotate("text", x = 1, y = 10, label = "23", size = 5) +
       geom_text(data = range_pm %>%
-                  dplyr::filter(grepl("liquid", stovecat)),
+                  dplyr::filter(grepl("kerosene", stovecat)),
                 aes(x = stove, y = val, label = sym),
                 stroke = 2, size = 10, angle = 90, nudge_x = -0.02) +
       theme_bw() +
-      scale_y_continuous(limits = c(0, 10)) +
+      #scale_y_continuous(limits = c(0, 10)) +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.title.y = element_blank(),
+            axis.text.x = element_blank(),
+            axis.title.x = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(size = 12)) +
+      guides(fill = guide_legend(title = NULL)) +
+      facet_wrap(~stovecat, scales = "free")
+
+  p5 <-
+    pm_mass_p %>%
+    dplyr::filter(grepl("lpg", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol), stat = "identity") +
+      geom_histogram(data = ec_oc_ions_p %>%
+                       dplyr::filter(grepl("lpg", stovecat)),
+                     aes(x = stove, y = val, fill = pol, order = pol),
+                     stat = "identity", width = 0.75) +
+      scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
+     # annotate("text", x = 1, y = 10, label = "23", size = 5) +
+      geom_text(data = range_pm %>%
+                  dplyr::filter(grepl("lpg", stovecat)),
+                aes(x = stove, y = val, label = sym),
+                stroke = 2, size = 10, angle = 90, nudge_x = -0.02) +
+      theme_bw() +
+      #scale_y_continuous(limits = c(0, 10)) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
@@ -343,7 +421,7 @@ load data
       facet_wrap(~stovecat, scales = "free")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   p4 <- 
     ultrafines_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
@@ -385,11 +463,11 @@ load data
         facet_wrap(~stovecat, scales = "free")
   p6 <- 
     ultrafines_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
       geom_histogram(stat = "identity", fill = "#56B4E9") +
       geom_text(data = range_ultrafines %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_bw() +
         #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
@@ -406,7 +484,7 @@ load data
         facet_wrap(~stovecat, scales = "free")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
   p7 <- 
     co_p %>%
     dplyr::filter(grepl("traditional", stovecat)) %>%
@@ -449,11 +527,11 @@ load data
   
   p9 <- 
     co_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
       ggplot(aes(x = stove, y = mean)) +
       geom_histogram(stat = "identity", fill = "mediumslateblue") +
       geom_text(data = range_co %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         scale_y_continuous(limits = c(0, 4)) +
         theme_bw() +
@@ -470,8 +548,148 @@ load data
         facet_wrap(~stovecat, scales = "free")
 ```
 
-```{r figure_1, echo=FALSE, fig.width=16, fig.height=10}
+```{r, echo=FALSE, fig.width=16, fig.height=10, eval=FALSE}
  (p1 + p2 + p3) + p7 + p8 + p9 + p4 + p5 + p6 + plot_layout(ncol = 3, widths = c(1, 1.5, 1), heights = c(1.25, 1, 1))
+```
+
+```{r, echo=FALSE}
+  p1 <-
+    pm_mass_p %>%
+      dplyr::mutate(pol_category = "PM2.5 composition") %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol), stat = "identity") +
+      geom_histogram(data = ec_oc_ions_p %>%
+                     dplyr::mutate(pol_category = "PM2.5 composition"),
+                     aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
+      scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999"), name = expression(paste(PM[2.5], ' composition'))) +
+      scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+      annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
+      annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
+      geom_text(data = range_pm,
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      theme_bw() +
+      theme(text = element_text(size = 20),
+            axis.text.y = element_text(size = 18),
+            axis.text.x = element_blank(),
+            axis.title.x = element_blank(),
+            legend.position = "right") +
+      facet_grid(.~pol_category, scales = "free") +
+      ylab("miligrams per MJ delivered")
+```
+
+```{r, echo=FALSE}
+  p3 <- 
+    ultrafines_p %>%
+      ggplot(aes(x = stove, y = mean)) +
+      geom_histogram(stat = "identity", fill = "#56B4E9") +
+      geom_text(data = range_ultrafines,
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+        theme_bw() +
+        #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
+        theme(text = element_text(size = 20),
+              axis.text.y = element_text(size = 18),
+              axis.text.x = element_blank(),
+              legend.title = element_blank(),
+              axis.title.x = element_blank(),
+              legend.position = "none",
+              legend.text = element_text(size = 12)) +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(.~pol_category, scales = "free") +
+        ylab("particles per MJ delivered")
+```
+
+```{r}
+  p2 <-
+    co_p %>%
+      ggplot(aes(x = stove, y = mean)) +
+      geom_histogram(stat = "identity", fill = "mediumslateblue") +
+      geom_text(data = range_co,
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+        #scale_y_continuous(limits = c(0, 4)) +
+        theme_bw() +
+        theme(text = element_text(size = 20),
+              axis.text.y = element_text(size = 18),
+              axis.title.x = element_blank(),
+              axis.text.x = element_blank(),
+              legend.title = element_blank(),
+              legend.position = "none",
+              legend.text = element_text(size = 12)) +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(.~pol_category, scales = "free") +
+    ylab("grams per MJ delivered")
+```
+
+```{r figure_1, echo=FALSE, fig.width=16, fig.height=12}
+ (p1 + plot_spacer() + p2 + plot_spacer() + p3) + plot_layout(nrow = 3, heights = c(1.25, 1, 1))
+```
+
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+  pm_mass_p %>%
+    dplyr::filter(grepl("fossil", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+    geom_histogram(aes(fill = pol), stat = "identity") +
+    geom_histogram(data = ec_oc_ions_p %>%
+                   dplyr::filter(grepl("fossil", stovecat)),
+                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
+    scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
+    #scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+    geom_text(data = range_pm %>%
+              dplyr::filter(grepl("fossil", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          strip.text.x = element_text(size = 24),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(.~stovecat, scales = "free", switch = "y")
+```
+
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+  co_p %>%
+    dplyr::filter(grepl("fossil", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+    geom_histogram(fill = "mediumslateblue", stat = "identity") +
+    geom_histogram(data = ec_oc_ions_p %>%
+                   dplyr::filter(grepl("fossil", stovecat)),
+                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
+    geom_text(data = range_pm %>%
+              dplyr::filter(grepl("fossil", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(.~stovecat, scales = "free", switch = "y")
+```
+
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+  ultrafines_p %>%
+    dplyr::filter(grepl("fossil", stovecat)) %>%
+    ggplot(aes(x = stove, y = val)) +
+    geom_histogram(fill = "#56B4E9", stat = "identity") +
+    geom_histogram(data = ec_oc_ions_p %>%
+                   dplyr::filter(grepl("fossil", stovecat)),
+                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
+    geom_text(data = range_pm %>%
+              dplyr::filter(grepl("fossil", stovecat)),
+              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+    theme_bw() +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none") +
+    guides(fill = guide_legend(title = NULL)) +
+    facet_grid(.~stovecat, scales = "free", switch = "y")
 ```
 
 # summary tables
