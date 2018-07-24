@@ -36,7 +36,7 @@ load data
     dplyr::inner_join(fuel %>%
                         dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (mass_fuel_comb * 1e-3)) %>%
-    dplyr::select(id, pol, pol_category, val, qc) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
     dplyr::mutate(units = "miligrams per kilogram fuel",
                   units = ifelse(pol == "ultrafines", "number per kilogram fuel", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
@@ -52,7 +52,7 @@ load data
     dplyr::inner_join(fuel %>%
                        dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (lhv * 1e-3))) %>%
-    dplyr::select(id, pol, pol_category, val, qc) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
     dplyr::mutate(units = "miligrams per Megajoule fuel",
                   units = ifelse(pol == "ultrafines", "number per Megajoule fuel", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
@@ -68,7 +68,7 @@ load data
     dplyr::inner_join(energy %>%
                         dplyr::filter(!is.na(joules)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (joules * 1e-6)) %>% 
-    dplyr::select(id, pol, pol_category, val, qc) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
     dplyr::mutate(units = "miligrams per Megajoule delivered",
                   units = ifelse(pol == "ultrafines", "number per Megajoule delivered", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
