@@ -118,7 +118,7 @@ define test type variable
   ecoc <- 
     ecoc %>%
       dplyr::select(id, oc_ug_sq_cm, ec_ug_sq_cm,
-                    cassette, test_type, oc_unc, ec_unc, fid2, qc) %>%
+                    cassette, test_type, oc_unc, ec_unc, fid2, punch_area, qc) %>%
       tidyr::gather("pol", "val", ec_ug_sq_cm, oc_ug_sq_cm, oc_unc, ec_unc) %>%
       dplyr::mutate(pol = ifelse(pol == "ec_ug_sq_cm", "ec", pol),
                     pol = ifelse(pol == "oc_ug_sq_cm", "oc", pol))
@@ -241,6 +241,48 @@ notes:
                      qc = last(qc))
 ```
 
+## flow data
+
+```{r}
+ flows <- 
+  flows %>%
+  dplyr::select(-date) %>%
+  dplyr::filter(colour == "white" | colour == "orange") %>%
+  dplyr::group_by(id, type, colour) %>%
+  dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+  dplyr::group_by(id, colour) %>%
+  dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+  dplyr::mutate(colour = as_factor(colour)) %>%
+  dplyr::mutate(cassette =  forcats::fct_recode(colour, "a" = "white", "e" = "orange")) %>%
+  dplyr::select(-colour)
+```
+
+notes: no flow data is missing
+
+## time data
+
+```{r}
+  times <-
+    times %>%
+    dplyr::select(-date) %>%
+    dplyr::filter(color == "white" | color == "orange") %>%
+    tidyr::spread(type, value) %>%
+    dplyr::mutate(cassette = forcats::fct_recode(color, "a" = "white", "e" = "orange")) %>%
+    dplyr::select(-color)
+```
+
+notes: no time data is missing
+
+```{r}
+  readr::write_csv(ecoc_merged %>%
+                   dplyr::ungroup() %>%
+                   tidyr::spread(pol, val) %>%
+                   dplyr::left_join(flows, by = c("id", "cassette")) %>%
+                   dplyr::left_join(times, by = c("id", "cassette")) %>%
+                   dplyr::mutate(cassette = ifelse(cassette == "e", "bq", "qbt")),
+                   "../../exported_data/oc_raw.csv")
+```
+
 # uncertainty
 
 ## plot: ratio of uncertainty to value
@@ -249,6 +291,7 @@ elemental carbon
 
 ```{r, echo=FALSE, fig.width=12, fig.height=5}
   ecoc_merged %>%
+    dplyr::ungroup() %>%
     dplyr::filter(test_type == "test", grepl("ec", pol), cassette == "e") %>%
     dplyr::select(id, cassette, qc, pol, val) %>%
     tidyr::spread(pol, val) %>%
@@ -358,6 +401,16 @@ percent of lab blanks with NA values
     knitr::kable("markdown", align = 'c')
 ```
 
+## save data for volatility (Shantanu)
+
+```{r}
+  readr::write_csv(blanks %>%
+                     dplyr::ungroup() %>%
+                     dplyr::select(-cassette) %>%
+                     dplyr::filter(pol == "oc"),
+                   "../../exported_data/oc_blanks_disaggregated.csv")
+```
+
 ## summarize blanks
 
 ```{r}
@@ -367,8 +420,8 @@ percent of lab blanks with NA values
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
-                     lod = stdev * 3 + mean,
-                     loq = stdev * 10 + mean)
+                     lod = stdev * 3,
+                     loq = stdev * 10)
 ```
 
 ## table: blank summary (ug)
@@ -384,12 +437,30 @@ percent of lab blanks with NA values
   saveRDS(blanks, file = "../../r_data/ecoc_lod.RDS")
 ```
 
+## save data for volatility (Shantanu)
+
+```{r}
+  readr::write_csv(blanks %>%
+                     dplyr::filter(pol == "oc"),
+                   "../../exported_data/oc_blank_summary.csv")
+```
+
 remove lab blanks from merged file
 
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::filter(test_type != "blank") # remove blanks
+```
+
+## subtract blank mean
+
+```{r}
+  ecoc_merged <-
+    ecoc_merged %>%
+    dplyr::left_join(dplyr::select(blanks, pol, mean), by = "pol") %>%
+    dplyr::mutate(val = val - mean) %>%
+    dplyr::select(-mean)
 ```
 
 ## lod
@@ -412,6 +483,7 @@ add lod variable and replace values below lod with lod/sqrt(2)
 ```{r}
   ecoc_artifact <-
     ecoc_merged %>%
+    dplyr::ungroup() %>%
     dplyr::filter(cassette == "a") %>%
     dplyr::select(id, pol, val) %>%
     dplyr::rename("artifact" = "val")
@@ -444,7 +516,7 @@ add lod variable and replace values below lod with lod/sqrt(2)
       ylab("ratio (artifact to loaded filter)")
 ```
 
-notes: high ratios imply break through - all these tests are 
+notes: high ratios imply break through
 
 ## replace ec artifacts with zero
 
@@ -455,38 +527,6 @@ notes: high ratios imply break through - all these tests are
 ```
 
 # calculate concentrations
-
-## flow data
-
-```{r}
- flows <- 
-  flows %>%
-  dplyr::select(-date) %>%
-  dplyr::filter(colour == "white" | colour == "orange") %>%
-  dplyr::group_by(id, type, colour) %>%
-  dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-  dplyr::group_by(id, colour) %>%
-  dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-  dplyr::mutate(colour = as_factor(colour)) %>%
-  dplyr::mutate(cassette =  forcats::fct_recode(colour, "a" = "white", "e" = "orange")) %>%
-  dplyr::select(-colour)
-```
-
-notes: no flow data is missing
-
-## time data
-
-```{r}
-  times <-
-    times %>%
-    dplyr::select(-date) %>%
-    dplyr::filter(color == "white" | color == "orange") %>%
-    tidyr::spread(type, value) %>%
-    dplyr::mutate(cassette = forcats::fct_recode(color, "a" = "white", "e" = "orange")) %>%
-    dplyr::select(-color)
-```
-
-notes: no time data is missing
 
 ## merge flow and time data
 
@@ -791,7 +831,7 @@ extract artifact
 ```{r, echo=FALSE}
   ecoc_merged %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., val <= 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
@@ -803,7 +843,7 @@ notes: two tests 26A and 25B were below background for oc
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 
