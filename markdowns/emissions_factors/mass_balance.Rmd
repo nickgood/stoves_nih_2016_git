@@ -1,0 +1,168 @@
+---
+title: "Combine all pollutant data and calculate additional emissions metrics"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+```{r}
+  emissions <- readRDS(file = "../../r_data/emissions.RDS")
+  samples <- readRDS(file = "../../r_data/samples.RDS")
+```
+
+## add stove fuel info and select pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, date, fuelcat), by = "id") %>%
+    dplyr::filter(grepl("ions|ec|^oc$|pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "conc")
+```
+
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(bg != "below")
+```
+
+# check for outliers
+
+## elemental carbon
+
+```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
+  emissions %>%
+    dplyr::filter(pol_category == "ec") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+## organic carbon
+
+```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
+  emissions %>%
+    dplyr::filter(pol_category == "oc") %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## pm mass
+
+```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
+  pm_mass %>%
+    ggplot(aes(x = id, y = val, color = fuel)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free_x")
+```
+
+## plot 1: Mass balance with OC
+
+```{r}
+  ec_oc_ions <-
+    emissions %>%
+    dplyr::filter(grepl("ions|ec|^oc$", pol_category)) %>%
+    dplyr::group_by(id, stove, fuel, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    na.omit %>%
+    dplyr::rename("ec_oc_ions" = "val")
+```
+
+```{r}
+  pm_mass <-
+    emissions %>%
+    dplyr::filter(grepl("pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "conc") %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    dplyr::select(id, pm_mass) 
+```
+
+```{r}
+  pm_comp <-
+    ec_oc_ions %>%
+    dplyr::left_join(pm_mass, by = "id") %>%
+    na.omit
+```
+
+```{r, echo=FALSE, fig.width=8, fig.height=8}
+  pm_comp %>%
+  ggplot(aes(x = ec_oc_ions, y = pm_mass, color = fuel)) +
+    geom_point() +
+    geom_abline(slope = 1, intercept = 0) +
+    geom_abline(slope = 1.20, intercept = 0, color = "blue") +
+    geom_abline(slope = 0.80, intercept = 0, color = "blue") +
+    scale_y_continuous(limits = c(1, 10000), trans = "log10") +
+    scale_x_continuous(limits = c(1, 10000), trans = "log10") +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~fuelcat) +
+    ylab(expression(paste(PM[2.5], " mass (", mu, "g/", m^3, ")"))) +
+    xlab(expression(paste("EC + OC + ions", " (", mu, "g/", m^3, ")")))
+```
+
+## plot 2: Mass balance with OM
+
+```{r}
+  ec_oc_ions <-
+    emissions %>%
+    dplyr::filter(grepl("ions|ec|^om$", pol_category)) %>%
+    dplyr::filter(metric == "conc") %>%
+    dplyr::group_by(id, stove, fuel, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    na.omit %>%
+    dplyr::rename("ec_oc_ions" = "val")
+```
+
+```{r}
+  pm_comp <-
+    ec_oc_ions %>%
+    dplyr::left_join(pm_mass, by = "id") %>%
+    na.omit
+```
+
+```{r, echo=FALSE, fig.width=8, fig.height=8}
+  pm_comp %>%
+  ggplot(aes(x = ec_oc_ions, y = pm_mass, color = fuel)) +
+    geom_point() +
+    geom_abline(slope = 1, intercept = 0) +
+    geom_abline(slope = 1.20, intercept = 0, color = "blue") +
+    geom_abline(slope = 0.80, intercept = 0, color = "blue") +
+    scale_y_continuous(limits = c(1, 10000), trans = "log10") +
+    scale_x_continuous(limits = c(1, 10000), trans = "log10") +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~fuelcat) +
+    ylab(expression(paste(PM[2.5], " mass (", mu, "g/", m^3, ")"))) +
+    xlab(expression(paste("EC + OM + ions", " (", mu, "g/", m^3, ")")))
+```
