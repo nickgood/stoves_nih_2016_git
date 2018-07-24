@@ -35,18 +35,16 @@ load data
     dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
-                    gsub(" ", "\n",.) %>% 
-                    forcats::fct_relevel("three\nstone\nfire",
-                                         "clay\nring",
-                                         "ceramic\ncharcoal",
-                                         "rocket\nelbow",
-                                         "built-in\nplancha",
-                                         "metal\ncharcoal",
-                                         "fan\nrocket\nelbow",
+                    forcats::fct_relevel("three stone fire",
+                                         "clay ring",
+                                         "ceramic charcoal",
+                                         "rocket elbow",
+                                         "built-in plancha",
+                                         "metal charcoal",
+                                         "fan rocket elbow",
                                          "gasifier",
-                                         "wick\nkerosene",
-                                         "pressure\nkerosene",
-                                         "lpg"))
+                                         "wick kerosene",
+                                         "pressure kerosene"))
 ```
 
 ## add stove fuel info
@@ -201,11 +199,11 @@ load data
   
   p3 <-
     gases_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
       geom_text(data = stats_gases %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_bw() +
       scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
@@ -231,7 +229,7 @@ load data
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
       scale_y_continuous(limits = c(0, 5)) +
-      annotate("text", x = 1, y = 5, label = "7.1", size = 5) +
+      annotate("text", x = 1, y = 5, label = "7.2", size = 5) +
       annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
       theme_bw() +
       theme(text = element_text(size = 20),
@@ -269,15 +267,16 @@ load data
   
   p6 <-
     particles_p %>%
-    dplyr::filter(grepl("liquid", stovecat)) %>%
+    dplyr::filter(grepl("advanced", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
       geom_text(data = stats_particles %>%
-                dplyr::filter(grepl("liquid", stovecat)),
+                dplyr::filter(grepl("advanced", stovecat)),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
       theme_bw() +
       scale_y_continuous(limits = c(0, 0.4)) +
+      annotate("text", x = 1, y = 0.4, label = "0.14", size = 5) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.text.x = element_blank(),
