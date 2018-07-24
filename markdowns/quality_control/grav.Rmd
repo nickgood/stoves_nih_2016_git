@@ -300,8 +300,8 @@ percent of lab blanks with NA values
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
-                     lod = stdev * 3 + mean,
-                     loq = stdev * 10 + mean)
+                     lod = stdev * 3,
+                     loq = stdev * 10)
 ```
 
 ## table: blank summary
@@ -323,6 +323,14 @@ remove lab blanks from merged file
   grav_merged <-
     grav_merged %>%
     dplyr::filter(test_type != "blank") # remove blanks
+```
+
+## subtract blank mean
+
+```{r}
+  grav_merged <-
+    grav_merged %>%
+    dplyr::mutate(val = val - blanks$mean)
 ```
 
 ## lod
@@ -549,7 +557,7 @@ notes: some burns have low concentrations - opt to subtract median background fr
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., val <= 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
@@ -559,7 +567,7 @@ notes: some burns have low concentrations - opt to subtract median background fr
 ```{r}
   grav_merged <-
    grav_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 
@@ -682,7 +690,7 @@ notes:
     knitr::kable("markdown", align = 'c')
 ```
 
-## save data
+## save data<
 
 ```{r}
   grav_merged <-
