@@ -752,6 +752,23 @@ notes: most backgrounds below lod
       xlab("")
 ```
 
+```{r}
+  pah_merged %>%
+    dplyr::filter(test_type == "test", grepl("front puf|filter", filter_type)) %>%
+    tidyr::spread(filter_type, val) %>%
+    dplyr::rename("front_puf" = "front puf") %>%
+    dplyr::mutate(ratio = front_puf / (filter + front_puf)) %>%
+      ggplot(aes_string(y = "ratio", x = "pol")) +
+      geom_boxplot(outlier.colour = NA) +
+      geom_jitter(shape = 1, size = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 16),
+            legend.position = "top",
+            axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1)) +
+      ylab("fraction of gas phase PAHs") +
+      xlab("")
+```
+
 ## sum pollutants across filters
 
 ```{r}
