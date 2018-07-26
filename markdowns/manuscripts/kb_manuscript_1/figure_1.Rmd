@@ -248,7 +248,6 @@ load data
 ```{r}
   ec_oc_ions_p <-
     ec_oc_ions %>%
-    #dplyr::mutate(val = ifelse(pol_category == "organic carbon", val * 1.8, val)) %>%
     dplyr::group_by(id, pol_category, stove, fuel, stovecat, fuelcat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     tidyr::spread(pol_category, val) %>%
@@ -267,6 +266,47 @@ load data
                                          "inorganic ions") %>%
                     forcats::fct_rev(),
                   pol_category = "PM2.5 mass")
+```
+
+```{r}
+    ec_oc_ions %>%
+    dplyr::filter(pol_category == "inorganic ions") %>%
+    dplyr::group_by(fuelcat, pol) %>%
+    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
+      ggplot(aes(x = fuelcat, y = val)) +
+      geom_point() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free")
+```
+
+```{r}
+  ions <-
+    ec_oc_ions %>%
+    dplyr::filter(pol_category == "inorganic ions") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::rename("ions" = "val")
+
+    ec_oc_ions %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(id, pol_category, stove, fuel, stovecat, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 6:8) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(id, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::left_join(ions, by = "id") %>%
+    dplyr::mutate(ion_frac = (ions / val) * 100) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(fuelcat) %>%
+    dplyr::summarise(min = min(ion_frac, na.rm = TRUE),
+                     mean = mean(ion_frac, na.rm = TRUE),
+                     max = max(ion_frac, na.rm = TRUE)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
 ## average ultrafines by stove type
