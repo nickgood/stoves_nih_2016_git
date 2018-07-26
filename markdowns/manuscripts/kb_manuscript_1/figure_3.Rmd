@@ -35,16 +35,17 @@ load data
     dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
-                    forcats::fct_relevel("three stone fire",
+                    forcats::fct_relevel("three-stone fire",
                                          "clay ring",
-                                         "ceramic charcoal",
                                          "rocket elbow",
                                          "built-in plancha",
-                                         "metal charcoal",
-                                         "fan rocket elbow",
+                                         "fan rocket-elbow",
                                          "gasifier",
+                                         "ceramic charcoal",
+                                         "metal charcoal",
                                          "wick kerosene",
-                                         "pressure kerosene"))
+                                         "pressure kerosene",
+                                         "lpg"))
 ```
 
 ## add stove fuel info
@@ -159,139 +160,55 @@ load data
 ```{r, echo=FALSE}
   p1 <-
     gases_p %>%
-    dplyr::filter(grepl("traditional", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
-      geom_text(data = stats_gases %>%
-                dplyr::filter(grepl("traditional", stovecat)),
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
-      scale_y_continuous(limits = c(0, 400)) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            axis.text.y = element_text(size = 18),
-            axis.title.x = element_blank(),
-            axis.text.x = element_blank(),
-            legend.position = "none") +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_grid(pol_category~stovecat, scales = "free", switch = "y") +
-      ylab("mg per MJ delivered")
-
-  p2 <-
-    gases_p %>%
-    dplyr::filter(grepl("improved", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
-      geom_text(data = stats_gases %>%
-                dplyr::filter(grepl("improved", stovecat)),
+      geom_text(data = stats_gases,
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_bw() +
-      scale_y_continuous(limits = c(0, 200)) +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
+      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3"),
+                        name = "gas-phase carcinogens") +
+      scale_y_continuous(limits = c(0, 250)) +
+      annotate("text", x = 2, y = 250, label = "363", size = 5) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
-            legend.position = "none") +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free")
-  
-  p3 <-
-    gases_p %>%
-    dplyr::filter(grepl("advanced", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
-      geom_text(data = stats_gases %>%
-                dplyr::filter(grepl("advanced", stovecat)),
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-      theme_bw() +
-      scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3")) +
-      theme(text = element_text(size = 20),
-            axis.text.y = element_text(size = 18),
-            axis.title.y = element_blank(),
-            axis.title.x = element_blank(),
-            axis.text.x = element_blank(),
+            strip.text.x = element_text(size = 20),
             legend.position = "right",
+            legend.title = element_text(size = 14),
             legend.text = element_text(size = 12)) +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free")
+      facet_wrap(~pol_category, scales = "free")
 ```
 
 ```{r, echo=FALSE}
-  p4 <-
+  p2 <-
     particles_p %>%
-    dplyr::filter(grepl("traditional", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
-      geom_text(data = stats_particles %>%
-                dplyr::filter(grepl("traditional", stovecat)),
+      geom_text(data = stats_particles,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
+      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4"),
+                        name = "particle-phase carcinogens") +
+      theme_bw() +
       scale_y_continuous(limits = c(0, 5)) +
-      annotate("text", x = 1, y = 5, label = "7.2", size = 5) +
+      annotate("text", x = 1, y = 5, label = "7.16", size = 5) +
       annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            axis.title.x = element_blank(),
-            axis.text.y = element_text(size = 18),
-            axis.text.x = element_blank(),
-            strip.text.x = element_blank(),
-            legend.position = "none") +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free") +
-      ylab("mg per MJ delivered") +
-      facet_grid(pol_category~stovecat, scales = "free", switch = "y")
-
-  p5 <-
-    particles_p %>%
-    dplyr::filter(grepl("improved", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
-      geom_text(data = stats_particles %>%
-                dplyr::filter(grepl("improved", stovecat)),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
-      scale_y_continuous(limits = c(0, 5)) +
-      annotate("text", x = 1, y = 5, label = "14.8", size = 5) +
-      theme_bw() +
-      theme(text = element_text(size = 20),
-            axis.title.x = element_blank(),
-            axis.text.x = element_blank(),
-            axis.text.y = element_text(size = 18),
-            axis.title.y = element_blank(),
-            strip.text.x = element_blank(),
-            legend.position = "none") +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free")
-  
-  p6 <-
-    particles_p %>%
-    dplyr::filter(grepl("advanced", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
-      geom_text(data = stats_particles %>%
-                dplyr::filter(grepl("advanced", stovecat)),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
-      theme_bw() +
-      scale_y_continuous(limits = c(0, 0.4)) +
-      annotate("text", x = 1, y = 0.4, label = "0.14", size = 5) +
+      annotate("text", x = 3, y = 5, label = "14.8", size = 5) +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.text.x = element_blank(),
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
-            strip.text.x = element_blank(),
+            strip.text.x = element_text(size = 20),
             legend.position = "right",
+            legend.title = element_text(size = 14),
             legend.text = element_text(size = 12)) +
-      guides(fill = guide_legend(title = NULL)) +
-      facet_wrap(~stovecat, scales = "free")
+      facet_wrap(~pol_category, scales = "free")
 ```
 
-```{r figure_1b, echo=FALSE, fig.width=16, fig.height=8}
- (p1 + p2 + p3) +
-  p4 + p5 + p6 +  plot_layout(ncol = 3, widths = c(1, 1.5, 1))
+```{r figure_1b, echo=FALSE, fig.width=16, fig.height=10}
+  p1 + p2 +  plot_layout(ncol = 1, heights = c(1, 1))
 ```
 
 # tables
