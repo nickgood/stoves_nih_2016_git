@@ -255,7 +255,7 @@ knitr::kable(fuel_sum)
 
 * emissions of key pollutants (mass per mass fuel basis)
 
-```{r, echo = FALSE, fig.width = 12, fig.height = 17.5}
+```{r, echo = FALSE, fig.width = 12, fig.height = 15}
   p_data_key_reorder <- p_data_key %>%
                         dplyr::mutate(fuel_names = forcats::fct_relevel(fuel_names, "inner tubes", "footwear", 
                                                                         "kerosene", "kindling",
@@ -266,13 +266,15 @@ knitr::kable(fuel_sum)
   geom_point(size = 5, shape = 1, stroke = 2) +
     theme_bw() +
   theme(legend.position = "none",
-        text = element_text(size=25),
+        panel.spacing.y = unit(1.5,"lines"),
+        panel.spacing.x = unit(0,"lines"),
+        text = element_text(size=30),
         axis.text.x = element_text(angle = 45, hjust = 1),
         axis.text.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 25))) +
   scale_y_log10(breaks = c(0, 0.05, 0.1, 0.5, 1, 5, 10, 20, 40, 80)) +
-  ylab("Emissions Factor (g/kg)") + xlab("Fuel Type") +
+  ylab("Emissions per mass fuel (g/kg)") + xlab("") +
   scale_color_manual(values = jvPalette) +
-  facet_wrap(~pol, scales = "free", ncol = 2)
+  facet_wrap(~pol, scales = "free_y", ncol = 2)
 ```
 
 
