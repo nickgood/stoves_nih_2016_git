@@ -1,12 +1,14 @@
 ---
+title: "SUPPORTING INFORMATION"
 output:
   pdf_document:
-    toc: yes
+    toc: false
 ---
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, patchwork, knitr, kableExtra, forcats, patchwork, RColorBrewer)
+  pacman::p_load(tidyverse, patchwork, knitr, kableExtra, forcats, patchwork,
+                 RColorBrewer, stringi, pBrackets)
 ```
 
 ```{r global_options, include=FALSE}
@@ -20,9 +22,18 @@ output:
   pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
 ```
 
+\begin{center}
+\LARGE{Household Cookstoves: A Comprehensive Laboratory Assessment of Air Pollutant Emissions}
+\end{center}
+
+Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobian, Pierre Herckes, Christian L’Orange, John Mehaffy, Amy Sullivan, Jessica Tryner, Lizette Van Zyl, Ethan Walker, Ander Wilson, Jennifer L. Peel, John Volckens
+
+\tableofcontents
+\newpage
+
 # 1. Stove-fuel test matrix
 
-```{r, fig.width=22, fig.height=10}
+```{r, fig.width=14, fig.height=10}
   samples %>%
     dplyr::select(id, stove, fuel, type) %>%
     dplyr::mutate(stove = as.character(stove),
@@ -30,17 +41,17 @@ output:
     dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
-                    forcats::fct_relevel("three stone fire",
+                    forcats::fct_relevel("three-stone fire",
                                          "clay ring",
                                          "rocket elbow",
                                          "built-in plancha",
-                                         "fan rocket elbow",
+                                         "fan rocket-elbow",
                                          "ceramic charcoal",
                                          "metal charcoal",
                                          "gasifier",
                                          "pressure lpg",
-                                         "pressure kerosene",
-                                         "wick kerosene"),
+                                         "wick kerosene",
+                                         "pressure kerosene"),
                   fuel = 
                     fuel %>% 
                     factor %>% 
@@ -59,14 +70,16 @@ output:
                  dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
                  dplyr::summarise(id = paste(id, collapse = ", ")) %>%
     ggplot(aes(x = stove, y = fuel)) + 
-      geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id)) +
+      geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id, order = id)) +
       theme_bw() +
       theme(legend.position = "none") +
       theme(axis.text.x = element_text(angle = 35, hjust = 1, vjust = 0.75)) +
-      theme(axis.text = element_text(size = 20)) +
-      geom_text(aes(label = id, size = 5)) +
+      theme(text = element_text(size = 20)) +
+      geom_text(aes(label = stringr::str_wrap(id, 9), size = 5)) +
       xlab("") +
       ylab("")
+
+    grid.brackets(200, 400, 550, 400, lwd = 2, col = "black")
 ```
 
 # 2. Fuel properties
@@ -87,13 +100,21 @@ output:
 
 # 3. Intrumentation
 
-# 4. Linear regression models
+## Table of instrumentation
+
+## Instrument schematic
+
+# 4. List of carcinogenic compounds
+
+# 5. List of stove-fuel categories
+
+# 6. Linear regression models
 
 ## Extended R-squared plot
 
 ## Model coefficients and confidence intervals
 
-# 5. Disaggregated data tables
+# 7. Disaggregated data tables
 
 ```{r}
   emissions <- 
