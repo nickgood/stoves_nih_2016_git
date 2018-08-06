@@ -1,0 +1,61 @@
+---
+title: "Compare black carbon measurements"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, kableExtra)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+## load files
+
+```{r}
+  ec <- readRDS(file = "../../r_data/ecoc_merged.RDS")
+  trans <- readRDS(file = "../../r_data/trans_merged.RDS")
+```
+
+## combine data
+
+```{r}
+  black_carbon <-
+    ec %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(pol == "ec") %>%
+    dplyr::filter(bg != "below") %>%
+    dplyr::select(id, val) %>%
+    dplyr::rename("ec" = "val") %>%
+    dplyr::left_join(trans %>%
+                       dplyr::ungroup() %>%
+                       dplyr::rename("trans" = "val") %>%
+                       dplyr::filter(bg != "below") %>%
+                       dplyr::select(id, trans), by = "id")
+```
+
+# Plot: EC vs. Sootscan
+
+```{r mass_balance, echo=FALSE, fig.width=8, fig.height=6}
+  black_carbon %>%
+    ggplot(aes(y = trans, x = ec)) +
+      geom_point(size = 2) +
+      geom_abline(slope = 1, intercept = 0) +
+      geom_abline(slope = 1.20, intercept = 0, color = "blue") +
+      geom_abline(slope = 0.80, intercept = 0, color = "blue") +
+      #scale_y_continuous(limits = c(0, 6)) +
+      #scale_x_continuous(limits = c(0, 6)) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "right") +
+      xlab(expression(paste0("Sunset EC (", mu, "g/", m^3, ")"))) +
+      ylab(expression(paste0("Sootscan BC (", mu, "g/", m^3, ")")))
+```
