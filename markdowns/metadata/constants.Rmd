@@ -54,13 +54,13 @@ output:
 # oc:om
 
 ```{r}
-  oc_om <- tibble::data_frame(stove = c("three stone fire",
+  oc_om <- tibble::data_frame(stove = c("three-stone fire",
                                         "clay ring",
                                         "ceramic charcoal",
                                         "rocket elbow",
                                         "built-in plancha",
                                         "metal charcoal",
-                                        "fan rocket elbow",
+                                        "fan rocket-elbow",
                                         "gasifier",
                                         "wick kerosene",
                                         "pressure kerosene",
