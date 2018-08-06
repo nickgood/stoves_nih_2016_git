@@ -150,7 +150,7 @@ load data
 
 ```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
   ec_oc_ions %>%
-    dplyr::filter(pol_category == "organic carbon") %>%
+    dplyr::filter(pol_category == "organic matter") %>%
     ggplot(aes(x = id, y = val, color = fuel)) +
     geom_point() +
     theme_bw() +
@@ -210,7 +210,6 @@ load data
 ```{r}
   range_ultrafines <-
     ultrafines %>%
-    na.omit %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -221,7 +220,6 @@ load data
 ```{r}
   range_co <-
     co %>%
-    na.omit %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::mutate(val = val / 1000) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
@@ -343,33 +341,62 @@ load data
                      aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
       scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999"),
                         name = expression(paste(PM[2.5], ' composition')),
-                        labels = c("elemental carbon", "inorganic ions",
-                                   "organic carbon", expression(paste(PM[2.5], ' mass')))) +
+                        labels = c("elemental carbon ", "inorganic ions ",
+                                   "organic carbon ", expression(paste(PM[2.5], ' mass')))) +
       scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
       annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
       annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
       geom_text(data = range_pm,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      theme_bw() +
+      theme_minimal() +
       theme(text = element_text(size = 20),
             legend.text.align = 0,
             axis.text.y = element_text(size = 18),
             strip.text.x = element_text(size = 20),
             axis.text.x = element_blank(),
             axis.title.x = element_blank(),
-            legend.position = "right") +
+            legend.position = "top", 
+            legend.title = element_blank()) +
       facet_grid(.~pol_category, scales = "free", labeller = label_parsed) +
       ylab("miligrams per MJ delivered")
+```
+
+```{r}
+  p2 <-
+    co_p %>%
+      dplyr::mutate(pol_category = "Carbon Monoxide") %>%
+      ggplot(aes(x = stove, y = mean)) +
+      geom_histogram(stat = "identity", fill = "cadetblue") +
+      geom_text(data = range_co %>%
+                  dplyr::mutate(pol_category = "Carbon Monoxide"),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+        scale_y_continuous(limits = c(0, 25)) +
+        annotate("text", x = 7, y = 25, label = "32.5", size = 5) +
+        annotate("text", x = 8, y = 25, label = "30.1", size = 5) +
+        theme_minimal() +
+        theme(text = element_text(size = 20),
+              axis.text.y = element_text(size = 18),
+              axis.title.x = element_blank(),
+              strip.text.x = element_text(size = 20),
+              axis.text.x = element_blank(),
+              legend.title = element_blank(),
+              legend.position = "none",
+              legend.text = element_text(size = 12)) +
+        guides(fill = guide_legend(title = NULL)) +
+        facet_wrap(.~pol_category, scales = "free") +
+    ylab("grams per MJ delivered")
 ```
 
 ```{r, echo=FALSE}
   p3 <- 
     ultrafines_p %>%
+      dplyr::mutate(pol_category = "Ultrafine Particles") %>%
       ggplot(aes(x = stove, y = mean)) +
-      geom_histogram(stat = "identity", fill = "#56B4E9") +
-      geom_text(data = range_ultrafines,
+      geom_histogram(stat = "identity", fill = "royalblue3") +
+      geom_text(data = range_ultrafines %>%
+                  dplyr::mutate(pol_category = "Ultrafine Particles"),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-        theme_bw() +
+        theme_minimal() +
         #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
         theme(text = element_text(size = 20),
               axis.text.y = element_text(size = 18),
@@ -384,33 +411,12 @@ load data
         ylab("particles per MJ delivered")
 ```
 
-```{r}
-  p2 <-
-    co_p %>%
-      ggplot(aes(x = stove, y = mean)) +
-      geom_histogram(stat = "identity", fill = "mediumslateblue") +
-      geom_text(data = range_co,
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-        #scale_y_continuous(limits = c(0, 4)) +
-        theme_bw() +
-        theme(text = element_text(size = 20),
-              axis.text.y = element_text(size = 18),
-              axis.title.x = element_blank(),
-              strip.text.x = element_text(size = 20),
-              axis.text.x = element_blank(),
-              legend.title = element_blank(),
-              legend.position = "none",
-              legend.text = element_text(size = 12)) +
-        guides(fill = guide_legend(title = NULL)) +
-        facet_wrap(.~pol_category, scales = "free") +
-    ylab("grams per MJ delivered")
+```{r figure_1, echo=FALSE, fig.width=10, fig.height=12}
+  p1 + plot_spacer() + p2 + plot_spacer() + p3 + plot_layout(nrow = 5,
+                                                             heights = c(1, 0.10, 1, 0.10, 1))
 ```
 
-```{r figure_1, echo=FALSE, fig.width=16, fig.height=12}
-  p1 + p2 + p3 + plot_layout(nrow = 3, heights = c(1.25, 1, 1))
-```
-
-```{r, fig.width=4, fig.height=2.5, echo=FALSE}
+```{r, fig.width=4, fig.height=2, echo=FALSE}
   pm_mass_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
     ggplot(aes(x = stove, y = val)) +
@@ -419,22 +425,23 @@ load data
                    dplyr::filter(grepl("fossil", stovecat)),
                    aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
     scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-    #scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+    scale_y_continuous(limits = c(0, 20), breaks = c(0, 10, 20)) +
     geom_text(data = range_pm %>%
               dplyr::filter(grepl("fossil", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-    theme_bw() +
+    theme_minimal() +
     theme(text = element_text(size = 20),
           axis.text.y = element_text(size = 18),
           axis.text.x = element_blank(),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
+          strip.text.x = element_blank(),
           legend.position = "none") +
     guides(fill = guide_legend(title = NULL)) +
     facet_grid(.~stovecat, scales = "free", switch = "y")
 ```
 
-```{r, fig.width=4, fig.height=2.5, echo=FALSE}
+```{r, fig.width=4, fig.height=2.5, echo=FALSE, eval=FALSE}
   co_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
     ggplot(aes(x = stove, y = mean)) +
@@ -453,11 +460,11 @@ load data
     facet_grid(.~stovecat, scales = "free", switch = "y")
 ```
 
-```{r, fig.width=4, fig.height=2.5, echo=FALSE}
+```{r, fig.width=4, fig.height=2, echo=FALSE}
   ultrafines_p %>%
     dplyr::filter(grepl("fossil", stovecat)) %>%
     ggplot(aes(x = stove, y = mean)) +
-    geom_histogram(fill = "#56B4E9", stat = "identity") +
+    geom_histogram(fill = "royalblue3", stat = "identity") +
     geom_text(data = range_ultrafines %>%
               dplyr::filter(grepl("fossil", stovecat)),
               aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
@@ -467,6 +474,7 @@ load data
           axis.text.x = element_blank(),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
+          strip.text.x = element_blank(),
           legend.position = "none") +
     guides(fill = guide_legend(title = NULL)) +
     facet_grid(.~stovecat, scales = "free", switch = "y")

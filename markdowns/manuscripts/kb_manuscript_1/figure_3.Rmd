@@ -57,6 +57,14 @@ load data
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(bg != "below")
+```
+
 ## select pollutants
 
 ```{r}
@@ -160,11 +168,12 @@ load data
 ```{r, echo=FALSE}
   p1 <-
     gases_p %>%
+    dplyr::mutate(pol_category = "Gas-Phase Carcinogens") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
       geom_text(data = stats_gases,
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-      theme_bw() +
+      theme_minimal() +
       scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3"),
                         name = "gas-phase carcinogens") +
       scale_y_continuous(limits = c(0, 250)) +
@@ -175,22 +184,23 @@ load data
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
             strip.text.x = element_text(size = 20),
-            legend.position = "right",
-            legend.title = element_text(size = 14),
-            legend.text = element_text(size = 12)) +
+            legend.position = "top",
+            legend.title = element_blank()) +
       facet_wrap(~pol_category, scales = "free")
 ```
 
 ```{r, echo=FALSE}
   p2 <-
     particles_p %>%
+    dplyr::mutate(pol_category = "Particle-Phase Carcinogens") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
       geom_text(data = stats_particles,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4"),
+                        guide = guide_legend(nrow = 2),
                         name = "particle-phase carcinogens") +
-      theme_bw() +
+      theme_minimal() +
       scale_y_continuous(limits = c(0, 5)) +
       annotate("text", x = 1, y = 5, label = "7.16", size = 5) +
       annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
@@ -201,14 +211,14 @@ load data
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
             strip.text.x = element_text(size = 20),
-            legend.position = "right",
-            legend.title = element_text(size = 14),
-            legend.text = element_text(size = 12)) +
+            legend.position = "top",
+            legend.title = element_blank()) +
       facet_wrap(~pol_category, scales = "free")
 ```
 
-```{r figure_1b, echo=FALSE, fig.width=16, fig.height=10}
-  p1 + p2 +  plot_layout(ncol = 1, heights = c(1, 1))
+```{r figure_2, echo=FALSE, fig.width=10, fig.height=8}
+  p1 + plot_spacer() + p2 + plot_layout(nrow = 3,
+                                        heights = c(1, 0.20, 1))
 ```
 
 # tables

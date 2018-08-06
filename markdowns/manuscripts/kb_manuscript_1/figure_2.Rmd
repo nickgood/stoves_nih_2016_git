@@ -56,6 +56,14 @@ load data
     dplyr::filter(!is.na(val))
 ```
 
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(bg != "below")
+```
+
 ## rename pollutants
 
 ```{r}
@@ -195,10 +203,14 @@ notes: need to look at these tests still
     dplyr::mutate(pol_subcategory = 
                     pol_subcategory %>% 
                     factor %>% 
-                    forcats::fct_relevel("saturated aldehydes",
-                                         "unsaturated aldehydes",
-                                         "aromatic aldehydes",
-                                         "ketones") %>%
+                    fct_recode("saturated aldehydes " = "saturated aldehydes",
+                               "unsaturated aldehydes " = "unsaturated aldehydes",
+                               "aromatic aldehydes " = "aromatic aldehydes",
+                               "ketones " = "ketones") %>% 
+                    forcats::fct_relevel("saturated aldehydes ",
+                                         "unsaturated aldehydes ",
+                                         "aromatic aldehydes ",
+                                         "ketones ") %>%
                     forcats::fct_rev(),
                   pol_category = "carbonyls")
 ```
@@ -212,12 +224,16 @@ notes: need to look at these tests still
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(pol_subcategory = 
-                    pol_subcategory %>% 
+                    pol_subcategory %>%
                     factor %>% 
-                    forcats::fct_relevel("alkanes",
-                                         "alkenes",
-                                         "alkynes",
-                                         "aromatics") %>%
+                    fct_recode("alkanes " = "alkanes",
+                               "alkenes " = "alkenes",
+                               "alkynes " = "alkynes",
+                               "aromatics " = "aromatics") %>%
+                    forcats::fct_relevel("alkanes ",
+                                         "alkenes ",
+                                         "alkynes ",
+                                         "aromatics ") %>%
                     forcats::fct_rev(),
                   pol_category = "volatile organic compounds")
 ```
@@ -233,10 +249,14 @@ notes: need to look at these tests still
     dplyr::mutate(pol_subcategory = 
                     pol_subcategory %>% 
                     factor %>% 
-                    forcats::fct_relevel("three rings",
-                                         "four rings",
-                                         "five rings",
-                                         "six rings") %>%
+                    fct_recode("three rings " = "three rings",
+                               "four rings " = "four rings",
+                               "five rings " = "five rings",
+                               "six rings " = "six rings") %>%
+                    forcats::fct_relevel("three rings ",
+                                         "four rings ",
+                                         "five rings ",
+                                         "six rings ") %>%
                     forcats::fct_rev(),
                   pol_category = "polycyclic aromatic hydrocarbons")
 ```
@@ -251,12 +271,12 @@ notes: need to look at these tests still
 
   p1 <-
     carbonyls_p %>%
-    dplyr::mutate(pol_category = "carbonyl compounds") %>%
+    dplyr::mutate(pol_category = "Carbonyl Compounds") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stats_carbs,
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
-      theme_bw() +
+      theme_minimal() +
       scale_fill_manual(values = col_vector,
                         name = "carbonyls") +
       #scale_y_continuous(limits = c(0, 100)) +
@@ -266,15 +286,15 @@ notes: need to look at these tests still
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
-            legend.position = "right",
-            legend.text = element_text(size = 12)) +
+            legend.position = "top",
+            legend.title = element_blank()) +
       facet_wrap(~pol_category, scales = "free")
 ```
 
 ```{r, echo=FALSE}
   p2 <-
     vocs_p %>%
-    dplyr::mutate(pol_category = "volatile organic compounds (VOCs)") %>%
+    dplyr::mutate(pol_category = "Volatile Organic Compounds") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stat_vocs,
@@ -284,22 +304,23 @@ notes: need to look at these tests still
       scale_y_continuous(limits = c(0, 2000)) +
       annotate("text", x = 1, y = 2000, label = "2251", size = 5) +
       annotate("text", x = 2, y = 2000, label = "3254", size = 5) +
-      theme_bw() +
+      theme_minimal() +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             strip.text.x = element_text(size = 20),
             axis.title.y = element_blank(),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
-            legend.position = "right",
-            legend.text = element_text(size = 12)) +
+            legend.position = "top",
+            legend.title = element_blank(),
+            legend.margin = margin(c(1, 10, 5, 10), "pt")) +
       facet_wrap(~pol_category, scales = "free")
 ```
 
 ```{r, echo=FALSE}
   p3 <-
     pahs_p %>%
-    dplyr::mutate(pol_category = "polycyclic aromatic hydrocarbons (PAHs)") %>%
+    dplyr::mutate(pol_category = "Polycyclic Aromatic Hydrocarbons") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
       geom_text(data = stats_pahs,
@@ -310,20 +331,21 @@ notes: need to look at these tests still
       annotate("text", x = 1, y = 30, label = "36.1", size = 5) +
       annotate("text", x = 2, y = 30, label = "56.3", size = 5) +
       annotate("text", x = 3, y = 30, label = "73.6", size = 5) +
-      theme_bw() +
+      theme_minimal() +
       theme(text = element_text(size = 20),
             axis.text.y = element_text(size = 18),
             axis.title.y = element_blank(),
             axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             strip.text.x = element_text(size = 20),
-            legend.position = "right",
-            legend.text = element_text(size = 12)) +
+            legend.position = "top",
+            legend.title = element_blank()) +
       facet_wrap(~pol_category, scales = "free")
 ```
 
-```{r figure_1b, echo=FALSE, fig.width=16, fig.height=12}
- (p1 + p2 + p3) + plot_layout(ncol = 1, heights = c(1, 1, 1))
+```{r figure_2, echo=FALSE, fig.width=10, fig.height=12}
+  p1 + plot_spacer() + p2 + plot_spacer() + p3 + plot_layout(nrow = 5,
+                                                             heights = c(1, 0.10, 1, 0.10, 1))
 ```
 
 # tables
@@ -663,6 +685,21 @@ ratio of total to aromatics
     dplyr::left_join(benzene, by = "fuelcat") %>%
     dplyr::mutate(ratio = mean_benzene / all_mean) %>%
     dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r, echo=FALSE}
+  vocs %>%
+      dplyr::filter(grepl("ethyne", pol)) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove, stovecat) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
