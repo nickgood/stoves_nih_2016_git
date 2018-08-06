@@ -130,7 +130,7 @@ post-weights
 
 ## plot: calibration weight by date
 
-```{r pm_calibration_wgt_timeseries}
+```{r pm_calibration_wgt_timeseries, echo=FALSE}
   grav %>%
     ggplot(aes(x = date_pre, y = wgt_cal_pre)) +
       geom_point(shape = 1) +
@@ -690,7 +690,7 @@ notes:
     knitr::kable("markdown", align = 'c')
 ```
 
-## save data<
+## save data
 
 ```{r}
   grav_merged <-
