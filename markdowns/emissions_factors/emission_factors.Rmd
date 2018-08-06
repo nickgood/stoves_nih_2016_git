@@ -36,7 +36,7 @@ load data
     dplyr::inner_join(fuel %>%
                         dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (mass_fuel_comb * 1e-3)) %>%
-    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg, lod) %>%
     dplyr::mutate(units = "miligrams per kilogram fuel",
                   units = ifelse(pol == "ultrafines", "number per kilogram fuel", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
@@ -52,7 +52,7 @@ load data
     dplyr::inner_join(fuel %>%
                        dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (lhv * 1e-3))) %>%
-    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg, lod) %>%
     dplyr::mutate(units = "miligrams per Megajoule fuel",
                   units = ifelse(pol == "ultrafines", "number per Megajoule fuel", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
@@ -68,11 +68,25 @@ load data
     dplyr::inner_join(energy %>%
                         dplyr::filter(!is.na(joules)), by = "id") %>%
     dplyr::mutate(val =  (val * 1e-3) / (joules * 1e-6)) %>% 
-    dplyr::select(id, pol, pol_category, val, qc, bg) %>%
+    dplyr::select(id, pol, pol_category, val, qc, bg, lod) %>%
     dplyr::mutate(units = "miligrams per Megajoule delivered",
                   units = ifelse(pol == "ultrafines", "number per Megajoule delivered", units),
                   val = ifelse(pol == "ultrafines", val * 1e3, val),
                   metric = "energy_delivered_ef")
+```
+
+# emissions rate
+
+```{r}
+  emissions_rate <-
+    emissions %>%
+    dplyr::filter(metric == "mass_emitted") %>%
+    dplyr::mutate(val =  (val * 1e-3) / (dur / 60)) %>% 
+    dplyr::select(id, pol, pol_category, val, qc, bg, lod) %>%
+    dplyr::mutate(units = "miligrams per hour",
+                  units = ifelse(pol == "ultrafines", "number per hour", units),
+                  val = ifelse(pol == "ultrafines", val * 1e3, val),
+                  metric = "emissions_rate")
 ```
 
 ## table: number of data points (by pollutant)
@@ -91,7 +105,8 @@ load data
   emissions_factors <-
     mass_fuel %>%
     dplyr::bind_rows(energy_fuel) %>%
-    dplyr::bind_rows(energy_factors)
+    dplyr::bind_rows(energy_factors) %>%
+    dplyr::bind_rows(emissions_rate)
 ```
 
 # save
