@@ -21,7 +21,7 @@ output:
 ## load files
 
 ```{r}
-  emissions <- readRDS(file = "../../r_data/emissions.RDS")
+  emissions <- readRDS(file = "../../r_data/emissions_factors.RDS")
   samples <- readRDS(file = "../../r_data/samples.RDS")
 ```
 
@@ -32,8 +32,8 @@ output:
     emissions %>%
     dplyr::left_join(samples %>%
                        dplyr::select(id, stove, fuel, stovecat, date, fuelcat), by = "id") %>%
-    dplyr::filter(grepl("ions|ec|^oc$|pm_mass", pol_category)) %>%
-    dplyr::filter(metric == "conc")
+    dplyr::filter(grepl("ions|ec|^oc$|oc_unc|pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "mass_fuel_ef")
 ```
 
 ## filter out values below background
@@ -44,63 +44,40 @@ output:
     dplyr::filter(bg != "below")
 ```
 
-# check for outliers
-
-## elemental carbon
-
-```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
-  emissions %>%
-    dplyr::filter(pol_category == "ec") %>%
-    ggplot(aes(x = id, y = val, color = fuel)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## organic carbon
-
-```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
-  emissions %>%
-    dplyr::filter(pol_category == "oc") %>%
-    ggplot(aes(x = id, y = val, color = fuel)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free_x")
-```
-
-## pm mass
-
-```{r, echo=FALSE, fig.width=10, fig.height=8, eval=FALSE}
-  pm_mass %>%
-    ggplot(aes(x = id, y = val, color = fuel)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free_x")
-```
+# mass balance
 
 ## plot 1: Mass balance with OC
 
 ```{r}
   ec_oc_ions <-
     emissions %>%
-    dplyr::filter(grepl("ions|ec|^oc$", pol_category)) %>%
-    dplyr::group_by(id, stove, fuel, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::filter(grepl("ions|ec|^oc$", pol_category), !grepl("unc", pol)) %>%
+    dplyr::group_by(id, pol_category, stove, fuel, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    tidyr::spread(pol_category, val) %>%
     na.omit %>%
+    tidyr::gather("pol", "val", 6:8) %>%
+    dplyr::group_by(id, stove, fuel, fuelcat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc)) %>%
     dplyr::rename("ec_oc_ions" = "val")
+```
+
+```{r}
+  ec_oc_ions_unc <-
+    emissions %>%
+    dplyr::filter(grepl("unc", pol)) %>%
+    dplyr::select(id, pol, val) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(unc = sqrt(ec_unc^2 + oc_unc^2)) %>%
+    dplyr::select(id, unc)
 ```
 
 ```{r}
   pm_mass <-
     emissions %>%
     dplyr::filter(grepl("pm_mass", pol_category)) %>%
-    dplyr::filter(metric == "conc") %>%
     tidyr::spread(pol_category, val) %>%
     na.omit %>%
     dplyr::select(id, pm_mass) 
@@ -110,59 +87,25 @@ output:
   pm_comp <-
     ec_oc_ions %>%
     dplyr::left_join(pm_mass, by = "id") %>%
-    na.omit
+    dplyr::left_join(ec_oc_ions_unc, by = "id")
 ```
 
-```{r, echo=FALSE, fig.width=8, fig.height=8}
+```{r mass_balance, echo=FALSE, fig.width=8, fig.height=6}
   pm_comp %>%
-  ggplot(aes(x = ec_oc_ions, y = pm_mass, color = fuel)) +
-    geom_point() +
-    geom_abline(slope = 1, intercept = 0) +
-    geom_abline(slope = 1.20, intercept = 0, color = "blue") +
-    geom_abline(slope = 0.80, intercept = 0, color = "blue") +
-    scale_y_continuous(limits = c(1, 10000), trans = "log10") +
-    scale_x_continuous(limits = c(1, 10000), trans = "log10") +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~fuelcat) +
-    ylab(expression(paste(PM[2.5], " mass (", mu, "g/", m^3, ")"))) +
-    xlab(expression(paste("EC + OC + ions", " (", mu, "g/", m^3, ")")))
-```
-
-## plot 2: Mass balance with OM
-
-```{r}
-  ec_oc_ions <-
-    emissions %>%
-    dplyr::filter(grepl("ions|ec|^om$", pol_category)) %>%
-    dplyr::filter(metric == "conc") %>%
-    dplyr::group_by(id, stove, fuel, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    na.omit %>%
-    dplyr::rename("ec_oc_ions" = "val")
-```
-
-```{r}
-  pm_comp <-
-    ec_oc_ions %>%
-    dplyr::left_join(pm_mass, by = "id") %>%
-    na.omit
-```
-
-```{r, echo=FALSE, fig.width=8, fig.height=8}
-  pm_comp %>%
-  ggplot(aes(x = ec_oc_ions, y = pm_mass, color = fuel)) +
-    geom_point() +
-    geom_abline(slope = 1, intercept = 0) +
-    geom_abline(slope = 1.20, intercept = 0, color = "blue") +
-    geom_abline(slope = 0.80, intercept = 0, color = "blue") +
-    scale_y_continuous(limits = c(1, 10000), trans = "log10") +
-    scale_x_continuous(limits = c(1, 10000), trans = "log10") +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~fuelcat) +
-    ylab(expression(paste(PM[2.5], " mass (", mu, "g/", m^3, ")"))) +
-    xlab(expression(paste("EC + OM + ions", " (", mu, "g/", m^3, ")")))
+    dplyr::mutate(ec_oc_ions = ec_oc_ions * 1e-3,
+                  pm_mass = pm_mass * 1e-3,
+                  unc = unc * 1e-3) %>%
+    ggplot(aes(y = ec_oc_ions, x = pm_mass, color = fuelcat)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = ec_oc_ions - unc, ymax = ec_oc_ions + unc)) +
+      geom_abline(slope = 1, intercept = 0) +
+      geom_abline(slope = 1.20, intercept = 0, color = "blue") +
+      geom_abline(slope = 0.80, intercept = 0, color = "blue") +
+      scale_y_continuous(limits = c(0, 6)) +
+      scale_x_continuous(limits = c(0, 6)) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "right") +
+      xlab(expression(paste(PM[2.5], " EF (g/kg)"))) +
+      ylab(expression(paste("EC + OC + ions", " EF (g/kg)")))
 ```
