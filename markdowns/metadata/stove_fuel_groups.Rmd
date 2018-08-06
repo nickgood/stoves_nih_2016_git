@@ -45,7 +45,9 @@ output:
                                forcats::fct_recode("fan rocket-elbow" = "fan rocket elbow") %>%
                                forcats::fct_recode("lpg" = "pressurized lpg") %>%
                                forcats::fct_recode("built-in plancha" = "built-in justa") %>%
-                               forcats::fct_recode("pressure kerosene" = "pressurized kerosene"))
+                               forcats::fct_recode("pressure kerosene" = "pressurized kerosene") %>%
+                               forcats::fct_recode("forced-draft gasifier" = "gasifier") %>%
+                               forcats::fct_recode("chulha" = "clay ring"))
 ```
 
 # fuel types
