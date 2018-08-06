@@ -71,9 +71,10 @@ load schemes
 ```{r}
   trans_merged <- dplyr::filter(trans_merged, grepl("^[0-9]|^G[0-9]", id) == TRUE) %>%
                   tidyr::gather_("var", "val", grep("^ir|^uv", colnames(trans_merged), value = TRUE)) %>%
-                  dplyr::mutate(lamda = sub("_.*", "", var)) %>%
-                  dplyr::mutate(pos = sub(".*_", "", var)) %>%
-                  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
+                  dplyr::mutate(lambda = sub("_.*", "", var)) %>%
+                  dplyr::mutate(time = sub(".*_", "", var)) %>%
+                  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var)) %>%
+                  dplyr::filter(!grepl("diff", type))
 ```
 
 ## flags
@@ -83,7 +84,7 @@ extract flags
 ```{r}
   notes <- 
     notes %>%
-    dplyr::filter(grepl("ecoc|all", inst) == TRUE)
+    dplyr::filter(grepl("grav|all", inst) == TRUE)
 ```
 
 bad preceeds maybe preceeds good
@@ -107,27 +108,419 @@ add flag by id
     dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
 ```
 
-# save
+# missing and bad data
+
+## table: missing data
+
+```{r, echo = FALSE}
+  dplyr::select(samples, id, stove, fuel) %>%
+    dplyr::anti_join(trans_merged %>%
+                     dplyr::select(id) %>%
+                     dplyr::distinct(),
+                   by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: never post weighed, because filter ruptured
+
+## table: bad data
+
+```{r, echo=FALSE}
+  notes %>%
+    dplyr::filter(grepl("grav|all", inst) == TRUE,
+                  qc != "ok") %>%
+    dplyr::select(-inst) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* 2A: fire went out - check if outlier
+* 2C: filter switched but should be ok now, also had flow issues, also start up period twice - check if outlier
+* 2E: possible filter clog - check if outlier
+* 3A: white rotometer malfunctioning - check if outlier
+* 4C: flow problem at end of test - check if outlier
+* 7A: possible contamination - check if outlier
+* 8C: lots of test problems - check if outlier
+* 9A: possible transcription error - check if outlier
+* 14C: filter switched but should be ok now - check if outlier
+* 23A: fire went out - check if outlier
+* G2: filter ruptured, not sure which one - check if outlier - ok
+* G8: possibly switched - check if outlier - ok
+
+* 15A: contaminated - mark as bad
+* 2D: filter contamination - mark as bad
+* 3A: flow unknown for most of test - mark as bad
+* 17A: filter ruptured - mark as bad
+* G5: filter contamination or switched - mark as bad
+* G7: unresolved transcription error - mark as bad
+* G14: filter contamination - mark as bad
+
+* 1A: filter ruptured, not sure which one - ecoc artifact ruptured - ignore
+
+## mark additional tests as bad
 
 ```{r}
-  saveRDS(trans_merged, file = "../../r_data/trans_merged.Rda")
+  trans_merged <- 
+    trans_merged %>%
+    dplyr::mutate(qc = as.character(qc),
+                  qc = ifelse(grepl("^2D|^3A|^17A|G5|G14|G7|^15A", id), "bad", qc))
+```
+
+## remove bad tests
+
+```{r}
+  trans_merged <-
+    trans_merged %>% 
+    dplyr::filter(qc != "bad")
+```
+
+# calculate mass on filter
+
+# calculate attenuation
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::select(date_pre, date_post, id, lambda, val, type, time, qc) %>%
+    dplyr::filter(type != "diff") %>%
+    tidyr::spread(time, val) %>%
+    dplyr::mutate(atn = 100 * log(pre/post)) %>%
+    dplyr::select(id, lambda, type, atn, qc)
+```
+
+## filter out
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::group_by(id, lambda, type) %>%
+    dplyr::summarise(val = mean(atn, na.rm = TRUE),
+                     qc = first(qc)) %>%
+    dplyr::filter(!is.nan(val)) %>%
+    dplyr::rename("pol" = "lambda")
+```
+
+# blank analysis 
+
+extract blanks
+
+```{r}
+  blanks <-
+    trans_merged %>%
+    dplyr::filter(type == "blank")
+```
+
+## table: lab blank outliers
+
+outliers (z > 3) when blanks are grouped by pollutant and filter type
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::filter(!is.na(val)) %>%
+    dplyr::mutate(z_score = (val - mean(val, na.rm = TRUE)) / sd(val, na.rm = TRUE)) %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+remove outliers
+
+```{r}
+  blanks <-
+    blanks %>%
+    dplyr::filter(!(val > 6), val > -2)
 ```
 
 ## plot: time series of lab blanks
 
-```{r, echo=FALSE, fig.width=12, fig.height=8}
- trans_merged %>%
-    dplyr::filter(var == "ir_front_sample_post", !grepl("G", id)) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel, fuelcat), by = "id") %>%
-    dplyr::filter(fuelcat == "wood") %>%
+```{r trans_blank_timeseries, echo=FALSE}
+ blanks %>%
     ggplot(aes_string(x = "id", y = "val")) +
       geom_point(aes(color = qc), size = 2) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
-      theme(text = element_text(size = 16),
+      theme(text = element_text(size = 12),
             legend.position = "top") +
-      facet_wrap(stove~fuel, scales = "free", ncol = 4) +
+      facet_wrap(~pol, scales = "free") +
       ylab("atn")
 ```
 
-notes: data is expected to be missing for: 17A only. This filter ruptured during the test so was not able to be transmissometer-ed.
+
+
+notes:
+
+## table: lab blanks with NA values
+
+percent of lab blanks with NA values
+
+```{r, echo=FALSE}
+  blanks %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+## summarize blanks
+
+```{r}
+  blanks <-
+    blanks %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE),
+                     stdev = sd(val, na.rm = TRUE),
+                     lod = stdev * 3,
+                     loq = stdev * 10)
+```
+
+## table: blank summary
+
+```{r, echo=FALSE}
+  blanks %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save blanks
+
+```{r}
+  saveRDS(blanks, file = "../../r_data/trans_lod.RDS")
+```
+
+## plot: time series of samples
+
+```{r, echo=FALSE}
+ trans_merged  %>%
+    ggplot(aes_string(x = "id", y = "val")) +
+      geom_point(aes(color = type), size = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      facet_wrap(~pol, scales = "free") +
+      ylab("atn")
+```
+
+remove lab blanks from merged file
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::filter(type != "blank") # remove blanks
+```
+
+
+## subtract blank mean
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::mutate(val = ifelse(pol == "ir", val - blanks$mean[1], val),
+                  val = ifelse(pol == "uv", val - blanks$mean[2], val))
+```
+
+## lod
+
+add lod variable and replace values below lod with lod/sqrt(2)
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::mutate(lod = ifelse(pol == "ir" & val <= blanks$lod[1], "below", "above"),
+                  lod = ifelse(pol == "uv" & val <= blanks$lod[2], "below", "above"),
+                  val = ifelse(pol == "ir" & val <= blanks$lod[1], blanks$lod[1] / sqrt(2), val),
+                  val = ifelse(pol == "uv" & val <= blanks$lod[2], blanks$lod[2] / sqrt(2), val))
+```
+
+# calculate concentrations
+
+## extract flow data
+
+```{r}
+  flows <- 
+    flows %>%
+    dplyr::select(-date) %>%
+    dplyr::filter(colour == "white") %>%
+    dplyr::group_by(id, type, colour) %>%
+    dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
+    dplyr::group_by(id, colour) %>%
+    dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
+    dplyr::select(-colour)
+```
+
+notes: no flow data appear to be missing
+
+## extract time data
+
+```{r}
+  times <-
+    times %>%
+    dplyr::select(-date) %>%
+    dplyr::filter(color == "white") %>%
+    tidyr::spread(type, value) %>%
+    dplyr::select(-color)
+```
+
+notes: no time data appear to be missing
+
+## merge data with flows and times
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::left_join(flows, by = "id") %>%
+    dplyr::left_join(times, by = "id")
+```
+
+notes: all weights matched up with times and flows - no data missing
+
+## calculate bc concentrations
+
+note: filter out uv wavelength (for now)
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::filter(pol == "ir") %>%
+    dplyr::mutate(dur = (end - start) / 60,
+                  bc_0 = (val / 16.6) * (filter_area),
+                  bc_0 = (bc_0 * 1000) / (flow * dur), #ug/m3
+                  bc_0 = bc_0 * 1e6) %>% #g/m3
+    dplyr::rename("atn" = "val")
+```
+
+## add loading correction
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::mutate(tr = exp(-atn / 100),
+                  bc = bc_0 / (0.6 * (0.88 * tr + 0.12)), #g/m3
+                  bc = bc * 1e-6) #ug/m3
+```
+
+# backgrounds
+
+```{r}
+  bg <-
+    trans_merged %>%
+    dplyr::filter(grepl("^G", id))
+```
+
+## plot: lab background outliers
+
+outliers (z > 3) when backgrounds are grouped by pollutant
+
+```{r echo=FALSE}
+  bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::filter(!is.na(bc)) %>%
+    dplyr::mutate(z_score = (bc- mean(bc, na.rm = TRUE)) / sd(bc, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(id, z_score) %>%
+    dplyr::filter(z_score > 3) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: no outliers
+
+## plot: time series of lab backgrounds
+
+```{r pm_bg_timeseries, echo=FALSE}
+ bg %>%
+    dplyr::filter(!is.na(bc)) %>%
+    dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
+    ggplot(aes_string(x = "date", y = "bc")) +
+      geom_point(aes(color = qc), size = 2) +
+      scale_color_manual(values = qc_colors) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top") +
+      ylab("concentrations (micrograms per meter cubed)") +
+      xlab("")
+```
+
+## table: background summary
+
+summarize backgrounds
+
+```{r}
+  bg <-
+    bg %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(mean = mean(bc, na.rm = TRUE),
+                     median = median(bc, na.rm = TRUE),
+                     stdev = sd(bc, na.rm = TRUE),
+                     min = min(bc, na.rm = TRUE),
+                     max = max(bc, na.rm = TRUE),
+                     count = n())
+```
+
+## table: background summary
+
+```{r, echo=FALSE}
+  bg %>%
+    knitr::kable(digits = 2, align = 'c')
+```
+
+## save backgrounds
+
+```{r}
+  saveRDS(bg, file = "../../r_data/trans_bg.RDS")
+```
+
+## subtract background
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::filter(!grepl("^G", id))
+```
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::left_join(bg, by = c("pol"))
+```
+
+```{r}
+  trans_merged <-
+   trans_merged %>%
+    dplyr::mutate(bc = bc - median) %>%
+    dplyr::select(-min, -max, -count, -mean, -median, -stdev)
+```
+
+## table: percentage of measurements below the background median
+
+```{r, echo=FALSE}
+  trans_merged %>%
+    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
+    #dplyr::filter(stove == "lpg") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::do(val = round(nrow(filter(., bc <= 0))/nrow(.), 2) * 100) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
+    knitr::kable("markdown", align = 'c', digits = 2)
+```
+
+## create a new below background variable
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::mutate(bg = ifelse(bc <= 0, "below", "above"),
+                  bc = ifelse(bg == "below", NA, bc))
+```
+
+## save data
+
+```{r}
+  trans_merged <-
+    trans_merged %>%
+    dplyr::rename("val" = "bc") %>%
+    dplyr::select(id, pol, val, dur, lod, bg, qc) %>%
+    dplyr::mutate(pol_category = "pm_mass")
+
+  saveRDS(trans_merged, file = "../../r_data/trans_merged.RDS")
+```
