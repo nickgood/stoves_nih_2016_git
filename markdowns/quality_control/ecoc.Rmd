@@ -298,13 +298,11 @@ elemental carbon
     dplyr::mutate(ratio = ec_unc / ec) %>%
     dplyr::left_join(samples %>%
                      dplyr::select(id, stove, fuel, fuelcat, date), by = "id") %>%
-      dplyr::filter(fuelcat == "wood") %>%
       ggplot(aes_string(x = "id", y = "ratio")) +
       geom_point(size = 2) +
       theme_bw() +
       theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(stove~fuel, scales = "free", ncol = 5)
+            legend.position = "top")
 ```
 
 ```{r, echo=FALSE, fig.width=12, fig.height=5}
@@ -315,20 +313,18 @@ elemental carbon
     dplyr::mutate(ratio = oc_unc / oc) %>%
     dplyr::left_join(samples %>%
                      dplyr::select(id, stove, fuel, fuelcat, date), by = "id") %>%
-      dplyr::filter(fuelcat == "wood") %>%
       ggplot(aes_string(x = "id", y = "ratio")) +
       geom_point(size = 2) +
       theme_bw() +
       theme(text = element_text(size = 16),
-            legend.position = "top") +
-      facet_wrap(stove~fuel, scales = "free", ncol = 5)
+            legend.position = "top")
 ```
 
 notes: all less than 1% uncertainty
 
 filter out uncertainty 
 
-```{r}
+```{r, eval=FALSE}
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::filter(!grepl("unc", pol))
@@ -347,7 +343,7 @@ filter out uncertainty
 ```{r}
   blanks <-
     ecoc_merged %>%
-    dplyr::filter(test_type == "blank")
+    dplyr::filter(test_type == "blank", !grepl("unc", pol))
 ```
 
 ## table: lab blank outliers
@@ -459,7 +455,7 @@ remove lab blanks from merged file
   ecoc_merged <-
     ecoc_merged %>%
     dplyr::left_join(dplyr::select(blanks, pol, mean), by = "pol") %>%
-    dplyr::mutate(val = val - mean) %>%
+    dplyr::mutate(val = ifelse(!grepl("unc", pol), val - mean, val)) %>%
     dplyr::select(-mean)
 ```
 
@@ -470,11 +466,11 @@ add lod variable and replace values below lod with lod/sqrt(2)
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::left_join(dplyr::select(blanks, pol, lod) %>%
                      dplyr::rename("lod_val" = "lod"), by = "pol") %>%
-    dplyr::mutate(lod = ifelse(val <= lod_val, "below", "above"),
-                  val = ifelse(lod == "below", lod_val / sqrt(2), val)) %>%
+    dplyr::mutate(lod = ifelse(val <= lod_val & !grepl("unc", pol), "below", "above"),
+                  val = ifelse(lod == "below", lod_val / sqrt(2), val),
+                  lod = ifelse(grepl("unc", pol), NA, lod)) %>%
     dplyr::select(-lod_val)
 ```
 
@@ -523,7 +519,7 @@ notes: high ratios imply break through
 ```{r}
   ecoc_merged <-
     ecoc_merged %>%
-    dplyr::mutate(val = ifelse(cassette == "a" & pol == "ec", 0, val))
+    dplyr::mutate(val = ifelse(cassette == "a" & grepl("ec", pol), 0, val))
 ```
 
 # calculate concentrations
@@ -577,6 +573,7 @@ notes: no outliers
 
 ```{r ecoc_bg_timeseries_byfilter, echo=FALSE}
   bg %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
       geom_point(aes(shape = lod, color = qc), size = 2) +
@@ -633,8 +630,9 @@ extract artifact
     dplyr::ungroup() %>%
     dplyr::select(-cassette) %>%
     dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
-    dplyr::mutate(val = val - artifact, 
-                  val = ifelse(val < 0, 0, val))
+    dplyr::mutate(val = ifelse(!grepl("unc", pol), val - artifact, val),
+                  val = ifelse(grepl("unc", pol), sqrt(val^2 + artifact^2), val)) %>%
+    dplyr::filter(val > 0)
 ```
 
 ## plot: time series of lab backgrounds
@@ -643,7 +641,7 @@ extract artifact
   bg %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
+      geom_point(aes(color = qc), size = 2) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
@@ -681,6 +679,7 @@ note: no trends in time
 ```{r}
   bg <-
     bg %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::group_by(pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
@@ -717,7 +716,7 @@ note: no trends in time
     dplyr::group_by(id, test_type) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 2) +
+      geom_jitter(aes(color = qc), size = 2) +
       theme_bw() +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
@@ -806,8 +805,11 @@ extract artifact
     dplyr::select(-cassette) %>%
     dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
     dplyr::mutate(artifact = ifelse(is.na(artifact) & pol == "ec", 0, artifact),
-                  artifact = ifelse(is.na(artifact) & pol == "oc", val * oc_ratio$ratio[2], artifact),
-                  val = val - artifact) %>%
+                  artifact = ifelse(is.na(artifact) & pol == "ec_unc", 0, artifact),
+                  artifact = ifelse(is.na(artifact) & pol == "oc", val * oc_ratio$ratio[3], artifact),
+                  artifact = ifelse(is.na(artifact) & pol == "oc_unc", val * oc_ratio$ratio[4], artifact),
+                  val = ifelse(!grepl("unc", pol), val - artifact, val),
+                  val = ifelse(grepl("unc", pol), sqrt(val^2 + artifact^2), val)) %>%
     dplyr::select(-artifact)
 ```
 
@@ -822,7 +824,7 @@ extract artifact
 ```{r}
   ecoc_merged <-
    ecoc_merged %>%
-    dplyr::mutate(val = val - median) %>%
+    dplyr::mutate(val = ifelse(!grepl("unc", pol), val - median, val)) %>%
     dplyr::select(-min, -max, -count, -mean, -median, -stdev)
 ```
 
@@ -857,14 +859,14 @@ notes: two tests 26A and 25B were below background for oc
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
     ggplot(aes_string(x = "date", y = "val")) +
-      geom_point(aes(shape = lod, color = qc), size = 2) +
+      geom_point(aes(color = qc), size = 2) +
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
       theme(text = element_text(size = 16),
             legend.position = "top") +
       labs(shape = "lod") +
-      facet_wrap(~pol, scales = "free", ncol = 1) +
+      facet_wrap(~pol, scales = "free", ncol = 2) +
       ylab("concentration (microgram per meter cubed)") +
       xlab("")
 ```
@@ -881,7 +883,7 @@ notes: looks reasonable - proceed
  ecoc_merged_p %>%
     ggplot(aes_string(x = "stove", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_jitter(aes(color = qc), size = 2) + 
       scale_shape_manual(values = lod_shapes) +
       scale_color_manual(values = qc_colors) +
       theme_bw() +
@@ -920,7 +922,7 @@ notes:
   ecoc_merged_p %>%
     ggplot(aes_string(x = "fuel", y = "val")) +
       geom_boxplot(outlier.colour = NA) +
-      geom_jitter(aes(color = qc, shape = lod), size = 2) + 
+      geom_jitter(aes(color = qc), size = 2) + 
       theme_bw() +
       #scale_y_log10() +
       scale_shape_manual(values = lod_shapes) +
@@ -970,6 +972,7 @@ percent of burn samples with NA values
 
 ```{r, echo=FALSE}
   ecoc_merged %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., is.na(val) == TRUE))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
@@ -985,16 +988,6 @@ percent of burn samples with NA values
     dplyr::mutate(pol_category = pol)
 
   saveRDS(ecoc_merged, file = "../../r_data/ecoc_merged.RDS")
-```
-
-```{r}
-  ecoc_merged %>%
-    dplyr::select(id, pol, val) %>%
-    tidyr::spread(pol, val) %>%
-    dplyr::mutate(ratio = oc / ec) %>%
-    dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
-    dplyr::filter(stove == "three stone fire")
-
 ```
 
 ## table: missing data at end
@@ -1017,6 +1010,7 @@ percent of burn samples with NA values
 
 ```{r, echo=FALSE}
   ecoc_merged %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
     dplyr::group_by(pol) %>%
     dplyr::do(val = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
