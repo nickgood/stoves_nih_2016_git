@@ -65,13 +65,13 @@ constants
     dplyr::mutate(mass_emitted = conc * hood_flow * dur,
                   carbon_fraction = num_c * mw_c / mw,
                   mass_carbon = mass_emitted * carbon_fraction) %>%
-    dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg) %>%
+    dplyr::select(id, pol_category, pol, conc, mass_emitted, mass_carbon, qc, bg, lod, dur) %>%
     tidyr::gather("metric", "val", 4:6) %>%
     dplyr::inner_join(dilution, by = "id") %>%
     dplyr::mutate(val = ifelse(pol == "ultrafines", val * (1 / ratio), val),
                   units = ifelse(metric == "conc", "micrograms per meter cubed", "micrograms"),
                   units = ifelse(metric == "conc" & pol == "ultrafines", "number per meter cubed", units),
-                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number per meter cubed", units)) %>%
+                  units = ifelse(metric == "mass_emitted" & pol == "ultrafines", "number", units)) %>%
     dplyr::select(-ratio)
 ```
 
