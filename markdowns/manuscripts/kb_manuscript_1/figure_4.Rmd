@@ -58,9 +58,7 @@ load data
                   pol_subcategory = ifelse(grepl("alkenes", pol_subcategory), "gas-phase alkenes", pol_subcategory),
                   pol_subcategory = ifelse(grepl("alkynes", pol_subcategory), "gas-phase alkynes", pol_subcategory),
                   pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
-                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("carbohydrates", pol_subcategory), "carbohydrates", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("carbonyls", pol_subcategory), "carbonyls", pol_subcategory)) %>%
+                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory)) %>%
     dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
                   pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
                   pol = gsub("b\\[",  "benzo\\[", pol),
