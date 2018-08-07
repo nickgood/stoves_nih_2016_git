@@ -386,7 +386,7 @@ conclusions:
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     #dplyr::filter(stove == "lpg") %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., val <= 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
@@ -395,7 +395,7 @@ conclusions:
 ```{r}
   carbs_merged <-
     carbs_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 
