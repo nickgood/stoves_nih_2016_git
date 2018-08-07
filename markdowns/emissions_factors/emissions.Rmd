@@ -78,13 +78,13 @@ constants
 ```{r}
   om <- 
     emissions %>%
-    dplyr::filter(pol == "oc") %>%
+    dplyr::filter(grepl("^oc$|^oc_unc$", pol)) %>%
     dplyr::left_join(samples %>%
                        dplyr::select(id, stove), by = "id") %>%
     dplyr::left_join(oc_om , by = "stove") %>%
     dplyr::mutate(val = val * ratio,
-                  pol = "om",
-                  pol_category = "organic matter") %>%
+                  pol = gsub("oc", "om", pol),
+                  pol_category = gsub("oc", "om", pol)) %>%
     dplyr::select(-ratio, -stove)
 ```
 
