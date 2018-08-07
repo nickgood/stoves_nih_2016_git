@@ -32,8 +32,8 @@ output:
     emissions %>%
     dplyr::left_join(samples %>%
                        dplyr::select(id, stove, fuel, stovecat, date, fuelcat), by = "id") %>%
-    dplyr::filter(grepl("ions|ec|^oc$|oc_unc|pm_mass", pol_category)) %>%
-    dplyr::filter(metric == "mass_fuel_ef")
+    dplyr::filter(grepl("ions|^ec$|^om$|om_unc|ec_unc|pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
 ```
 
 ## filter out values below background
@@ -41,17 +41,15 @@ output:
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::filter(bg != "below")
+    dplyr::filter(bg != "below", !is.na(val))
 ```
 
 # mass balance
 
-## plot 1: Mass balance with OC
-
 ```{r}
   ec_oc_ions <-
     emissions %>%
-    dplyr::filter(grepl("ions|ec|^oc$", pol_category), !grepl("unc", pol)) %>%
+    dplyr::filter(!grepl("unc", pol_category)) %>%
     dplyr::group_by(id, pol_category, stove, fuel, fuelcat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc)) %>%
@@ -70,7 +68,7 @@ output:
     dplyr::filter(grepl("unc", pol)) %>%
     dplyr::select(id, pol, val) %>%
     tidyr::spread(pol, val) %>%
-    dplyr::mutate(unc = sqrt(ec_unc^2 + oc_unc^2)) %>%
+    dplyr::mutate(unc = sqrt(ec_unc^2 + om_unc^2)) %>%
     dplyr::select(id, unc)
 ```
 
@@ -90,22 +88,20 @@ output:
     dplyr::left_join(ec_oc_ions_unc, by = "id")
 ```
 
-```{r mass_balance, echo=FALSE, fig.width=8, fig.height=6}
+```{r mass_balance, echo=FALSE, fig.width=5, fig.height=5}
   pm_comp %>%
-    dplyr::mutate(ec_oc_ions = ec_oc_ions * 1e-3,
-                  pm_mass = pm_mass * 1e-3,
-                  unc = unc * 1e-3) %>%
     ggplot(aes(y = ec_oc_ions, x = pm_mass, color = fuelcat)) +
       geom_point(size = 2) +
       geom_errorbar(aes(ymin = ec_oc_ions - unc, ymax = ec_oc_ions + unc)) +
       geom_abline(slope = 1, intercept = 0) +
       geom_abline(slope = 1.20, intercept = 0, color = "blue") +
       geom_abline(slope = 0.80, intercept = 0, color = "blue") +
-      scale_y_continuous(limits = c(0, 6)) +
-      scale_x_continuous(limits = c(0, 6)) +
+      scale_y_continuous(limits = c(0, 1000)) +
+      scale_x_continuous(limits = c(0, 1000)) +
       theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.position = "right") +
-      xlab(expression(paste(PM[2.5], " EF (g/kg)"))) +
-      ylab(expression(paste("EC + OC + ions", " EF (g/kg)")))
+      theme(text = element_text(size = 14),
+            legend.position = "top",
+            legend.title = element_blank()) +
+      xlab(expression(paste(PM[2.5], " EF (mg/", MJ[delivered], ")"))) +
+      ylab(expression(paste("EC + OM + ions", " EF (mg/", MJ[delivered], ")")))
 ```
