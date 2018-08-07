@@ -150,6 +150,8 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
              number = c("Stove model in the picture is newer than the one tested"))
 ```
 
+\pagebreak
+
 ## Fuel properties
 
 ```{r}
@@ -172,7 +174,17 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
   knitr::include_graphics("schematic.png")
 ```
 
-# 3. Carcinogenic compound classifications
+\newpage
+
+# 3. Particle emissions mass balance
+
+PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic matter. The error bars represent the uncertainty from the Sunset OCEC analyzer measurement. The black line represent the line $y = x$ and the blue lines represent $\pm 20 \%$ deviation from that line.
+
+```{r, echo=FALSE, out.width = '75%', fig.align="center"}
+  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
+```
+
+# 4. Carcinogenic compound classifications
 
 ```{r}
   tibble::data_frame("pollutant" = c("benzene",
@@ -232,12 +244,6 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
     footnote(general_title = "Notes: ", threeparttable = TRUE,
              number = c("National Toxicology Program (NTP)",
                         "International Agency for Research on Cancer (IARC)"))
-```
-
-# 4. PM$_{2.5}$ mass balance
-
-```{r, echo=FALSE, out.width = '75%', fig.align="center"}
-  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
 ```
 
 \pagebreak
@@ -545,6 +551,8 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
+\newpage
+
 # 6. Disaggregated data tables
 
 ```{r}
@@ -681,7 +689,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -749,7 +757,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("g/MJ$_{delivered}$", "g/hour", "g/kg$_{fuel}$", "g/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -761,7 +769,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
 ```{r}
   oc_ec_om <-
     emissions %>%
-    dplyr::filter(grepl("^oc$|^om$|^ec$", pol)) %>%
+    dplyr::filter(grepl("^oc$|^om$|^ec$", pol_category)) %>%
     dplyr::select(-pol_category, -pol)
 
   ids <-
@@ -817,7 +825,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -885,7 +893,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -897,7 +905,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
 ```{r}
   ufp <-
     emissions %>%
-    dplyr::filter(grepl("ultrafines", pol)) %>%
+    dplyr::filter(grepl("ultrafine", pol)) %>%
     dplyr::select(-pol_category, -pol)
 
   ids <-
@@ -949,7 +957,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("particles/MJ$_{delivered}$", "particles/hour", "particles/kg$_{fuel}$", "particles/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -1050,7 +1058,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 5) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -1128,8 +1136,8 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped", "scale_down"),
-                  font_size = 4) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"),
+                  font_size = 5) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -1213,8 +1221,8 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped", "scale_down"),
-                  font_size = 4) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"),
+                  font_size = 5) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
@@ -1282,7 +1290,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                   "per-fuel-mass$^3$" = "mass_fuel_ef",
                   "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 8) %>%
+    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
     footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
              number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```
