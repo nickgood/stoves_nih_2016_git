@@ -36,16 +36,28 @@ load data
                     stove %>% 
                     factor %>% 
                     forcats::fct_relevel("three-stone fire",
-                                         "clay ring",
+                                         "chulha",
                                          "rocket elbow",
                                          "built-in plancha",
                                          "fan rocket-elbow",
-                                         "gasifier",
+                                         "forced-draft gasifier",
                                          "ceramic charcoal",
                                          "metal charcoal",
                                          "wick kerosene",
                                          "pressure kerosene",
-                                         "lpg"))
+                                         "lpg") %>%
+                    forcats::fct_recode(A = "three-stone fire",
+                                        B = "chulha",
+                                        C = "rocket elbow",
+                                        D = "built-in plancha",
+                                        E = "fan rocket-elbow",
+                                        F = "forced-draft gasifier",
+                                        G = "ceramic charcoal",
+                                        H = "metal charcoal",
+                                        I = "wick kerosene",
+                                        J = "pressure kerosene",
+                                        K = "lpg") %>%
+                    tolower)
 ```
 
 ## add stove fuel info
@@ -178,47 +190,42 @@ load data
                         name = "gas-phase carcinogens") +
       scale_y_continuous(limits = c(0, 250)) +
       annotate("text", x = 2, y = 250, label = "363", size = 5) +
-      theme(text = element_text(size = 20),
-            axis.text.y = element_text(size = 18),
-            axis.title.y = element_blank(),
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            axis.text.x = element_blank(),
-            strip.text.x = element_text(size = 20),
-            legend.position = "top",
+            axis.text.x = element_text(vjust = -15),
             legend.title = element_blank()) +
-      facet_wrap(~pol_category, scales = "free")
+    ylab(expression(atop(paste('Gas-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
 ```{r, echo=FALSE}
   p2 <-
     particles_p %>%
-    dplyr::mutate(pol_category = "Particle-Phase Carcinogens") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
       geom_text(data = stats_particles,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4"),
-                        guide = guide_legend(nrow = 2),
-                        name = "particle-phase carcinogens") +
+      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
       theme_minimal() +
       scale_y_continuous(limits = c(0, 5)) +
       annotate("text", x = 1, y = 5, label = "7.16", size = 5) +
       annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
       annotate("text", x = 3, y = 5, label = "14.8", size = 5) +
-      theme(text = element_text(size = 20),
-            axis.text.y = element_text(size = 18),
-            axis.text.x = element_blank(),
-            axis.title.y = element_blank(),
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            strip.text.x = element_text(size = 20),
-            legend.position = "top",
+            axis.text.x = element_text(vjust = -15),
             legend.title = element_blank()) +
-      facet_wrap(~pol_category, scales = "free")
+    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
-```{r figure_2, echo=FALSE, fig.width=10, fig.height=8}
-  p1 + plot_spacer() + p2 + plot_layout(nrow = 3,
-                                        heights = c(1, 0.20, 1))
+```{r figure_2, echo=FALSE, fig.width=10, fig.height=9}
+  p2 + plot_spacer() + p1 + plot_spacer() + plot_layout(nrow = 4,
+                                        heights = c(1, 0.10, 1, 0.10))
 ```
 
 # tables
