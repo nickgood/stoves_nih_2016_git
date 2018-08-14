@@ -94,7 +94,8 @@ load data
     dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
                   pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
                   pol = gsub("b\\[",  "benzo\\[", pol),
-                  pol = gsub("b\\[",  "benzo\\[", pol))
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol))
 ```
 
 # check for outliers
@@ -189,6 +190,7 @@ load data
       scale_fill_manual(values = c("gold3", "mediumseagreen", "palegoldenrod", "dodgerblue1", "dodgerblue3"),
                         name = "gas-phase carcinogens") +
       scale_y_continuous(limits = c(0, 250)) +
+      guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
       annotate("text", x = 2, y = 250, label = "363", size = 5) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
@@ -196,7 +198,9 @@ load data
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_text(vjust = -15),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
     ylab(expression(atop(paste('Gas-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
@@ -207,9 +211,11 @@ load data
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
       geom_text(data = stats_particles,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid", "lightsteelblue4", "lavender", "orange", "orangered4")) +
+      scale_fill_manual(values = c("plum4", "plum", "yellowgreen", "darkorchid",
+                                   "lightsteelblue4", "lavender", "orange", "orangered4")) +
       theme_minimal() +
       scale_y_continuous(limits = c(0, 5)) +
+      guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
       annotate("text", x = 1, y = 5, label = "7.16", size = 5) +
       annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
       annotate("text", x = 3, y = 5, label = "14.8", size = 5) +
@@ -219,13 +225,14 @@ load data
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_text(vjust = -15),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'),
+            legend.spacing.y = unit(0.25, 'cm')) +
     ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
-```{r figure_2, echo=FALSE, fig.width=10, fig.height=9}
-  p2 + plot_spacer() + p1 + plot_spacer() + plot_layout(nrow = 4,
-                                        heights = c(1, 0.10, 1, 0.10))
+```{r figure_2, echo=FALSE, fig.width=10, fig.height=10}
+  p2 + plot_spacer() + p1 + plot_spacer() + plot_layout(nrow = 4, heights = c(1, 0.10, 1, 0.15))
 ```
 
 # tables
