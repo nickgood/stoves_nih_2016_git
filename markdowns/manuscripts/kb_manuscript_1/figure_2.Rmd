@@ -106,7 +106,7 @@ load data
 ```{r}
   pahs <-
     emissions %>%
-    dplyr::filter(grepl("aromatic", pol_category), pol != "napthalene") %>%
+    dplyr::filter(grepl("aromatic", pol_category), pol != "naphthalene") %>%
     dplyr::filter(metric == "energy_delivered_ef")
 ```
 
@@ -289,13 +289,16 @@ notes: need to look at these tests still
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
       scale_fill_manual(values = col_vector) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_text(vjust = -15),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
     ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per ', MJ[delivered]))))
 ```
 
@@ -312,13 +315,16 @@ notes: need to look at these tests still
       annotate("text", x = 1, y = 2000, label = "2251", size = 5) +
       annotate("text", x = 2, y = 2000, label = "3254", size = 5) +
       theme_minimal() +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_text(vjust = -15),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
     ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per ', MJ[delivered]))))
 ```
 
@@ -335,13 +341,16 @@ notes: need to look at these tests still
       annotate("text", x = 2, y = 30, label = "56.3", size = 5) +
       annotate("text", x = 3, y = 30, label = "73.6", size = 5) +
       theme_minimal() +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.text.x = element_text(vjust = -15),
             axis.title.x = element_blank(),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
     ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per ', MJ[delivered]))))
 ```
 
@@ -770,6 +779,26 @@ ratio of total to aromatics
     dplyr::left_join(aromatics, by = "fuelcat") %>%
     dplyr::mutate(ratio = mean_aromatics / all_mean) %>%
     dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+lpg stoves
+
+```{r, echo=FALSE}
+  vocs %>%
+    dplyr::filter(stove == "k") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::arrange(val) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r, echo=FALSE}
+  vocs %>%
+    dplyr::filter(stove == "i") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::arrange(val) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
