@@ -363,6 +363,7 @@ load data
                         labels = c("inorganic ions", "elemental carbon",
                                    "organic carbon", expression(paste(PM[2.5], ' mass'))),
                         drop = FALSE) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
       annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
       annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
@@ -376,7 +377,9 @@ load data
             axis.text.y = element_text(size = 16),
             axis.text.x = element_text(vjust = -15),
             axis.title.x = element_blank(),
-            legend.title = element_blank()) +
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
       ylab(expression(atop(paste(PM[2.5], ' composition'), paste('miligrams per ', MJ[delivered]))))
 ```
 
@@ -405,7 +408,7 @@ load data
   p3 <- 
     ultrafines_p %>%
       ggplot(aes(x = stove, y = mean)) +
-      geom_histogram(stat = "identity", fill = "royalblue3") +
+      geom_histogram(stat = "identity", fill = "cornflowerblue") +
       geom_text(data = range_ultrafines,
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
         theme_minimal() +
@@ -422,70 +425,40 @@ load data
 
 ```{r figure_1, echo=FALSE, fig.width=10, fig.height=12}
   p1 + plot_spacer() + p2 + plot_spacer() + p3 + plot_spacer() + plot_layout(nrow = 6,
-                                                             heights = c(1, 0.10, 1, 0.10, 1, 0.10))
+                                                             heights = c(1, 0.10, 1, 0.10, 1, 0.15))
 ```
 
-```{r, fig.width=3, fig.height=2, echo=FALSE}
+```{r, echo=FALSE, fig.width=10, fig.height=2}
   pm_mass_p %>%
-    dplyr::filter(grepl("fossil", stovecat)) %>%
-    ggplot(aes(x = stove, y = val)) +
-    geom_histogram(aes(fill = pol), stat = "identity") +
-    geom_histogram(data = ec_oc_ions_p %>%
-                   dplyr::filter(grepl("fossil", stovecat)),
-                   aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.75) +
-    scale_fill_manual(values = c("gray30", "#E69F00", "snow", "#999999")) +
-    scale_y_continuous(limits = c(0, 20), breaks = c(0, 10, 20), position = "right") +
-    geom_text(data = range_pm %>%
-              dplyr::filter(grepl("fossil", stovecat)),
-              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.05) +
-    theme_minimal() +
-    theme(text = element_text(size = 20),
-          axis.text.y = element_text(size = 18),
-          axis.text.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          strip.text.x = element_blank(),
-          legend.position = "none") +
-    guides(fill = guide_legend(title = NULL))
-```
-
-```{r, fig.width=4, fig.height=2.5, echo=FALSE, eval=FALSE}
-  co_p %>%
-    dplyr::filter(grepl("fossil", stovecat)) %>%
-    ggplot(aes(x = stove, y = mean)) +
-    geom_histogram(fill = "mediumslateblue", stat = "identity") +
-    geom_text(data = range_co %>%
-              dplyr::filter(grepl("fossil", stovecat)),
-              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-    theme_bw() +
-    theme(text = element_text(size = 20),
-          axis.text.y = element_text(size = 18),
-          axis.text.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          legend.position = "none") +
-    guides(fill = guide_legend(title = NULL)) +
-    facet_grid(.~stovecat, scales = "free", switch = "y")
-```
-
-```{r, fig.width=4, fig.height=2, echo=FALSE, eval=FALSE}
-  ultrafines_p %>%
-    dplyr::filter(grepl("fossil", stovecat)) %>%
-    ggplot(aes(x = stove, y = mean)) +
-    geom_histogram(fill = "royalblue3", stat = "identity") +
-    geom_text(data = range_ultrafines %>%
-              dplyr::filter(grepl("fossil", stovecat)),
-              aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-    theme_bw() +
-    theme(text = element_text(size = 20),
-          axis.text.y = element_text(size = 18),
-          axis.text.x = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          strip.text.x = element_blank(),
-          legend.position = "none") +
-    guides(fill = guide_legend(title = NULL)) +
-    facet_grid(.~stovecat, scales = "free", switch = "y")
+    dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(fill = "#999999", stat = "identity") +
+      geom_histogram(data = ec_oc_ions_p %>%
+                           dplyr::mutate(pol =
+                                           pol %>% 
+                                           factor %>%
+                                           forcats::fct_expand("PM2.5 mass"),
+                                           forcats::fct_relevel("inorganic ions",
+                                                                "elemental carbon",
+                                                                "organic matter",
+                                                                "PM2.5 mass")),
+                     aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.6) +
+      scale_fill_manual(values = c("#E69F00", "gray30", "snow", "#999999"),
+                        labels = c("inorganic ions", "elemental carbon",
+                                   "organic carbon", expression(paste(PM[2.5], ' mass'))),
+                        drop = FALSE) +
+      scale_y_continuous(limits = c(0, 15), breaks = c(0, 5, 10, 15), position = "right") +
+      annotate("text", x = 9, y = 15, label = "22.7", size = 5) +
+      geom_text(data = range_pm,
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.05) +
+      theme_minimal() +
+      theme(legend.text.align = 0,
+            text = element_text(size = 18),
+            axis.text.y = element_text(size = 16),
+            axis.text.x = element_text(vjust = -15),
+            axis.title.x = element_blank(),
+            legend.position = "none") +
+      ylab(expression(atop(paste(' '), paste(' '))))
 ```
 
 # summary tables
