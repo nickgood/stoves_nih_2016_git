@@ -137,6 +137,23 @@ load schemes
     dplyr::ungroup()
 ```
 
+## remove unknown pollutant
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::filter(pol != "cyclopenta[ce]phenanthrylene")
+```
+
+## rename two mislabeled pollutants
+
+```{r}
+  pah <-
+    pah %>%
+    dplyr::mutate(pol = ifelse(pol == "napthalene", "naphthalene", pol),
+                  pol = ifelse(pol == "phenanthene", "phenanthrene", pol))
+```
+
 ## recode filter names
 
 ```{r}
@@ -150,15 +167,11 @@ load schemes
                                         "filter" = "p"))
 ```
 
-## remove 24A-P
-
 ```{r}
   # pah <-
   #   pah %>%
   #   dplyr::filter(pol != "napthalene")
 ```
-
-notes: Pierre would like to re-run remove for now
 
 ## flags
 
@@ -447,13 +460,6 @@ percent of lab blanks with NA values
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
 
-notes: lots of NAs - contacted Pierre regarding NAs they could be either
-
-* below LOD, no limit given
-* issues with column degredation
-
-for now, remove (there should be at least one value for background for each measurement)
-
 ## table: blank summary
 
 summarize blanks
@@ -465,8 +471,8 @@ summarize blanks
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      median = median(val, na.rm = TRUE),
                      stdev = sd(val, na.rm = TRUE),
-                     lod = stdev * 3 + mean,
-                     loq = stdev * 10 + mean)
+                     lod = stdev * 3,
+                     loq = stdev * 10)
 ```
 
 ## table: summary of lab blanks (ug)
@@ -498,12 +504,25 @@ add lod variable and replace with lod/sqrt(2)
   pah_merged <-
     pah_merged %>%
     dplyr::mutate(filter_class = gsub("front |back ", "", filter_type)) %>%
-    dplyr::left_join(dplyr::select(blanks, pol, lod, filter_type) %>%
+    dplyr::left_join(dplyr::select(blanks, pol, mean, lod, filter_type) %>%
                      dplyr::rename("lod_val" = "lod",
                                    "filter_class" = "filter_type"), by = c("pol", "filter_class")) %>%
-    dplyr::mutate(lod = ifelse(val <= lod_val, "below", "above"),
+    dplyr::mutate(val = val - mean,
+                  lod = ifelse(val <= lod_val, "below", "above"),
                   val = ifelse(val <= lod_val, lod_val / sqrt(2), val)) %>%
-    dplyr::select(-lod_val, -filter_class)
+    dplyr::select(-lod_val, -filter_class, -mean)
+```
+
+```{r, eval=FALSE}
+  # total number 
+  pah_merged %>%
+    dplyr::filter(lod == "above", filter_type == "filter") %>%
+    nrow(.)
+
+  # lod 
+  pah_merged %>%
+    dplyr::filter(lod == "below", filter_type == "filter") %>%
+    nrow(.)
 ```
 
 # concentration calculations
@@ -752,7 +771,7 @@ notes: most backgrounds below lod
       xlab("")
 ```
 
-```{r}
+```{r, eval=FALSE}
   pah_merged %>%
     dplyr::filter(test_type == "test", grepl("front puf|filter", filter_type)) %>%
     tidyr::spread(filter_type, val) %>%
@@ -769,7 +788,7 @@ notes: most backgrounds below lod
       xlab("")
 ```
 
-## sum pollutants across filters
+## sum across filters
 
 ```{r}
   pah_merged <-
@@ -778,7 +797,18 @@ notes: most backgrounds below lod
     dplyr::group_by(id, pol)  %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc),
-                     lod = first(lod))
+                     lod = last(lod))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  pah_merged %>%
+    nrow(.)
+
+  # lod 
+  pah_merged %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ## subtract background
@@ -805,7 +835,7 @@ notes: remove NA values before subtracting background, because don't know how to
   pah_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel), by = "id") %>%
     dplyr::group_by(pol) %>%
-    dplyr::do(val = round(nrow(filter(., val < 0))/nrow(.), 2) * 100) %>%
+    dplyr::do(val = round(nrow(filter(., val <= 0))/nrow(.), 2) * 100) %>%
     dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val > 10, "red", "blue"))) %>%
     knitr::kable("markdown", align = 'c', digits = 2)
 ```
@@ -815,7 +845,7 @@ notes: remove NA values before subtracting background, because don't know how to
 ```{r}
   pah_merged <-
     pah_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 
