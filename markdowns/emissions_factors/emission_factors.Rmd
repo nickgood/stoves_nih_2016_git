@@ -51,7 +51,7 @@ load data
     dplyr::filter(metric == "mass_emitted") %>%
     dplyr::inner_join(fuel %>%
                        dplyr::filter(!is.na(mass_fuel_comb)), by = "id") %>%
-    dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (lhv * 1e-3))) %>%
+    dplyr::mutate(val =  (val * 1e-3) / ((mass_fuel_comb * 1e-3) * (hhv * 1e-3))) %>%
     dplyr::select(id, pol, pol_category, val, qc, bg, lod) %>%
     dplyr::mutate(units = "miligrams per Megajoule fuel",
                   units = ifelse(pol == "ultrafines", "number per Megajoule fuel", units),
