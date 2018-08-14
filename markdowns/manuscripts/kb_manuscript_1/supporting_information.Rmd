@@ -59,7 +59,9 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
 ```{r test_matrix, fig.height=10, fig.width=14, eval=FALSE}
   samples %>%
     dplyr::select(id, stove, fuel, type) %>%
-    dplyr::mutate(stove = as.character(stove)) %>%
+    dplyr::mutate(stove = as.character(stove),
+                  fuel = as.character(fuel),
+                  fuel = ifelse(fuel == "west slope pellets", "lodgepole pine pellets", fuel)) %>%
     dplyr::mutate(stove = 
                     stove %>% 
                     factor %>% 
@@ -83,7 +85,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                                          "lump hardwood (med.)",
                                          "lump hardwood (sm.)",
                                          "coconut charcoal",
-                                         "west slope pellets",
+                                         "lodgepole pine pellets",
                                          "eucalyptus pellets",
                                          "lpg",
                                          "kerosene")) %>%
@@ -145,7 +147,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                                 "WS-C1-25K"),
                      "photo" = c("", "", "", "", "", "", "", "", "", "", "")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c') %>%
-    kable_styling(position = "center", latex_options = c("striped"), font_size = 10) %>%
+    kable_styling(position = "center", latex_options = c("scale_down"), font_size = 10) %>%
     footnote(general_title = "Notes: ", threeparttable = TRUE,
              number = c("Stove model in the picture is newer than the one tested"))
 ```
@@ -154,18 +156,21 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
 
 ## Fuel properties
 
-```{r}
+```{r, echo=FALSE}
   fuels %>%
     dplyr::mutate(carbon_fraction = format(round(carbon_fraction, 2), nsmall = 2, scientific = FALSE),
-                  carbon_fraction = ifelse(carbon_fraction == "0.82", "0.82$^+$", carbon_fraction),
-                  lhv = ifelse(grepl("00", lhv), paste0(lhv, "$^+$"), lhv)) %>%
-    dplyr::rename("lower heating value*" = "lhv",
-                  "fraction of carbon in fuel" = "carbon_fraction") %>%
-    kable(escape = FALSE, booktabs = TRUE, align = "c",
-          longtable = TRUE) %>%
-    kable_styling(position = "center", font_size = 10,
-                  latex_options = "repeat_header") %>%
-    footnote(general = "*in units of kilojoules per kilogram; $^+$estimated values", escape = FALSE)
+                  carbon_fraction = ifelse(carbon_fraction == "0.82", "0.82$^2$", carbon_fraction),
+                  hhv = ifelse(grepl("00", hhv), paste0(hhv, "$^2$"), hhv)) %>%
+    dplyr::rename("HHV (kJ/kg)$^1$" = "hhv",
+                  "carbon fraction$^1$" = "carbon_fraction",
+                  "moisture content ($\\%$)" = "moisture",
+                  "ash content ($\\%$)$^1$" = "ash",
+                  "volatile content ($\\%$)$^1$" = "volatile_content",
+                  "fixed carbon content ($\\%$)$^1$" = "fixed_carbon") %>%
+    kable(escape = FALSE, booktabs = TRUE, align = "c") %>%
+    kable_styling(position = "center", font_size = 10, latex_options = c("scale_down", "striped")) %>%
+    footnote(general_title = "Notes: ", threeparttable = TRUE,
+             number = c("dry basis", "estimated values"), escape = FALSE)
 ```
 
 # 2. Intrumentation
@@ -676,12 +681,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  fine_pm %>%
+    nrow(.)
+
+  # lod 
+  fine_pm %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   fine_pm %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
@@ -744,12 +760,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     dplyr::mutate(energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  gases %>%
+    nrow(.)
+
+  # lod 
+  gases %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
-  gases %>%
+  gases  %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol, stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
@@ -812,12 +839,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  oc_ec_om %>%
+    nrow(.)
+
+  # lod 
+  oc_ec_om %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   oc_ec_om %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol_subcategory, stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol_subcategory",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
@@ -880,12 +918,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  ions %>%
+    nrow(.)
+
+  # lod 
+  ions %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   ions %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol, stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
@@ -944,12 +993,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     dplyr::mutate(energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  ufp %>%
+    nrow(.)
+
+  # lod 
+  ufp %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
-  ufp %>%
+  ufp  %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol_subcategory, stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol_subcategory",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
@@ -1044,12 +1104,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  vocs %>%
+    nrow(.)
+
+  # lod 
+  vocs %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
-  vocs %>%
+  vocs  %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
     dplyr::rename("subcategory" = "pol_subcategory",
                   "pollutant" = "pol",
@@ -1122,12 +1193,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  carbs %>%
+    nrow(.)
+
+  # lod 
+  carbs %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   carbs %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
     dplyr::rename("subcategory" = "pol_subcategory",
                   "pollutant" = "pol",
@@ -1207,12 +1289,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  pahs %>%
+    nrow(.)
+
+  # lod 
+  pahs %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   pahs %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
     dplyr::rename("subcategory" = "pol_subcategory",
                   "pollutant" = "pol",
@@ -1277,12 +1370,23 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
                   mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
                   energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate)) %>%
-    dplyr::select(-lod, -bg)
+                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
+```
+
+```{r, eval=FALSE}
+  # total number 
+  sugars %>%
+    nrow(.)
+
+  # lod 
+  sugars %>%
+    dplyr::filter(lod == "below") %>%
+    nrow(.)
 ```
 
 ```{r}
   sugars %>%
+    dplyr::select(-lod, -bg) %>%
     dplyr::arrange(pol, stove, fuel, id) %>%
     dplyr::rename("pollutant" = "pol",
                   "per-energy-delivered$^1$" = "energy_delivered_ef",
