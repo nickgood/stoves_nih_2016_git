@@ -67,15 +67,24 @@ load data
                   pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol))
 ```
 
-## check number of data points
+## check number of data points by stove type
 
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=FALSE}
   emissions %>%
-    dplyr::group_by(pol) %>% 
+    dplyr::group_by(pol, stove) %>% 
     dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 20, "blue", "blue"))) %>%
+    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 3, "red", "blue"))) %>%
     dplyr::arrange(val) %>%
     knitr::kable("markdown", align = 'c')
+```
+
+```{r, echo=FALSE}
+  small_samples <- 
+    emissions %>%
+    dplyr::group_by(pol, stove) %>% 
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::filter(val <= 1) %>%
+    dplyr::select(-val)
 ```
 
 notes: 
@@ -107,6 +116,7 @@ notes:
   all <-
     emissions %>%
     dplyr::select(id, pol, val, stove) %>%
+    dplyr::anti_join(small_samples, by = c("stove", "pol")) %>%
     tidyr::spread(pol, val) %>%
     tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
     dplyr::mutate(pm_mass = log(pm_mass),
