@@ -44,7 +44,8 @@ check that co and co2 exist and sum carbon
     dplyr::summarise(mass_carbon = sum(val, na.rm = TRUE) * 1e-6) %>%
     dplyr::left_join(dplyr::select(samples, id, fuel), by = "id") %>%
     dplyr::left_join(fuel_properties, by = "fuel") %>%
-    dplyr::mutate(mass_fuel_c = mass_carbon * (1 / carbon_fraction))
+    dplyr::mutate(mass_fuel_c = mass_carbon * (1 / carbon_fraction)) %>%
+    dplyr::select(id, mass_fuel_c)
 ```
 
 # plot: fuel burnt vs. fuel calculated from carbon
@@ -71,9 +72,14 @@ notes: looks good!
   fuel_merged <-
     mass_carbon %>%
     dplyr::full_join(fuel, by = "id") %>%
+    dplyr::left_join(dplyr::select(samples, id, fuel) %>%
+                       dplyr::mutate(fuel = as.character(fuel),
+                                     fuel = ifelse(fuel == "west slope pellets",
+                                                   "lodgepole pine pellets",
+                                                   fuel)), by = "id") %>%
+    dplyr::left_join(fuel_properties, by = "fuel") %>%
     dplyr::mutate(mass_fuel_comb = ifelse(is.na(mass_fuel), mass_fuel_c, mass_fuel)) %>%
-    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
-    dplyr::select(-mass_carbon)
+    dplyr::filter(!grepl("^27|^28|^29|^30", id))
 
   saveRDS(fuel_merged, file = "../../r_data/fuel_merged.RDS")
 ```
