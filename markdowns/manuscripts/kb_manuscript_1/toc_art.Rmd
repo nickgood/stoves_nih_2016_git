@@ -125,17 +125,17 @@ load data
                                          "i",
                                          "j",
                                         "k"),
-                              loc = c("stove_images/three_stone.png",
-                                      "stove_images/chulha.png",
-                                      "stove_images/rocket_elbow.png",
-                                      "stove_images/chimney.png",
-                                      "stove_images/fan_rocket.png",
-                                      "stove_images/gasifier.png",
-                                      "stove_images/metal_charcoal.png",
-                                      "stove_images/ceramic_charcoal.png",
-                                      "stove_images/wick_kerosene.png",
-                                      "stove_images/pressure_kerosene.png",
-                                      "stove_images/lpg.png"))
+                              loc = c("stove_images/a.png",
+                                      "stove_images/b.png",
+                                      "stove_images/c.png",
+                                      "stove_images/d.png",
+                                      "stove_images/e.png",
+                                      "stove_images/f.png",
+                                      "stove_images/g.png",
+                                      "stove_images/h.png",
+                                      "stove_images/i.png",
+                                      "stove_images/j.png",
+                                      "stove_images/k.png"))
 ```
 
 ## combine pollutants and image locations
@@ -173,13 +173,13 @@ load data
 
 # plot stoves
 
-```{r, fig.height=4.76, fig.width=8.47}
+```{r, fig.height=4.76, fig.width= 8.47}
  pols_p %>%
     ggplot(aes(x = pm_mass, y = co)) +
-       geom_image(aes(image = loc), size = 0.1) +
-       geom_text(data = other_pollutants,
-                 aes(x = xloc, y = yloc, label = words),
-                 check_overlap = TRUE, size = 6, color = "gray50") +
+       geom_image(aes(image = loc), size = 0.15) +
+       #geom_text(data = other_pollutants,
+                 #aes(x = xloc, y = yloc, label = words),
+                 #check_overlap = TRUE, size = 6, color = "gray50") +
         theme_minimal() +
         theme(text = element_text(size = 18),
               axis.text.x = element_blank(),
