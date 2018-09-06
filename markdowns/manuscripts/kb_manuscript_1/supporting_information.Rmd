@@ -1292,7 +1292,7 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
                   emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
 ```
 
-```{r, eval=FALSE}
+```{r}
   # total number 
   pahs %>%
     nrow(.)
