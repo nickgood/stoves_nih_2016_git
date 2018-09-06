@@ -295,7 +295,7 @@ notes: need to look at these tests still
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            axis.text.x = element_text(vjust = -15),
+            axis.text.x = element_text(vjust = -15, size = 16),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
@@ -321,7 +321,7 @@ notes: need to look at these tests still
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            axis.text.x = element_text(vjust = -15),
+            axis.text.x = element_blank(),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
@@ -346,7 +346,7 @@ notes: need to look at these tests still
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
-            axis.text.x = element_text(vjust = -15),
+            axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
@@ -356,7 +356,7 @@ notes: need to look at these tests still
 
 ```{r figure_2, echo=FALSE, fig.width=10, fig.height=12}
   p1 + plot_spacer() + p2 + plot_spacer() + p3 + plot_spacer() + plot_layout(nrow = 6,
-                                                             heights = c(1, 0.10, 1, 0.10, 1, 0.15))
+                                                             heights = c(1, 0.15, 1, 0.10, 1, 0.10))
 ```
 
 # tables

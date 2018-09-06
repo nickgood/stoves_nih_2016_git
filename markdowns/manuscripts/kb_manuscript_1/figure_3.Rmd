@@ -197,7 +197,7 @@ load data
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            axis.text.x = element_text(vjust = -15),
+            axis.text.x = element_blank(),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
@@ -224,7 +224,7 @@ load data
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
-            axis.text.x = element_text(vjust = -15),
+            axis.text.x = element_text(vjust = -20, size = 16),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'),
             legend.spacing.y = unit(0.25, 'cm')) +
@@ -232,7 +232,7 @@ load data
 ```
 
 ```{r figure_2, echo=FALSE, fig.width=10, fig.height=10}
-  p2 + plot_spacer() + p1 + plot_spacer() + plot_layout(nrow = 4, heights = c(1, 0.10, 1, 0.15))
+  p2 + plot_spacer() + p1 + plot_spacer() + plot_layout(nrow = 4, heights = c(1, 0.15, 1, 0.10))
 ```
 
 # tables
