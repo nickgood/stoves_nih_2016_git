@@ -328,6 +328,10 @@ firepower <- select(co_co2_ch4_ppm, id, pol, ppm, ppm_bg) %>%
              mutate(firepower = (19000 * mw_c * hood_flow/(60*1000*0.5))* #LHV [kJ/kg_fuel*mw_c [g/mol]*hood_flow[m3/min]*(1/fuel_c_frac)[g_wood/g_carbon]
                    ((1.784 * co2/(1000*44.0094)) + (1.14 * co/(1000*28.0100)))) # density_co2 [kg/m3] * conc_co2 [ppmv] * (1/mw_co2) [mol/g] + density_co [kg/m3] * conc_co [ppmv]*(1/mw_co) [mol/g]
 
+firepower_means <- left_join(firepower, select(samples, id, type, mc_level), by = "id") %>%
+                   group_by(mc_level) %>%
+                   summarise(mean_fp = mean(firepower))
+
 ggplot(firepower, aes(x = mean_mc, y = firepower)) +
   geom_point() +
   labs(x = "Mean Moisture Content [%]", y = "Firepower [kW]") +

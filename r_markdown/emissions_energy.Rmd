@@ -106,21 +106,33 @@ ggplot(t_per_kg, aes(x = mean_mc, y = kg_per_degree)) +
 e_temp1 <- dplyr::filter(temp_merged, grepl("pot", loc))  
 e_temp1 <- filter_temp(times, e_temp1)
  
-t_range1 <- dplyr::group_by(e_temp1, id) %>%
+t_range1 <- dplyr::filter(e_temp1, !grepl("FH2", id)) %>%
+            group_by(id) %>%
             dplyr::summarise(t_min = min(t_oc, na.rm = TRUE),  
                              t_max = max(t_oc, na.rm = TRUE),
                              t_med = median(t_oc),
+                             t_mean = mean(t_oc),
                              t_high_avg = t_med + 0.5*(t_max - t_med))
+
+t_means1 <- left_join(t_range1, dplyr::select(samples, id, type, mc_level), by = "id") %>%
+            group_by(mc_level) %>%
+            summarise(mean = mean(t_mean))
 
 mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
 
  temp_plot1 <- left_join(t_range1, mean_mc, by = "id")
  
- ggplot(data = temp_plot1, aes(x = mean_mc)) +
-   geom_point(aes(y = t_max), color = "darkblue") +
+ cols <- c("Max" = "#FF3366", "Mean" = "#FF9900", "Min" = "#330099")
+ 
+ ggplot() +
+   scale_color_manual(name = "Temperature", values = cols) +
+   geom_point(data = temp_plot1, aes(x = mean_mc, y = t_max, color = "Max")) +
+   geom_point(data = temp_plot1, aes(x = mean_mc, y = t_mean, color = "Mean")) +
+   #geom_point(data = temp_plot1, aes(x = mean_mc, y = t_med, color = "Median")) +
+   geom_point(data = temp_plot1, aes(x = mean_mc, y = t_min, color = "Min")) +
    #geom_point(aes(y = t_min, color= "blue")) +
    theme_bw() +
-   labs(x = "Mean Moisture Content (%)", y = "Maximum Temperature (C)")
+   labs(x = "Mean Moisture Content (%)", y = "Temperature (C)")
 ```
 
 
@@ -335,12 +347,40 @@ all_energy <- p_data %>%
                  mc_level = ifelse(mc_level %in% "med", "medium",
                                    ifelse(mc_level %in% "high", "high", "low"))) %>%
           mutate(mc_level = factor(mc_level, levels = c("low", "medium", "high"))) %>%
-          mutate(mass_pol_energy_mg = mass_pol_energy *1000)
+          mutate(mass_pol_energy_mg = mass_pol_energy *1000) %>%
+          mutate(panel = as.factor(ifelse(pol %in% c("grav", "ec", "oc"), "pan1", "pan2")))
 
+# graphical display volckens would like to see
 
+ggplot(data = all_energy) + #, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
+  geom_point(data = filter(all_energy, pol %in% "grav"), aes(x = mean_mc, y = mass_pol_energy_mg/10,
+                           shape = type), size = 2, color = "#FF3366", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "ec"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
+             size = 2, color = "#FF9900", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "oc"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
+             size = 2, color = "#33CC99", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "co"), aes(x = mean_mc, y = mass_pol_energy_mg/100, shape = type),
+             size = 2, color = "#FF6633", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "ch4"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
+             size = 2, color = "#330099", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "benzene"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
+             size = 2, color = "#CC0066", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "acetaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
+             size = 2, color = "#339999", alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "formaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
+             size = 2, color = "#0099CC", alpha = 0.8) +
+  facet_wrap(~panel, ncol = 2, scales = "free_y") +
+  theme_bw() +
+  theme(text = element_text(size=12), legend.position = "top",
+  strip.background = element_blank(),
+  strip.text.x = element_blank()) +
+  ylab("EF [mg / MJ Delivered]") + xlab("Moisture Content (%)") +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape") +
+  geom_point(aes(x = mean_mc, y = size = 2, color = "black", alpha = 0.7)
 
-ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) + #color = mc_level, 
-  geom_point(size = 2) +
+# graphical display I like
+ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
   theme_bw() +
   theme(text = element_text(size=12), legend.position = "top",
   strip.background = element_blank(),
@@ -349,23 +389,26 @@ ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) + #co
   #scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape") +
-  geom_hline(aes(yintercept = 979), size = 1, data=subset(all_energy, pol == "grav"), color = "#FF3366") +
-  geom_hline(aes(yintercept = 386), size = 1,data=subset(all_energy, pol == "grav"), color = "#330099") +
-  geom_hline(aes(yintercept = 168), size = 1,data=subset(all_energy, pol == "grav"), color = "yellow") +
-  geom_hline(aes(yintercept = 41), size = 1,data=subset(all_energy, pol == "grav"), color = "green") +
-  geom_hline(aes(yintercept = 16000), size = 1,data=subset(all_energy, pol == "co"), color = "red") +
-  geom_hline(aes(yintercept = 11000), size = 1,data=subset(all_energy, pol == "co"), color = "orange") +
-  geom_hline(aes(yintercept = 9000), size = 1,data=subset(all_energy, pol == "co"), color = "yellow") +
-  geom_hline(aes(yintercept = 8000), size = 1,data=subset(all_energy, pol == "co"), color = "green") +
+  geom_hline(aes(yintercept = 1030), size = 1, data=subset(all_energy, pol == "grav"), color = "#FF3366") +
+  geom_hline(aes(yintercept = 481), size = 1,data=subset(all_energy, pol == "grav"), color = "#FF9900") +
+  geom_hline(aes(yintercept = 218), size = 1,data=subset(all_energy, pol == "grav"), color = "#33CC99") +
+  geom_hline(aes(yintercept = 62), size = 1,data=subset(all_energy, pol == "grav"), color = "#339999") +
+  geom_hline(aes(yintercept = 5), size = 1,data=subset(all_energy, pol == "grav"), color = "#330099") +
+  geom_hline(aes(yintercept = 18300), size = 1,data=subset(all_energy, pol == "co"), color = "#FF3366") +
+  geom_hline(aes(yintercept = 11500), size = 1,data=subset(all_energy, pol == "co"), color = "#FF9900") +
+  geom_hline(aes(yintercept = 7200), size = 1,data=subset(all_energy, pol == "co"), color = "#33CC99") +
+  geom_hline(aes(yintercept = 4400), size = 1,data=subset(all_energy, pol == "co"), color = "#339999") +
+  geom_hline(aes(yintercept = 3000), size = 1,data=subset(all_energy, pol == "co"), color = "#330099") +
   facet_wrap(~pol, ncol = 4, scales = "free_y") + #dummy value for now to fix panel issue
-  geom_text(aes(label = "CO", x = 25, y = 3800), colour = "black", data=subset(all_energy, pol == "co")) +
-  geom_text(aes(label = "PM2.5", x = 25, y = 150), colour = "black", data=subset(all_energy, pol == "grav")) +
+  geom_text(aes(label = "CO", x = 7.5, y = 14000), colour = "black", data=subset(all_energy, pol == "co")) +
+  geom_text(aes(label = "PM2.5", x = 9, y = 900), colour = "black", data=subset(all_energy, pol == "grav")) +
   geom_text(aes(label = "EC", x = 8, y = 40), colour = "black", data=subset(all_energy, pol == "ec")) +
   geom_text(aes(label = "OC", x = 25, y = 130), colour = "black", data=subset(all_energy, pol == "oc")) +
   geom_text(aes(label = "CH4", x = 25, y = 400), colour = "black", data=subset(all_energy, pol == "ch4")) +
   geom_text(aes(label = "CH2O", x = 25, y = 45), colour = "black", data=subset(all_energy, pol == "formaldehyde")) +
   geom_text(aes(label = "C2H4O", x = 25, y = 15), colour = "black", data=subset(all_energy, pol == "acetaldehyde")) +
-  geom_text(aes(label = "C6H6", x = 25, y = 5), colour = "black", data=subset(all_energy, pol == "benzene"))
+  geom_text(aes(label = "C6H6", x = 25, y = 5), colour = "black", data=subset(all_energy, pol == "benzene")) +
+  geom_point(size = 2, color = "black", alpha = 0.7)
 ```
 
 ```{r}
