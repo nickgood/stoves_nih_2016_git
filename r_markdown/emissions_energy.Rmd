@@ -333,7 +333,7 @@ ggplot(ecoc_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shap
 ```
 
 # all pollutants one figure
-```{r fig.height=4, fig.width=7.48}
+```{r fig.height=4, fig.width=9}
 all_energy <- p_data %>%
           dplyr::filter(pol %in% c("grav", "ec", "oc", "formaldehyde", "acetaldehyde",
                                    "benzene", "co", "ch4")) %>%
@@ -348,36 +348,40 @@ all_energy <- p_data %>%
                                    ifelse(mc_level %in% "high", "high", "low"))) %>%
           mutate(mc_level = factor(mc_level, levels = c("low", "medium", "high"))) %>%
           mutate(mass_pol_energy_mg = mass_pol_energy *1000) %>%
-          mutate(panel = as.factor(ifelse(pol %in% c("grav", "ec", "oc"), "pan1", "pan2")))
+          mutate(panel = as.factor(ifelse(pol %in% c("grav", "ec", "oc"), "Particulate Matter", "Gases")))
 
 # graphical display volckens would like to see
 
-ggplot(data = all_energy) + #, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
+cols2 <- c("PM2.5/10" = "#FF3366", "Elemental Carbon/2" = "#FF9900", "Organic Carbon/10" = "#33CC99",
+          "Carbon Monoxide/100" = "#FF6633", "Methane/10" = "#330099", "Benzene" = "#CC0066",
+          "Acetaldehyde" = "#339999", "Formaldehyde/10" = "#0099CC")
+
+ggplot(data = all_energy) +
+  scale_colour_manual(name = "Pollutant", values = cols2) +
   geom_point(data = filter(all_energy, pol %in% "grav"), aes(x = mean_mc, y = mass_pol_energy_mg/10,
-                           shape = type), size = 2, color = "#FF3366", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "ec"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
-             size = 2, color = "#FF9900", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "oc"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
-             size = 2, color = "#33CC99", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "co"), aes(x = mean_mc, y = mass_pol_energy_mg/100, shape = type),
-             size = 2, color = "#FF6633", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "ch4"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
-             size = 2, color = "#330099", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "benzene"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
-             size = 2, color = "#CC0066", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "acetaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg, shape = type),
-             size = 2, color = "#339999", alpha = 0.8) +
-  geom_point(data = filter(all_energy, pol %in% "formaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg/10, shape = type),
-             size = 2, color = "#0099CC", alpha = 0.8) +
+                           shape = type, color = "PM2.5/10"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "ec"), aes(x = mean_mc, y = mass_pol_energy_mg/2,
+                           shape = type, color = "Elemental Carbon/2"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "oc"), aes(x = mean_mc, y = mass_pol_energy_mg/10,
+                           shape = type, color = "Organic Carbon/10"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "co"), aes(x = mean_mc, y = mass_pol_energy_mg/100,
+                           shape = type, color = "Carbon Monoxide/100"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "ch4"), aes(x = mean_mc, y = mass_pol_energy_mg/10,
+                           shape = type, color = "Methane/10"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "benzene"), aes(x = mean_mc, y = mass_pol_energy_mg,
+                           shape = type, color = "Benzene"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "acetaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg,
+                           shape = type, color = "Acetaldehyde"), size = 2, alpha = 0.8) +
+  geom_point(data = filter(all_energy, pol %in% "formaldehyde"), aes(x = mean_mc, y = mass_pol_energy_mg/10,
+                           shape = type, color = "Formaldehyde/10"), size = 2, alpha = 0.8) +
   facet_wrap(~panel, ncol = 2, scales = "free_y") +
   theme_bw() +
-  theme(text = element_text(size=12), legend.position = "top",
-  strip.background = element_blank(),
-  strip.text.x = element_blank()) +
+  theme(text = element_text(size=12), legend.position = "right") +
+  #strip.background = element_blank(),
+  #strip.text.x = element_blank()) +
   ylab("EF [mg / MJ Delivered]") + xlab("Moisture Content (%)") +
   scale_x_continuous(breaks = c(5, 15, 25)) +
-  labs(color = "MC Level", shape = "Fuel Shape") +
-  geom_point(aes(x = mean_mc, y = size = 2, color = "black", alpha = 0.7)
+  labs(shape = "Fuel Shape")
 
 # graphical display I like
 ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
