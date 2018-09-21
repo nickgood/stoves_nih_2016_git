@@ -115,3 +115,12 @@ load data
   saveRDS(emissions_factors, file = "../../r_data/emissions_factors.RDS")
 ```
 
+```{r}
+  emissions_factors %>%
+    dplyr::left_join(samples, by = "id") %>%
+    dplyr::select(id, stove, fuel) %>%
+    dplyr::distinct() %>%
+    dplyr::group_by(stove, fuel) %>%
+    dplyr::summarise(n = n())
+```
+
