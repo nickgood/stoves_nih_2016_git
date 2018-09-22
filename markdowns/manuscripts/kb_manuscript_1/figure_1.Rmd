@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, pals, devtools, patchwork)
+  pacman::p_load(tidyverse, pals, devtools, patchwork, Hmisc)
   #devtools::install_github("thomasp85/patchwork")
 ```
 
@@ -44,19 +44,7 @@ load data
                                          "metal charcoal",
                                          "wick kerosene",
                                          "pressure kerosene",
-                                         "lpg") %>%
-                    forcats::fct_recode(A = "three-stone fire",
-                                        B = "chulha",
-                                        C = "rocket elbow",
-                                        D = "built-in plancha",
-                                        E = "fan rocket-elbow",
-                                        F = "forced-draft gasifier",
-                                        G = "ceramic charcoal",
-                                        H = "metal charcoal",
-                                        I = "wick kerosene",
-                                        J = "pressure kerosene",
-                                        K = "lpg") %>%
-                    tolower)
+                                         "lpg"))
 ```
 
 ## add stove fuel info
@@ -361,7 +349,7 @@ load data
                      aes(x = stove, y = val, fill = pol, order = pol), stat = "identity", width = 0.6) +
       scale_fill_manual(values = c("#E69F00", "gray30", "snow", "#999999"),
                         labels = c("inorganic ions", "elemental carbon",
-                                   "organic carbon", expression(paste(PM[2.5], ' mass'))),
+                                   "organic matter", expression(paste(PM[2.5], ' mass'))),
                         drop = FALSE) +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
