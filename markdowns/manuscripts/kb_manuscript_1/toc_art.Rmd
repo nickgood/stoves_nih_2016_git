@@ -8,8 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, pals, devtools, patchwork, ggimage)
-  #devtools::install_github("thomasp85/patchwork")
+  pacman::p_load(tidyverse, wordcloud2, webshot, htmlwidgets)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -44,19 +43,7 @@ load data
                                          "metal charcoal",
                                          "wick kerosene",
                                          "pressure kerosene",
-                                         "lpg") %>%
-                    forcats::fct_recode(A = "three-stone fire",
-                                        B = "chulha",
-                                        C = "rocket elbow",
-                                        D = "built-in plancha",
-                                        E = "fan rocket-elbow",
-                                        F = "forced-draft gasifier",
-                                        G = "ceramic charcoal",
-                                        H = "metal charcoal",
-                                        I = "wick kerosene",
-                                        J = "pressure kerosene",
-                                        K = "lpg") %>%
-                    tolower)
+                                         "lpg"))
 ```
 
 ## add stove fuel info
@@ -71,121 +58,34 @@ load data
 ## filter out values below background
 
 ```{r}
-  emissions <-
+  three_stone <-
     emissions %>%
-    dplyr::filter(bg != "below")
+    dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(val = 0.1)  %>%
+    dplyr::filter(!grepl("organic matter", pol)) %>%
+    dplyr::mutate(pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol))
 ```
 
-```{r}
-  pm_mass <-
-    emissions %>%
-    dplyr::filter(pol == "pm_mass") %>%
-    dplyr::filter(metric == "energy_delivered_ef")
-```
+# word cloud
 
-```{r}
-  co <-
-    emissions %>%
-    dplyr::filter(pol == "co") %>%
-    dplyr::filter(metric == "energy_delivered_ef")
-```
-
-## average pm mass by stove type
-
-```{r}
-  pm_mass_p <-
-    pm_mass %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::summarise(pm_mass = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(stove, pm_mass)
-```
-
-## average carbon monoxide by stove type
-
-```{r}
-  co_p <-
-    co %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::mutate(val = val / 1000) %>%
-    dplyr::summarise(co = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(stove, co)
-```
-
-```{r}
-  photos <- tibble::data_frame(stove = c("a",
-                                         "b",
-                                         "c",
-                                         "d",
-                                         "e",
-                                         "f",
-                                         "g",
-                                         "h",
-                                         "i",
-                                         "j",
-                                        "k"),
-                              loc = c("stove_images/a.png",
-                                      "stove_images/b.png",
-                                      "stove_images/c.png",
-                                      "stove_images/d.png",
-                                      "stove_images/e.png",
-                                      "stove_images/f.png",
-                                      "stove_images/g.png",
-                                      "stove_images/h.png",
-                                      "stove_images/i.png",
-                                      "stove_images/j.png",
-                                      "stove_images/k.png"))
-```
-
-## combine pollutants and image locations
-
-```{r}
-  pols_p <-
-    pm_mass_p %>%
-    dplyr::left_join(co_p, by = "stove") %>%
-    dplyr::left_join(photos, by = "stove")
-```
-
-```{r}
-  other_pollutants <- tibble::data_frame(words = c("carbonyl compounds?",
-                                                   "elemental carbon?",
-                                                   "organic matter?",
-                                                   "inorganic ions?",
-                                                   "volatile orgnaic compounds?",
-                                                   "polycyclic aromatic hydrocarbons?",
-                                                   "ultrafine particles?"),
-                                         yloc = c(20,
-                                                  2,
-                                                  5,
-                                                  15,
-                                                  13,
-                                                  25,
-                                                  20),
-                                         xloc = c(250,
-                                                  550,
-                                                  750,
-                                                  150,
-                                                  750,
-                                                  700,
-                                                  800))
-```
-
-# plot stoves
-
-```{r, fig.height=4.76, fig.width= 8.47}
- pols_p %>%
-    ggplot(aes(x = pm_mass, y = co)) +
-       geom_image(aes(image = loc), size = 0.15) +
-       #geom_text(data = other_pollutants,
-                 #aes(x = xloc, y = yloc, label = words),
-                 #check_overlap = TRUE, size = 6, color = "gray50") +
-        theme_minimal() +
-        theme(text = element_text(size = 18),
-              axis.text.x = element_blank(),
-              axis.text.y = element_blank(),
-              panel.grid.minor = element_blank()) +
-      ylab(expression('Increasing CO Emissions' %->% ' ')) +
-      xlab(expression(Increasing~PM[2.5]~Emissions %->% ' '))
+```{r, fig.width=10, fig.height=10}
+  wordcloud2(three_stone, figPath = "cloud.jpg", color = "black", size = 0.1)
 ```
 
