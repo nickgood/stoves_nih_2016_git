@@ -13,3 +13,8 @@ r_csv/
 *_cache/
 *.html
 .Rproj.user
+model_confint/
+qaqc_files/
+documents/
+exported_data/
+images/
