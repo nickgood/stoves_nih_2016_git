@@ -1,6 +1,6 @@
 ---
 title: "SUPPORTING INFORMATION"
-geometry: margin=0.5in
+geometry: margin=1in
 output:
   pdf_document:
     toc: false
@@ -18,6 +18,8 @@ output:
 
 ```{r, echo=FALSE}
   emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  fuel_burnt <- readRDS("../../../r_data/fuel_merged.RDS")
+  times <- readRDS("../../../r_data/test_times.RDS")
   samples <- readRDS("../../../r_data/samples.RDS")
   fuels <- readRDS("../../../r_data/fuel_properties.RDS")
   pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
@@ -43,6 +45,36 @@ output:
   mod_7_c <- readRDS("model_confint/mod_7_c.RDS")
 ```
 
+```{r, echo=FALSE}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    forcats::fct_relevel("three-stone fire",
+                                         "chulha",
+                                         "rocket elbow",
+                                         "built-in plancha",
+                                         "fan rocket-elbow",
+                                         "forced-draft gasifier",
+                                         "ceramic charcoal",
+                                         "metal charcoal",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg") %>%
+                    forcats::fct_recode("Three-stone fire" = "three-stone fire",
+                                         "Mud chulha" = "chulha",
+                                         "Rocket elbow" = "rocket elbow",
+                                         "Built-in plancha" = "built-in plancha",
+                                         "Fan rocket elbow" = "fan rocket-elbow",
+                                         "Gasifier" = "forced-draft gasifier",
+                                         "Ceramic jiko" = "ceramic charcoal",
+                                          "Metal jiko" = "metal charcoal",
+                                          "Wick kerosene" = "wick kerosene",
+                                         "Pressure kerosene" = "pressure kerosene",
+                                          "LPG" = "lpg"))
+```
+
 \begin{center}
 \LARGE{Household Cookstoves: A Comprehensive Laboratory Assessment of Air Pollutant Emissions}
 \end{center}
@@ -52,7 +84,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
 \tableofcontents
 \newpage
 
-# S1. Make and model of each stove type
+# S1: Make and model of each stove type
 
 ```{r}
   tibble::data_frame("Stove type" = c("Three-stone fire",
@@ -89,29 +121,1370 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
                                 "2412",
                                 "WS-C1-25K")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c') %>%
-    kable_styling(position = "center", latex_options = c("scale_down"), font_size = 10)
+    kable_styling(position = "center", font_size = 12)
 ```
 
-# S2. Average fuel use, test length, and firepower level by stove type
+# S2: Fuel use by stove type
 
-# S3. Schematic of emissions sampling system
-
-```{r, echo=FALSE, out.width = '100%'}
-  knitr::include_graphics("schematic.png")
-```
-
-# S4. Table of emissions instrumentation
+Fuel use by stove type (including all fuel types), where the mean and range of are indicated by the markers and bars, respectively.
 
 ```{r}
-  tibble::data_frame("Pollutant type" = c(),
-                     "Sampling media" = c(),
-                     "Analysis instrumentation" = c(),
-                     "Mesurement type" = c()) %>%
+  fuel_burnt %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(fuel_mass = mean(mass_fuel_comb, na.rm = TRUE),
+                     min = min(mass_fuel_comb, na.rm = TRUE),
+                     max = max(mass_fuel_comb, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = fuel_mass)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            axis.title.y = element_blank()) +
+      ylab("Fuel burned (grams)")
+```
+
+# S3: Sample duration by stove type
+
+Sample duration by stove type (including all fuel types), where the mean and range of are indicated by the markers and bars, respectively.
+
+```{r}
+  times %>%
+    dplyr::filter(var == "sample" | var == "refuel_1" | var == "shutdown") %>%
+    dplyr::mutate(var = as.character(var),
+                  var = ifelse(var == "refuel_1", "sample", var)) %>%
+    tidyr::spread(var, value) %>%
+    dplyr::mutate(duration = (shutdown - sample) / 60) %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::group_by(stove) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::summarise(dur = mean(duration, na.rm = TRUE),
+                     min = min(duration, na.rm = TRUE),
+                     max = max(duration, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = dur)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 14),
+            axis.title.y = element_blank()) +
+      ylab("Test duration (minutes)")
+```
+
+# S4: Firepower by stove type
+
+Firepower by stove type (including all fuel types), where the mean and range of are indicated by the markers and bars, respectively.
+
+# S5: Schematic of emissions sampling system
+
+```{r, echo=FALSE, out.width = '100%'}
+  knitr::include_graphics("images/schematic.png")
+```
+
+# S6: Table of emissions instrumentation
+
+```{r}
+  tibble::data_frame("Pollutant type" = c(""),
+                     "Sampling media" = c(""),
+                     "Analysis instrumentation" = c(""),
+                     "Mesurement type" = c("")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c') %>%
     kable_styling(position = "center", latex_options = c("scale_down"), font_size = 10)
 ```
 
-## Fuel properties
+# S7: Number of measurements by pollutant category
+
+The following tables list the number of test measurements for each pollutant category discussed in the main manuscript. The number of tests includes measurements that were below the limit of detection or below the study-averaged laboratory background level by pollutant. Missing measurements are due to measurement error. There are eleven tables representing each of the stove types tested.
+
+## S7.1: Three-stone fire
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.2: Mud chulha
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "chulha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.3: Rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "rocket elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.4: Built-in plancha stove (with chimney)
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "built-in plancha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.5: Fan rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "fan rocket-elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.6: Forced-draft gasifier
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  dplyr::filter(stove == "forced-draft gasifier", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.7: Ceramic jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "ceramic charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.8: Metal jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "metal charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.9: Wick kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "wick kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.10: Pressure kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "pressure kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S7.11: Liquified petroleum gas stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "lpg", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory) %>%
+  dplyr::select(pol_subcategory, id) %>%
+  dplyr::distinct() %>%
+  dplyr::summarise(num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+# S8: Fraction of measurements below limit of detection
+
+The following tables list the percent of test measurements that were below the limit of detection (LOD) by pollutant. There are eleven tables representing each of the stove types tested. To calculate the percent of measurements below LOD, the total number of tests that was below LOD was divided by the total number of measurements and multiplied by 100. Tests with measurement errors were not included in the total number of measurements. The total number of measurements for each pollutant are also listed. Pollutants that did not have any values below LOD are not included in the tables. Tables are sorted in order of most to least percent of tests with values below LOD.
+
+## S8.1: Three-stone fire
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 9)
+```
+
+\newpage
+
+## S8.2: Mud chulha
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "chulha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.3: Rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "rocket elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 9)
+```
+
+\newpage
+
+## S8.4: Built-in plancha stove (with chimney)
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "built-in plancha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.5: Fan rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "fan rocket-elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.6: Forced-draft gasifier
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  dplyr::filter(stove == "forced-draft gasifier", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.7: Ceramic jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "ceramic charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.8: Metal jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "metal charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.9: Wick kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "wick kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.10: Pressure kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "pressure kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S8.11: Liquified petroleum gas stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "lpg", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(lod == "below") / n(),
+                   num_lod = sum(lod == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below LOD" = "fraction",
+                "no. below LOD" = "num_lod",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+# S9: Fraction of measurements below background
+
+The following tables list the percent of test measurements that were below the study-averaged laboratory background level by pollutant. There are eleven tables representing each of the stove types tested. To calculate the percent of measurements below background, the total number of tests that was below background was divided by the total number of measurements and multiplied by 100. Tests with measurement errors were not included in the total number of measurements. The total number of measurements for each pollutant are also listed. Pollutants that did not have any measurements below background were not included in the tables. Tables are sorted in order of most to least percent of tests with values below background.
+
+## S9.1: Three-stone fire
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.2: Mud chulha
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "chulha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.3: Rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "rocket elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.4: Built-in plancha stove (with chimney)
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "built-in plancha", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.5: Fan rocket-elbow stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "fan rocket-elbow", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.6: Forced-draft gasifier
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+  dplyr::filter(stove == "forced-draft gasifier", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.7: Ceramic jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "ceramic charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.8: Metal jiko
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "metal charcoal", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.9: Wick kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "wick kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.10: Pressure kerosene stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "pressure kerosene", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+\newpage
+
+## S9.11: Liquified petroleum gas stove
+
+```{r, echo=FALSE}
+  emissions %>%
+  dplyr::left_join(samples %>%
+                     dplyr::select(id, stove), by = "id") %>%
+  dplyr::filter(stove == "lpg", !grepl("unc", pol), pol != "organic carbon") %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  dplyr::group_by(pol_subcategory, pol) %>%
+  dplyr::summarise(fraction = sum(bg == "below") / n(),
+                   num_bg = sum(bg == "below"),
+                   num = n()) %>%
+  dplyr::filter(fraction != 0, !is.na(fraction)) %>%
+  dplyr::mutate(fraction = format(round(fraction, 2)  * 100, nsmall = 0)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                pol_subcategory = ifelse(pol_subcategory == "pm_mass",
+                                         "fine particulate matter", pol_subcategory),
+                pol = ifelse(pol == "pm_mass", "fine particulate matter", pol),
+                pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+  dplyr::arrange(desc(fraction)) %>%
+  dplyr::rename("category" = "pol_subcategory",
+                "pollutant" = "pol",
+                "\\% below background" = "fraction",
+                "no. below background" = "num_bg",
+                "no. of measurements" = "num") %>%
+  kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+# S10: Fuel properties
 
 ```{r, echo=FALSE}
   fuels %>%
@@ -130,7 +1503,7 @@ Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobia
              number = c("dry basis", "estimated values"), escape = FALSE)
 ```
 
-# 3. Particle emissions mass balance
+# S11: Particle emissions mass balance
 
 PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic matter. The error bars represent the uncertainty from the Sunset OCEC analyzer measurement. The black line represent the line $y = x$ and the blue lines represent $\pm 20 \%$ deviation from that line.
 
@@ -138,7 +1511,7 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
   knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
 ```
 
-# 4. Carcinogenic compound classifications
+# S12: Carcinogenic compound classifications
 
 ```{r}
   tibble::data_frame("pollutant" = c("benzene",
@@ -202,11 +1575,24 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
 
 \pagebreak
 
-# 5. Linear regression model
+# S13: R-squared plot for individual pollutant species
 
-## Coefficients and confidence intervals for pollutant subcategories
+***Add description here
 
-* stove type only: 
+```{r, echo=FALSE, out.width = '60%', fig.align="center"}
+  knitr::include_graphics("figures/models_all-1.png")
+```
+
+# S14: Bayesian information criterion plot for individual pollutant species
+
+***Add description here
+
+# S15: Linear regression model coefficients and confidence intervals for pollutant categories
+
+***Add description here, if this ends up in primary SI
+
+## S15.1: Stove type only
+
 \[ln(EF) = \alpha_i\]
 
 ```{r}
@@ -232,7 +1618,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass only:
+## S15.2: PM$_{2.5}$ mass only
+
 \[ln(EF) = \alpha + \beta \cdot PM_{2.5}\]
 
 ```{r}
@@ -244,7 +1631,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* CO only:
+## S15.3: CO only
+
 \[ln(EF) = \alpha + \beta \cdot CO\]
 
 ```{r}
@@ -256,7 +1644,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass and CO:
+## S15.4: PM$_{2.5}$ mass and CO
+
 \[ln(EF) = \alpha + \beta_1 \cdot CO + \beta_2 \cdot PM_{2.5}\]
 
 ```{r}
@@ -269,7 +1658,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass and stove type:
+## S15.5: PM$_{2.5}$ mass and stove type:
+
 \[ln(EF) = \alpha_i + \beta \cdot PM_{2.5}\]
 
 ```{r}
@@ -296,7 +1686,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* CO and stove type:
+## S15.6: CO and stove type
+
 \[ln(EF) = \alpha_i + \beta \cdot CO\]
 
 ```{r}
@@ -323,7 +1714,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass, CO, and stove type:
+## S15.7: PM$_{2.5}$ mass, CO, and stove type
+
 \[ln(EF) = \alpha_i + \beta_1 \cdot CO + \beta_2 \cdot PM_{2.5}\]
 
 ```{r}
@@ -351,15 +1743,12 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-## R-squared plot for individual pollutant species
+# S16: Linear regression model coefficients and confidence intervals for pollutant categories
 
-```{r, echo=FALSE, out.width = '60%', fig.align="center"}
-  knitr::include_graphics("figures/models_all-1.png")
-```
+***Add description here, if this ends up in primary SI
 
-## Model coefficients and confidence intervals for individual pollutant species
+## S16.1: Stove type only
 
-* stove type only: 
 \[ln(EF) = \alpha_i\]
 
 ```{r}
@@ -385,7 +1774,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass only:
+## S16.2: PM$_{2.5}$ mass only
+
 \[ln(EF) = \alpha + \beta \cdot PM_{2.5}\]
 
 ```{r}
@@ -397,7 +1787,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* CO only:
+## S16.3: CO only
+
 \[ln(EF) = \alpha + \beta \cdot CO\]
 
 ```{r}
@@ -409,8 +1800,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
+## S16.4: PM$_{2.5}$ mass and CO
 
-* PM$_{2.5}$ mass and CO:
 \[ln(EF) = \alpha + \beta_1 \cdot CO + \beta_2 \cdot PM_{2.5}\]
 
 ```{r}
@@ -423,7 +1814,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass and stove type:
+## S16.5: PM$_{2.5}$ mass and stove type
+
 \[ln(EF) = \alpha_i + \beta \cdot PM_{2.5}\]
 
 ```{r}
@@ -450,7 +1842,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* CO and stove type:
+## S16.6: CO and stove type
+
 \[ln(EF) = \alpha_i + \beta \cdot CO\]
 
 ```{r}
@@ -477,7 +1870,8 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
 ```
 
-* PM$_{2.5}$ mass, CO, and stove type:
+## S16.7: PM$_{2.5}$ mass, CO, and stove type
+
 \[ln(EF) = \alpha_i + \beta_1 \cdot CO + \beta_2 \cdot PM_{2.5}\]
 
 ```{r}
@@ -503,847 +1897,4 @@ PM$_{2.5}$ mass versus the sum of inorganic ions, elemental carbon, and organic 
     dplyr::arrange(pollutant, stove) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
     kable_styling(position = "center", latex_options = c("striped", "repeat_header"), font_size = 10)
-```
-
-\newpage
-
-# 6. Disaggregated data tables
-
-```{r}
-  samples <-
-    samples %>%
-    dplyr::select(id, stove, fuel, stovecat, fuelcat) %>%
-    dplyr::mutate(stove = as.character(stove)) %>%
-    dplyr::filter(!grepl("^G|^27|^28|^29|^30", id)) %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    factor %>% 
-                    forcats::fct_relevel("three-stone fire",
-                                         "chulha",
-                                         "rocket elbow",
-                                         "built-in plancha",
-                                         "fan rocket-elbow",
-                                         "ceramic charcoal",
-                                         "metal charcoal",
-                                         "forced-draft gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"),
-                  fuel = 
-                    fuel %>% 
-                    factor %>% 
-                    forcats::fct_relevel("oak",
-                                         "eucalyptus",
-                                         "douglas fir",
-                                         "lump hardwood (med.)",
-                                         "lump hardwood (sm.)",
-                                         "coconut charcoal",
-                                         "west slope pellets",
-                                         "eucalyptus pellets",
-                                         "kerosene",
-                                         "lpg"))
-```
-
-```{r, echo=FALSE}
-  emissions <-
-    emissions %>%
-    dplyr::filter(grepl("energy_delivered_ef|mass_fuel_ef|energy_fuel_ef|emissions_rate", metric)) %>%
-    dplyr::select(-qc, -units) %>%
-    tidyr::spread("metric", "val") %>%
-    dplyr::full_join(samples %>%
-                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::mutate(id = as_factor(id)) %>%
-    dplyr::select(pol, pol_category, pol_subcategory, id, stove, fuel, energy_delivered_ef, mass_fuel_ef,
-                  energy_fuel_ef, emissions_rate, lod, bg) %>%
-    dplyr::mutate(stove = as.character(stove)) %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    factor %>% 
-                    forcats::fct_relevel("three-stone fire",
-                                         "chulha",
-                                         "rocket elbow",
-                                         "built-in plancha",
-                                         "fan rocket-elbow",
-                                         "ceramic charcoal",
-                                         "metal charcoal",
-                                         "forced-draft gasifier",
-                                         "wick kerosene",
-                                         "pressure kerosene",
-                                         "lpg"),
-                  fuel = 
-                    fuel %>% 
-                    factor %>% 
-                    forcats::fct_relevel("oak",
-                                         "eucalyptus",
-                                         "douglas fir",
-                                         "lump hardwood (med.)",
-                                         "lump hardwood (sm.)",
-                                         "coconut charcoal",
-                                         "west slope pellets",
-                                         "eucalyptus pellets",
-                                         "kerosene",
-                                         "lpg")) %>%
-    dplyr::mutate(pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
-                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
-                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol))%>%
-    dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
-                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "ultrafine particles", pol_subcategory))
-```
-
-## Fine particulate matter
-
-```{r}
-  fine_pm <-
-    emissions %>%
-    dplyr::filter(grepl("pm", pol)) %>%
-    dplyr::full_join(samples %>%
-                       dplyr::select(id, stove, fuel),
-                     by = c("id", "stove", "fuel")) %>%
-    dplyr::select(-pol_category, -pol_subcategory) %>%
-    dplyr::mutate(pol = "PM$_{2.5}$ mass") %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  fine_pm %>%
-    nrow(.)
-
-  # lod 
-  fine_pm %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  fine_pm %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Carbon dioxide, carbon monoxide, and methane
-
-```{r}
-  gases <-
-    emissions %>%
-    dplyr::filter(grepl("monoxide|dioxide|methane", pol)) %>%
-    dplyr::select(-pol_category, -pol_subcategory)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    gases %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id")
-
-  gases <-
-    gases %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = energy_delivered_ef * 1e-3,
-                  mass_fuel_ef = mass_fuel_ef * 1e-3,
-                  energy_fuel_ef = energy_fuel_ef * 1e-3,
-                  emissions_rate = emissions_rate * 1e-3,
-                  energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  gases %>%
-    nrow(.)
-
-  # lod 
-  gases %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  gases  %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol, stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("g/MJ$_{delivered}$", "g/hour", "g/kg$_{fuel}$", "g/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Organic carbon, organic matter, elemental carbon
-
-```{r}
-  oc_ec_om <-
-    emissions %>%
-    dplyr::filter(grepl("^oc$|^om$|^ec$", pol_category)) %>%
-    dplyr::select(-pol_category, -pol)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    oc_ec_om %>%
-    dplyr::select(pol_subcategory) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol_subcategory" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id")
-
-  oc_ec_om <-
-    oc_ec_om %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol_subcategory", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  oc_ec_om %>%
-    nrow(.)
-
-  # lod 
-  oc_ec_om %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  oc_ec_om %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol_subcategory, stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol_subcategory",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Inorganic ions
-
-```{r}
-  ions <-
-    emissions %>%
-    dplyr::filter(grepl("ions", pol_category)) %>%
-    dplyr::select(-pol_category, -pol_subcategory)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    ions %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id")
-
-  ions <-
-    ions %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  ions %>%
-    nrow(.)
-
-  # lod 
-  ions %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  ions %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol, stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Ultrafine particles
-
-```{r}
-  ufp <-
-    emissions %>%
-    dplyr::filter(grepl("ultrafine", pol)) %>%
-    dplyr::select(-pol_category, -pol)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    ufp %>%
-    dplyr::select(pol_subcategory) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol_subcategory" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id")
-
-  ufp <-
-    ufp %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol_subcategory", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  ufp %>%
-    nrow(.)
-
-  # lod 
-  ufp %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  ufp  %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol_subcategory, stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol_subcategory",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("particles/MJ$_{delivered}$", "particles/hour", "particles/kg$_{fuel}$", "particles/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Volatile organic compounds
-
-```{r}
-  vocs <-
-    emissions %>%
-    dplyr::filter(grepl("vocs", pol_category)) %>%
-    dplyr::select(-pol_category)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    vocs %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id") %>%
-    dplyr::mutate(pol_subcategory =
-                    forcats::fct_collapse(pol,
-                                          "alkanes" = c("ethane", "propane",
-                                                        "i-butane", "n-butane",
-                                                        "i-pentane", "n-pentane",
-                                                        "n-hexane", "2,4-dimethylpentane",
-                                                        "n-heptane", "3-methylpentane",
-                                                        "2,3-dimethylpentane", "2-methylhexane",
-                                                        "3-methylhexane", "2,2,4-trimethylpentane",
-                                                        "2,3,4-trimethylpentane",
-                                                        "2-methylheptane", "3-methylheptane",
-                                                        "n-octane", "n-nonane", "n-decane"),
-                                          "alkenes" = c("ethene", "propene",
-                                                        "t,2-butene", "1-butene",
-                                                        "i-butene", "c,2-butene",
-                                                        "t,2-pentene", "2-methyl-2-butene",
-                                                        "1-pentene", "c,2-pentene",
-                                                        "isoprene", "1-hexene",
-                                                        "c,2-hexene", "alpha-pinene"),
-                                          "alkynes" = c("ethyne"),
-                                          "aromatics" = c("cyclopentane", "cyclohexane",
-                                                          "methylcyclohexane", "benzene",
-                                                          "toluene", "ethylbenzene",
-                                                          "m,p-xylene", "styrene",
-                                                          "o-xylene", "i-propylbenzene",
-                                                          "n-propylbenzene", "3-ethyltoluene",
-                                                          "4-ethyltoluene", "1,3,5-trimethylbenzene",
-                                                          "2-ethyltoluene", "1,2,4-trimethylbenzene",
-                                                          "1,2,3-trimethylbenzene",
-                                                          "1,3-diethylbenzene",
-                                                          "1,4-diethylbenzene",
-                                                          "1,2-diethylbenzene")))
-
-  vocs <-
-    vocs %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "pol_subcategory", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  vocs %>%
-    nrow(.)
-
-  # lod 
-  vocs %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  vocs  %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
-    dplyr::rename("subcategory" = "pol_subcategory",
-                  "pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 5) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Carbonyl compounds
-
-```{r}
-  carbs <-
-    emissions %>%
-    dplyr::filter(grepl("carbonyls", pol_category)) %>%
-    dplyr::select(-pol_category)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    carbs %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id") %>%
-    dplyr::mutate(pol_subcategory =
-                    forcats::fct_collapse(pol,
-                                          "saturated aldehydes" = c("formaldehyde", "acetaldehyde",
-                                                                    "propionaldehyde", "butyraldehyde",
-                                                                    "valeraldehyde", "hexaldehyde"),
-                                          "ketones" = c("acetone", "butanone", "isovaleraldehyde"),
-                                          "unsaturated aldehydes" = c("acrolein", "crotonaldehyde", "methacrolein"),
-                                          "aromatic aldehydes" = c("benzaldehyde", "o-tolualdehyde",
-                                                                   "m,p-tolualdehyde", "2,5-dimethylbenzaldehyde")))
-
-  carbs <-
-    carbs %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "pol_subcategory", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  carbs %>%
-    nrow(.)
-
-  # lod 
-  carbs %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  carbs %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
-    dplyr::rename("subcategory" = "pol_subcategory",
-                  "pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"),
-                  font_size = 5) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Polycyclic Aromatic Hydrocarbons
-
-```{r}
-  pahs <-
-    emissions %>%
-    dplyr::filter(grepl("pahs", pol_category)) %>%
-    dplyr::select(-pol_category)  %>%
-    dplyr::filter(pol != "cyclopenta[ce]phenanthrylene")
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    pahs %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id") %>%
-    dplyr::mutate(pol_subcategory =
-                    forcats::fct_collapse(pol,
-                                          "two rings" = c("napthalene"),
-                                          "three rings" = c("anthracene", "fluorene",
-                                                            "phenanthene"),
-                                          "four rings" = c("acephenanthrylene", "b[a]pyrene",
-                                                           "benz[a]anthracene", "benzo[c]phenanthrene",
-                                                           "chrysene and triphenylene", "pyrene",
-                                                           "fluoranthene"),
-                                          "five rings" = c("b[b]fluoranthene", "b[e]pyrene", "b[k]fluoranthene",
-                                                           "b[j]fluoranthene", "benzo[ghi]fluoranthene",
-                                                           "cyclopenta[cd]pyrene", "dibenzo(ah)anthracene",
-                                                           "perylene"),
-                                          "six rings" = c("benzo(ghi)perylene", "indeno(1,2,3) cd pyrene")))
-
-  pahs <-
-    pahs %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "pol_subcategory", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r}
-  # total number 
-  pahs %>%
-    nrow(.)
-
-  # lod 
-  pahs %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  pahs %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol_subcategory, pol, stove, fuel, id) %>%
-    dplyr::rename("subcategory" = "pol_subcategory",
-                  "pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"),
-                  font_size = 5) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
-```
-
-\newpage
-
-## Carbohydrates
-
-```{r}
-  sugars <-
-    emissions %>%
-    dplyr::filter(grepl("carbohydrates", pol_category)) %>%
-    dplyr::select(-pol_category, -pol_subcategory)
-
-  ids <-
-    samples %>%
-    dplyr::select(id) %>%
-    dplyr::mutate(id = as.character(id)) %>%
-    as_vector
-
-  pols <-
-    sugars %>%
-    dplyr::select(pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol)) %>%
-    as_vector
-
-  cmpt <-
-    expand.grid(pols, ids, stringsAsFactors = FALSE) %>%
-    dplyr::rename("pol" = "Var1",
-                  "id" = "Var2") %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), 
-                     by = "id")
-
-  sugars <-
-    sugars %>%
-    dplyr::full_join(cmpt,
-                     by = c("pol", "id", "stove", "fuel")) %>%
-    dplyr::mutate(energy_delivered_ef = signif(energy_delivered_ef, 3),
-                  mass_fuel_ef = signif(mass_fuel_ef, 3),
-                  energy_fuel_ef = signif(energy_fuel_ef, 3),
-                  emissions_rate = signif(emissions_rate, 3),
-                  energy_delivered_ef = as.character(energy_delivered_ef),
-                  mass_fuel_ef = as.character(mass_fuel_ef),
-                  energy_fuel_ef = as.character(energy_fuel_ef),
-                  emissions_rate = as.character(emissions_rate)) %>%
-    dplyr::mutate(energy_delivered_ef = ifelse(lod == "below", paste0(energy_delivered_ef, "*"), energy_delivered_ef),
-                  mass_fuel_ef = ifelse(lod == "below", paste0(mass_fuel_ef, "*"), mass_fuel_ef),
-                  energy_fuel_ef = ifelse(lod == "below", paste0(energy_fuel_ef, "*"), energy_fuel_ef),
-                  emissions_rate = ifelse(lod == "below", paste0(emissions_rate, "*"), emissions_rate),
-                  energy_delivered_ef = ifelse(bg == "below", "BB", energy_delivered_ef),
-                  mass_fuel_ef = ifelse(bg == "below", "BB", mass_fuel_ef ),
-                  energy_fuel_ef = ifelse(bg == "below", "BB", energy_fuel_ef),
-                  emissions_rate = ifelse(bg == "below", "BB", emissions_rate))
-```
-
-```{r, eval=FALSE}
-  # total number 
-  sugars %>%
-    nrow(.)
-
-  # lod 
-  sugars %>%
-    dplyr::filter(lod == "below") %>%
-    nrow(.)
-```
-
-```{r}
-  sugars %>%
-    dplyr::select(-lod, -bg) %>%
-    dplyr::arrange(pol, stove, fuel, id) %>%
-    dplyr::rename("pollutant" = "pol",
-                  "per-energy-delivered$^1$" = "energy_delivered_ef",
-                  "per-time$^2$" = "emissions_rate",
-                  "per-fuel-mass$^3$" = "mass_fuel_ef",
-                  "per-fuel-energy$^4$" = "energy_fuel_ef") %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE) %>%
-    kable_styling(position = "center", latex_options = c("repeat_header", "striped"), font_size = 6) %>%
-    footnote(general_title = "Notes: ", general = "Results reported to three significant figures; BB indicates a value below background; * indicates a value below the limit of detection; NA indicates a value with a measurement error", threeparttable = TRUE,
-             number = c("mg/MJ$_{delivered}$", "mg/hour", "mg/kg$_{fuel}$", "mg/kJ$_{fuel}$"), escape = FALSE)
 ```

@@ -55,9 +55,7 @@ load data
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
-## filter out values below background
-
-```{r}
+```{r, eval=FALSE}
   three_stone <-
     emissions %>%
     dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
@@ -83,9 +81,32 @@ load data
                   pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol))
 ```
 
+```{r}
+  three_stone <-
+    emissions %>%
+    dplyr::filter(stove == "three-stone fire", !grepl("unc", pol), pol != "organic carbon") %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::group_by(pol_subcategory) %>%
+    dplyr::summarise(val = 0.1)  %>%
+    dplyr::filter(!grepl("organic carbon", pol_subcategory)) %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                  pol_subcategory = ifelse(grepl("organic matter", pol_subcategory), "particle-phase organic matter", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^co$", pol_subcategory), "carbon monoxide", pol_subcategory),
+                  pol_subcategory = ifelse(pol_subcategory == "pm_mass", "fine particulate matter", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ions", pol_subcategory), "inorganic ions", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "ultrafine particles", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkanes", pol_subcategory), "gas-phase alkanes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkenes", pol_subcategory), "gas-phase alkenes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkynes", pol_subcategory), "gas-phase alkynes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
+                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory))
+```
+
 # word cloud
 
 ```{r, fig.width=10, fig.height=10}
-  wordcloud2(three_stone, figPath = "cloud.jpg", color = "black", size = 0.1)
+  wordcloud2(three_stone, figPath = "images/cloud.jpg", size = 0.3)
 ```
 
