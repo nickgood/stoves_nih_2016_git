@@ -71,7 +71,7 @@ output:
                                                               "glucose", "mannose",
                                                               "glycerol", "threitol",
                                                               "mannitol", "arabinose",
-                                                              "xylose"),
+                                                              "xylose", "inositol"),
                                           "ions" = c("sodium", "ammonium",
                                                      "potassium", "magnesium",
                                                      "calcium", "chloride",
