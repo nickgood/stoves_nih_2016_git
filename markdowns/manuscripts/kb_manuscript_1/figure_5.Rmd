@@ -50,7 +50,7 @@ load data
                                          "Mud\nchulha" = "chulha",
                                          "Rocket\nelbow" = "rocket elbow",
                                          "Built-in\nplancha" = "built-in plancha",
-                                         "Fan rocket\neblow" = "fan rocket-elbow",
+                                         "Fan rocket\nelbow" = "fan rocket-elbow",
                                          "Gasifier" = "forced-draft gasifier",
                                          "Ceramic\njiko" = "ceramic charcoal",
                                           "Metal\njiko" = "metal charcoal",
@@ -102,6 +102,7 @@ load data
 ```{r}
   stats_gases <-
     gases %>%
+    dplyr::filter(pol == "formaldehyde") %>%
     dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     dplyr::group_by(stove, stovecat) %>%
@@ -128,6 +129,7 @@ load data
 ```{r}
   gases_p <-
     gases %>%
+      dplyr::filter(pol == "formaldehyde") %>%
     dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
@@ -151,26 +153,27 @@ load data
   p1 <-
     gases_p %>%
     dplyr::mutate(pol_category = "Gas-Phase Carcinogens") %>%
+    dplyr::filter(pol == "formaldehyde") %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
       geom_text(data = stats_gases,
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
-      scale_fill_manual(values = c("gold3", "mediumaquamarine", "palegoldenrod", "dodgerblue1", "dodgerblue4"),
+      scale_fill_manual(values = c("mediumaquamarine", "palegoldenrod", "dodgerblue1", "dodgerblue4"),
                         name = "gas-phase carcinogens") +
-      scale_y_continuous(limits = c(0, 250)) +
+      scale_y_continuous(limits = c(0, 150)) +
       guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
-      annotate("text", x = 2, y = 250, label = "363", size = 5) +
+      #annotate("text", x = 2, y = 250, label = "363", size = 5) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
-            legend.position = c(1, 1),
+            legend.position = "none",
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_text(size = 14),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Gas-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Formaldehyde'), paste('miligrams per ', MJ[delivered]))))
 ```
 
 ```{r, echo=FALSE}
@@ -202,8 +205,16 @@ load data
     ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
-```{r figure_4, echo=FALSE, fig.width=12, fig.height=8}
+```{r, echo=FALSE, fig.width=12, fig.height=8}
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=4}
+  p2
+```
+
+```{r figure_4, echo=FALSE, fig.width=12, fig.height=4}
+  p1
 ```
 
 # tables

@@ -34,13 +34,16 @@ load data
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
-## filter out values below background, NA values, and select metric
+## replace values below background with zero, remove NA values, and select metric
 
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::filter(bg != "below", !is.na(val), metric == "energy_delivered_ef", !(val <= 0)) %>%
-    dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "cyclopenta[ce]phenanthrylene")
+    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
+    dplyr::filter(!is.na(val), metric == "energy_delivered_ef") %>%
+    dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "om_unc",
+                  pol != "oc", 
+                  pol != "cyclopenta[ce]phenanthrylene")
 ```
 
 ## rename pollutants
@@ -79,12 +82,12 @@ load data
 ```
 
 ```{r, echo=FALSE}
-  small_samples <- 
     emissions %>%
     dplyr::group_by(pol, stove) %>% 
     dplyr::do(val = round(nrow(.), 2)) %>%
     dplyr::filter(val <= 1) %>%
-    dplyr::select(-val)
+    dplyr::select(-val) %>%
+    knitr::kable("markdown", align = 'c')
 ```
 
 notes: 

@@ -49,7 +49,7 @@ load data
                                          "Mud\nchulha" = "chulha",
                                          "Rocket\nelbow" = "rocket elbow",
                                          "Built-in\nplancha" = "built-in plancha",
-                                         "Fan rocket\neblow" = "fan rocket-elbow",
+                                         "Fan rocket\nelbow" = "fan rocket-elbow",
                                          "Gasifier" = "forced-draft gasifier",
                                          "Ceramic\njiko" = "ceramic charcoal",
                                           "Metal\njiko" = "metal charcoal",
@@ -251,6 +251,35 @@ load data
 
 ```{r figure_2, echo=FALSE, fig.width=12, fig.height=8}
   p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r figure_2, echo=FALSE, fig.width=12, fig.height=4}
+    pm_mass_p %>%
+    dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(fill = "#999999", stat = "identity") +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+      annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
+      annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
+      geom_text(data = range_pm,
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.05) +
+      theme_minimal() +
+      theme(legend.text.align = 0,
+            text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 16),
+            axis.text.x = element_text(size = 14),
+            axis.title.x = element_blank(),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+      ylab(expression(atop(paste(PM[2.5], ' composition'), paste('miligrams per ', MJ[delivered]))))
+```
+
+```{r figure_2, echo=FALSE, fig.width=12, fig.height=4}
+  p1
 ```
 
 ```{r, echo=FALSE, fig.width=12, fig.height=2}

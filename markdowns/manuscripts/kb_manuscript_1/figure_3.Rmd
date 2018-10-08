@@ -48,7 +48,7 @@ load data
                                          "Mud\nchulha" = "chulha",
                                          "Rocket\nelbow" = "rocket elbow",
                                          "Built-in\nplancha" = "built-in plancha",
-                                         "Fan rocket\neblow" = "fan rocket-elbow",
+                                         "Fan rocket\nelbow" = "fan rocket-elbow",
                                          "Gasifier" = "forced-draft gasifier",
                                          "Ceramic\njiko" = "ceramic charcoal",
                                           "Metal\njiko" = "metal charcoal",
@@ -175,7 +175,6 @@ load data
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
-            axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             legend.title = element_blank()) +
       ylab(expression(atop(paste('Ultrafine Particles'), paste('particles per ', MJ[delivered]))))
@@ -199,7 +198,6 @@ load data
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
             axis.text.y = element_text(size = 16),
-            axis.text.x = element_blank(),
             axis.title.x = element_blank(),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 

@@ -48,7 +48,7 @@ load data
                                          "Mud\nchulha" = "chulha",
                                          "Rocket\nelbow" = "rocket elbow",
                                          "Built-in\nplancha" = "built-in plancha",
-                                         "Fan rocket\neblow" = "fan rocket-elbow",
+                                         "Fan rocket\nelbow" = "fan rocket-elbow",
                                          "Gasifier" = "forced-draft gasifier",
                                          "Ceramic\njiko" = "ceramic charcoal",
                                           "Metal\njiko" = "metal charcoal",
@@ -239,6 +239,14 @@ notes: need to look at these tests still
 
 ```{r figure_4, echo=FALSE, fig.width=12, fig.height=8}
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=4}
+  p1
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=4}
+  p2
 ```
 
 ```{r, echo=FALSE, fig.width=12, fig.height=2}
