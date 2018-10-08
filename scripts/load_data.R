@@ -973,3 +973,15 @@ load_rose_data <- function(){
 }
 #________________________________________________________
 
+#________________________________________________________
+# load grav data and convert each column to appropriate R class
+#file <- "../data/other/gbd.csv"
+load_gbd_data <- function(){
+  readr::read_csv("../data/other/gbd.csv",
+                  skip = 1,
+                  col_names = c("loc", "year", "age", "sex",
+                                "cause", "risk_factor", "measure", "value", "lower", "upper"))
+}
+#________________________________________________________
+
+
