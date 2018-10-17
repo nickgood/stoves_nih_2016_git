@@ -180,7 +180,7 @@ TukeyHSD(aov(mce ~ mc_level, df_anova))
 pairwise.t.test(df_anova$mce, df_anova$test_fuel_type, p.adj = "none")
 ```
 
-```{r fig.height=3, fig.width=4}
+```{r fig.height=3, fig.width=3.5}
        
 mce_plot <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", "med", "high")) %>%
        dplyr::mutate(mc_level = forcats::fct_recode(mc_level, "medium" = "med")) %>%
@@ -195,7 +195,7 @@ ggplot(data = mce_plot, aes(x = mean_mc, y = mce, shape = `Fuel Shape`)) + #, co
   geom_point(size = 3) +
   theme_bw() +
   labs(x = "Moisture Content (%)", y = "Modified Combustion Efficiency (%)") +
-  theme(text = element_text(size=10), legend.position = "right") +
+  theme(text = element_text(size=10), legend.position = "top") +
   #scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25))
 

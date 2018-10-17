@@ -416,6 +416,61 @@ ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
 ```
 
 ```{r}
+# final display for manuscript
+main_energy <- ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape = type)) +
+  theme_bw() +
+  theme(text = element_text(size=12), legend.position = "none",
+  strip.background = element_blank(),
+  strip.text.x = element_blank()) +
+  ylab("EF [mg / MJ Delivered]") + xlab("Moisture Content (%)") +
+  #scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape") +
+  geom_point(size = 2, aes(color = pol), alpha = 0.7) +
+  facet_wrap(~pol, ncol = 4, scales = "free_y") + #dummy value for now to fix panel issue
+  scale_color_manual(values = c("#FF3366", "#FF9900", "#33CC99", "#339999", "#330099", "#CC0066", "#FF6633", "#0099CC")) +
+  geom_hline(aes(yintercept = 1030), size = .5, data=subset(all_energy, pol == "grav"), color = "black") +
+  geom_hline(aes(yintercept = 481), size = .5,data=subset(all_energy, pol == "grav"), color = "black") +
+  geom_hline(aes(yintercept = 218), size = .5,data=subset(all_energy, pol == "grav"), color = "black") +
+  geom_hline(aes(yintercept = 62), size = .5,data=subset(all_energy, pol == "grav"), color = "black") +
+  geom_hline(aes(yintercept = 5), size = .5,data=subset(all_energy, pol == "grav"), color = "black") +
+  geom_hline(aes(yintercept = 18300), size = .5,data=subset(all_energy, pol == "co"), color = "black") +
+  geom_hline(aes(yintercept = 11500), size = .5,data=subset(all_energy, pol == "co"), color = "black") +
+  geom_hline(aes(yintercept = 7200), size = .5,data=subset(all_energy, pol == "co"), color = "black") +
+  geom_hline(aes(yintercept = 4400), size = .5,data=subset(all_energy, pol == "co"), color = "black") +
+  geom_hline(aes(yintercept = 3000), size = .5,data=subset(all_energy, pol == "co"), color = "black") +
+  geom_text(aes(label = "CO", x = 7.5, y = 14000), colour = "black", data=subset(all_energy, pol == "co")) +
+  geom_text(aes(label = "PM2.5", x = 9, y = 900), colour = "black", data=subset(all_energy, pol == "grav")) +
+  geom_text(aes(label = "EC", x = 8, y = 40), colour = "black", data=subset(all_energy, pol == "ec")) +
+  geom_text(aes(label = "OC", x = 25, y = 130), colour = "black", data=subset(all_energy, pol == "oc")) +
+  geom_text(aes(label = "CH4", x = 25, y = 400), colour = "black", data=subset(all_energy, pol == "ch4")) +
+  geom_text(aes(label = "Formaldehyde", x = 20, y = 45), colour = "black", data=subset(all_energy, pol == "formaldehyde")) +
+  geom_text(aes(label = "Acetaldehyde", x = 20, y = 15), colour = "black", data=subset(all_energy, pol == "acetaldehyde")) +
+  geom_text(aes(label = "Benzene", x = 20, y = 5), colour = "black", data=subset(all_energy, pol == "benzene"))
+  
+ggsave(filename = "main_fig.pdf", plot = main_energy, width = 7, height = 3.5, units = "in")
+```
+
+```{r fig.height= 11, fig.width=6}
+carb_plot_energy <- filter(p_data, !grepl("ec|oc|co2|co|ch4|benzene|toluene|ethylbenzene|o-xylene|m+p-xylene|tc|grav|2_5_dimethylbenzaldehyde", pol)) %>%
+  mutate(mass_pol_energy_mg = mass_pol_energy *1000)
+             #rename(dimethylbenzaldehyde = `)
+
+carb_energy <- ggplot(carb_plot_energy, aes(x = mc_level, y = mass_pol_energy_mg, color = mc_level, shape = type)) +
+  geom_point(size = 2) +
+  theme_bw() +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  theme(text = element_text(size = 12)) + 
+  ylab("EF [mg pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  facet_wrap(~pol, scales = "free_y", ncol = 3) +
+  scale_x_discrete(labels = c("5", "15", "25"))
+
+ggsave(filename = "carb_energy.pdf", plot = carb_energy)
+
+```
+
+
+```{r}
 # anova tests for pollutants efs               
 df_anova <- dplyr::select(all_energy, mass_pol_energy, type, mc_level, pol, id) %>%
        dplyr::mutate(type = as.factor(type),
