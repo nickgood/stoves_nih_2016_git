@@ -1,0 +1,189 @@
+---
+title: "figure 4: correlation plots"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, lme4, kableExtra, stats4, broom, MuMIn)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# Tidy data for models
+
+## load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+## Replace values below background with zero, remove NA values, and select metric
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
+    dplyr::filter(!is.na(val), metric == "energy_delivered_ef") %>%
+    dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "om_unc",
+                  pol != "oc", 
+                  pol != "cyclopenta[ce]phenanthrylene",
+                  pol != "inositol")
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
+                  pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("benz\\[",  "benzo\\[", pol),
+                  pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol)) %>%
+    dplyr::mutate(pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("pm-mass", "pm_mass", pol))
+```
+
+## Select only complete observations retained
+
+* turn off log-transform
+
+```{r}
+  all <-
+    emissions %>%
+    dplyr::select(id, pol, val, stove, fuel) %>%
+    tidyr::spread(pol, val) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -fuel) %>%
+    #dplyr::mutate(pm_mass = log(pm_mass),
+    #              co = log(co),
+    #              val = log(val)) %>%
+    na.omit
+```
+
+# Leave-one-out cross validation
+
+## Get list of pollutants for loop
+
+```{r}
+  pols <-
+    emissions %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(pol != "pm_mass", pol != "co")
+```
+
+## Calculate metrics
+
+```{r}
+  pred_metrics <- 
+    pols %>%
+    dplyr::mutate(rmse = NA,
+                  nrmse = NA,
+                  E = NA)
+
+  for (n in 1:nrow(pols)) {
+    
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[n])
+    
+    obs_mean = mean(mod_data$val)
+
+    obs_mod_sqdiff <- rep(NA, len = nrow(mod_data))
+    obs_mean_sqdiff <- rep(NA, len = nrow(mod_data))
+  
+    for(i in 1:nrow(mod_data)) {
+      
+      training <- mod_data[-i,]
+      prediction <- mod_data[i,]
+      
+      mdl <- lm(val ~ pm_mass + co, data = training) # model with i'th observation out
+      y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
+      obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
+      obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
+      
+    }
+    pred_metrics$rmse[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
+    pred_metrics$nrmse[n] <- pred_metrics$rmse[n] / obs_mean # normalized root mean squared error
+    pred_metrics$E[n] <- 1 - (sum(obs_mod_sqdiff) / sum(obs_mean_sqdiff))
+  }
+```
+
+# Plotting
+
+## Root Mean Squared Error
+
+```{r, fig.height=14, fig.width=4, echo=FALSE}
+    pred_metrics %>%
+    dplyr::filter(pol != "ultrafine particles", pol != "carbon dioxide") %>%
+      ggplot(aes(x = reorder(pol, rmse), y = rmse)) +
+        geom_point() +
+        coord_flip() +
+        theme_bw() +
+        scale_y_log10() +
+        theme(axis.title.y = element_blank()) +
+        ylab(expression(paste('RMSE (miligrams per ', MJ[delivered], ')')))
+```
+
+## Normalized Root Mean Squared Error
+
+* Root mean squared error divided by mean of the observtion (similar to coefficient of variation)
+* Expoentiated at the end
+
+```{r, fig.height=14, fig.width=4, echo=FALSE}
+    pred_metrics %>%
+      ggplot(aes(x = reorder(pol, nrmse), y = nrmse)) +
+        geom_point() +
+        coord_flip() +
+        theme_bw() +
+        theme(axis.title.y = element_blank()) +
+        ylab('Normalized RMSE')
+```
+
+## Nash-Sutcliffe coefficient
+
+* Ranges from negative infinity to one
+* Efficiency of one corresponds to a perfect model fit
+* Efficiency of zero indicates that model predicitons are equivalent to predicting the mean
+* Efficiency less than zero indicates that observed mean is better than the predicted model
+
+```{r, fig.height=14, fig.width=4, echo=FALSE}
+    pred_metrics %>%
+      ggplot(aes(x = reorder(pol, E), y = E)) +
+        geom_point() +
+        coord_flip() +
+        theme_bw() +
+        theme(axis.title.y = element_blank()) +
+        ylab('Nash-Sutcliffe coefficient')
+```
