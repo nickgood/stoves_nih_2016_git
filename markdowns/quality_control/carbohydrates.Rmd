@@ -233,7 +233,13 @@ notes: no time data missing
 ## save lod
 
 ```{r}
-  saveRDS(lod, file = "../../r_data/carbonyls_lod.RDS")
+  carbs_lod <- 
+    carbohyrates_merged %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(lod = lod)
+
+  saveRDS(carbs_lod, file = "../../r_data/carbohydrates_lod.RDS")
 ```
 
 # backgrounds
