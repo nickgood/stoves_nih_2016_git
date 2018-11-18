@@ -405,7 +405,7 @@ extract burn data
 ```{r}
   vocs_merged <-
     vocs_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 
