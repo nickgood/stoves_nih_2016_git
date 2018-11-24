@@ -316,13 +316,15 @@ ggplot(df_grav_plot, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`
           dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type) %>%
           dplyr::filter(!grepl("FH2", id))
 
-  ggplot(ecoc, aes(x = mean_mc, y = ratio, color = `MC Level`, shape = `Fuel Shape`)) +
+  ecoc_ratio_fig <- ggplot(ecoc, aes(x = mean_mc, y = ratio, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 3.5) +
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme(text = element_text(size = 15)) +
   ylab("EC/OC Ratio") + xlab("Moisture Content (%)") +
   scale_x_continuous(breaks = c(5, 15, 25))
+  
+  ggsave(filename = "ecoc_ratio_fig.svg", plot = ecoc_ratio_fig, device = "svg", width = 8, height = 4, units = "in")
   #ggtitle("EC ratio")
 
   #ecoc_summary <- ecoc %>%
@@ -388,7 +390,7 @@ p_data_ <- dplyr::left_join(p_data_, mean_mc_df) %>%
            dplyr::mutate(pol = forcats::fct_recode(pol, "Elemental Carbon" = "ec",
                                                       "Organic Carbon" = "oc"))
 
-  ggplot(p_data_, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
+  ecoc_fig_kg <- ggplot(p_data_, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 3.5) +
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
@@ -396,6 +398,8 @@ p_data_ <- dplyr::left_join(p_data_, mean_mc_df) %>%
   ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free_y") +
   scale_x_continuous(breaks = c(5, 15, 25))
+  
+  ggsave(filename = "ecoc_fig_kg.svg", plot = ecoc_fig_kg, device = "svg", width = 8, height = 4, units = "in")
 ```
 
 ## Plot emissions by moisture content and fuel type
@@ -487,14 +491,16 @@ p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenze
                                                       "m+p-xylene",
                                                       "o-xylene"))
 
-  ggplot(p_data_voc, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
+  btex_kg <- ggplot(p_data_voc, aes(x = mean_mc, y = mass_pol_mass_fuel*1000, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 3) +
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme(text = element_text(size = 15)) + #legend.position = "none", 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
+  ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free_y") +
   scale_x_continuous(breaks = c(5, 15, 25))
+  
+  ggsave(filename = "btex_kg.svg", plot = btex_kg, device = "svg", width = 8, height = 4, units = "in")
 
 ```
 
@@ -583,20 +589,24 @@ mean_emissions <- select(p_data, mc_level, pol, mass_pol_mass_fuel) %>%
                   summarize(sd_pol = sd(mass_pol_mass_fuel))
 ```
 
-```{r fig.height= 11, fig.width=6}
+```{r fig.height= 10, fig.width=8}
 #plot of all carbonyls
 
-carb_plot <- filter(p_data, !grepl("ec|oc|co2|co|ch4|benzene|toluene|ethylbenzene|o-xylene|m+p-xylene|tc|grav|2_5_dimethylbenzaldehyde", pol))
+carb_plot <- filter(p_data, !grepl("ec|oc|co2|co|ch4|benzene|toluene|ethylbenzene|o-xylene|m+p-xylene|tc|grav|2_5_dimethylbenzaldehyde", pol)) %>%
+  left_join(mean_mc_df, by = "id") %>%
+  rename(`MC Level` = mc_level, `Fuel Shape` = type)
              #rename(dimethylbenzaldehyde = `)
 
-ggplot(carb_plot, aes(x = mc_level, y = mass_pol_mass_fuel, color = mc_level, shape = type)) +
+carb_fig_kg <- ggplot(carb_plot, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 2) +
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   theme(text = element_text(size = 12)) + 
   ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free_y", ncol = 3) +
-  scale_x_discrete(labels = c("low", "med", "high"))
+  scale_x_continuous(breaks = c(5, 15, 25))
+
+ggsave(filename = "carb_fig_kg.svg", plot = carb_fig_kg, device = "svg", width = 8, height = 10, units = "in")
 ```
 
 ```{r}

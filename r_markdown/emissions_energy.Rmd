@@ -124,7 +124,7 @@ mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
  
  cols <- c("Max" = "#FF3366", "Mean" = "#FF9900", "Min" = "#330099")
  
- ggplot() +
+temp_fig <- ggplot() +
    scale_color_manual(name = "Temperature", values = cols) +
    geom_point(data = temp_plot1, aes(x = mean_mc, y = t_max, color = "Max")) +
    geom_point(data = temp_plot1, aes(x = mean_mc, y = t_mean, color = "Mean")) +
@@ -133,6 +133,8 @@ mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
    #geom_point(aes(y = t_min, color= "blue")) +
    theme_bw() +
    labs(x = "Mean Moisture Content (%)", y = "Temperature (C)")
+
+ggsave(filename = "temp_fig.svg", plot = temp_fig, device = "svg", width = 7, height = 6, units = "in")
 ```
 
 
@@ -242,7 +244,7 @@ grav_energy <- p_data %>%
           dplyr::select(-inst) %>%
           left_join(temps, by = "id")
 
-ggplot(grav_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+grav_fig_energy <- ggplot(grav_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
   geom_point(size = 3.5) +
   theme_bw() +
   theme(text = element_text(size=15)) +
@@ -251,6 +253,8 @@ ggplot(grav_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shap
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape")
+
+ggsave(filename = "grav_fig_energy.svg", plot = grav_fig_energy, device = "svg", width = 7, height = 6, units = "in")
 ```
 
 ```{r}
@@ -283,17 +287,20 @@ voc_energy <- p_data %>%
                                                       "toluene",
                                                       "ethylbenzene",
                                                       "m+p-xylene",
-                                                      "o-xylene"))
+                                                      "o-xylene")) %>%
+          rename(`MC Level` = mc_level, `Fuel Shape` = type)
 
-ggplot(voc_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+voc_fig_energy <- ggplot(voc_energy, aes(x = mean_mc, y = mass_pol_energy*1000, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 3.5) +
   theme_bw() +
   theme(text = element_text(size=15)) +
-  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  ylab("EF [mg pol / MJ Delivered]") + xlab("Moisture Content (%)") +
   facet_wrap(~pol, scales = "free", ncol = 2) +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape")
+
+ggsave(filename = "voc_fig_energy.svg", plot = voc_fig_energy, device = "svg", width = 7, height = 6, units = "in")
 ```
 
 ```{r}
@@ -330,6 +337,27 @@ ggplot(ecoc_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shap
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
   scale_x_continuous(breaks = c(5, 15, 25)) +
   labs(color = "MC Level", shape = "Fuel Shape")
+```
+
+```{r}
+
+ecoc_grav_energy <- p_data %>%
+          dplyr::filter(pol %in% c("grav", "ec", "oc")) %>%
+          dplyr::select(-inst) %>%
+          left_join(temps, by = "id") %>%
+          mutate(pol = ifelse(pol == "grav", "PM2.5", pol))
+
+ecoc_grav_fig <- ggplot(ecoc_grav_energy, aes(x = mean_mc, y = mass_pol_energy, color = mc_level, shape = type)) +
+  geom_point(size = 3.5) +
+  theme_bw() +
+  theme(text = element_text(size=15)) +
+  ylab("EF [g pol / MJ Delivered]") + xlab("Moisture Content (%)") +
+  facet_wrap(~pol, scales = "free", ncol = 2) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  labs(color = "MC Level", shape = "Fuel Shape")
+
+ggsave(filename = "ecoc_grav_fig.svg", plot = ecoc_grav_fig, device = "svg", width = 7, height = 5, units = "in")
 ```
 
 # all pollutants one figure
@@ -449,14 +477,16 @@ main_energy <- ggplot(all_energy, aes(x = mean_mc, y = mass_pol_energy_mg, shape
   geom_text(aes(label = "Benzene", x = 20, y = 5), colour = "black", data=subset(all_energy, pol == "benzene"))
   
 ggsave(filename = "main_fig.pdf", plot = main_energy, width = 7, height = 3.5, units = "in")
+ggsave(filename = "main_fig.svg", plot = main_energy, device = "svg", width = 7, height = 3.5, units = "in")
 ```
 
 ```{r fig.height= 11, fig.width=6}
 carb_plot_energy <- filter(p_data, !grepl("ec|oc|co2|co|ch4|benzene|toluene|ethylbenzene|o-xylene|m+p-xylene|tc|grav|2_5_dimethylbenzaldehyde", pol)) %>%
-  mutate(mass_pol_energy_mg = mass_pol_energy *1000)
+  mutate(mass_pol_energy_mg = mass_pol_energy *1000) %>%
+  rename(`MC Level` = mc_level, `Fuel Shape` = type)
              #rename(dimethylbenzaldehyde = `)
 
-carb_energy <- ggplot(carb_plot_energy, aes(x = mc_level, y = mass_pol_energy_mg, color = mc_level, shape = type)) +
+carb_energy <- ggplot(carb_plot_energy, aes(x = mean_mc, y = mass_pol_energy_mg, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point(size = 2) +
   theme_bw() +
   scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
@@ -466,6 +496,7 @@ carb_energy <- ggplot(carb_plot_energy, aes(x = mc_level, y = mass_pol_energy_mg
   scale_x_discrete(labels = c("5", "15", "25"))
 
 ggsave(filename = "carb_energy.pdf", plot = carb_energy)
+ggsave(filename = "carb_fig_energy.svg", plot = carb_energy, device = "svg", width = 8, height = 10, units = "in")
 
 ```
 

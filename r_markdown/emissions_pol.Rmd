@@ -325,6 +325,9 @@ firepower <- select(co_co2_ch4_ppm, id, pol, ppm, ppm_bg) %>%
              select(id, pol, ppm_corrected) %>%
              spread(key = pol, value = ppm_corrected) %>%
              left_join(mean_mc, by = "id") %>%
+             left_join(select(samples, id, type, mc_level), by = "id") %>%
+             rename(`MC Level` = mc_level, `Fuel Shape` = type) %>%
+             mutate(`MC Level` = fct_relevel(`MC Level`, c("low", "med", "high"))) %>%
              mutate(firepower = (19000 * mw_c * hood_flow/(60*1000*0.5))* #LHV [kJ/kg_fuel*mw_c [g/mol]*hood_flow[m3/min]*(1/fuel_c_frac)[g_wood/g_carbon]
                    ((1.784 * co2/(1000*44.0094)) + (1.14 * co/(1000*28.0100)))) # density_co2 [kg/m3] * conc_co2 [ppmv] * (1/mw_co2) [mol/g] + density_co [kg/m3] * conc_co [ppmv]*(1/mw_co) [mol/g]
 
@@ -332,10 +335,17 @@ firepower_means <- left_join(firepower, select(samples, id, type, mc_level), by 
                    group_by(mc_level) %>%
                    summarise(mean_fp = mean(firepower))
 
-ggplot(firepower, aes(x = mean_mc, y = firepower)) +
+firepower_fig <- ggplot(firepower, aes(x = mean_mc, y = firepower, color = `MC Level`, shape = `Fuel Shape`)) +
   geom_point() +
+  geom_point(size = 3.5) +
+  theme_bw() +
+  theme(text = element_text(size=15)) +
   labs(x = "Mean Moisture Content [%]", y = "Firepower [kW]") +
-  theme_bw()
+  scale_x_continuous(breaks = c(5, 15, 25)) +
+  scale_color_manual(values = c("darkorange", "darkorchid3", "blue"))
+
+ggsave(filename = "firepower_fig.svg", plot = firepower_fig, device = "svg", width = 7, height = 6, units = "in")
+
 ```
 
 ---

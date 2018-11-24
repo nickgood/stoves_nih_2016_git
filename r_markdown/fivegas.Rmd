@@ -10,6 +10,7 @@ output:
 ```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
   library(forcats)
+  library(svglite)
 ```
 
 ```{r global_options, include=FALSE}
@@ -190,7 +191,7 @@ mce_plot <- dplyr::mutate(mce, mc_level = forcats::fct_relevel(mc_level, "low", 
        dplyr::group_by(mc_level, type) %>%
        dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type)
 
-ggplot(data = mce_plot, aes(x = mean_mc, y = mce, shape = `Fuel Shape`)) + #, color = `MC Level`
+mce_fig <- ggplot(data = mce_plot, aes(x = mean_mc, y = mce, shape = `Fuel Shape`)) + #, color = `MC Level`
   #geom_boxplot(size = 1) +
   geom_point(size = 3) +
   theme_bw() +
@@ -200,6 +201,8 @@ ggplot(data = mce_plot, aes(x = mean_mc, y = mce, shape = `Fuel Shape`)) + #, co
   scale_x_continuous(breaks = c(5, 15, 25))
 
 saveRDS(mce_plot, file = "../r_files/mce_plot.RDS")
+
+ggsave(filename = "mce_fig.svg", plot = mce_fig, device = "svg", width = 3, height = 4, units = "in")
 ```
 
 ```{r}
