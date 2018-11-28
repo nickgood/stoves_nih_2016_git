@@ -18,6 +18,7 @@ output:
 
 ```{r, echo=FALSE}
   emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  missing_stoves <- readRDS("../../../r_data/model_info.RDS")
   fuel_burnt <- readRDS("../../../r_data/fuel_merged.RDS")
   times <- readRDS("../../../r_data/test_times.RDS")
   samples <- readRDS("../../../r_data/samples.RDS")
@@ -243,7 +244,7 @@ Information about the sampling media and analysis instrumentation used to measur
                                                     "Gas chromatograph mass spectrometer (GC-17A); Shimadzu; Kyoto, Japan",
                                                     "HPLC 1050 series; Agilent Technologies; Santa Clara, CA",
                                                     "Scanning Mobility Particle Sizer Spectrometer 3938, TSI Incorporated, Shoreview, Minnesota",
-                                                    "ULTRAMAT/OXYMAT 6 and ULTRAMAT 23; Siemens; Munich, Germany"),
+                                                    "ULTRAMAT/OXYMAT 6 and ULTRAMAT 23 (NDIR); Siemens; Munich, Germany"),
                      "Mesurement frequency" = c("Test integrated",
                                                 "Test integrated",
                                                 "Test integrated",
@@ -277,15 +278,17 @@ Instrumentation that was used for either quality control or as part of the test 
                                            "Thermocouple",
                                            "HEPA filters",
                                            "Needle valves",
-                                           "Rotometers"),
+                                           "Rotometers",
+                                           "Diaphragm Pump"),
                      "Details" = c("Velometer AVM430-A; TSI Alnor; Huntington Beach, CA",
-                                    "mini-Buck Calibrator M-30; A.P. Buck, Inc; Orlando, FL",
-                                    "16.7 liters per minute, 2.5 µm cutpoint; URG; Chapel Hill, NC",
-                                    "LI-820 CO2 Analyzer; LI-COR; Lincoln, NE",
-                                   "K-type, OMEGA Engineering Inc., Norwalk, CT",
-                                   "",
-                                   "",
-                                   ""),
+                                   "mini-Buck Calibrator M-30; A.P. Buck, Inc; Orlando, FL",
+                                   "16.7 liters per minute, 2.5 µm cutpoint; URG; Chapel Hill, NC",
+                                   "LI-820 CO2 Analyzer; LI-COR; Lincoln, NE",
+                                   "K-type Thermocouple; OMEGA Engineering Inc.; Norwalk, CT",
+                                   "HEPA Capsule Filter (HC10-4N-PTF - HEPA); Eta Filters; Minneapolis, MN",
+                                   "High Flow Metering Valve (SS-4L/B-4L); Swagelok; Solon, OH",
+                                   "Acrylic Flow Meters (FL-2041-SS); OMEGA Engineering Inc.; Norwalk, CT",
+                                   "Oilless Diaphragm Pump (MOA-P109-CA); Gast; York, PA"),
                      "Purpose" = c("Hood flow rates (monitored throughout the study)",
                                    "Sample line flow rates (measured in triplicate before and after each test)",
                                    "Removing particles above 2.5 µm for filter-based measurements",
@@ -293,7 +296,8 @@ Instrumentation that was used for either quality control or as part of the test 
                                    "Measure water temperature and flame temperature",
                                    "Various (see SI 5.1)",
                                    "Various (see SI 5.1)",
-                                   "Monitoring flow rates")) %>%
+                                   "Monitoring flow rates",
+                                   "Various (see SI 5.1)")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
           linesep = "") %>%
     kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
@@ -454,35 +458,11 @@ PM$_{2.5}$ versus the sum of inorganic ions, elemental carbon, and organic matte
 
 \newpage
 
-# SI 10: Models used in selection
-
-The following are equations of the models used in the small-sample-size-corrected Akaike information criterion (AICc) selection analysis, where $\alpha$, $\beta$, and $\gamma$ are constant coefficients; $\alpha_i$, $\beta_i$, and $\gamma_i$ are stove-type or fuel-type specific coefficients; and $CO$ is carbon monoxide, $PM_{2.5}$ is fine particulate matter, and $EF$ is the smoke constituent that is being predicted on a per-energy-delivered basis.
-
-```{r}
-  tibble::data_frame("Model equations" = c("$ln(EF) = \\alpha_i$",
-                                           "$ln(EF) = \\alpha + \\beta \\cdot PM_{2.5}$",
-                                           "$ln(EF) = \\alpha + \\gamma \\cdot CO$",
-                                           "$ln(EF) = \\alpha + \\beta \\cdot PM_{2.5} + \\gamma \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta \\cdot PM_{2.5}$",
-                                           "$ln(EF) = \\alpha_i + \\gamma \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta \\cdot PM_{2.5} + \\gamma \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta_i \\cdot PM_{2.5}$",
-                                           "$ln(EF) = \\alpha_i + \\gamma_i \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta_i \\cdot PM_{2.5} + \\gamma \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta \\cdot PM_{2.5} + \\gamma_i \\cdot CO$",
-                                           "$ln(EF) = \\alpha_i + \\beta_i \\cdot PM_{2.5} + \\gamma_i \\cdot CO$")) %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
-          linesep = "") %>%
-    kable_styling(latex_options = c("striped"), position = "center", font_size = 12)
-```
-
-\newpage
-
-# SI 11: Number of measurements by stove type
+# SI 10: Number of measurements by stove type
 
 The number of per-energy-delivered emissions factors used in the analysis for each type of pollutant. The number of attempted measurements, by stove type, are listed in the footnote. See Figure q for breakdown by fuel type. Missing measurements are due to measurement issues or erroneous data. (The number of measurements include both measurements that were below the limit of detection or below the study-averaged laboratory background level.)
 
-## SI 11.1: Wood stoves
+## SI 10.1: Wood stoves
 
 ```{r}
   three_stone <-
@@ -627,7 +607,7 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
 
 \newpage
 
-## SI 11.2: Pellet, charcoal, and fossil-fuel stoves
+## SI 10.2: Pellet, charcoal, and fossil-fuel stoves
 
 ```{r}
   gasifier <-
@@ -770,11 +750,35 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
 
 \newpage
 
-# SI 12: Fraction of measurements below limit of detection
+```{r, echo=FALSE, eval=FALSE}
+  voc_lod <-
+    readRDS("../../../r_data/voc_lod.RDS") %>%
+    dplyr::mutate(lod = paste(lod, "ppbv*"))
+
+  carbos_lod <- 
+    readRDS("../../../r_data/carbohydrates_lod.RDS") %>%
+    dplyr::mutate(lod = paste(lod, "$\\mu$g/m$^3$*"))
+  
+  carbons_lod <- readRDS("../../../r_data/carbonyls_lod.RDS")
+  
+  ions_lod <- readRDS("../../../r_data/ions_lod.RDS")
+  ecoc_lod <- readRDS("../../../r_data/ecoc_lod.RDS")
+  pah_lod <- readRDS("../../../r_data/pah_lod.RDS")
+  
+  lods <-
+    voc_lod %>%
+    dplyr::bind_rows(carbos_lod) %>%
+    dplyr::bind_rows(carbons_lod) %>%
+    dplyr::bind_rows(ions_lod) %>%
+    dplyr::bind_rows(ecoc_lod) %>%
+    dplyr::bind_rows(pah_lod)
+```
+
+# SI 11: Fraction of measurements below limit of detection
 
 Fraction of measurements that were below the limit of detection (LOD) by smoke constituent. Refer to SI 11 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations).
 
-## SI 12.1: Wood stoves
+## SI 11.1: Wood stoves
 
 ```{r}
   three_stone <-
@@ -867,7 +871,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
 
 \newpage
 
-## SI 12.2: Pellet, charcoal, and fossil-fuel stoves
+## SI 11.2: Pellet, charcoal, and fossil-fuel stoves
 
 ```{r}
   gasifier <-
@@ -973,11 +977,21 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
 
 \newpage
 
-# SI 13: Fraction of measurements below background
+```{r, echo=FALSE, eval=FALSE}
+  vocs_bg <- readRDS("../../../r_data/vocs_bg.RDS")
+  carbos_bg <- readRDS("../../../r_data/carbohydrates_bg.RDS")
+  carbons_bg <- readRDS("../../../r_data/carbonyls_bg.RDS")
+  ions_bg <- readRDS("../../../r_data/ions_bg.RDS")
+  ecoc_bg <- readRDS("../../../r_data/ecoc_bg.RDS")
+
+  
+```
+
+# SI 12: Fraction of measurements below background
 
 Fraction of measurements that were below the study-averaged background by smoke constituent. Refer to SI 11 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations).
 
-## SI 13.1: Wood stoves
+## SI 12.1: Wood stoves
 
 ```{r}
   three_stone <-
@@ -1070,7 +1084,7 @@ Fraction of measurements that were below the study-averaged background by smoke 
 
 \newpage
 
-## SI 13.2: Pellet, charcoal, and fossil-fuel stoves
+## SI 12.2: Pellet, charcoal, and fossil-fuel stoves
 
 ```{r}
   gasifier <-
@@ -1176,7 +1190,7 @@ Fraction of measurements that were below the study-averaged background by smoke 
 
 \newpage
 
-# SI 14: Fuel properties
+# SI 13: Fuel properties
 
 Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany), proximate properties (Hazen Research Inc.; Golden, CO), and ultimate properties (Soil-Water-Plant laboratory at Colorado State University; Fort Collins, CO) of all fuels tested except the LPG. LPG properties were derived from the Phyllis database (https://phyllis.nl/). Fuel hydrogen contents from the Phyllis database (https://phyllis.nl/) and higher heating values (HHV) were used to calculate the lower heating values (LHV) of the fuels. Moisture content is reported on a wet basis, while all other measurements are reported on a dry basis. 
 
@@ -1213,12 +1227,45 @@ Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany)
     row_spec(0, angle = 90)
 ```
 
-\pagebreak
+\newpage
 
-# SI 15: Top models by pollutant (with stove type as categorical variable)
+# SI 14: Stove types that were excluded from leave-one-out cross validation
 
-*** Will add if JV & JT like new regression analysis
+List of stove types that were excluded from the regression analysis by pollutant. Stove types were exluded from the leave-one-out cross validation if they had less than three data points, because only two data points would be avaliable to fit the data. Replicates could be missing if they the measurement was below background or there were measurement issues. Missing stove types were excluded from both models presented in the main manuscript for consistency.
 
-# SI 16: Top models by pollutant (with fuel type as categorical variable)
+```{r, echo=FALSE}
+  missing_stoves %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    forcats::fct_recode("Three-stone fire" = "three-stone fire",
+                                        "Mud chulha" = "chulha",
+                                        "Rocket elbow" = "rocket elbow",
+                                        "Built-in plancha" = "built-in plancha",
+                                        "Fan rocket elbow" = "fan rocket-elbow",
+                                        "Gasifier" = "forced-draft gasifier",
+                                        "Ceramic jiko" = "ceramic charcoal",
+                                        "Metal jiko" = "metal charcoal",
+                                        "Wick kerosene" = "wick kerosene",
+                                        "Pressure kerosene" = "pressure kerosene",
+                                        "LPG" = "lpg") %>%
+                  forcats::fct_relevel("Three-stone fire",
+                                       "Mud chulha",
+                                       "Rocket elbow",
+                                       "Built-in plancha",
+                                       "Fan rocket elbow",
+                                       "Gasifier",
+                                       "Ceramic jiko",
+                                       "Metal jiko",
+                                       "Wick kerosene",
+                                       "Pressure kerosene",
+                                       "LPG")) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(stove = paste(stove, collapse = ", ")) %>%
+    dplyr::rename("Missing stove types" = "stove", " " = pol) %>%
+      kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
+            linesep = "") %>%
+      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+      column_spec(1, width = "12em") %>%
+      column_spec(2, width = "30em")
+```
 
-*** Will add if JV & JT like new regression analysis
