@@ -1,5 +1,5 @@
 ---
-title: "figure 2: gas emissions"
+title: "Figure 4: Carbonyls and VOCs"
 output:
   html_document:
     toc: true
@@ -118,8 +118,9 @@ notes: need to look at these tests still
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max) %>%
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max, mean) %>%
     dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
 ```
 
@@ -130,8 +131,9 @@ notes: need to look at these tests still
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max) %>%
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max, mean) %>%
     dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
 ```
 
@@ -194,7 +196,8 @@ notes: need to look at these tests still
     carbonyls_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_carbs,
+      geom_text(data = stats_carbs %>%
+                  dplyr::filter(var != "mean"),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
       scale_fill_manual(values = col_vector) +
@@ -216,13 +219,14 @@ notes: need to look at these tests still
     vocs_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stat_vocs,
+      geom_text(data = stat_vocs  %>%
+                  dplyr::filter(var != "mean"),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2"),
                         name = "VOCs") +
-      scale_y_continuous(limits = c(0, 2000)) +
-      annotate("text", x = 1, y = 2000, label = "2251", size = 5) +
-      annotate("text", x = 2, y = 2000, label = "3254", size = 5) +
+      scale_y_continuous(limits = c(0, 2200)) +
+      annotate("text", x = 1, y = 2200, label = "2251", size = 5) +
+      annotate("text", x = 2, y = 2200, label = "3254", size = 5) +
       theme_minimal() +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
@@ -241,15 +245,7 @@ notes: need to look at these tests still
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r, echo=FALSE, fig.width=12, fig.height=4}
-  p1
-```
-
-```{r, echo=FALSE, fig.width=12, fig.height=4}
-  p2
-```
-
-```{r, echo=FALSE, fig.width=12, fig.height=2}
+```{r figure_4b, echo=FALSE, fig.width=12, fig.height=2}
   col_vector = c("cornflowerblue",
                  "khaki",
                  "slateblue3",
@@ -257,7 +253,8 @@ notes: need to look at these tests still
     carbonyls_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_carbs,
+      geom_text(data = stats_carbs  %>%
+                  dplyr::filter(var != "mean"),
                 aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
       scale_y_continuous(limits = c(0, 15), position = "right") +
@@ -277,186 +274,42 @@ notes: need to look at these tests still
 
 # tables
 
-## carbonyls
+## percent reductions
 
-average carbonyls by stove type (total)
+VOCs
 
 ```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
+  three_stone <- 
+    stat_vocs %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  stat_vocs %>%
+    dplyr::filter(var == "mean") %>%
+    dplyr::mutate(three_stone = three_stone$val[3]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+    knitr::kable("markdown", digits = 0, align = 'c')
 ```
 
-average formaldeyde by stove type
+Carbonyls
 
 ```{r, echo=FALSE}
-  carbonyls %>%
-      dplyr::filter(grepl("form", pol)) %>%
-    dplyr::group_by(id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
+  three_stone <- 
+    stats_carbs %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  stats_carbs %>%
+    dplyr::filter(var == "mean") %>%
+    dplyr::mutate(three_stone = three_stone$val[3]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average acetaldeyde by stove type
-
-```{r, echo=FALSE}
-  carbonyls %>%
-      dplyr::filter(grepl("acet", pol)) %>%
-    dplyr::group_by(id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(stove, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(stove, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by stovecat (total)
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-fraction of total emissions made up of formaldehyde
-
-```{r, echo=FALSE}
-  formaldehyde <-
-    carbonyls %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::filter(grepl("form", pol)) %>%
-    dplyr::summarise(form_mean = mean(val, na.rm = TRUE))
-
-  carbonyls %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(formaldehyde, by = "fuelcat") %>%
-    dplyr::mutate(ratio = form_mean / all_mean) %>%
-    dplyr::arrange(ratio) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-fraction of total emissions made up of formaldehyde + acetaldehyde
-
-```{r, echo=FALSE}
-  formaldehyde <-
-    carbonyls %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::filter(grepl("formal|acet", pol)) %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(form_mean = mean(val, na.rm = TRUE))
-
-  carbonyls %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(formaldehyde, by = "fuelcat") %>%
-    dplyr::mutate(ratio = form_mean / all_mean) %>%
-    dplyr::arrange(ratio) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(fuelcat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(fuelcat, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by fuel type (total)
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(id, fuel) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by fuelcat
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbonyls by fuelcat (by pollutant)
-
-```{r, echo=FALSE}
-  carbonyls %>%
-    dplyr::group_by(fuelcat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(fuelcat, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+    knitr::kable("markdown", digits = 0, align = 'c')
 ```
 
 ## vocs
@@ -477,72 +330,53 @@ average vocs by stove type (total)
     knitr::kable("markdown", digits = 3, align = 'c')
 ```
 
-average vocs by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, stove, pol_subcategory) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, pol_subcategory) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
-```
-
-average vocs by stovecat (total)
-
-```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
-```
-
-average vocs by stovecat (by pollutant)
-
-```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, stovecat, pol_subcategory) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat, pol_subcategory) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
-```
-
 ratio of total to aromatics
 
 ```{r, echo=FALSE}
   aromatics <-
     vocs %>%
       dplyr::filter(pol_subcategory == "aromatics") %>%
-      dplyr::group_by(id, fuelcat) %>%
+      dplyr::group_by(id, stove) %>%
       dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-      dplyr::group_by(fuelcat) %>%
+      dplyr::group_by(stove) %>%
       dplyr::summarise(mean_aromatics = mean(val, na.rm = TRUE))
 
   vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(aromatics, by = "fuelcat") %>%
-    dplyr::mutate(ratio = mean_aromatics / all_mean) %>%
-    dplyr::arrange(ratio) %>%
+    dplyr::left_join(aromatics, by = "stove") %>%
+    dplyr::mutate(ratio = (mean_aromatics / all_mean) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+ratio of total to alkynes
+
+```{r, echo=FALSE}
+  alkynes <-
+    vocs %>%
+      dplyr::filter(pol_subcategory == "alkynes") %>%
+      dplyr::group_by(id, stove) %>%
+      dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+      dplyr::group_by(stove) %>%
+      dplyr::summarise(mean_alkynes = mean(val, na.rm = TRUE))
+
+  vocs %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(alkynes, by = "stove") %>%
+    dplyr::mutate(ratio = (mean_alkynes / all_mean) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -552,20 +386,22 @@ ratio of total to alkenes
   alkenes <-
     vocs %>%
       dplyr::filter(pol_subcategory == "alkenes") %>%
-      dplyr::group_by(id, fuelcat) %>%
+      dplyr::group_by(id, stove) %>%
       dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-      dplyr::group_by(fuelcat) %>%
+      dplyr::group_by(stove) %>%
       dplyr::summarise(mean_alkenes = mean(val, na.rm = TRUE))
 
   vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(alkenes, by = "fuelcat") %>%
-    dplyr::mutate(ratio = mean_alkenes / all_mean) %>%
-    dplyr::arrange(ratio) %>%
+    dplyr::left_join(alkenes, by = "stove") %>%
+    dplyr::mutate(ratio = (mean_alkenes / all_mean) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
@@ -575,52 +411,76 @@ ratio of total to alkanes
   alkanes <-
     vocs %>%
       dplyr::filter(pol_subcategory == "alkanes") %>%
-      dplyr::group_by(id, fuelcat) %>%
+      dplyr::group_by(id, stove) %>%
       dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-      dplyr::group_by(fuelcat) %>%
+      dplyr::group_by(stove) %>%
       dplyr::summarise(mean_alkanes = mean(val, na.rm = TRUE))
 
   vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(alkanes, by = "fuelcat") %>%
-    dplyr::mutate(ratio = mean_alkanes / all_mean) %>%
-    dplyr::arrange(ratio) %>%
+    dplyr::left_join(alkanes, by = "stove") %>%
+    dplyr::mutate(ratio = (mean_alkanes / all_mean) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-ratio of total to aromatics
+lpg stove
 
 ```{r, echo=FALSE}
-  benzene <-
+  lpg <-
     vocs %>%
-      dplyr::filter(pol == "benzene") %>%
-      dplyr::group_by(id, fuelcat) %>%
-      dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-      dplyr::group_by(fuelcat) %>%
-      dplyr::summarise(mean_benzene = mean(val, na.rm = TRUE))
+      dplyr::filter(stove == "LPG") %>%
+      dplyr::group_by(id) %>%
+      dplyr::summarise(total = sum(val, na.rm = TRUE))
 
   vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::filter(stove == "LPG") %>%
+    dplyr::left_join(lpg, by = "id") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::left_join(benzene, by = "fuelcat") %>%
-    dplyr::mutate(ratio = mean_benzene / all_mean) %>%
     dplyr::arrange(ratio) %>%
+    dplyr::select(pol, ratio) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
+wick kerosene stove
+
 ```{r, echo=FALSE}
+  wick <-
+    vocs %>%
+      dplyr::filter(stove == "Wick\nkerosene") %>%
+      dplyr::group_by(id) %>%
+      dplyr::summarise(total = sum(val, na.rm = TRUE))
+
   vocs %>%
-      dplyr::filter(grepl("ethyne", pol)) %>%
-    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::filter(stove == "Wick\nkerosene") %>%
+    dplyr::left_join(wick, by = "id") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::group_by(pol) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(ratio) %>%
+    dplyr::select(pol, ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+## carbonyls
+
+average carbonyls by stove type (total)
+
+```{r, echo=FALSE}
+  carbonyls %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -630,90 +490,92 @@ ratio of total to aromatics
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average vocs by fuel type (total)
+average formaldeyde by stove type
 
 ```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, fuel) %>%
+  carbonyls %>%
+      dplyr::filter(grepl("form", pol)) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuel) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average vocs by fuelcat
+average acetaldeyde by stove type
 
 ```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
+  carbonyls %>%
+      dplyr::filter(grepl("acet", pol)) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average vocs by fuelcat (by pollutant)
+fraction of total emissions made up of formaldehyde
 
 ```{r, echo=FALSE}
-  vocs %>%
-    dplyr::group_by(id, fuelcat, pol_subcategory) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat, pol_subcategory) %>%
+  formaldehyde <-
+    carbonyls %>%
+    dplyr::group_by(id) %>%
+    dplyr::filter(grepl("form", pol)) %>%
+    dplyr::summarise(form = mean(val, na.rm = TRUE))
+
+  carbonyls %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarise(all = sum(val, na.rm = TRUE)) %>%
+    dplyr::left_join(formaldehyde, by = "id") %>%
+    dplyr::mutate(ratio = (form / all) * 100) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+fraction of total emissions made up of acetaldehyde
+
+```{r, echo=FALSE}
+  formaldehyde <-
+    carbonyls %>%
+    dplyr::group_by(id) %>%
+    dplyr::filter(grepl("acet", pol)) %>%
+    dplyr::summarise(form = mean(val, na.rm = TRUE))
+
+  carbonyls %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarise(all = sum(val, na.rm = TRUE)) %>%
+    dplyr::left_join(formaldehyde, by = "id") %>%
+    dplyr::mutate(ratio = (form / all) * 100) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(ratio = mean(ratio, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+average carbonyls by stove type (by pollutant)
+
+```{r, echo=FALSE}
+  carbonyls %>%
+    dplyr::group_by(stove, pol) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
-    dplyr::arrange(fuelcat, mean) %>%
-    knitr::kable("markdown", digits = 3, align = 'c')
-```
-
-ratio of total to aromatics
-
-```{r, echo=FALSE}
-  aromatics <-
-    vocs %>%
-      dplyr::filter(pol_subcategory == "aromatics") %>%
-      dplyr::group_by(id, fuelcat) %>%
-      dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-      dplyr::group_by(fuelcat) %>%
-      dplyr::summarise(mean_aromatics = mean(val, na.rm = TRUE))
-
-  vocs %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(aromatics, by = "fuelcat") %>%
-    dplyr::mutate(ratio = mean_aromatics / all_mean) %>%
-    dplyr::arrange(ratio) %>%
+    dplyr::arrange(stove, mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-lpg stoves
-
-```{r, echo=FALSE}
-  vocs %>%
-    dplyr::filter(stove == "k") %>%
-    dplyr::group_by(pol) %>%
-    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
-    dplyr::arrange(val) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-```{r, echo=FALSE}
-  vocs %>%
-    dplyr::filter(stove == "i") %>%
-    dplyr::group_by(pol) %>%
-    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
-    dplyr::arrange(val) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```

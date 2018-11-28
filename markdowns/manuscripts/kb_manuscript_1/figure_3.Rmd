@@ -1,5 +1,5 @@
 ---
-title: "figure 2: gas emissions"
+title: "Figure 3: Ultrafines and PAHs"
 output:
   html_document:
     toc: true
@@ -121,8 +121,9 @@ load data
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
     dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max) %>%
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max, mean) %>%
     dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
 ```
 
@@ -185,13 +186,14 @@ load data
     pahs_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_pahs,
+      geom_text(data = stats_pahs %>%
+                  dplyr::filter(var != "mean"),
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
       scale_y_continuous(limits = c(0, 30)) +
-      annotate("text", x = 1, y = 30, label = "36.1", size = 5) +
-      annotate("text", x = 2, y = 30, label = "56.3", size = 5) +
-      annotate("text", x = 3, y = 30, label = "73.6", size = 5) +
+      annotate("text", x = 1, y = 30, label = "35", size = 5) +
+      annotate("text", x = 2, y = 30, label = "55", size = 5) +
+      annotate("text", x = 3, y = 30, label = "73", size = 5) +
       theme_minimal() +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
@@ -205,8 +207,71 @@ load data
     ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per ', MJ[delivered]))))
 ```
 
-```{r figure_4, echo=FALSE, fig.width=12, fig.height=8}
+```{r figure_3, echo=FALSE, fig.width=12, fig.height=8}
   p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r figure_3a, echo=FALSE, fig.width=12, fig.height=2}
+    pahs_p %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+      geom_text(data = stats_pahs %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
+      scale_y_continuous(limits = c(0, 2), breaks = c(0, 1, 2, 3), position = "right") +
+      annotate("text", x = 9, y = 2, label = "2.9", size = 5) +
+      theme_minimal() +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = "none",
+            axis.text.y = element_text(size = 16),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per ', MJ[delivered]))))
+```
+
+# summary
+
+## percent reductions
+
+Ultrafines
+
+```{r, echo=FALSE}
+  three_stone <- 
+    ultrafines_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  ultrafines_p %>%
+    dplyr::mutate(three_stone = three_stone$mean[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+PAHs
+
+```{r, echo=FALSE}
+  three_stone <- 
+    stats_pahs %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  stats_pahs %>%
+    dplyr::filter(var == "mean") %>%
+    dplyr::mutate(three_stone = three_stone$val[3]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
 ```
 
 ## ultrafines
@@ -225,41 +290,100 @@ average ultrafines by stove type
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average ultrafines by stovecat
+## pahs
+
+average total pahs by stove type
 
 ```{r, echo=FALSE}
-  ultrafines %>%
-    dplyr::group_by(stovecat) %>%
+  pahs %>%
+    dplyr::group_by(id, stove) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     dplyr::arrange(mean) %>%
     dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average ultrafines by fuel type
+three ring
 
 ```{r, echo=FALSE}
-  ultrafines %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::arrange(mean) %>%
-    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+  three_ring <-
+    pahs_p %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
+    dplyr::filter(grepl("three", pol_subcategory)) %>%
+    dplyr::select(stove, val)
+
+  pahs_p %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(total = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(three_ring, by = "stove") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
 ```
 
-average ultrafines by fuelcat
+four ring
 
 ```{r, echo=FALSE}
-  ultrafines %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::arrange(mean) %>%
-    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 2)))) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+  four_ring <-
+    pahs_p %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
+    dplyr::filter(grepl("four", pol_subcategory)) %>%
+    dplyr::select(stove, val)
+
+  pahs_p %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(total = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(four_ring, by = "stove") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+five ring
+
+```{r, echo=FALSE}
+  five_ring <-
+    pahs_p %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
+    dplyr::filter(grepl("five", pol_subcategory)) %>%
+    dplyr::select(stove, val)
+
+  pahs_p %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(total = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(five_ring, by = "stove") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+six ring
+
+```{r, echo=FALSE}
+  six_ring <-
+    pahs_p %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory)) %>%
+    dplyr::filter(grepl("six", pol_subcategory)) %>%
+    dplyr::select(stove, val)
+
+  pahs_p %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(total = sum(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(six_ring, by = "stove") %>%
+    dplyr::mutate(ratio = (val / total) * 100) %>%
+    dplyr::select(stove, ratio) %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
 ```

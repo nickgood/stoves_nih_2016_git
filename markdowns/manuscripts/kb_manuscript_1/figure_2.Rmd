@@ -1,5 +1,5 @@
 ---
-title: "figure 1: particle emissions"
+title: "Figure 2: PM composition and CO"
 output:
   html_document:
     toc: true
@@ -210,8 +210,8 @@ load data
                         drop = FALSE) +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
-      annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
-      annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
+      annotate("text", x = 1, y = 1050, label = "1609", size = 5) +
+      annotate("text", x = 2, y = 1050, label = "2117", size = 5) +
       geom_text(data = range_pm,
                 aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
@@ -253,36 +253,7 @@ load data
   p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_2, echo=FALSE, fig.width=12, fig.height=4}
-    pm_mass_p %>%
-    dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
-      ggplot(aes(x = stove, y = val)) +
-      geom_histogram(fill = "#999999", stat = "identity") +
-      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
-      scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
-      annotate("text", x = 1, y = 1050, label = "1610", size = 5) +
-      annotate("text", x = 2, y = 1050, label = "2119", size = 5) +
-      geom_text(data = range_pm,
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.05) +
-      theme_minimal() +
-      theme(legend.text.align = 0,
-            text = element_text(size = 18),
-            legend.justification = c(1, 1), 
-            legend.position = c(1, 1),
-            axis.text.y = element_text(size = 16),
-            axis.text.x = element_text(size = 14),
-            axis.title.x = element_blank(),
-            legend.title = element_blank(), 
-            legend.spacing.x = unit(0.25, 'cm'), 
-            legend.spacing.y = unit(0.25, 'cm')) +
-      ylab(expression(atop(paste(PM[2.5], ' composition'), paste('miligrams per ', MJ[delivered]))))
-```
-
-```{r figure_2, echo=FALSE, fig.width=12, fig.height=4}
-  p1
-```
-
-```{r, echo=FALSE, fig.width=12, fig.height=2}
+```{r figure_2a, echo=FALSE, fig.width=12, fig.height=2}
     pm_mass_p %>%
     dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
       ggplot(aes(x = stove, y = val)) +
@@ -323,6 +294,95 @@ load data
 
 # summary information
 
+## percent reduction
+
+PM2.5
+
+```{r, echo=FALSE}
+  three_stone <- 
+    pm_mass_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+
+  pm_mass_p %>%
+    dplyr::mutate(three_stone = three_stone$val[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+Elemental carbon
+
+```{r, echo=FALSE}
+  three_stone <- 
+    ec_oc_ions_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  ec_oc_ions_p %>%
+    dplyr::filter(pol == "elemental carbon") %>%
+    dplyr::mutate(three_stone = three_stone$val[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+Organic matter
+
+```{r, echo=FALSE}
+  three_stone <- 
+    ec_oc_ions_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  ec_oc_ions_p %>%
+    dplyr::filter(pol == "organic matter") %>%
+    dplyr::mutate(three_stone = three_stone$val[3]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 3, align = 'c')
+```
+
+Inorganic ions
+
+```{r, echo=FALSE}
+  three_stone <- 
+    ec_oc_ions_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  ec_oc_ions_p %>%
+    dplyr::filter(pol == "inorganic ions") %>%
+    dplyr::mutate(three_stone = three_stone$val[2]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+Carbon monoxide
+
+```{r, echo=FALSE}
+  three_stone <- 
+    co_p %>%
+    dplyr::filter(stove == "Three-stone\nfire")
+    
+
+  co_p %>%
+    dplyr::mutate(three_stone = three_stone$mean[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100) %>%
+    dplyr::select(stove, prct_decrease) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
 ## carbon monoxide
 
 average carbon monoxide by stove type
@@ -335,72 +395,11 @@ average carbon monoxide by stove type
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-      dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbon monoxide by stovecat
-
-```{r, echo=FALSE}
-  co %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::mutate(val = val / 1000) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-      dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbon monoxide by fuel type
-
-```{r, echo=FALSE}
-  co %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::mutate(val = val / 1000) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-      dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average carbon monoxide by fuelcat
-
-```{r, echo=FALSE}
-  co %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::mutate(val = val / 1000) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-      dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+    dplyr::arrange(mean) %>%
+    knitr::kable("markdown", digits = 1, align = 'c')
 ```
 
 ## pm mass
-
-pm mass in natural-draft improved stoves
-
-```{r, echo=FALSE}
-  pm_mass %>%
-    dplyr::filter(grepl("^rocket elbow|plancha|metal charcoal", stove)) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-pm mass in forced-draft improved stoves
-
-```{r, echo=FALSE}
-  pm_mass %>%
-    dplyr::filter(grepl("gasifier|fan rocket elbow", stove)) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
 
 average pm mass by stove type
 
@@ -411,86 +410,10 @@ average pm mass by stove type
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm mass by stovecat
-
-```{r, echo=FALSE}
-  pm_mass %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm mass by fuel type
-
-```{r, echo=FALSE}
-  pm_mass %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm mass by fuelcat
-
-```{r, echo=FALSE}
-  pm_mass %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
+    knitr::kable("markdown", digits = 1, align = 'c')
 ```
 
 ## pm composition
-
-ions
-
-```{r}
-    ec_oc_ions %>%
-    dplyr::filter(pol_category == "inorganic ions") %>%
-    dplyr::group_by(fuelcat, pol) %>%
-    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
-      ggplot(aes(x = fuelcat, y = val)) +
-      geom_point() +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            legend.position = "top") +
-      facet_wrap(~pol, scales = "free")
-```
-
-```{r}
-  ions <-
-    ec_oc_ions %>%
-    dplyr::filter(pol_category == "inorganic ions") %>%
-    dplyr::group_by(id) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::rename("ions" = "val")
-
-    ec_oc_ions %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(id, pol_category, stove, fuel, stovecat, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    tidyr::spread(pol_category, val) %>%
-    na.omit %>%
-    tidyr::gather(pol_category, val, 6:8) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::left_join(ions, by = "id") %>%
-    dplyr::mutate(ion_frac = (ions / val) * 100) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(min = min(ion_frac, na.rm = TRUE),
-                     mean = mean(ion_frac, na.rm = TRUE),
-                     max = max(ion_frac, na.rm = TRUE)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
 
 average pm composition by stove type
 
@@ -506,57 +429,6 @@ average pm composition by stove type
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>% 
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm composition by stovecat
-
-```{r, echo=FALSE}
-  ec_oc_ions %>%
-    dplyr::group_by(id, pol_category, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    tidyr::spread(pol_category, val) %>%
-    na.omit %>%
-    tidyr::gather(pol_category, val, 3:5) %>%
-    dplyr::group_by(pol_category, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm composition by fuel type
-
-```{r, echo=FALSE}
-  ec_oc_ions %>%
-    dplyr::group_by(id, pol_category, fuel) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    tidyr::spread(pol_category, val) %>%
-    na.omit %>%
-    tidyr::gather(pol_category, val, 3:5) %>%
-    dplyr::group_by(pol_category, fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average pm composition by fuelcat
-
-```{r, echo=FALSE}
-  ec_oc_ions %>%
-    dplyr::group_by(id, pol_category, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    tidyr::spread(pol_category, val) %>%
-    na.omit %>%
-    tidyr::gather(pol_category, val, 3:5) %>%
-    dplyr::group_by(pol_category, fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
     dplyr::arrange(mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```

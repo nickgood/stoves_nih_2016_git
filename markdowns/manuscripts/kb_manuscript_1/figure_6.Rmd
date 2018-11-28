@@ -39,7 +39,7 @@ load data
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
+    dplyr::filter(bg == "below") %>%
     dplyr::filter(!is.na(val), metric == "energy_delivered_ef") %>%
     dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "om_unc",
                   pol != "oc", 
@@ -73,15 +73,6 @@ load data
 ## check number of data points by stove type
 
 ```{r, echo=FALSE}
-  emissions %>%
-    dplyr::group_by(pol, stove) %>% 
-    dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val < 3, "red", "blue"))) %>%
-    dplyr::arrange(val) %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-```{r, echo=FALSE}
     emissions %>%
     dplyr::group_by(pol, stove) %>% 
     dplyr::do(val = round(nrow(.), 2)) %>%
@@ -95,31 +86,12 @@ notes:
 * total number of burn tests were 87
 * temperature data missing for 10 tests - brings total down to 77
 
-## number of data points for liquid-fuel stoves (only three replicates of each test)
-
-```{r, echo=FALSE, eval=FALSE}
-  emissions %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
-    dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::mutate(val = cell_spec(val, "html", color = ifelse(val <= 2, "red", "blue"))) %>%
-    dplyr::arrange(val) %>%
-    tidyr::spread(stove, val) %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-notes: 
-
-* the smallest number of total data points is 19 which seems like enough to run a regression analysis
-* should there be a minimum number by stove type?
-
 ## log transform pollutants
 
 ```{r}
   all <-
     emissions %>%
     dplyr::select(id, pol, val, stove) %>%
-    dplyr::anti_join(small_samples, by = c("stove", "pol")) %>%
     tidyr::spread(pol, val) %>%
     tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
     dplyr::mutate(pm_mass = log(pm_mass),
@@ -131,32 +103,6 @@ notes:
 notes:
 
 * only complete observations retained
-
-## check number of data points
-
-```{r, echo=FALSE}
-  liquid_num <-
-    all %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
-    dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::mutate(val = as.numeric(val)) %>%
-    tidyr::spread(stove, val)
-
-  num_data_points <-
-    all %>%
-    dplyr::group_by(pol) %>% 
-    dplyr::count() %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(liquid_num, by = "pol") %>%
-    dplyr::arrange(n) %>%
-    dplyr::rename("pol" = "pol",
-                  "all stoves" = "n")
-
-  readr::write_csv(num_data_points,
-                   "../../../qaqc_files/num_data_points_all.csv",
-                   append = FALSE)
-```
 
 ## subset
 
@@ -191,31 +137,6 @@ notes:
                   val = log(val)) %>%
     na.omit
 ```
-
-```{r, echo=FALSE}
-  liquid_num <-
-    subcat %>%
-    dplyr::group_by(pol, stove) %>%
-    dplyr::filter(grepl("pressure|lpg|wick", stove)) %>%
-    dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::mutate(val = as.numeric(val)) %>%
-    tidyr::spread(stove, val)
-
-  num_data_points <-
-    subcat %>%
-    dplyr::group_by(pol) %>% 
-    dplyr::count() %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(liquid_num, by = "pol") %>%
-    dplyr::arrange(n) %>%
-    dplyr::rename("pol" = "pol",
-                  "all stoves" = "n")
-
-  readr::write_csv(num_data_points,
-                   "../../../qaqc_files/num_data_points_subcat.csv",
-                   append = FALSE)
-```
-
 # subcat models
 
 ## run
