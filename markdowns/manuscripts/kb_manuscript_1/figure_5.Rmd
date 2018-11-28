@@ -1,5 +1,5 @@
 ---
-title: "figure 3: carcinogenic compounds"
+title: "Figure 5: Carcinogenic compounds"
 output:
   html_document:
     toc: true
@@ -161,9 +161,9 @@ load data
       theme_minimal() +
       scale_fill_manual(values = c("darkgoldenrod", "mediumaquamarine", "palegoldenrod",  "dodgerblue1", "dodgerblue4"),
                         name = "gas-phase carcinogens") +
-      scale_y_continuous(limits = c(0, 150)) +
+      scale_y_continuous(limits = c(0, 250)) +
       guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
-      #annotate("text", x = 2, y = 250, label = "363", size = 5) +
+      annotate("text", x = 2, y = 250, label = "363", size = 5) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
@@ -191,9 +191,9 @@ load data
       theme_minimal() +
       scale_y_continuous(limits = c(0, 5)) +
       guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
-      annotate("text", x = 1, y = 5, label = "7.16", size = 5) +
-      annotate("text", x = 2, y = 5, label = "10.9", size = 5) +
-      annotate("text", x = 3, y = 5, label = "14.8", size = 5) +
+      annotate("text", x = 1, y = 5, label = "7.0", size = 5) +
+      annotate("text", x = 2, y = 5, label = "10.7", size = 5) +
+      annotate("text", x = 3, y = 5, label = "14.7", size = 5) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
@@ -206,8 +206,63 @@ load data
     ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
-```{r, echo=FALSE, fig.width=12, fig.height=8}
+```{r figure_5, echo=FALSE, fig.width=12, fig.height=8}
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r figure_5a, echo=FALSE, fig.width=12, fig.height=1.5}
+    gases_p %>%
+    dplyr::mutate(pol_category = "Gas-Phase Carcinogens") %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = forcats::fct_reorder(pol, mw, .desc = TRUE)), stat = "identity") +
+      geom_text(data = stats_gases  %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      theme_minimal() +
+      scale_fill_manual(values = c("darkgoldenrod", "mediumaquamarine", "palegoldenrod",  "dodgerblue1", "dodgerblue4"),
+                        name = "gas-phase carcinogens") +
+      scale_y_continuous(limits = c(0, 15), position = "right") +
+      guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
+      annotate("text", x = 2, y = 250, label = "363", size = 5) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = "none",
+            axis.text.y = element_text(size = 16),
+            axis.title.x = element_blank(),
+            legend.title = element_blank(), 
+            axis.text.x = element_blank(),
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Gas-phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+```
+
+```{r figure_5b, echo=FALSE, fig.width=12, fig.height=1.5}
+    particles_p %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
+      geom_text(data = stats_particles  %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      scale_fill_manual(values = c("powderblue", "paleturquoise4",
+                                   "slategray1", "lightpink4",
+                                     "plum3",
+                                   "plum4", "thistle3", "hotpink4")) +
+      theme_minimal() +
+      scale_y_continuous(limits = c(0, 0.15), position = "right") +
+      guides(fill = guide_legend(ncol = 2, byrow = FALSE)) +
+      annotate("text", x = 1, y = 5, label = "7", size = 5) +
+      annotate("text", x = 2, y = 5, label = "11", size = 5) +
+      annotate("text", x = 3, y = 5, label = "15", size = 5) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = "none",
+            axis.text.y = element_text(size = 16),
+            axis.title.x = element_blank(),
+            legend.title = element_blank(), 
+            axis.text.x = element_blank(),
+            legend.spacing.x = unit(0.25, 'cm'),
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
 ```
 
 # tables
@@ -299,21 +354,6 @@ average gas-phase carcinogens by stove type (by pollutant)
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average gas-phase carcinogens by stovecat (total)
-
-```{r, echo=FALSE}
-  gases %>%
-    dplyr::group_by(id, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
 fraction of total carcinogenic emissions made up of formaldehyde
 
 ```{r, echo=FALSE}
@@ -383,62 +423,6 @@ fraction of total emissions made up of benzene
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
-average gas-phase carcinogens by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  gases %>%
-    dplyr::group_by(stovecat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(stovecat, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average gas-phase carcinogens by fuel type (total)
-
-```{r, echo=FALSE}
-  gases %>%
-    dplyr::group_by(id, fuel) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average gas-phase carcinogens by fuelcat
-
-```{r, echo=FALSE}
-  gases %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average gas-phase carcinogens by fuelcat (by pollutant)
-
-```{r, echo=FALSE}
-  gases %>%
-    dplyr::group_by(fuelcat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(fuelcat, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
 ##  particle-phase carcinogens 
 
 average particle-phase carcinogens by stove type (total)
@@ -454,151 +438,5 @@ average particle-phase carcinogens by stove type (total)
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average bap by stove type
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
-    dplyr::group_by(id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-fraction of total carcinogenic emissions made up of bap
-
-```{r, echo=FALSE}
-  bap <-
-    particles %>%
-    dplyr::group_by(stovecat, stove) %>%
-    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
-    dplyr::summarise(bap_mean = mean(val, na.rm = TRUE))
-
-  particles %>%
-    dplyr::group_by(id, stove, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(bap, by = "stovecat") %>%
-    dplyr::mutate(ratio = bap_mean / all_mean) %>%
-    dplyr::arrange(ratio) %>%
-        dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average particle-phase carcinogens by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(stove, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average particle-phase carcinogens by stovecat (total)
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(id, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-fraction of total carcinogenic emissions made up of bap
-
-```{r, echo=FALSE}
-  bap <-
-    particles %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::filter(grepl("benzo.a.pyrene", pol)) %>%
-    dplyr::summarise(bap_mean = mean(val, na.rm = TRUE))
-
-  particles %>%
-    dplyr::group_by(id, stovecat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stovecat) %>%
-    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::left_join(bap, by = "stovecat") %>%
-    dplyr::mutate(ratio = bap_mean / all_mean) %>%
-    dplyr::arrange(ratio) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-
-average particle-phase carcinogens by stove type (by pollutant)
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(stovecat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(stovecat, mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average particle-phase carcinogens by fuel type (total)
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(id, fuel) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuel) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average particles-phase carcinogens by fuelcat
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(id, fuelcat) %>%
-    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(fuelcat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(mean) %>%
-    knitr::kable("markdown", digits = 2, align = 'c')
-```
-
-average particle-phase carcinogens by fuelcat (by pollutant)
-
-```{r, echo=FALSE}
-  particles %>%
-    dplyr::group_by(fuelcat, pol) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE),
-                     min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(fuelcat, mean) %>%
     knitr::kable("markdown", digits = 2, align = 'c')
 ```

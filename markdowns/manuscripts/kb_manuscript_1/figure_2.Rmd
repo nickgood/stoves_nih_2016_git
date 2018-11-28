@@ -253,7 +253,7 @@ load data
   p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_2a, echo=FALSE, fig.width=12, fig.height=2}
+```{r figure_2a, echo=FALSE, fig.width=12, fig.height=1.75}
     pm_mass_p %>%
     dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
       ggplot(aes(x = stove, y = val)) +
