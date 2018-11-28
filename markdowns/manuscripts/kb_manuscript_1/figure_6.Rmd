@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, lme4, kableExtra, stats4, broom)
+  pacman::p_load(tidyverse, patchwork, lme4, kableExtra, stats4, broom, MuMIn)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -16,9 +16,9 @@ output:
                         warning = FALSE, message = FALSE, cache = FALSE)
 ```
 
-# tidy data
+# Tidy data for models
 
-load data
+## load data
 
 ```{r}
   emissions <- readRDS("../../../r_data/emissions_factors.RDS")
@@ -34,444 +34,30 @@ load data
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
-## replace values below background with zero, remove NA values, and select metric
+## Select metric
 
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::filter(bg == "below") %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
     dplyr::filter(!is.na(val), metric == "energy_delivered_ef") %>%
     dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "om_unc",
                   pol != "oc", 
-                  pol != "cyclopenta[ce]phenanthrylene")
+                  pol != "cyclopenta[ce]phenanthrylene",
+                  pol != "inositol")
 ```
 
-## rename pollutants
+## Rename pollutants
 
 ```{r}
   emissions <-
     emissions %>%
-    dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
-                  pol_subcategory = ifelse(grepl("organic matter", pol_subcategory), "particle-phase organic matter", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("ions", pol_subcategory), "inorganic ions", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "ultrafine particles", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("alkanes", pol_subcategory), "gas-phase alkanes", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("alkenes", pol_subcategory), "gas-phase alkenes", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("alkynes", pol_subcategory), "gas-phase alkynes", pol_subcategory),
-                  pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
-                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory)) %>%
     dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
                   pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
                   pol = gsub("b\\[",  "benzo\\[", pol),
                   pol = gsub("b\\[",  "benzo\\[", pol),
                   pol = gsub("benz\\[",  "benzo\\[", pol),
-                  pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol))
-```
-
-## check number of data points by stove type
-
-```{r, echo=FALSE}
-    emissions %>%
-    dplyr::group_by(pol, stove) %>% 
-    dplyr::do(val = round(nrow(.), 2)) %>%
-    dplyr::filter(val <= 1) %>%
-    dplyr::select(-val) %>%
-    knitr::kable("markdown", align = 'c')
-```
-
-notes: 
-
-* total number of burn tests were 87
-* temperature data missing for 10 tests - brings total down to 77
-
-## log transform pollutants
-
-```{r}
-  all <-
-    emissions %>%
-    dplyr::select(id, pol, val, stove) %>%
-    tidyr::spread(pol, val) %>%
-    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co) %>%
-    dplyr::mutate(pm_mass = log(pm_mass),
-                  co = log(co),
-                  val = log(val)) %>%
-    na.omit
-```
-
-notes:
-
-* only complete observations retained
-
-## subset
-
-```{r}
-  gases <-
-    emissions %>%
-    dplyr::filter(grepl("^benzene|formaldehyde|styrene|acetaldehyde|isoprene", pol)) %>%
-    dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(id, pol, val, stove, stovecat)
-
-  particles <-
-    emissions %>%
-    dplyr::filter(grepl("b.a.pyrene|dibenzo.*anthracene|cyclopenta.*pyrene|b.*anthracene|b...fluoranthene|indeno", pol)) %>%
-    dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(id, pol, val, stove, stovecat)
-
-  subcat <-
-    emissions %>%
-    dplyr::filter(!grepl("^oc$", pol), !grepl("unc", pol)) %>%
-    dplyr::select(id, pol_subcategory, val, stove, stovecat) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(id, pol_subcategory) %>%
-    dplyr::mutate(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::rename("pol" = "pol_subcategory") %>%
-    dplyr::distinct() %>%
-    dplyr::bind_rows(gases) %>%
-    dplyr::bind_rows(particles) %>%
-    tidyr::spread(pol, val) %>%
-    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -stovecat) %>%
-    dplyr::mutate(pm_mass = log(pm_mass),
-                  co = log(co),
-                  val = log(val)) %>%
-    na.omit
-```
-# subcat models
-
-## run
-
-```{r}
-  subcat_m <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(mod_1 = lm(val ~ stove, data = .),
-              mod_2 = lm(val ~ pm_mass, data = .),
-              mod_3 = lm(val ~ co, data = .),
-              mod_4 = lm(val ~ pm_mass + co, data = .),
-              mod_5 = lm(val ~ pm_mass + stove, data = .),
-              mod_6 = lm(val ~ co + stove, data = .),
-              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
-    dplyr::mutate("stove type only" = summary(mod_1)$r.squared,
-                  "pm only" = summary(mod_2)$r.squared,
-                  "co only" = summary(mod_3)$r.squared,
-                  "pm and co" = summary(mod_4)$r.squared,
-                  "pm and stove type" = summary(mod_5)$r.squared,
-                  "co and stove type" = summary(mod_6)$r.squared,
-                  "pm, co, and stove type" = summary(mod_7)$r.squared) %>%
-    tidyr::gather("model", "val", -pol) %>%
-    dplyr::filter(!grepl("mod", model)) %>%
-    dplyr::mutate(val = as.numeric(val))
-```
-
-## plot
-
-* plot is sorted by R2-value of top model
-* pollutants are colored by pollutant cateogry
-
-```{r models_subcat, echo=FALSE, fig.height=6, fig.width=8}
-  subcat_m %>%
-  dplyr::mutate(model = 
-                  model %>%
-                  factor %>%
-                  forcats::fct_relevel("stove type only",
-                                       "pm only",
-                                       "co only",
-                                       "pm and co",
-                                       "pm and stove type",
-                                       "co and stove type",
-                                       "pm, co, and stove type")) %>%
-    ggplot(aes(x = reorder(pol, val, max), y = val)) +
-      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
-      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
-                                    "turquoise3", "turquoise3", "turquoise3"),
-                        labels = c("Stove type only", expression(paste(PM[2.5], ' mass only')),
-                                   "CO only", expression(paste(PM[2.5], ' mass and CO')),
-                                   expression(paste(PM[2.5], ' mass and stove type')),
-                                   "CO and stove type",
-                                   expression(paste(PM[2.5], ' mass, CO, and stove type')))) +
-      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4),
-                        labels = c("Stove type only", expression(paste(PM[2.5], ' mass only')),
-                                   "CO only", expression(paste(PM[2.5], ' mass and CO')),
-                                   expression(paste(PM[2.5], ' mass and stove type')),
-                                   "CO and stove type",
-                                   expression(paste(PM[2.5], ' mass, CO, and stove type')))) +
-      coord_flip() +
-      theme_minimal() +
-    scale_y_continuous(limits = c(0, 1)) +
-    theme(legend.text.align = 0,
-          text = element_text(size = 12),
-          axis.title.y = element_blank(),
-          legend.position = "right",
-          legend.title = element_blank()) +
-    ylab("R-squared value")
-```
-
-```{r}
-  subcat <-
-    subcat %>%
-    dplyr::filter(!grepl("acetaldehyde|formaldehyde|\\[|benzene|isoprene|styrene|elemental|dioxide|organic matter|ultrafine|methane", pol))
-```
-
-## coefficients
-
-```{r}
-  mod1_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod1_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_1 <-
-    mod1_est %>%
-    dplyr::left_join(mod1_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  saveRDS(mod_1 %>%
-            dplyr::select(pol, stove, val), "model_confint/mod_1.RDS")
-```
-
-```{r}
-  mod2_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ pm_mass, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod2_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ pm_mass , data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_2 <-
-    mod2_est %>%
-    dplyr::left_join(mod2_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, term, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_2, "model_confint/mod_2.RDS")
-```
-
-```{r}
-  mod3_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ co, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod3_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ co, data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_3 <-
-    mod3_est %>%
-    dplyr::left_join(mod3_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, term, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_3, "model_confint/mod_3.RDS")
-```
-
-```{r}
-  mod4_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ pm_mass + co, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod4_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ pm_mass + co, data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_4 <-
-    mod4_est %>%
-    dplyr::group_by(pol, term) %>%
-    dplyr::left_join(mod4_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_4, "model_confint/mod_4.RDS")
-```
-
-
-```{r}
-  mod5_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + pm_mass - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod5_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + pm_mass - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_5 <-
-    mod5_est %>%
-    dplyr::left_join(mod5_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_5_pm <-
-    mod_5 %>%
-    dplyr::filter(stove == "pm_mass") %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, pm_mass)
-  
-  mod_5 <-
-    mod_5 %>%
-    dplyr::filter(stove != "pm_mass") %>%
-    dplyr::left_join(mod_5_pm, by = "pol")
-  
-  saveRDS(mod_5 %>%
-            dplyr::select(pol, stove, val, pm_mass), "model_confint/mod_5.RDS")
-```
-
-```{r}
-  mod6_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + co - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod6_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + co - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_6 <-
-    mod6_est %>%
-    dplyr::left_join(mod6_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_6_co <-
-    mod_6 %>%
-    dplyr::filter(stove == "co") %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, co)
-  
-  mod_6 <-
-    mod_6 %>%
-    dplyr::filter(stove != "co") %>%
-    dplyr::left_join(mod_6_co, by = "pol")
-  
-  saveRDS(mod_6 %>%
-            dplyr::select(pol, stove, val, co), "model_confint/mod_6.RDS")
-```
-
-```{r}
-  mod7_est <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + co + pm_mass - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod7_conf <-
-    subcat %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + co + pm_mass - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_7 <-
-    mod7_est %>%
-    dplyr::left_join(mod7_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_7_co_pm <-
-    mod_7 %>%
-    dplyr::filter(grepl("^co|pm", stove)) %>%
-    dplyr::select(pol, stove, val) %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, co, pm_mass)
-  
-  mod_7 <-
-    mod_7 %>%
-    dplyr::filter(stove != "co", stove != "pm_mass") %>%
-    dplyr::left_join(mod_7_co_pm, by = "pol")
-  
-  saveRDS(mod_7 %>%
-            dplyr::select(pol, stove, val, co, pm_mass), "model_confint/mod_7.RDS")
-```
-
-# full models
-
-## fix pollutant names
-
-```{r}
-  all <-
-    all %>%
+                  pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol)) %>%
     dplyr::mutate(pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
                   pol = ifelse(grepl("^ch4$", pol), "methane", pol),
                   pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
@@ -485,315 +71,185 @@ notes:
                   pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
                   pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
                   pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol))
+                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("pm-mass", "pm_mass", pol))
 ```
 
-
-## run
+## Print names of pollutants with greater than than 15% of the data missing
 
 ```{r}
-  all_m <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(mod_1 = lm(val ~ stove, data = .),
-              mod_2 = lm(val ~ pm_mass, data = .),
-              mod_3 = lm(val ~ co, data = .),
-              mod_4 = lm(val ~ pm_mass + co, data = .),
-              mod_5 = lm(val ~ pm_mass + stove, data = .),
-              mod_6 = lm(val ~ co + stove, data = .),
-              mod_7 = lm(val ~ pm_mass + co + stove, data = .)) %>%
-    dplyr::mutate("stove type only" = summary(mod_1)$r.squared,
-                  "pm only" = summary(mod_2)$r.squared,
-                  "co only" = summary(mod_3)$r.squared,
-                  "pm and co" = summary(mod_4)$r.squared,
-                  "pm and stove type" = summary(mod_5)$r.squared,
-                  "co and stove type" = summary(mod_6)$r.squared,
-                  "pm, co, and stove type" = summary(mod_7)$r.squared) %>%
-    tidyr::gather("model", "val", -pol) %>%
-    dplyr::filter(!grepl("mod", model)) %>%
-    dplyr::mutate(val = as.numeric(val))
+  bb <-
+    emissions %>%
+      dplyr::group_by(pol) %>%
+      dplyr::summarise(prct_ab = sum(bg == "below") / n()) %>%
+      dplyr::filter(prct_ab >= 0.15) %>%
+      dplyr::select(-prct_ab)
+
+  bb %>%
+    knitr::kable('markdown', align = 'c')
 ```
 
-## plot
-
-* plot is sorted by R2-value of top model
-* pollutants are colored by pollutant cateogry
-
-```{r models_all, echo=FALSE, fig.height=18, fig.width=8}
-  all_m %>%
-  dplyr::mutate(model = 
-                  model %>%
-                  factor %>%
-                  forcats::fct_relevel("stove type only",
-                                       "pm only",
-                                       "co only",
-                                       "pm and co",
-                                       "pm and stove type",
-                                       "co and stove type",
-                                       "pm, co, and stove type")) %>%
-    ggplot(aes(x = reorder(pol, val, max), y = val)) +
-      geom_point(aes(color = model, shape = model), size = 2, stroke = 1, alpha = 0.75) +
-      scale_color_manual(values = c("blueviolet", "orange", "orange", "orange",
-                                    "turquoise3", "turquoise3", "turquoise3")) +
-      scale_shape_manual(values = c(1, 2, 3, 4, 2, 3, 4)) +
-      coord_flip() +
-      theme_minimal() +
-    scale_y_continuous(limits = c(0, 1)) +
-    theme(text = element_text(size = 12),
-          axis.title.y = element_blank(),
-          legend.position = "right",
-          legend.title = element_blank()) +
-    ylab("R-squared value")
-```
-
-## coefficients
+## Print names of pollutants less than three data points above background for a particular stove type
 
 ```{r}
-  mod1_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
+  missing_stove <-
+    emissions %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::summarise(prct_ab = sum(bg == "above")) %>%
+    dplyr::filter(prct_ab < 3) %>%
+    dplyr::select(-prct_ab) %>%
+    dplyr::distinct()
 
-  mod1_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_1_c <-
-    mod1_est %>%
-    dplyr::left_join(mod1_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  saveRDS(mod_1_c %>%
-            dplyr::select(pol, stove, val), "model_confint/mod_1_c.RDS")
+  saveRDS(missing_stove, "../../../r_data/model_info.RDS")
+
+  missing_stove %>%
+    knitr::kable('markdown', align = 'c')
 ```
+
+# Leave-one-out cross validation
+
+## Tidy data
+
+* Remove data points with greater than 15% of the data missing
+* Remove data points with less than three data points per stove type
+* Only complete observations retained
+* remove data below background
 
 ```{r}
-  mod2_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ pm_mass, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod2_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ pm_mass , data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_2_c <-
-    mod2_est %>%
-    dplyr::left_join(mod2_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, term, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_2_c, "model_confint/mod_2_c.RDS")
+  all <-
+    emissions %>%
+    dplyr::anti_join(bb, by = "pol") %>%
+    dplyr::anti_join(missing_stove, by = c("pol", "stove")) %>%
+    dplyr::filter(bg != "below") %>%
+    dplyr::select(id, pol, val, stove, fuel) %>%
+    tidyr::spread(pol, val) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -fuel) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
+                  co = log(co),
+                  val = log(val)) %>%
+    na.omit
 ```
+
+## Get list of pollutants for loop
 
 ```{r}
-  mod3_est <-
+  pols <-
     all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ co, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod3_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ co, data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_3_c <-
-    mod3_est %>%
-    dplyr::left_join(mod3_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, term, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_3_c, "model_confint/mod_3_c.RDS")
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(pol != "pm_mass", pol != "co")
 ```
+
+## PM2.5 and CO model
 
 ```{r}
-  mod4_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ pm_mass + co, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::select(pol, term, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
+  pred_metrics <- 
+    pols %>%
+    dplyr::mutate(rmse_mod = NA,
+                  rmse_mean = NA,
+                  rrmse = NA)
 
-  mod4_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ pm_mass + co, data = .)), rownames = "term")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::select(pol, term, lower, upper) %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
+  for (n in 1:nrow(pols)) {
+    
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[n])
+    
+    obs_mean = mean(mod_data$val)
+
+    obs_mod_sqdiff <- rep(NA, len = nrow(mod_data))
+    obs_mean_sqdiff <- rep(NA, len = nrow(mod_data))
   
-  mod_4_c <-
-    mod4_est %>%
-    dplyr::group_by(pol, term) %>%
-    dplyr::left_join(mod4_conf, by = c("pol", "term")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")")) %>%
-    dplyr::select(pol, val) %>%
-    tidyr::spread(term, val)
-  
-  saveRDS(mod_4_c, "model_confint/mod_4_c.RDS")
+    for(i in 1:nrow(mod_data)) {
+      
+      training <- mod_data[-i,]
+      prediction <- mod_data[i,]
+      
+      mdl <- lm(val ~ pm_mass + co, data = training) # model with i'th observation out
+      y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
+      obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
+      obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
+
+    }
+    pred_metrics$rmse_mod[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
+    pred_metrics$rmse_mean[n] <- sqrt(mean(obs_mean_sqdiff)) # root mean squared error
+    pred_metrics$rrmse[n] <- pred_metrics$rmse_mod[n] / pred_metrics$rmse_mean[n] # relative root mean squared error
+  }
 ```
 
+## PM2.5, CO, and stove type model
 
 ```{r}
-  mod5_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + pm_mass - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
+  pred_metrics2 <- 
+    pols %>%
+    dplyr::mutate(rmse_mod = NA,
+                  rmse_mean = NA,
+                  rrmse = NA)
 
-  mod5_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + pm_mass - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
+  for (n in 1:nrow(pols)) {
+    
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[n])
+    
+    obs_mean = mean(mod_data$val)
+
+    obs_mod_sqdiff <- rep(NA, len = nrow(mod_data))
+    obs_mean_sqdiff <- rep(NA, len = nrow(mod_data))
   
-  mod_5_c <-
-    mod5_est %>%
-    dplyr::left_join(mod5_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_5_pm <-
-    mod_5_c %>%
-    dplyr::filter(stove == "pm_mass") %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, pm_mass)
-  
-  mod_5_c <-
-    mod_5_c %>%
-    dplyr::filter(stove != "pm_mass") %>%
-    dplyr::left_join(mod_5_pm, by = "pol")
-  
-  saveRDS(mod_5_c %>%
-            dplyr::select(pol, stove, val, pm_mass), "model_confint/mod_5_c.RDS")
+    for(i in 1:nrow(mod_data)) {
+      
+      training <- mod_data[-i,]
+      prediction <- mod_data[i,]
+      
+      mdl <- lm(val ~ pm_mass + co + stove, data = training) # model with i'th observation out
+      y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
+      obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
+      obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
+
+    }
+    pred_metrics2$rmse_mod[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
+    pred_metrics2$rmse_mean[n] <- sqrt(mean(obs_mean_sqdiff)) # root mean squared error
+    pred_metrics2$rrmse[n] <- pred_metrics2$rmse_mod[n] / pred_metrics2$rmse_mean[n] # relative root mean squared error
+  }
 ```
 
-```{r}
-  mod6_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + co - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
+## Plotting
 
-  mod6_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + co - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_6_c <-
-    mod6_est %>%
-    dplyr::left_join(mod6_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_6_co <-
-    mod_6_c %>%
-    dplyr::filter(stove == "co") %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, co)
-  
-  mod_6_c <-
-    mod_6_c %>%
-    dplyr::filter(stove != "co") %>%
-    dplyr::left_join(mod_6_co, by = "pol")
-  
-  saveRDS(mod_6_c %>%
-            dplyr::select(pol, stove, val, co), "model_confint/mod_6_c.RDS")
+## Relative root Mean Squared Error
+
+```{r, fig.height=5, fig.width=12, dpi=150}
+  #p1 <-
+    pred_metrics %>%
+    dplyr::mutate(model = 1,
+                  model =
+                    model %>% 
+                    factor %>% 
+                    forcats::fct_relevel("1",
+                                         "2")) %>%
+      ggplot(aes(x = reorder(pol, rrmse), y = rrmse, color = model, stroke = 1)) +
+        geom_hline(yintercept = 0, color = "darkcyan", lwd = 1.5, alpha = 0.8) +
+        geom_hline(yintercept = 1, color = "orange", lwd = 1.5, alpha = 0.8) +
+        geom_point(stat = "identity") +
+        geom_point(data = pred_metrics2  %>%
+                         dplyr::mutate(model = 2,
+                                          model =
+                                            model %>% 
+                                            factor %>% 
+                                            forcats::fct_relevel("1",
+                                                                 "2")), aes(x = pol, y = rrmse, color = model)) +
+        scale_color_manual(values = c("dodgerblue2", "yellowgreen"),
+                          labels = c(expression(paste('Model 1: ', PM[2.5], ' and CO')), expression(paste('Model 2: ', PM[2.5], ', CO, and stove type')))) +
+        scale_y_continuous(limits = c(0, 1.13), breaks = c(0, 0.25, 0.5, 0.75, 1.0)) +
+        guides(color = guide_legend(nrow = 1, byrow = FALSE, override.aes = list(size=2))) +
+        theme_bw() +
+        theme(text = element_text(size = 18),
+              axis.title.x = element_blank(),
+              axis.text.x = element_text(angle = 90, hjust=0.95, vjust = 0.2, size = 10),
+              legend.position = c(0.5, 0.25),
+              legend.title = element_blank()) +
+        geom_text(aes(y = 0.0, x = 12, label="highly performing models\n"), colour = "darkcyan", size = 6) +
+        geom_text(aes(y = 1, x = 12, label = "poorly performing models\n"), colour = "orange", size = 6) +
+        ylab('RMSE ratio')
 ```
 
-```{r}
-  mod7_est <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(est = tidy(lm(val ~ stove + co + pm_mass - 1, data = .))) %>%
-    tidyr::unnest(est) %>%
-    dplyr::rename("stove" = "term") %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::select(pol, stove, estimate) %>%
-    dplyr::mutate(estimate = format(round(estimate, digits = 2), nsmall = 2))
-
-  mod7_conf <-
-    all %>%
-    dplyr::group_by(pol) %>%
-    dplyr::do(conf = as_tibble(confint(lm(val ~ stove + co + pm_mass - 1, data = .)), rownames = "stove")) %>%
-    tidyr::unnest(conf) %>%
-    dplyr::mutate(stove = gsub("stove", "", stove)) %>%
-    dplyr::rename("lower" = "2.5 %",
-                  "upper" = "97.5 %") %>%
-    dplyr::mutate(lower = format(round(lower, digits = 2), nsmall = 2),
-                  upper = format(round(upper, digits = 2), nsmall = 2))
-  
-  mod_7_c <-
-    mod7_est %>%
-    dplyr::left_join(mod7_conf, by = c("pol", "stove")) %>%
-    dplyr::mutate(val = paste0(estimate, " (", lower, ", ", upper,")"))
-  
-  mod_7_co_pm <-
-    mod_7_c %>%
-    dplyr::filter(grepl("^co|pm", stove)) %>%
-    dplyr::select(pol, stove, val) %>%
-    tidyr::spread(stove, val) %>%
-    dplyr::select(pol, co, pm_mass)
-  
-  mod_7_c <-
-    mod_7_c %>%
-    dplyr::filter(stove != "co", stove != "pm_mass") %>%
-    dplyr::left_join(mod_7_co_pm, by = "pol")
-  
-  saveRDS(mod_7_c %>%
-            dplyr::select(pol, stove, val, co, pm_mass), "model_confint/mod_7_c.RDS")
-```
