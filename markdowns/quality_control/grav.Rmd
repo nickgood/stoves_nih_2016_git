@@ -314,7 +314,8 @@ percent of lab blanks with NA values
 ## save blanks
 
 ```{r}
-  saveRDS(blanks, file = "../../r_data/pm_lod.RDS")
+  saveRDS(blanks %>%
+            dplyr::mutate(pol = "pm_mass"), file = "../../r_data/pm_lod.RDS")
 ```
 
 remove lab blanks from merged file
@@ -330,7 +331,7 @@ remove lab blanks from merged file
 ```{r}
   grav_merged <-
     grav_merged %>%
-    dplyr::mutate(val = val - blanks$mean)
+    dplyr::mutate(val = val - blanks$median)
 ```
 
 ## lod

@@ -236,7 +236,13 @@ define lod
 ## save lod
 
 ```{r}
-  saveRDS(lod, file = "../../r_data/carbonyls_lod.RDS")
+  carbs_lod <- 
+    carbs_merged %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(lod = lod)
+
+  saveRDS(carbs_lod, file = "../../r_data/carbonyls_lod.RDS")
 ```
 
 # backgrounds

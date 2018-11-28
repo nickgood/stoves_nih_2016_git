@@ -240,7 +240,13 @@ notes: no flow or time data missing so no filters should be erroneously flagged 
 ## save lod
 
 ```{r}
-  saveRDS(lod, file = "../../r_data/ions_lod.RDS")
+  ions_lod <- 
+    ions_merged %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(lod = lod)
+
+  saveRDS(ions_lod, file = "../../r_data/ions_lod.RDS")
 ```
 
 # backgrounds

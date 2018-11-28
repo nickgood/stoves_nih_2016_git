@@ -70,7 +70,7 @@ load schemes
     dplyr::select(id, pol, filter_type, lod)
 ```
 
-## replace with lod/sqrt(2) 
+## tidy data
 
 ```{r}
   pah <- 
@@ -81,8 +81,8 @@ load schemes
     dplyr::filter(!is.na(val)) %>%
     dplyr::mutate(lod = ifelse(is.na(lod), "above", lod)) %>%
     dplyr::bind_rows(pah_add) %>%
-    dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val),
-                  val = as.numeric(val)) %>%
+    dplyr::mutate(val = as.numeric(val)) %>%
+    dplyr::mutate(val = ifelse(lod == "below", val / sqrt(2), val)) %>%
     dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
     dplyr::mutate(id = ifelse(id == "10D", "1D", id),
                   id = ifelse(id == "8E", "6E", id)) %>%
@@ -482,10 +482,16 @@ summarize blanks
     knitr::kable(digits = 2, align = 'c')
 ```
 
-## save blanks
+## save lod
 
 ```{r}
-  saveRDS(blanks, file = "../../r_data/pah_lod.RDS")
+  pah_lod <-
+    blanks %>%
+    dplyr::select()
+    tidyr::spread(filter_type, pol) %>%
+    dplyr::mutate(lod = paste0(filter, "|", puf))
+
+  saveRDS(pah_lod, "../../r_data/pah_lod.RDS")
 ```
 
 ## lod
