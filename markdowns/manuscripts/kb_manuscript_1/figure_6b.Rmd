@@ -1,0 +1,364 @@
+---
+title: "figure 4: correlation plots"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, lme4, kableExtra, stats4, broom, MuMIn)
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+## replace values below background with zero, remove NA values, and select metric
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(bg != "below") %>%
+    dplyr::filter(!is.na(val), metric == "energy_delivered_ef") %>%
+    dplyr::filter(pol != "ec_unc", pol != "oc_unc", pol != "om_unc",
+                  pol != "oc", 
+                  pol != "cyclopenta[ce]phenanthrylene")
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_subcategory = as.character(pol_subcategory),
+                  pol_subcategory = ifelse(grepl("organic matter", pol_subcategory), "particle-phase organic matter", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ions", pol_subcategory), "inorganic ions", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "carbon dioxide", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "methane", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "ultrafine particles", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkanes", pol_subcategory), "gas-phase alkanes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkenes", pol_subcategory), "gas-phase alkenes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("alkynes", pol_subcategory), "gas-phase alkynes", pol_subcategory),
+                  pol_subcategory = ifelse(grepl("aromatics", pol_subcategory), "gas-phase aromatics", pol_subcategory),
+                  pol_subcategory = gsub(" rings", "-ring PAHs", pol_subcategory)) %>%
+    dplyr::mutate(pol = gsub("indeno\\(1,2,3\\) cd pyrene", "indeno\\[1,2,3-cd\\]pyrene", pol),
+                  pol = gsub("\\(ah\\)",  "\\[a,h\\]", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("b\\[",  "benzo\\[", pol),
+                  pol = gsub("benz\\[",  "benzo\\[", pol),
+                  pol = gsub("benzo\\[a\\]anthracene",  "benz\\[a\\]anthracene", pol))
+```
+
+## check number of data points by stove type
+
+```{r, echo=FALSE}
+    emissions %>%
+    dplyr::group_by(pol, stove) %>% 
+    dplyr::do(val = round(nrow(.), 2)) %>%
+    dplyr::filter(val <= 1) %>%
+    dplyr::select(-val) %>%
+    knitr::kable("markdown", align = 'c')
+```
+
+notes: 
+
+* total number of burn tests were 87
+* temperature data missing for 10 tests - brings total down to 77
+
+## log transform pollutants
+
+```{r}
+  all <-
+    emissions %>%
+    dplyr::select(id, pol, val, stove, fuel) %>%
+    tidyr::spread(pol, val) %>%
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -fuel) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
+                  co = log(co),
+                  val = log(val)) %>%
+    na.omit
+```
+
+notes:
+
+* only complete observations retained
+
+# subcat models
+
+## run models
+
+```{r}
+  pols <-
+    emissions %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(pol != "pm_mass", pol != "co")
+
+  mod_sel <-
+    pols %>%
+    dplyr::mutate(model = NA,
+                  r_squared = NA)
+
+  for (i in c(1:nrow(pols))) {
+
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[i])
+
+    mod_1 = lm(val ~ stove, data = mod_data)
+    mod_2 = lm(val ~ pm_mass, data = mod_data)
+    mod_3 = lm(val ~ co, data = mod_data)
+    mod_4 = lm(val ~ pm_mass + co, data = mod_data)
+    mod_5 = lm(val ~ pm_mass + stove, data = mod_data)
+    mod_6 = lm(val ~ co + stove, data = mod_data)
+    mod_7 = lm(val ~ pm_mass + co + stove, data = mod_data)
+    mod_8 = lm(val ~ pm_mass * stove, data = mod_data)
+    mod_9 = lm(val ~ co * stove, data = mod_data)
+    mod_10 = lm(val ~ co * stove + pm_mass, data = mod_data)
+    mod_11 = lm(val ~ pm_mass * stove + co, data = mod_data)
+    mod_12 = lm(val ~ pm_mass * stove + co * stove, data = mod_data)
+    
+    models = model.sel(mod_1, mod_2, mod_3, mod_4, mod_5, mod_6, mod_7, mod_8, mod_9, mod_10, mod_11, mod_12)
+    
+    mod_sel$model[i] <- row.names(models)[1]
+    mod_sel$r_squared[i] <- summary(get.models(models, subset = 1)[[1]])$r.squared
+  }
+```
+
+```{r}
+  saveRDS(mod_sel, '../../../r_data/stove_type_models.RDS')
+```
+
+```{r}
+  test <-
+  mod_sel %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(model) %>%
+    dplyr::summarise(freq = (n() / nrow(.)) * 100) %>%
+    dplyr::arrange(desc(freq)) %>%
+    knitr::kable("markdown", digits = 0, align = 'c')
+```
+
+
+```{r}
+  mod_sel <-
+    mod_sel %>%
+    dplyr::mutate(model = 
+                    model %>%
+                    factor %>%
+                    forcats::fct_relevel("mod_5",
+                                         "mod_1",
+                                         "mod_2",
+                                         "mod_6",
+                                         "mod_4",
+                                         "mod_3",
+                                         "mod_7",
+                                         "mod_9",
+                                         "mod_12",
+                                         "mod_8") %>%
+                    forcats::fct_rev())
+```
+
+```{r}
+  mod_sel %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(model) %>%
+    dplyr::summarise(min = min(r_squared),
+                     max = max(r_squared)) %>%
+    dplyr::distinct() %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r}
+  pol_cats <-
+    emissions %>%
+      dplyr::select(pol, pol_category) %>%
+      dplyr::distinct()
+
+  mod_sel %>%
+    dplyr::filter(model == "mod_5") %>%
+    dplyr::left_join(pol_cats, by = "pol") %>%
+    dplyr::group_by(pol_category) %>%
+    dplyr::summarise(n = n()) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r}
+  pol_cats <-
+    emissions %>%
+      dplyr::select(pol, pol_category) %>%
+      dplyr::distinct()
+
+  mod_sel %>%
+    dplyr::filter(model == "mod_1") %>%
+    dplyr::left_join(pol_cats, by = "pol") %>%
+    dplyr::group_by(pol_category) %>%
+    dplyr::summarise(n = n()) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r}
+  pol_cats <-
+    emissions %>%
+      dplyr::select(pol, pol_category) %>%
+      dplyr::distinct()
+
+  mod_sel %>%
+    dplyr::filter(model == "mod_2") %>%
+    dplyr::left_join(pol_cats, by = "pol") %>%
+    dplyr::group_by(pol_category) %>%
+    dplyr::summarise(n = n()) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
+
+```{r, fig.width=4, fig.height=2}
+  p1 <-
+  mod_sel %>%
+    ggplot(aes(x = model, fill = model)) +
+    scale_fill_manual(values = c("coral", "coral3", "mediumpurple", "mediumorchid", "goldenrod", "darkgoldenrod", 
+                                 "yellowgreen", "aquamarine4" , "lightsteelblue2", "darkslateblue")) +
+    geom_bar() +
+    theme_bw() +
+    coord_flip() + 
+    theme(text = element_text(size = 14),
+          legend.position = "none") +
+    ylab("Frequency") + 
+    xlab("Top models")
+```
+
+```{r, fig.width=4, fig.height=6}
+  p2 <-
+  mod_sel %>%
+    ggplot(aes(x = model, y = r_squared, color = model)) +
+    geom_point(shape = 8) +
+    scale_color_manual(values = c("coral", "coral3", "mediumpurple", "mediumorchid", "goldenrod", "darkgoldenrod", 
+                                  "yellowgreen", "aquamarine4" , "lightsteelblue2", "darkslateblue")) +
+    theme_bw() +
+    coord_flip() + 
+    theme(text = element_text(size = 14),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          legend.position = "none") +
+    ylab("R-squared")
+```
+
+```{r, fig.width=8, fig.height=4}
+ p1 + p2
+```
+
+```{r}
+  pols <-
+    emissions %>%
+    dplyr::select(pol) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(pol != "pm_mass", pol != "co")
+
+  mod_sel <-
+    pols %>%
+    dplyr::mutate(model = NA,
+                  r_squared = NA)
+
+  for (i in c(1:nrow(pols))) {
+
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[i])
+
+    mod_1 = lm(val ~ fuel, data = mod_data)
+    mod_2 = lm(val ~ pm_mass, data = mod_data)
+    mod_3 = lm(val ~ co, data = mod_data)
+    mod_4 = lm(val ~ pm_mass + co, data = mod_data)
+    mod_5 = lm(val ~ pm_mass + fuel, data = mod_data)
+    mod_6 = lm(val ~ co + fuel, data = mod_data)
+    mod_7 = lm(val ~ pm_mass + co + fuel, data = mod_data)
+    mod_8 = lm(val ~ pm_mass * fuel, data = mod_data)
+    mod_9 = lm(val ~ co * fuel, data = mod_data)
+    mod_10 = lm(val ~ co * fuel + pm_mass, data = mod_data)
+    mod_11 = lm(val ~ pm_mass * fuel + co, data = mod_data)
+    mod_12 = lm(val ~ pm_mass * fuel + co * fuel, data = mod_data)
+    
+    models = model.sel(mod_1, mod_2, mod_3, mod_4, mod_5, mod_6, mod_7, mod_8, mod_9, mod_10, mod_11, mod_12)
+    
+    mod_sel$model[i] <- row.names(models)[1]
+    mod_sel$r_squared[i] <- summary(get.models(models, subset = 1)[[1]])$r.squared
+  }
+```
+
+```{r}
+  saveRDS(mod_sel, '../../../r_data/fuel_type_models.RDS')
+```
+
+```{r}
+  mod_sel <-
+    mod_sel %>%
+    dplyr::mutate(model = 
+                    model %>%
+                    factor %>%
+                    forcats::fct_relevel("mod_5",
+                                         "mod_2",
+                                         "mod_1",
+                                         "mod_4",
+                                         "mod_3",
+                                         "mod_6",
+                                         "mod_7",
+                                         "mod_10",
+                                         "mod_11",
+                                         "mod_9"))
+```
+
+```{r, fig.width=4, fig.height=3}
+  p1 <-
+  mod_sel %>%
+      dplyr::mutate(model =
+                    model %>%
+                    forcats::fct_rev()) %>%
+    dplyr::group_by(model) %>%
+    dplyr::summarise(freq = n() / nrow(.)) %>%
+    ggplot(aes(x = model, y = freq)) +
+    geom_histogram(stat = "identity", fill = "dodgerblue3") +
+    theme_bw() +
+    coord_flip() + 
+    theme(text = element_text(size = 14)) +
+    ylab("Fraction of Smoke Constituents") + 
+    xlab("Top models")
+```
+
+```{r, fig.width=4, fig.height=6}
+  p2 <-
+  mod_sel %>%
+    dplyr::mutate(model =
+                    model %>%
+                    forcats::fct_rev()) %>%
+    ggplot(aes(x = model, y = r_squared)) +
+    geom_point(shape = 8) +
+    theme_bw() +
+    coord_flip() + 
+    theme(text = element_text(size = 14),
+          axis.title.y = element_blank()) +
+    ylab("R-squared")
+```
+
+```{r, fig.width=4, fig.height=3}
+ p1 + p2
+```

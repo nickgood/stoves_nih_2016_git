@@ -8,7 +8,7 @@ output:
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
-  pacman::p_load(tidyverse, lme4, kableExtra, stats4, broom, MuMIn)
+  pacman::p_load(tidyverse, patchwork, lme4, kableExtra, stats4, broom, MuMIn)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -34,7 +34,7 @@ output:
                        dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
-## Replace values below background with zero, remove NA values, and select metric
+## Select metric
 
 ```{r}
   emissions <-
@@ -47,7 +47,7 @@ output:
                   pol != "inositol")
 ```
 
-## rename pollutants
+## Rename pollutants
 
 ```{r}
   emissions <-
@@ -75,42 +75,79 @@ output:
                   pol = gsub("pm-mass", "pm_mass", pol))
 ```
 
-## Select only complete observations retained
+## Print names of pollutants with greater than than 15% of the data missing
 
-* turn off log-transform
+```{r}
+  bb <-
+    emissions %>%
+      dplyr::group_by(pol) %>%
+      dplyr::summarise(prct_ab = sum(bg == "below") / n()) %>%
+      dplyr::filter(prct_ab >= 0.15) %>%
+      dplyr::select(-prct_ab)
+
+  bb %>%
+    knitr::kable('markdown', align = 'c')
+```
+
+## Print names of pollutants less than three data points above background for a particular stove type
+
+```{r}
+  missing_stove <-
+    emissions %>%
+    dplyr::group_by(pol, stove) %>%
+    dplyr::summarise(prct_ab = sum(bg == "above")) %>%
+    dplyr::filter(prct_ab < 3) %>%
+    dplyr::select(-prct_ab) %>%
+    dplyr::distinct()
+
+  saveRDS(missing_stove, "../../../r_data/model_info.RDS")
+
+  missing_stove %>%
+    knitr::kable('markdown', align = 'c')
+```
+
+# Leave-one-out cross validation
+
+## Tidy data
+
+* Remove data points with greater than 15% of the data missing
+* Remove data points with less than three data points per stove type
+* Only complete observations retained
+* remove data below background
 
 ```{r}
   all <-
     emissions %>%
+    dplyr::anti_join(bb, by = "pol") %>%
+    dplyr::anti_join(missing_stove, by = c("pol", "stove")) %>%
+    dplyr::filter(bg != "below") %>%
     dplyr::select(id, pol, val, stove, fuel) %>%
     tidyr::spread(pol, val) %>%
     tidyr::gather("pol", "val", -id, -stove, -pm_mass, -co, -fuel) %>%
-    #dplyr::mutate(pm_mass = log(pm_mass),
-    #              co = log(co),
-    #              val = log(val)) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
+                  co = log(co),
+                  val = log(val)) %>%
     na.omit
 ```
-
-# Leave-one-out cross validation
 
 ## Get list of pollutants for loop
 
 ```{r}
   pols <-
-    emissions %>%
+    all %>%
     dplyr::select(pol) %>%
     dplyr::distinct() %>%
     dplyr::filter(pol != "pm_mass", pol != "co")
 ```
 
-## Calculate metrics
+## PM2.5 and CO model
 
 ```{r}
   pred_metrics <- 
     pols %>%
-    dplyr::mutate(rmse = NA,
-                  nrmse = NA,
-                  E = NA)
+    dplyr::mutate(rmse_mod = NA,
+                  rmse_mean = NA,
+                  rrmse = NA)
 
   for (n in 1:nrow(pols)) {
     
@@ -132,58 +169,87 @@ output:
       y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
       obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
       obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
-      
+
     }
-    pred_metrics$rmse[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
-    pred_metrics$nrmse[n] <- pred_metrics$rmse[n] / obs_mean # normalized root mean squared error
-    pred_metrics$E[n] <- 1 - (sum(obs_mod_sqdiff) / sum(obs_mean_sqdiff))
+    pred_metrics$rmse_mod[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
+    pred_metrics$rmse_mean[n] <- sqrt(mean(obs_mean_sqdiff)) # root mean squared error
+    pred_metrics$rrmse[n] <- pred_metrics$rmse_mod[n] / pred_metrics$rmse_mean[n] # relative root mean squared error
   }
 ```
 
-# Plotting
+## PM2.5, CO, and stove type model
 
-## Root Mean Squared Error
+```{r}
+  pred_metrics2 <- 
+    pols %>%
+    dplyr::mutate(rmse_mod = NA,
+                  rmse_mean = NA,
+                  rrmse = NA)
 
-```{r, fig.height=14, fig.width=4, echo=FALSE}
-    pred_metrics %>%
-    dplyr::filter(pol != "ultrafine particles", pol != "carbon dioxide") %>%
-      ggplot(aes(x = reorder(pol, rmse), y = rmse)) +
-        geom_point() +
-        coord_flip() +
-        theme_bw() +
-        scale_y_log10() +
-        theme(axis.title.y = element_blank()) +
-        ylab(expression(paste('RMSE (miligrams per ', MJ[delivered], ')')))
+  for (n in 1:nrow(pols)) {
+    
+    mod_data <-
+      all %>%
+      dplyr::filter(pol == pols$pol[n])
+    
+    obs_mean = mean(mod_data$val)
+
+    obs_mod_sqdiff <- rep(NA, len = nrow(mod_data))
+    obs_mean_sqdiff <- rep(NA, len = nrow(mod_data))
+  
+    for(i in 1:nrow(mod_data)) {
+      
+      training <- mod_data[-i,]
+      prediction <- mod_data[i,]
+      
+      mdl <- lm(val ~ pm_mass + co + stove, data = training) # model with i'th observation out
+      y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
+      obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
+      obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
+
+    }
+    pred_metrics2$rmse_mod[n] <- sqrt(mean(obs_mod_sqdiff)) # root mean squared error
+    pred_metrics2$rmse_mean[n] <- sqrt(mean(obs_mean_sqdiff)) # root mean squared error
+    pred_metrics2$rrmse[n] <- pred_metrics2$rmse_mod[n] / pred_metrics2$rmse_mean[n] # relative root mean squared error
+  }
 ```
 
-## Normalized Root Mean Squared Error
+## Plotting
 
-* Root mean squared error divided by mean of the observtion (similar to coefficient of variation)
-* Expoentiated at the end
+## Relative root Mean Squared Error
 
-```{r, fig.height=14, fig.width=4, echo=FALSE}
+```{r, fig.height=5, fig.width=12, dpi=150}
+  #p1 <-
     pred_metrics %>%
-      ggplot(aes(x = reorder(pol, nrmse), y = nrmse)) +
-        geom_point() +
-        coord_flip() +
+    dplyr::mutate(model = 1,
+                  model =
+                    model %>% 
+                    factor %>% 
+                    forcats::fct_relevel("1",
+                                         "2")) %>%
+      ggplot(aes(x = reorder(pol, rrmse), y = rrmse, color = model, stroke = 1)) +
+        geom_hline(yintercept = 0, color = "darkcyan", lwd = 1.5, alpha = 0.8) +
+        geom_hline(yintercept = 1, color = "orange", lwd = 1.5, alpha = 0.8) +
+        geom_point(stat = "identity") +
+        geom_point(data = pred_metrics2  %>%
+                         dplyr::mutate(model = 2,
+                                          model =
+                                            model %>% 
+                                            factor %>% 
+                                            forcats::fct_relevel("1",
+                                                                 "2")), aes(x = pol, y = rrmse, color = model)) +
+        scale_color_manual(values = c("dodgerblue2", "yellowgreen"),
+                          labels = c(expression(paste('Model 1: ', PM[2.5], ' and CO')), expression(paste('Model 2: ', PM[2.5], ', CO, and stove type')))) +
+        scale_y_continuous(limits = c(0, 1.13), breaks = c(0, 0.25, 0.5, 0.75, 1.0)) +
+        guides(color = guide_legend(nrow = 1, byrow = FALSE, override.aes = list(size=2))) +
         theme_bw() +
-        theme(axis.title.y = element_blank()) +
-        ylab('Normalized RMSE')
+        theme(text = element_text(size = 18),
+              axis.title.x = element_blank(),
+              axis.text.x = element_text(angle = 90, hjust=0.95, vjust = 0.2, size = 10),
+              legend.position = c(0.5, 0.25),
+              legend.title = element_blank()) +
+        geom_text(aes(y = 0.0, x = 12, label="highly performing models\n"), colour = "darkcyan", size = 6) +
+        geom_text(aes(y = 1, x = 12, label = "poorly performing models\n"), colour = "orange", size = 6) +
+        ylab('RMSE ratio')
 ```
 
-## Nash-Sutcliffe coefficient
-
-* Ranges from negative infinity to one
-* Efficiency of one corresponds to a perfect model fit
-* Efficiency of zero indicates that model predicitons are equivalent to predicting the mean
-* Efficiency less than zero indicates that observed mean is better than the predicted model
-
-```{r, fig.height=14, fig.width=4, echo=FALSE}
-    pred_metrics %>%
-      ggplot(aes(x = reorder(pol, E), y = E)) +
-        geom_point() +
-        coord_flip() +
-        theme_bw() +
-        theme(axis.title.y = element_blank()) +
-        ylab('Nash-Sutcliffe coefficient')
-```
