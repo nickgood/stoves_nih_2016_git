@@ -218,7 +218,7 @@ output:
 
 ## Relative root Mean Squared Error
 
-```{r, fig.height=5, fig.width=12, dpi=150}
+```{r figure_6, fig.height=5, fig.width=12, dpi=400, dev='pdf'}
   #p1 <-
     pred_metrics %>%
     dplyr::mutate(model = 1,

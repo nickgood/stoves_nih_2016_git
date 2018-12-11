@@ -178,7 +178,7 @@ load data
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             legend.title = element_blank()) +
-      ylab(expression(atop(paste('Ultrafine Particles'), paste('particles per ', MJ[delivered]))))
+      ylab(expression(atop(paste('Ultrafine Particles'), paste('particles per Megajoul', e[delivered]))))
 ```
 
 ```{r, echo=FALSE}
@@ -204,14 +204,34 @@ load data
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
-```{r figure_3, echo=FALSE, fig.width=12, fig.height=8}
+```{r figure_3, echo=FALSE, fig.width=12, fig.height=8, dpi=400, dev='pdf'}
   p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_3a, echo=FALSE, fig.width=12, fig.height=1.75}
+```{r figure_3a, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
+    ultrafines_p %>%
+      ggplot(aes(x = stove, y = mean)) +
+      geom_histogram(stat = "identity", fill = "plum4") +
+      geom_text(data = range_ultrafines,
+                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+        theme_minimal() +
+      scale_y_continuous(limits = c(0, 5e15), position = "right") +
+      annotate("text", x = 11, y = 5e15, label = "1e+16", size = 5) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 16),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
+            legend.title = element_blank()) +
+      ylab(expression(atop(paste('Ultrafine Particles'), paste('particles per Megajoul', e[delivered]))))
+```
+
+```{r figure_3b, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
     pahs_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
@@ -229,11 +249,14 @@ load data
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Polycyclic Aromatic Hydrocarbons'), paste('miligrams per Megajoul', e[delivered]))))
 ```
+
+
 
 # summary
 

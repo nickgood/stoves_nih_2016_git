@@ -173,7 +173,7 @@ load data
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Gas-phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Gas-phase Carcinogens'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
 ```{r, echo=FALSE}
@@ -203,14 +203,14 @@ load data
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'),
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
-```{r figure_5, echo=FALSE, fig.width=12, fig.height=8}
+```{r figure_5, echo=FALSE, fig.width=12, fig.height=8, dpi=400, dev='pdf'}
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_5a, echo=FALSE, fig.width=12, fig.height=1.5}
+```{r figure_5a, echo=FALSE, fig.width=12, fig.height=1.5, dpi=400, dev='pdf'}
     gases_p %>%
     dplyr::mutate(pol_category = "Gas-Phase Carcinogens") %>%
     ggplot(aes(x = stove, y = val)) +
@@ -229,14 +229,15 @@ load data
             legend.position = "none",
             axis.text.y = element_text(size = 16),
             axis.title.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
             legend.title = element_blank(), 
             axis.text.x = element_blank(),
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Gas-phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Gas-phase Carcinogens'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
-```{r figure_5b, echo=FALSE, fig.width=12, fig.height=1.5}
+```{r figure_5b, echo=FALSE, fig.width=12, fig.height=1.5, dpi=400, dev='pdf'}
     particles_p %>%
     ggplot(aes(x = stove, y = val)) +
       geom_histogram(aes(fill = pol, order = pol), stat = "identity") +
@@ -260,9 +261,10 @@ load data
             axis.title.x = element_blank(),
             legend.title = element_blank(), 
             axis.text.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
             legend.spacing.x = unit(0.25, 'cm'),
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Particle-Phase Carcinogens'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
 # tables

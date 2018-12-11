@@ -175,7 +175,7 @@ notes: need to look at these tests still
                     factor %>% 
                     fct_recode("alkanes " = "alkanes",
                                "alkenes " = "alkenes",
-                               "alkynes " = "alkynes",
+                               "alkyne (ethyne) " = "alkynes",
                                "aromatics " = "aromatics") %>%
                     forcats::fct_relevel("alkanes ",
                                          "alkenes ",
@@ -211,7 +211,7 @@ notes: need to look at these tests still
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
 ```{r, echo=FALSE, fig.width=12, fig.height=4}
@@ -238,14 +238,40 @@ notes: need to look at these tests still
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
-```{r figure_4, echo=FALSE, fig.width=12, fig.height=8}
+```{r figure_4, echo=FALSE, fig.width=12, fig.height=8, dpi=400, dev='pdf'}
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_4a, echo=FALSE, fig.width=12, fig.height=1.5}
+```{r figure_4a, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
+    vocs_p %>%
+    ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+      geom_text(data = stat_vocs  %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2"),
+                        name = "VOCs") +
+      annotate("text", x = 11, y = 300, label = "328", size = 5) +
+      scale_y_continuous(limits = c(0, 300), position = "right") +
+      theme_minimal() +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = "none",
+            axis.text.y = element_text(size = 16),
+            axis.title.y = element_text(colour = "white"),
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per Megajoul', e[delivered]))))
+```
+
+```{r figure_4b, echo=FALSE, fig.width=12, fig.height=1.5, dpi=400, dev='pdf'}
   col_vector = c("cornflowerblue",
                  "khaki",
                  "slateblue3",
@@ -264,12 +290,13 @@ notes: need to look at these tests still
             legend.justification = c(1, 1), 
             legend.position = "none",
             axis.text.y = element_text(size = 16),
+            axis.title.y = element_text(colour = "white"),
             axis.title.x = element_blank(),
             axis.text.x = element_blank(),
             legend.title = element_blank(), 
             legend.spacing.x = unit(0.25, 'cm'), 
             legend.spacing.y = unit(0.25, 'cm')) +
-    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per ', MJ[delivered]))))
+    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per Megajoul', e[delivered]))))
 ```
 
 # tables
