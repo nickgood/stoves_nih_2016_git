@@ -40,6 +40,10 @@ load data
                               dplyr::filter(grepl("Household", risk_factor)),
                      aes(x = risk_factor, y = value),
                          stat = "identity", fill = "yellowgreen") +
+      geom_histogram(data = gbd_p %>%
+                              dplyr::filter(grepl("Ambient", risk_factor)),
+                     aes(x = risk_factor, y = value),
+                         stat = "identity", fill = "yellowgreen") +
       coord_flip() +
       theme_minimal() +
       theme(text = element_text(size = 14),
