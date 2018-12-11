@@ -42,33 +42,28 @@ output:
 
 ```{r}
   
-fuel_burnt <- fuel_wgts %>%
+  fuel_burnt <- fuel_wgts %>%
                 tidyr::spread(var, val) %>%
-                filter(!is.na(mass_dry_new_first))
-
-fuel_burnt[ , 18][is.na(fuel_burnt[ , 18] ) ] <- 0
-
-fuel_burnt <- mutate(fuel_burnt, wgt_ashpot_unusedfuel =
-                       ifelse(wgt_ashpot_unusedfuel %in% 0, wgt_ashpot_lid, wgt_ashpot_unusedfuel)) %>%
-              mutate(unused_fuel = wgt_ashpot_unusedfuel - wgt_ashpot_lid) %>%
-              mutate(char_ash = wgt_ashpot_char_ash - wgt_ashpot_unusedfuel)
-
-fuel_burnt <- fuel_burnt %>%
-                filter(!is.na(wgt_ashpot_lid)) %>%
-                dplyr::select(id, mass_dry_new_sum, wgt_ashpot_char_ash,
-                              wgt_ashpot_lid, wgt_ashpot_unusedfuel, unused_fuel, char_ash) %>%
-                mutate(mass_burnt_wrong = mass_dry_new_sum + wgt_ashpot_lid - wgt_ashpot_char_ash,
-                       units = "g") %>%
-                mutate(mass_burned_correct = (mass_dry_new_sum - unused_fuel) - char_ash)
-                
-
+                dplyr::select(id, mass_dry_new_sum, wgt_ashpot_lid, 
+                              wgt_ashpot_unusedfuel, wgt_ashpot_char_ash) %>%
+                dplyr::mutate(wgt_ashpot_unusedfuel = ifelse(is.na(wgt_ashpot_unusedfuel),
+                                                             wgt_ashpot_lid,
+                                                             wgt_ashpot_unusedfuel),
+                              unused_fuel = wgt_ashpot_unusedfuel - wgt_ashpot_lid,
+                              char_ash    = wgt_ashpot_char_ash - wgt_ashpot_unusedfuel,
+                              
+                              # This is incorrect because:
+                              # 1. It does not account for the moisture content of the unburned fuel
+                              # 2. It does not account for the fact that char != fuel
+                              mass_burned_wrong = mass_dry_new_sum - unused_fuel - char_ash,
+                              units = "g")
 ```
 
 ```{r, fig.width = 12, fig.height = 8}
   p_data <- dplyr::left_join(samples, fuel_burnt) %>%
             dplyr::mutate(id = as.factor(id))
 
-  ggplot(p_data, aes(x = id, y = mass_burned_correct, colour = stove)) +
+  ggplot(p_data, aes(x = id, y = mass_burned_wrong, colour = stove)) +
         geom_point() +
         theme_minimal() + 
         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +

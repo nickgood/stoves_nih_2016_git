@@ -1,0 +1,265 @@
+---
+title: "Carbon balance"
+author: "Jessica Tryner"
+date: "December 7, 2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r, echo=FALSE, include=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+```
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/',
+                        warning = FALSE,
+                        message = FALSE,
+                        fig.width = 10, fig.height = 4,
+                        cache = FALSE)
+```
+
+```{r}
+  source("../r_scripts/R_functions.R")
+```
+
+---
+
+# Load data
+
+### CO~2~, CO, and CH~4~
+
+```{r}
+ # fivegas data
+  data_fivegas <- readRDS("../r_files/fivegas_merged.RDS")
+
+ # background co
+  data_bg_co <- readRDS("../r_files/background_co.RDS")
+
+ # background co2
+  data_bg_co2 <- readRDS("../r_files/background_co2.RDS")
+
+ # background ch4
+  data_bg_ch4 <- readRDS("../r_files/background_ch4.RDS")
+```
+
+### Fuel
+
+```{r}
+  data_fuel_prop <- readRDS("../r_files/fuel_properties.RDS")
+  data_fuel      <- readRDS("../r_files/fuel_prep_clean.RDS")
+  data_test_log  <- readRDS("../r_files/mc_test_log.RDS")
+```
+
+### Metadata
+
+```{r}
+  data_samples <- readRDS("../r_files/samples.RDS")
+  data_times   <- readRDS("../r_files/test_times_all.RDS")
+  data_mc      <- readRDS("../r_files/mean_mc_df.RDS")
+```
+
+Constants:
+
+```{r}
+  hood_flow       <- readRDS("../r_files/hood_flow.RDS")      # m3/min
+  pol_properties  <- readRDS("../r_files/pol_properties.RDS")
+  mw_c            <- readRDS("../r_files/mw_carbon.RDS")      # g/mol
+```
+
+# Analyze the CO~2~, CO, and CH~4~ data
+
+Select the start and end times for each test.  For the carbon balance, the start time will be the time at which the shims were ignited.
+
+```{r}
+  df_times <- dplyr::filter(data_times, var=="ignite" | var=="end") %>%
+              tidyr::spread(var, value) %>%
+              dplyr::select(-date) %>%
+              dplyr::rename(start = ignite)
+```
+
+1. Filter out CO~2~, CO, and CH~4~ concentrations that were recorded before the start time or after the end time.  
+2. Only keep one data point per second.  
+3. Calculate the average concentrations (in ppmv) of CO~2~, CO, and CH~4~ recorded during each test.
+
+```{r}
+  df_fivegas <- filter_times(df_times, data_fivegas) %>% # 1
+                dplyr::distinct()                    %>% # 2
+                dplyr::group_by(id, pol)             %>% 
+                dplyr::summarise(ppm = mean(ppm, na.rm=TRUE)) %>% # 3
+                dplyr::ungroup()
+```
+
+Convert concentrations in ppmv to concentrations in ug/m^3 at 25 C and 84 kPa
+
+```{r}
+  df_fivegas <- dplyr::left_join(df_fivegas,
+                                 dplyr::select(pol_properties, pol, mw, num_c),
+                                 by=c("pol")) %>%
+                dplyr::mutate(conc = convert_ppmv_ugpmc(ppm, mw, 25, 84)) # ug/m^3
+```
+
+Merge the pollutant concentration data with the test start and end times, then calculate the duration of each test.
+
+```{r, warning=FALSE}
+  df_fivegas <- dplyr::left_join(df_fivegas, df_times, by=c("id")) %>%
+                dplyr::mutate(dur = end - start) # seconds
+```
+
+Get the background concentration for each pollutant for each test.  If the background concentration for a given test is unavailable, use the mean value from all tests. 
+
+```{r}
+
+  df_bg_co2 <- dplyr::mutate(data_bg_co2$bg,
+                             conc_bg = ifelse(!is.na(conc), conc, data_bg_co2$mean$conc),
+                             pol     = "co2")
+
+  df_bg_co  <- dplyr::mutate(data_bg_co$bg,
+                             conc_bg = ifelse(!is.na(conc), conc, data_bg_co$mean$conc),
+                             pol     = "co")
+
+  df_bg_ch4 <- dplyr::mutate(data_bg_ch4$bg,
+                             conc_bg = ifelse(!is.na(conc), conc, data_bg_ch4$mean$conc),
+                             pol     = "ch4")
+
+  df_bg <- dplyr::bind_rows(df_bg_co2, df_bg_co, df_bg_ch4) %>%
+           dplyr::select(id, pol, conc_bg)
+  
+  df_fivegas <- dplyr::left_join(df_fivegas, df_bg, by=c("id","pol"))
+```
+
+Calculate the mass of each pollutant emitted and the mass of carbon emitted during each test. 
+
+```{r}
+  df_fivegas <- dplyr::mutate(df_fivegas,
+                              mass_emitted = (conc - conc_bg) * hood_flow * (dur / 60), # ug
+                              mass_carbon  = mass_emitted * (mw_c * num_c / mw))        # ug
+```
+
+Caclulate the dry mass of fuel burned using a carbon balance on the CO~2~, CO, and CH~4~ concentrations measured in the fume hood exhaust:  
+
+  1. Remove background tests  
+  2. Sum the mass of carbon emitted as CO~2~, CO, and CH~4~ and convert from $\mu$g to grams.  
+  3. Get data on the mass fraction of carbon in the fuel.  
+  4. Calculate the mass of dry fuel burned.  
+
+```{r}
+
+  df_c_bal <- dplyr::filter(df_fivegas, substring(id,1,2) != "BG") %>% # 1
+              dplyr::group_by(id) %>%
+              #dplyr::filter(pol != "ch4") %>%
+              dplyr::summarise(mass_c = (1e-6)*sum(mass_carbon)) %>%   # 2
+              dplyr::left_join(dplyr::select(data_samples, id, fuel), by=c("id")) %>%
+              dplyr::left_join(dplyr::select(data_fuel_prop, fuel, carbon_fraction), by=c("fuel")) %>% # 3
+              plyr::rename(c("carbon_fraction" = "y_c_fuel")) %>%
+              mutate(m_fuel_c_bal = mass_c/y_c_fuel)              # 4
+```
+
+# Analyze the fuel weight data
+
+```{r, warning=FALSE}
+
+  df_fuel <- dplyr::group_by(data_fuel, fuel_id)                %>%
+             dplyr::summarise(m_fuel_dry = sum(m_dry),
+                              mc_dry = mean(mc_actual)/100) %>%
+             plyr::rename(c("fuel_id" = "id"))                  %>%
+             
+             # get mass of shims, unburned fuel, and char
+             dplyr::left_join(dplyr::select(data_test_log, id, 
+                                                           wgt_starter,
+                                                           wgt_ashpot_lid,
+                                                           wgt_ashpot_unusedfuel,
+                                                           wgt_ashpot_char_ash),
+                              by=c("id"))                       %>%
+             dplyr::mutate(wgt_ashpot_unusedfuel = ifelse(is.na(wgt_ashpot_unusedfuel),
+                                                          wgt_ashpot_lid,
+                                                          wgt_ashpot_unusedfuel),
+                           m_unused_wet = wgt_ashpot_unusedfuel - wgt_ashpot_lid,
+                           m_char       = wgt_ashpot_char_ash - wgt_ashpot_unusedfuel)    %>%
+             dplyr::select(-wgt_ashpot_lid, -wgt_ashpot_unusedfuel, -wgt_ashpot_char_ash) %>%
+             plyr::rename(c("wgt_starter" = "m_shims_wet"))     #%>%
+```
+
+Calculate average moisture content of "low moisture" fuels.
+
+```{r}
+  df_mc_low  <- dplyr::filter(df_fuel, substr(id,2,2) == "L") # select tests with low-moisture fuel
+
+  mc_low_dry <- mean(df_mc_low$mc_dry) # calculate average moisture content (dry basis) 
+```
+
+Calculate dry mass of shims and dry mass of unburned fuel.  
+
+```{r}
+  df_fuel <- df_fuel %>%
+             dplyr::mutate(m_shims_dry  = m_shims_wet/(1+mc_low_dry),
+                           m_unused_dry = m_unused_wet/(1+mc_dry),
+                           y_c_char     = 0.90) # assumed mass fraction of carbon in char
+```
+
+Calculate the dry mass of fuel burned. 
+
+```{r}
+
+  df_c_bal <- df_c_bal %>%
+              dplyr::left_join(dplyr::select(df_fuel, -m_shims_wet, -m_unused_wet), by=c("id")) %>%
+              dplyr::mutate(m_burned_dry = m_shims_dry + m_fuel_dry - m_unused_dry - ((y_c_char/y_c_fuel)*m_char),
+                            ratio = m_fuel_c_bal/m_burned_dry,
+                            diff  = m_fuel_c_bal - m_burned_dry) %>%
+              dplyr::filter(id != "FH2")
+```
+
+# Compare the results
+
+```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
+
+  ggplot(df_c_bal, aes(x=m_burned_dry, y=m_fuel_c_bal)) +
+    geom_abline(a=0, b=1) + 
+    geom_point(size=3, alpha=0.7, na.rm=TRUE) +
+    coord_cartesian(xlim=c(180,300),ylim=c(180,300)) +
+    xlab("Dry mass of fuel weighed (g)") + 
+    ylab("Dry mass of fuel from carbon balance (g)") +
+    theme(aspect.ratio=1,
+          panel.grid.major.x = element_line(color="gray95"),
+          panel.grid.minor.x = element_line(color="gray95"),
+          panel.grid.major.y = element_line(color="gray95"),
+          panel.grid.minor.y = element_line(color="gray95"),
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          axis.text  = element_text(size=10, color='black'),
+          axis.title = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black'))
+```
+
+```{r}
+  mod <- lm(m_fuel_c_bal ~ m_burned_dry, df_c_bal)
+  summary(mod)
+```
+
+```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
+
+  ggplot(df_c_bal, aes(ratio)) +
+    geom_vline(xintercept=1, size=1) + 
+    geom_histogram(na.rm=TRUE, breaks=seq(0.825,1.175,0.05),
+                   color="black") +
+    coord_cartesian(xlim=c(0.8,1.2), ylim=c(0,10)) + 
+    scale_x_continuous(breaks=seq(0.7,1.3,0.1)) + 
+    scale_y_continuous(breaks=seq(0,10,2)) + 
+    xlab("(C as CO2 + CO + CH4)/(C in weighed fuel)") + 
+    ylab("Count") +
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          axis.text  = element_text(size=10, color='black'),
+          axis.title = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black'))
+```
+
+There are two potential explanations for why the mass of fuel carbon measured as CO~2~, CO, and CH~4~ in the exhaust is sligtly higher than the mass of fuel weighed at the start and end of the test:  
+
+  1. The assumed hood exhaust temperature (25 C) is too low (and therefore the calculated exhaust density is too high).  
+  2. The assumed mass fraction of carbon in the char (`r df_c_bal$y_c_char[1]`) is too high.  

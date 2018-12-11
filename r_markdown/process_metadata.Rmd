@@ -87,39 +87,52 @@ output:
 
 ## fuel weights
 
-```{r}
- # remove FH2 rep 3 becuase fuel was not burned
-  fuel_no_fh2_3 <- dplyr::setdiff(fuel,
-                                  dplyr::filter(fuel, (id == "FH2" & order == "3")))
+I modified this section of code on Dec. 7, 2018
 
-  fuel_clean_no_fh2_3 <- dplyr::setdiff(fuel_clean,
-                                  dplyr::filter(fuel_clean, (fuel_id == "FH2" & test_order == "3"))) %>%
-                         dplyr::rename(id = fuel_id, mass_dry_new = m_dry) %>%
-                         dplyr::select(id, mass_dry_new)
-  
-  fuel_clean_no_fh2_3 <- cbind(fuel_clean_no_fh2_3, select(fuel_no_fh2_3, order))%>%
-                         select(mass_dry_new)
-  
-  fuel_clean_no_fh2_3 <- cbind(fuel_no_fh2_3, fuel_clean_no_fh2_3)
-  fuel_clean_no_fh2_3 <- select(fuel_clean_no_fh2_3, -13, -14, -15, -16, -17, -18, -19)
+```{r}
+
+  # select "m_dry" and variables needed to match with fuel data
+  mass_dry_new <- dplyr::select(fuel_clean, fuel_id, test_order, mass_original, m_dry) %>%
+                  plyr::rename(c("fuel_id"       = "id",
+                                 "test_order"    = "order",
+                                 "m_dry"         = "mass_dry_new",
+                                 "mass_original" = "mass_start"))
+
+  # Add "mass_dry_new" to the fuel data frame
+  fuel_mass <- dplyr::left_join(fuel, mass_dry_new, by=c("id","order","mass_start")) %>%
+               dplyr::select(-mass_wet, -date_wet_start, -time_wet_start, 
+                             -date_wet_end, -time_wet_end, -dur_wt, -notes)          %>%
     
-  fuel_mass <- dplyr::select(fuel_clean_no_fh2_3, id, order, starts_with("mass")) %>%
-               dplyr::group_by(id) %>%
-               dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first)) %>%
-               tidyr::gather("var", "val", 2:15)
+               # Removed FH2 rep 3 because the fuel was not burned
+               dplyr::filter((id=="FH2" & order==3) == FALSE)                        %>%
+    
+               # Select only mass data and sum masses over the test
+               dplyr::select(id, order, starts_with("mass"))                         %>%
+               dplyr::group_by(id)                                                   %>%
+               dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first))      %>%
+               dplyr::select(1:8) %>%
+               tidyr::gather("var", "val", 2:8)
+```
+
+```{r}
 
   pot_mass <- dplyr::select(test_log, id, starts_with("wgt")) %>%
               dplyr::rename(wgt_water_pot = wgt_pot_a,
-                            wgt_water_on = wgt_on_1,
+                            wgt_water_on  = wgt_on_1,
                             wgt_water_off = wgt_off_1) %>%
-               tidyr::gather("var", "val", 2:26) %>%
-               dplyr::filter(!is.na(val), id != "BG2")
+              tidyr::gather("var", "val", 2:26) %>%
+              dplyr::filter(!is.na(val), id != "BG2")
+```
 
-  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass) %>%
-               dplyr::select(id, var, val)
+```{r}
+
+  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass) 
 
   saveRDS(test_mass, file="../r_files/fuel_wgts.RDS")
 ```
+
+
+
 
 ```{r, echo=FALSE, fig.height=8}
   p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%

@@ -37,7 +37,7 @@ output:
 ```
 
 ```{r}
-const <- 0.015625355
+  const <- 0.015625355
 ```
 
 # Organize
@@ -143,30 +143,162 @@ const <- 0.015625355
    # smps_merged$qc[smps_merged$id == ""] <- "bad"
 ```
 
-```{r}
-types <- readRDS("../r_files/samples.RDS") %>%
-         select(id, type, mc_level)
+***
 
-smps_dilution <- select(smps_merged, id, size_nm, dw) %>%
-                 filter(!is.na(size_nm)) %>%
-                 mutate(dw = as.numeric(dw)) %>%
-                 group_by(id, size_nm) %>%
-                 summarise(avg_val = mean(dw)) %>%
-                 ungroup() %>%
-                 left_join(types, by = "id") %>%
-                 left_join(dilution, by = "id") %>%
-                 mutate(dil_num = avg_val*median_dilution) %>%
-                 group_by(mc_level,size_nm) %>%
-                 summarise(avg_num = mean(dil_num), sd_num = sd(dil_num))
+I updated the next three chunks of code on Dec. 4, 2018. -- J.T. 
 
-ggplot(smps_dilution, aes(x = size_nm, y = avg_num, color = mc_level)) +
-  geom_line(size = 1) +
-  #scale_y_log10() +
-  geom_errorbar(aes(ymin = avg_num-sd_num, ymax = avg_num+sd_num), width = 0.2, alpha =0.5) +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme_bw() +
-  labs(color = "MC Level", x = "Particle Size [nm]", y = "dN/dlog(Dp)")
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Define the colors to use in the plots. 
+
+  purple <- "#330099"
+  gold   <- "#FF9900"
+  teal1  <- "#33CC99"
+  teal2  <- "#339999"
+  teal3  <- "#0099CC"
+  orange <- "#FF6633"
+  pink1  <- "#CC0066"
+  pink2  <- "#FF3366"
 ```
+
+```{r}
+  types <- readRDS("../r_files/samples.RDS") %>%
+           dplyr::select(id, type, mc_level) %>%
+           dplyr::mutate(id = as.factor(id))
+
+  dilution <- dplyr::mutate(dilution, id = as.factor(id))
+
+  smps_dilution <- dplyr::select(smps_merged, id, size_nm, dw) %>%
+                   dplyr::filter(!is.na(size_nm))     %>%
+                   dplyr::mutate(dw = as.numeric(dw)) %>%
+                   group_by(id, size_nm)              %>%
+                   summarise(dw_mean = mean(dw))      %>%
+                   ungroup()                          %>%
+                   left_join(types,    by=c("id"))    %>%
+                   left_join(dilution, by=c("id"))    %>%
+                   dplyr::mutate(dndlogdp = dw_mean*median_dilution) %>%
+                   dplyr::filter(type != "bg")        %>%
+                   dplyr::mutate(mc_level = as.character(mc_level),
+                                 mc_level = ifelse(mc_level=="high", "High",   mc_level),
+                                 mc_level = ifelse(mc_level=="med",  "Medium", mc_level),
+                                 mc_level = ifelse(mc_level=="low",  "Low",    mc_level),
+                                 mc_level = as.factor(mc_level),
+                                 mc_level = forcats::fct_relevel(mc_level, "High","Medium","Low"))
+  
+  df_smps_avg <- smps_dilution %>%
+                 group_by(mc_level, size_nm) %>%
+                 summarise(dndlogdp_avg = mean(dndlogdp),
+                           dndlogdp_sd  = sd(dndlogdp))
+```
+
+```{r, fig.width=3.54, fig.height=3.15, fig.align='center'}
+
+  log10_breaks <- c(10,20,30,50,60,70,80,90,
+                    100,200,300,400,500)
+
+  ggplot(df_smps_avg, aes(x=size_nm, y=dndlogdp_avg, 
+                          ymin=dndlogdp_avg-dndlogdp_sd, ymax=dndlogdp_avg+dndlogdp_sd, 
+                          color=mc_level, fill=mc_level)) +
+    geom_blank() + 
+    geom_ribbon(data=dplyr::filter(df_smps_avg, mc_level=="High"),   alpha=0.25, color=NA) +
+      geom_line(data=dplyr::filter(df_smps_avg, mc_level=="High"),   size=1) +
+    geom_ribbon(data=dplyr::filter(df_smps_avg, mc_level=="Medium"), alpha=0.25, color=NA) +
+      geom_line(data=dplyr::filter(df_smps_avg, mc_level=="Medium"), size=1) +
+    geom_ribbon(data=dplyr::filter(df_smps_avg, mc_level=="Low"),    alpha=0.15, color=NA) +
+      geom_line(data=dplyr::filter(df_smps_avg, mc_level=="Low"),    size=1) +
+    # format plot
+    xlab("Particle size (nm)") + 
+    ylab(expression("dN/dlog("*D[p]*")")) +
+    labs(color="Moisture level", fill="Moisture level") +
+    scale_x_log10(breaks=c(10,20,50,100,200,500), minor_breaks=log10_breaks) + 
+    scale_color_manual(values = c(teal3,gold,pink1)) +
+    scale_fill_manual(values  = c(teal3,gold,pink1)) +
+    theme(aspect.ratio=1,
+          panel.grid.major.x = element_line(color="gray95"),
+          panel.grid.minor.x = element_line(color="gray95"),
+          panel.grid.major.y = element_line(color="gray95"),
+          panel.grid.minor.y = element_line(color="gray95"),
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          axis.text  = element_text(size=10, color='black'),
+          axis.title = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black'),
+          legend.text  = element_text(size=10, color='black'),
+          legend.title = element_text(size=10, color='black'),
+          legend.key   = element_blank(),
+          legend.position = c(0.77,0.74))
+
+  ggsave(filename="smps.pdf", plot=last_plot(), device="pdf", width=9/2.54, height=8/2.54)
+```
+
+* For the low-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Low")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Low")$dndlogdp_avg)]` nm.  
+* For the medium-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Medium")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Medium")$dndlogdp_avg)]` nm.  
+* For the high-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="High")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="High")$dndlogdp_avg)]` nm.  
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  hood_flow <- readRDS("../r_files/hood_flow.RDS") # m3/min
+  mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
+
+  test_times_renamed <- dplyr::mutate(test_times_renamed,
+                                      dur = end - start) # seconds
+
+                  # Calculate the number of UFPs emitted per test
+  df_ufp <- dplyr::filter(smps_dilution, size_nm <= 100) %>% # get particles smaller than 100 nm
+            dplyr::left_join(test_times_renamed, by=c("id")) %>%   # get test duration in seconds
+            dplyr::mutate(num_conc = dndlogdp * const,             # number of particles/cm3
+                          num = num_conc*(hood_flow/60)*dur*(10^6)) %>% # number of particles
+            dplyr::group_by(id) %>%
+            summarise(num = mean(num)) %>%
+    
+            # Add test metadata
+            dplyr::left_join(mean_mc, by=c("id")) %>%
+            dplyr::left_join(dplyr::select(samples, id, type, mc_level), by=c("id")) %>%
+            dplyr::mutate(type = ifelse(type=="lab", "Milled", "Split"))   %>%
+            dplyr::filter(!is.na(mean_mc))
+```
+
+```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
+
+  ggplot(data=df_ufp, aes(x=mean_mc, y=num, shape=type)) + 
+         geom_point(size=3, alpha=0.7) +
+         coord_cartesian(xlim=c(4,30), ylim=c(1e13,8.2e13)) +
+         scale_x_continuous(breaks=seq(5,30,10)) + 
+         xlab("Moisture content (%)") + 
+         ylab("Number of ultrafine particles emitted") +
+         labs(shape = "Fuel shape") + 
+         theme(aspect.ratio=1,
+               panel.grid.major.x = element_line(color="gray95"),
+               panel.grid.minor.x = element_line(color="gray95"),
+               panel.grid.major.y = element_line(color="gray95"),
+               panel.grid.minor.y = element_line(color="gray95"),
+               panel.border     = element_rect(fill=NA),
+               panel.background = element_rect(fill='white'),
+               axis.text  = element_text(size=10, color='black'),
+               axis.title = element_text(size=10, color='black'),
+               axis.ticks = element_line(color='black'),
+               legend.text  = element_text(size=10, color='black'),
+               legend.title = element_text(size=10, color='black'),
+               legend.key   = element_blank(),
+               legend.box.background = element_rect(color="black", size=0.6),
+               legend.position = c(0.2,0.8)) 
+
+  ggsave(filename="ufp.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
+```
+
+```{r}
+  df_ufp_summary <- group_by(df_ufp, mc_level) %>%
+                    summarise(mean = mean(num),
+                              sd   = sd(num))
+
+  #kable(df_ufp_summary, format="markdown", digits=c(2,1),
+  #      col.names=c("Moisture level", "Mean (%)","SD (%)"))
+```
+
+```{r}
+  TukeyHSD(aov(num ~ mc_level, df_ufp))
+```
+
+***
 
 ``` {r}
 
