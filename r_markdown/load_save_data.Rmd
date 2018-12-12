@@ -21,7 +21,7 @@ output:
 
 # Pollutant data
 
-## co2
+### CO~2~
 
 Loads and saves the CO2 voltage data (`calibration?`)
 
@@ -32,7 +32,7 @@ Loads and saves the CO2 voltage data (`calibration?`)
   saveRDS(co2, file = "../r_files/co2.RDS")
 ```
 
-## ecoc
+### EC/OC
 
 Loads ecoc data file and saves
 
@@ -42,7 +42,7 @@ Loads ecoc data file and saves
   saveRDS(ecoc, file = "../r_files/ecoc.RDS")
 ```  
 
-## fivegas
+### Five gas
 
 Loads fivegas mixing ratio files and resaves.
 
@@ -51,7 +51,7 @@ Loads fivegas mixing ratio files and resaves.
   saveRDS(data_fivegas, file = "../r_files/fivegas.RDS")
 ```
 
-## gravimetric
+### Gravimetric
 
 Loads filter weight data and resaves as .RDS.
 
@@ -60,7 +60,7 @@ Loads filter weight data and resaves as .RDS.
   saveRDS(data_grav, file = "../r_files/grav.RDS")
 ```
 
-## carbonyls
+### Carbonyls
 
 Loads and resaves data as .RDS.
 
@@ -69,7 +69,7 @@ Loads and resaves data as .RDS.
   saveRDS(carbonyls, file = "../r_files/carbonyls.RDS")
 ```
 
-## pax
+### PAX
 
 Loads and resaves data as .RDS.
 
@@ -80,7 +80,7 @@ Loads and resaves data as .RDS.
   saveRDS(pax, file = "../r_files/pax.RDS")
 ```
 
-## smps
+### SMPS
 
 Loads and resaves data as an .RDS.
 
@@ -90,7 +90,7 @@ Loads and resaves data as an .RDS.
   saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
-## temperature
+### Temperature
 
 Loads and resaves data as an .RDS.
 
@@ -100,7 +100,7 @@ Loads and resaves data as an .RDS.
   saveRDS(temp, file = "../r_files/temp.RDS")
 ```
 
-## transmissometer
+### Transmissometer
 
 Loads and resaves data as an .RDS.
 
@@ -109,7 +109,7 @@ Loads and resaves data as an .RDS.
   saveRDS(trans, file = "../r_files/trans.RDS")
 ```
  
-## vocs
+### VOCs
 
 Loads the microgram sheet  and resaves data as an .Rda.
  
@@ -125,6 +125,36 @@ Loads the microgram sheet  and resaves data as an .Rda.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   data_fuel_prep <- load_fuel_prep()
   saveRDS(data_fuel_prep, file = "../r_files/data_fuel_prep.RDS")
+```
+
+```{r, warning=FALSE}
+  
+  # Load the data
+  fuel_prep_clean <- read_excel("../data/logs/Fuel Prep Final Edited.xlsx")
+
+  # Clean the data
+  fuel_prep_clean <- dplyr::select(fuel_prep_clean, fuel_id, test_date, test_order, 
+                                                    mass_final, mass_original,
+                                                    kiln_wood_original, kiln_wood_post, 
+                                                    mc_target) %>%
+                     dplyr::mutate(test_order         = as.numeric(test_order),
+                                   mass_final         = as.numeric(mass_final),
+                                   mass_original      = as.numeric(mass_original),
+                                   kiln_wood_original = as.numeric(kiln_wood_original),
+                                   kiln_wood_post     = as.numeric(kiln_wood_post),
+                                   mc_target          = as.numeric(mc_target)) %>%
+                     plyr::rename(c("fuel_id"="id"))   %>%
+                     dplyr::filter(!is.na(test_order)) %>%
+  
+  # Calculate:
+  # 1. The moisture content of the reference piece of fuel (on a dry mass basis).  
+  # 2. The dry weight of the test fuel.  
+  # 3. The actual moisture content of the test fuel (on a dry mass basis). 
+  dplyr::mutate(kiln_mc = (kiln_wood_original - kiln_wood_post)/kiln_wood_post, # dry basis
+                m_dry   = mass_original/(kiln_mc + 1),
+                mc_dry  = 100*(mass_final - m_dry)/m_dry) # dry basis
+  
+  saveRDS(fuel_prep_clean, "../r_files/fuel_prep_clean.RDS")
 ```
 
 * Tester 1 log

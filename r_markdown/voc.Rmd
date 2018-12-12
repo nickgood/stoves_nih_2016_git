@@ -29,7 +29,6 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")     # load sample meta data
-  fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")  # fuel use meta data
   emissions <- readRDS("../r_files/emissions_long.RDS")   # load pollutant emissions data
   data_1 <- readRDS("../r_files/data_tester_one.RDS")
   notes <- readRDS("../r_files/notes.RDS")

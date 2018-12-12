@@ -1,0 +1,17 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/
+r_files/
+r_csv/
+figures/
+*.Rproj
+*.RDS
+*.RDA
+*.RData
+*.csv
+*.xls
+*.xlsx
+*.html
+

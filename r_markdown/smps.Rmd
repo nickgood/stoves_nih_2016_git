@@ -19,25 +19,29 @@ output:
 
 # Load data
 
-* smps
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps <- readRDS("../r_files/smps.RDS")
-```
-
-* metadata
+Test metadata
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples <- readRDS("../r_files/samples.RDS")
-  cal_2 <- readRDS("../r_files/data_cal_two.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
-  test_times <- readRDS("../r_files/test_times.RDS")
+  cal_2   <- readRDS("../r_files/data_cal_two.RDS")
+  notes   <- readRDS("../r_files/notes.RDS")
+  
+  test_times        <- readRDS("../r_files/test_times.RDS")
   smps_pax_bg_times <- readRDS("../r_files/smps_pax_bg_times.RDS")
+```
+
+SMPS
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  smps     <- readRDS("../r_files/smps.RDS")
   dilution <- readRDS("../r_files/dilution.RDS")
 ```
 
+Constants
+
 ```{r}
-  const <- 0.015625355
+  hood_flow <- readRDS("../r_files/hood_flow.RDS") # m3/min
+  const     <- 0.015625355
 ```
 
 # Organize
@@ -81,10 +85,9 @@ output:
   # smps_noid <- dplyr::setdiff(smps, select(smps_id, -id)) %>%
               # dplyr::mutate(id = NA)
   
- # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
+  # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
   # smps_merged <- dplyr::arrange(rbind(smps_id, smps_noid), datetime)
 ```
-
 
 * merge
 
@@ -143,26 +146,8 @@ output:
    # smps_merged$qc[smps_merged$id == ""] <- "bad"
 ```
 
-***
-
-I updated the next three chunks of code on Dec. 4, 2018. -- J.T. 
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Define the colors to use in the plots. 
-
-  purple <- "#330099"
-  gold   <- "#FF9900"
-  teal1  <- "#33CC99"
-  teal2  <- "#339999"
-  teal3  <- "#0099CC"
-  orange <- "#FF6633"
-  pink1  <- "#CC0066"
-  pink2  <- "#FF3366"
-```
-
 ```{r}
-  types <- readRDS("../r_files/samples.RDS") %>%
-           dplyr::select(id, type, mc_level) %>%
+  types <- dplyr::select(samples, id, type, mc_level) %>%
            dplyr::mutate(id = as.factor(id))
 
   dilution <- dplyr::mutate(dilution, id = as.factor(id))
@@ -188,6 +173,18 @@ I updated the next three chunks of code on Dec. 4, 2018. -- J.T.
                  group_by(mc_level, size_nm) %>%
                  summarise(dndlogdp_avg = mean(dndlogdp),
                            dndlogdp_sd  = sd(dndlogdp))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  # Define the colors to use in the plots. 
+  purple <- "#330099"
+  gold   <- "#FF9900"
+  teal1  <- "#33CC99"
+  teal2  <- "#339999"
+  teal3  <- "#0099CC"
+  orange <- "#FF6633"
+  pink1  <- "#CC0066"
+  pink2  <- "#FF3366"
 ```
 
 ```{r, fig.width=3.54, fig.height=3.15, fig.align='center'}
@@ -227,7 +224,7 @@ I updated the next three chunks of code on Dec. 4, 2018. -- J.T.
           legend.key   = element_blank(),
           legend.position = c(0.77,0.74))
 
-  ggsave(filename="smps.pdf", plot=last_plot(), device="pdf", width=9/2.54, height=8/2.54)
+  ggsave(filename="../figures/smps.pdf", plot=last_plot(), device="pdf", width=9/2.54, height=8/2.54)
 ```
 
 * For the low-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Low")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Low")$dndlogdp_avg)]` nm.  
@@ -235,9 +232,6 @@ I updated the next three chunks of code on Dec. 4, 2018. -- J.T.
 * For the high-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="High")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="High")$dndlogdp_avg)]` nm.  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
-  hood_flow <- readRDS("../r_files/hood_flow.RDS") # m3/min
-  mean_mc <- readRDS("../r_files/mean_mc_df.RDS")
 
   test_times_renamed <- dplyr::mutate(test_times_renamed,
                                       dur = end - start) # seconds
@@ -251,15 +245,14 @@ I updated the next three chunks of code on Dec. 4, 2018. -- J.T.
             summarise(num = mean(num)) %>%
     
             # Add test metadata
-            dplyr::left_join(mean_mc, by=c("id")) %>%
-            dplyr::left_join(dplyr::select(samples, id, type, mc_level), by=c("id")) %>%
-            dplyr::mutate(type = ifelse(type=="lab", "Milled", "Split"))   %>%
-            dplyr::filter(!is.na(mean_mc))
+            dplyr::left_join(dplyr::select(samples, id, type, mc_level, mc_dry), by=c("id")) %>%
+            dplyr::mutate(type = ifelse(type=="lab", "Milled", "Split"))  %>%
+            dplyr::filter(id != "FH2")
 ```
 
 ```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
 
-  ggplot(data=df_ufp, aes(x=mean_mc, y=num, shape=type)) + 
+  ggplot(data=df_ufp, aes(x=mc_dry, y=num, shape=type)) + 
          geom_point(size=3, alpha=0.7) +
          coord_cartesian(xlim=c(4,30), ylim=c(1e13,8.2e13)) +
          scale_x_continuous(breaks=seq(5,30,10)) + 
@@ -282,116 +275,18 @@ I updated the next three chunks of code on Dec. 4, 2018. -- J.T.
                legend.box.background = element_rect(color="black", size=0.6),
                legend.position = c(0.2,0.8)) 
 
-  ggsave(filename="ufp.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
+  ggsave(filename="../figures/ufp.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
 ```
 
 ```{r}
   df_ufp_summary <- group_by(df_ufp, mc_level) %>%
                     summarise(mean = mean(num),
                               sd   = sd(num))
-
-  #kable(df_ufp_summary, format="markdown", digits=c(2,1),
-  #      col.names=c("Moisture level", "Mean (%)","SD (%)"))
 ```
 
 ```{r}
   TukeyHSD(aov(num ~ mc_level, df_ufp))
 ```
-
-***
-
-``` {r}
-
-smps_conc <- select(smps_merged, id, size_nm, dw) %>%
-                 filter(!is.na(size_nm)) %>%
-                 mutate(dw = as.numeric(dw)) %>%
-                 group_by(id, size_nm) %>%
-                 summarise(avg_val = mean(dw)) %>%
-                 ungroup() %>%
-                 group_by(id) %>%
-                 mutate(conc = avg_val/sum(avg_val)) %>%
-                 ungroup() %>%
-                 left_join(types, by = "id") %>%
-                 filter(!grepl("^BG", id))
-
-smps_conc1 <- group_by(smps_conc, mc_level, size_nm) %>%
-              mutate(conc_avg = mean(conc), conc_sd = sd(conc)) %>%
-              ungroup() %>%
-              mutate(mc_level = forcats::fct_relevel(mc_level, "low","med","high"))
-
-smps_conc2 <- filter(smps_conc, grepl("low", mc_level))
-smps_conc3 <- filter(smps_conc, grepl("med", mc_level))
-smps_conc4 <- filter(smps_conc, grepl("high", mc_level))
-
-ggplot(smps_conc1, aes(x = size_nm, y = conc_avg, color = mc_level)) +
-  geom_line(size = 2) +
-  scale_y_log10() +
-  geom_errorbar(aes(ymin = conc_avg-conc_sd, ymax = conc_avg+conc_sd), width = 0.2) +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme_bw() +
-  labs(color = "MC Level", x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
-
-```
-
-```{r}
-ggplot(filter(smps_conc1, grepl("low", mc_level)), aes(x = size_nm, y = conc)) +
-  geom_line(size = 2, color = "darkorange") +
-  geom_line(data = smps_conc2, aes(group = id, x = size_nm, y = conc), color = "darkorange", alpha = 0.7) +
-  scale_y_log10() +
-  theme_bw() +
-  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
-```
-
-```{r}
-ggplot(filter(smps_conc1, grepl("med", mc_level)), aes(x = size_nm, y = conc)) +
-  geom_line(size = 2, color = "darkorchid3") +
-  geom_line(data = smps_conc3, aes(group = id, x = size_nm, y = conc), color = "darkorchid3", alpha = 0.7) +
-  scale_y_log10() +
-  theme_bw() +
-  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
-```
-
-```{r}
-ggplot(filter(smps_conc1, grepl("high", mc_level)), aes(x = size_nm, y = conc)) +
-  geom_line(size = 2, color = "blue") +
-  geom_line(data = smps_conc4, aes(group = id, x = size_nm, y = conc), color = "blue", alpha = 0.7) +
-  scale_y_log10() +
-  theme_bw() +
-  labs(x = "Particle Size [nm]", y = "Particle Number: Relative Frequency")
-```
-
-
-```{r}
-
-smps_plot <- select(smps_merged, id, size_nm, dw) %>%
-             left_join(types, by = "id") %>%
-             filter(!is.na(size_nm)) %>%
-             filter(!grepl("^BG", id)) %>%
-             mutate(dw = as.numeric(dw)) %>%
-             mutate(mc_level = forcats::fct_relevel(mc_level, "low","med","high")) %>%
-             group_by(mc_level, size_nm) %>%
-             summarise(avg_val = mean(dw))
-             
-smps_bg <- select(smps_merged, id, size_nm, dw) %>%
-             left_join(types, by = "id") %>%
-             filter(!is.na(size_nm)) %>%
-             filter(grepl("^BG", id)) %>%
-             mutate(dw = as.numeric(dw)) %>%
-             group_by(size_nm) %>%
-             summarise(avg_val_bg = mean(dw))
-
-smps_plot_bg_correct <- left_join(smps_plot, smps_bg, by = "size_nm") %>%
-                        mutate(corrected_num = avg_val - avg_val_bg)
-
-ggplot(smps_plot_bg_correct, aes(x = size_nm, y = corrected_num, color = mc_level)) +
-  geom_point() +
-  geom_line() +
-  scale_y_log10() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme_bw() +
-  labs(color = "MC Level", x = "Particle Size [nm]", y = "Number of Particles [dw/dlogDp]")
-```
-
 
 # Ultrafine number
 

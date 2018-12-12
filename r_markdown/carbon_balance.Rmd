@@ -1,7 +1,7 @@
 ---
-title: "Carbon balance"
+title: "Carbon Balance"
 author: "Jessica Tryner"
-date: "December 7, 2018"
+date: "December 11, 2018"
 output:
   html_document:
     toc: true
@@ -31,7 +31,22 @@ output:
 
 # Load data
 
-### CO~2~, CO, and CH~4~
+Metadata
+
+```{r}
+  data_samples <- readRDS("../r_files/samples.RDS")
+  data_times   <- readRDS("../r_files/test_times_all.RDS")
+```
+
+Constants
+
+```{r}
+  hood_flow       <- readRDS("../r_files/hood_flow.RDS")      # m3/min
+  pol_properties  <- readRDS("../r_files/pol_properties.RDS")
+  mw_c            <- readRDS("../r_files/mw_carbon.RDS")      # g/mol
+```
+
+CO~2~, CO, and CH~4~
 
 ```{r}
  # fivegas data
@@ -47,28 +62,12 @@ output:
   data_bg_ch4 <- readRDS("../r_files/background_ch4.RDS")
 ```
 
-### Fuel
+Fuel
 
 ```{r}
   data_fuel_prop <- readRDS("../r_files/fuel_properties.RDS")
   data_fuel      <- readRDS("../r_files/fuel_prep_clean.RDS")
   data_test_log  <- readRDS("../r_files/mc_test_log.RDS")
-```
-
-### Metadata
-
-```{r}
-  data_samples <- readRDS("../r_files/samples.RDS")
-  data_times   <- readRDS("../r_files/test_times_all.RDS")
-  data_mc      <- readRDS("../r_files/mean_mc_df.RDS")
-```
-
-Constants:
-
-```{r}
-  hood_flow       <- readRDS("../r_files/hood_flow.RDS")      # m3/min
-  pol_properties  <- readRDS("../r_files/pol_properties.RDS")
-  mw_c            <- readRDS("../r_files/mw_carbon.RDS")      # g/mol
 ```
 
 # Analyze the CO~2~, CO, and CH~4~ data
@@ -151,7 +150,6 @@ Caclulate the dry mass of fuel burned using a carbon balance on the CO~2~, CO, a
 
   df_c_bal <- dplyr::filter(df_fivegas, substring(id,1,2) != "BG") %>% # 1
               dplyr::group_by(id) %>%
-              #dplyr::filter(pol != "ch4") %>%
               dplyr::summarise(mass_c = (1e-6)*sum(mass_carbon)) %>%   # 2
               dplyr::left_join(dplyr::select(data_samples, id, fuel), by=c("id")) %>%
               dplyr::left_join(dplyr::select(data_fuel_prop, fuel, carbon_fraction), by=c("fuel")) %>% # 3
@@ -163,10 +161,9 @@ Caclulate the dry mass of fuel burned using a carbon balance on the CO~2~, CO, a
 
 ```{r, warning=FALSE}
 
-  df_fuel <- dplyr::group_by(data_fuel, fuel_id)                %>%
+  df_fuel <- dplyr::group_by(data_fuel, id)              %>%
              dplyr::summarise(m_fuel_dry = sum(m_dry),
-                              mc_dry = mean(mc_actual)/100) %>%
-             plyr::rename(c("fuel_id" = "id"))                  %>%
+                              mc_dry = mean(mc_dry)/100) %>%
              
              # get mass of shims, unburned fuel, and char
              dplyr::left_join(dplyr::select(data_test_log, id, 
@@ -181,7 +178,7 @@ Caclulate the dry mass of fuel burned using a carbon balance on the CO~2~, CO, a
                            m_unused_wet = wgt_ashpot_unusedfuel - wgt_ashpot_lid,
                            m_char       = wgt_ashpot_char_ash - wgt_ashpot_unusedfuel)    %>%
              dplyr::select(-wgt_ashpot_lid, -wgt_ashpot_unusedfuel, -wgt_ashpot_char_ash) %>%
-             plyr::rename(c("wgt_starter" = "m_shims_wet"))     #%>%
+             plyr::rename(c("wgt_starter" = "m_shims_wet"))
 ```
 
 Calculate average moisture content of "low moisture" fuels.

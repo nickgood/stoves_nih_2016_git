@@ -1,5 +1,5 @@
 ---
-title: "Data file summary"
+title: "Process test metadata"
 output:
   html_document:
     toc: true
@@ -55,20 +55,24 @@ output:
               dplyr::mutate(mc_level = ifelse(grepl("^B", id), NA, mc_level))
 ```
 
-```{r}
-  samples <-   test_log %>%
-               dplyr::select(id, date, stove, fuel, type, mc_level,notes) %>%
-               dplyr::mutate(mc_level = as.factor(mc_level)) %>%
-               dplyr::left_join(dplyr::select(fuel, id, mc_target) %>%
-                                dplyr::distinct(),
-                                by = "id") %>%
-               dplyr::mutate(mc_target = as.factor(mc_target),
-                             fuel = ifelse(type == "bg", NA, as.character(fuel)))
+```{r, message=FALSE, warning=FALSE}
+  samples <- test_log %>%
+             dplyr::select(id, date, stove, fuel, type, mc_level, notes) %>%
+             dplyr::mutate(mc_level = as.factor(mc_level)) 
+
+  df_mc <- dplyr::group_by(fuel_clean, id) %>%
+           dplyr::summarise(mc_target = mean(mc_target),
+                            mc_dry    = mean(mc_dry))
+  
+  samples <- dplyr::left_join(samples, df_mc, by=c("id")) %>%
+             dplyr::mutate(mc_target = as.factor(mc_target),
+                           fuel      = ifelse(type=="bg", NA, as.character(fuel))) %>%
+             dplyr::select(id, date, stove, fuel, type, mc_level, mc_target, mc_dry, notes)
 
   saveRDS(samples, "../r_files/samples.RDS")
 ```
 
-## Plot test ids
+Plot test IDs:
 
 ```{r, echo=FALSE}
   test_list <- samples %>%
@@ -87,14 +91,11 @@ output:
 
 ## fuel weights
 
-I modified this section of code on Dec. 7, 2018
-
 ```{r}
 
   # select "m_dry" and variables needed to match with fuel data
-  mass_dry_new <- dplyr::select(fuel_clean, fuel_id, test_order, mass_original, m_dry) %>%
-                  plyr::rename(c("fuel_id"       = "id",
-                                 "test_order"    = "order",
+  mass_dry_new <- dplyr::select(fuel_clean, id, test_order, mass_original, m_dry) %>%
+                  plyr::rename(c("test_order"    = "order",
                                  "m_dry"         = "mass_dry_new",
                                  "mass_original" = "mass_start"))
 
@@ -113,26 +114,6 @@ I modified this section of code on Dec. 7, 2018
                dplyr::select(1:8) %>%
                tidyr::gather("var", "val", 2:8)
 ```
-
-```{r}
-
-  pot_mass <- dplyr::select(test_log, id, starts_with("wgt")) %>%
-              dplyr::rename(wgt_water_pot = wgt_pot_a,
-                            wgt_water_on  = wgt_on_1,
-                            wgt_water_off = wgt_off_1) %>%
-              tidyr::gather("var", "val", 2:26) %>%
-              dplyr::filter(!is.na(val), id != "BG2")
-```
-
-```{r}
-
-  test_mass <- dplyr::bind_rows(fuel_mass, pot_mass) 
-
-  saveRDS(test_mass, file="../r_files/fuel_wgts.RDS")
-```
-
-
-
 
 ```{r, echo=FALSE, fig.height=8}
   p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%

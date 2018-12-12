@@ -1,6 +1,8 @@
-
 ---
 title: "Emission factors"
+subtitle: "Mass emitted per mass of fuel burned"
+author: "Lizette van Zyl and Jessica Tryner"
+date: "December 11, 2018"
 output:
   html_document:
     toc: true
@@ -17,10 +19,9 @@ output:
                         results='markup')
 ```
 
-```{r, echo=FALSE}
+```{r, echo=TRUE, message=FALSE}
   library(tidyverse)
   library(knitr)
-  library(viridis)
   library(broom)
 ```
 
@@ -32,16 +33,12 @@ output:
   samples <- readRDS("../r_files/samples.RDS")
 ```
 
-* fuel burnt
-
-```{r}
-  fuel_burnt <- readRDS("../r_files/fuel_burnt.RDS")
-```
-
 * emissions
 
 ```{r}
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
+  grav           <- readRDS("../r_files/grav_merged.RDS")
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
 ```
 
 * hood flow
@@ -50,116 +47,14 @@ output:
   hood_flow <- readRDS("../r_files/hood_flow.RDS")
 ```
 
-* polultant information
-
-```{r}
-  pol_properties <- readRDS("../r_files/pol_properties.RDS")
-  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
-```
-
 * fuel information
 
 ```{r}
   fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
-
-fuel_prep_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
-
-mean_mc_df <- readRDS("../r_files/mean_mc_df.RDS")
- 
-mc_test_log <- readRDS("../r_files/mc_test_log.RDS")
-
-test_times <- readRDS("../r_files/test_times.RDS")
-
-grav <- readRDS("../r_files/grav_merged.RDS")
-
-t_range <- readRDS("../r_files/t_range.RDS")
+  fuel_prep_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
 ```
 
-# Carbon calculations
-
-* sum carbon over all pollutants
-
-* calculate fuel burned using carbon balance method
-
-```{r}
-  carbon_emitted <- dplyr::filter(emissions_long, metric == "mass_carbon") %>% #grepl("co2", pol)) %>%
-                    dplyr::group_by(id) %>%
-                    dplyr::summarise(mass_carbon = sum(value, na.rm = TRUE)) %>%
-                    dplyr::left_join(dplyr::select(samples, id, fuel),
-                                     by = "id") %>%
-                    dplyr::left_join(fuel_properties, by = "fuel") %>%
-                    dplyr::left_join(select(fuel_burnt, -units), by = "id") %>%
-                    dplyr::filter(!is.na(fuel)) %>%
-                    dplyr::mutate(mass_fuel_from_carbon_balance_kg =
-                                  mass_carbon * (1e-9) * (1/carbon_fraction),
-                                  mass_fuel_scale_kg = mass_burned_correct * (1e-3)) %>% # the 1e-3 accounts for both the ug to g for pol AND the g to kg for fuel
-                    dplyr::select(-mass_burned_correct)
-                    # dplyr::filter(id != "FH2", id != "FL4", id != "LM4")
-```
-
-```{r}
-char_ratio <- dplyr::mutate(fuel_burnt, ratio = mass_burned_correct/mass_dry_new_sum)
-```
-
-* plot fuel from carbon balance versus measured fuel mass
-
-```{r}
-  ggplot(carbon_emitted, aes(mass_fuel_scale_kg, mass_fuel_from_carbon_balance_kg)) + 
-  geom_point() +
-  theme_minimal() +
-  geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
-  geom_abline(intercept = 0, slope = 1, color = "grey90") +
-  xlim(0, NA) + ylim(0, NA) +
-  geom_text(aes(label = id), nudge_x = -0.01, nudge_y = 0.01)
-
-```
-
-# Carbon Balance
-```{r}
-fuel_prep_clean <- dplyr::rename(fuel_prep_clean, id = fuel_id)
-df_carbon <- group_by(fuel_prep_clean, id) %>%
-             summarise(mean_mc = mean(mc_actual))
-
-mc_test_log <- select(mc_test_log, id, wgt_starter) %>%
-               filter(!is.na(wgt_starter))
-
-carbon_bal_2 <- dplyr::filter(emissions_long, metric == "mass_carbon", grepl("co2|co", pol)) %>%
-  #grepl("co2", pol)) %>%
-                    dplyr::group_by(id) %>%
-                    dplyr::summarise(mass_carbon = 1e-6*sum(value, na.rm = TRUE)) %>%
-                    dplyr::left_join(dplyr::select(samples, id, fuel),
-                                     by = "id") %>%
-                    dplyr::left_join(fuel_properties, by = "fuel") %>%
-                    dplyr::left_join(select(fuel_burnt, -units), by = "id") %>%
-                    dplyr::filter(!is.na(fuel)) %>%
-                    dplyr::left_join(mc_test_log, by = "id")
-
-carbon_bal_2 <- dplyr::left_join(carbon_bal_2, df_carbon, by = "id") %>%
-                    dplyr::mutate(mass_carbon_burned = carbon_fraction *
-                                    (mass_dry_new_sum - ((1- mean_mc/100)*unused_fuel-.8*.95*wgt_starter)) - (0.95 * char_ash)) # recheck the 0.8 multiple in the wgt_starter
-
-ggplot(data = carbon_bal_2, aes(x = mass_carbon_burned, y = mass_carbon)) +
-   geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "black", formula = y ~ x) +
-  geom_abline(intercept = 0, slope = 1, color = "grey90") +
-   theme_bw() +
-  labs(x = "mass carbon burned", y = "mass carbon emitted")
-
-  saveRDS(carbon_bal_2, file = "../r_files/carbon_bal_2.RDS")
-```
-
-
-```{r}
-  df_carb <- dplyr::select(carbon_emitted,
-                      mass_fuel_from_carbon_balance_kg,
-                      mass_fuel_scale_kg) %>%
-        dplyr::rename(mass_carbon_balance = mass_fuel_from_carbon_balance_kg,
-                      mass_scale = mass_fuel_scale_kg)
-
-  summary(lm(mass_carbon_balance ~ mass_scale, data = df_carb))
-```
-
-# Pollutant mass per kg fuel
+# Caclulate mass of fuel burned
 
 Calculate the dry mass of fuel burned from the mass of carbon measured as CO~2~, CO, and CH~4~ in the exhaust.  
 
@@ -175,69 +70,62 @@ Calculate the dry mass of fuel burned from the mass of carbon measured as CO~2~,
              dplyr::mutate(m_fuel_dry = mass_c/y_c_fuel) # grams
 ```
 
+# Calculate emission factors
+
 Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `value` has units of micrograms and `m_fuel_dry` has units of grams.  
  
 ```{r}
 
-  emission_factors <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted"), 
-                                       dplyr::select(df_fuel, id, m_fuel_dry),
-                                       by = "id" ) %>%
-                      dplyr::mutate(g_pol_kg_fuel = ((1e-3) * value / m_fuel_dry)) %>% # g/kg
-  
-                      # Add metadata
-                      dplyr::left_join(dplyr::select(samples, id, type, mc_level),
-                                       by=c("id")) %>% 
-                      dplyr::left_join(mean_mc_df, by=c("id")) %>%
-                      dplyr::mutate(type = forcats::fct_recode(type, "Split"   = "field",
-                                                                     "Milled"  = "lab"),
-                                    mc_level = forcats::fct_relevel(mc_level, "low",
-                                                                              "med",
-                                                                              "high")) %>%
-                      # Filter
-                      dplyr::filter(type != "bg", # remove background tests
-                                    id != "FH2")
+  df_ef <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted"), 
+                            dplyr::select(df_fuel, id, m_fuel_dry), by =c("id")) %>%
+           dplyr::mutate(g_pol_kg_fuel = ((1e-3) * value / m_fuel_dry)) # g/kg
 ```
 
-## Plot emissions by id
-
-```{r, fig.width = 12, fig.height = 8}
-  p_data <- dplyr::left_join(emission_factors,
-                             dplyr::select(samples, id, type, mc_level),
-                                           by = "id") %>%
-            dplyr::filter(type != "bg") %>%
-            dplyr::mutate(mc_level = forcats::fct_relevel(mc_level, "low",
-                                                                    "med",
-                                                                    "high")) %>%
-            #dplyr::mutate(id = as.factor(id)) %>%
-            dplyr::mutate(id = factor(id, levels = c("FL1", "FL2", "FL3", "FL4", "FM1", "FM2",
-                                                     "FM3", "FM4", "FH1", "FH2", "FH3", "FH4",
-                                                     "LL1", "LL2", "LL3", "LL4", "LM1", "LM2",
-                                                     "LM3", "LM4", "LH1", "LH2", "LH3",
-                                                     "LH4")))
-
-   p_data_1 <- dplyr::filter(p_data, pol %in% c("co", "acetaldehyde", "benzene", "ch4",
-                                        "ec", "ethylbenzene", "formaldehyde", "grav", "m+p-xylene",
-                                        "o-xylene", "oc", "tc", "toluene"))
-
-  ggplot(p_data_1, aes(id, mass_pol_mass_fuel, color = pol)) +
-  geom_point(size = 4) +
-  scale_y_log10() +
-  theme_minimal() +
-  theme(legend.position = "top",
-        text = element_text(size=20),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylab("g pol / kg fuel") + xlab("Test ID") +
-  scale_color_viridis(discrete=TRUE)
-  
-```
-
-## Remove tests
-
-* remove FH2 from further plots
+Add test metadata.
 
 ```{r}
- p_data <- left_join(p_data, mean_mc_df, by=c("id")) %>%
-           dplyr::filter(id != "FH2")
+
+  # Add metadata to data frame
+  df_ef <- dplyr::left_join(df_ef, dplyr::select(samples, id, type, mc_level, mc_dry),
+                            by=c("id")) %>% 
+           dplyr::mutate(type     = forcats::fct_recode(type, "Split"   = "field",
+                                                              "Milled"  = "lab"),
+                         mc_level = forcats::fct_relevel(mc_level, "low","med","high"),
+                         id       = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
+                                                             "FM1", "FM2", "FM3", "FM4",
+                                                             "FH1", "FH2", "FH3", "FH4",
+                                                             "LL1", "LL2", "LL3", "LL4",
+                                                             "LM1", "LM2", "LM3", "LM4",
+                                                             "LH1", "LH2", "LH3","LH4"),
+                         fuel_shape_mc = paste(type, mc_level, sep="_")) %>%
+    
+          dplyr::filter(type != "bg", # remove background tests
+                        id   != "FH2")
+```
+
+Save the data.
+
+```{r}
+  saveRDS(df_ef, file = "../r_files/emission_factors.RDS")
+```
+
+# Calculate EC/OC ratio
+
+```{r}
+  df_ecoc <- emissions_long %>%
+             dplyr::filter(pol %in% c("ec", "oc"), metric %in% "conc") %>%
+             dplyr::select(-inst)
+          
+  df_ecoc <- unique(df_ecoc) %>%
+             tidyr::spread(pol, value) %>%
+             dplyr::mutate(ratio = ec / oc) %>%
+             dplyr::left_join(dplyr::select(samples, id, type, mc_level, mc_dry), by=c("id")) %>%
+             dplyr::mutate(type     = forcats::fct_recode(type, "Split"  = "field",
+                                                                 "Milled" = "lab"),
+                           mc_level = forcats::fct_relevel(mc_level, "low","med","high"),
+                           fuel_shape_mc = paste(type, mc_level, sep = "_")) %>%
+             dplyr::filter(type != "bg",
+                           id   != "FH2") 
 ```
 
 # Plot results
@@ -254,20 +142,54 @@ Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `val
   pink2  <- "#FF3366"
 ```
 
+```{r, echo=FALSE, fig.width=6.5, fig.height=5, fig.align='center'}
+
+  log_10_breaks <- c(0.0001,0.0002,0.0003,0.0004,0.0005,0.0006,0.0007,0.0008,0.0009,
+                     0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009,
+                     0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,
+                     0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,
+                     1,2,3,4,5,6,7,8,9,
+                     10,20,30,40,50,60,70,80,90,100)
+
+  df_plot <- dplyr::filter(df_ef, pol %in% c("co", "ch4", "grav", "ec", "oc", "tc",
+                                             "formaldehyde", "acetaldehyde",
+                                             "benzene", "toluene", "ethylbenzene",
+                                             "m+p-xylene", "o-xylene"))
+
+  ggplot(df_plot, aes(id, g_pol_kg_fuel, color=pol)) +
+    geom_point(size = 3) +
+    xlab("Test ID") + 
+    ylab(expression(Emission ~ factor ~ "(" * g ~ kg^-1*")")) + 
+    scale_y_log10(breaks=c(0.0001,0.001,0.01,0.1,1.0,10,100),
+                  minor_breaks=log_10_breaks) +
+    # format plot
+    theme(panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray90"),
+          panel.grid.minor = element_line(color="gray90"),
+          text       = element_text(size=10, color="black"), 
+          axis.text.x = element_text(size=10, color="black", angle=45, hjust=1),
+          axis.text.y = element_text(size=10, color="black"),
+          axis.title = element_text(size=10, color="black"),
+          axis.ticks = element_line(color="black"),
+          legend.position = "top")
+   
+```
+
 ```{r, fig.width=6.5, fig.height=4.1, fig.align='center'}
 
-  df_ef_subset <- dplyr::filter(emission_factors, pol %in% c("co2",  "co", "ch4",
-                                                             "grav", "ec", "oc")) %>%
+  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("co2",  "co", "ch4",
+                                                  "grav", "ec", "oc")) %>%
                    dplyr::mutate(pol = factor(pol, levels=c("co2", "co","ch4",
                                                             "grav","ec","oc")))
 
   # dummy data used to ensure that y-axis goes to zero on all panels except CO, PM, and CH4
   df_dummy <- data.frame(pol=levels(df_ef_subset$pol),
-                         mean_mc=c(5),
+                         mc_dry=c(5),
                          g_pol_kg_fuel=c(1740,10,1.4,0.9,0,0),
                          type=c("Milled"))
 
-  ggplot(df_ef_subset, aes(x=mean_mc, y=g_pol_kg_fuel, shape=type, color=pol)) +
+  ggplot(df_ef_subset, aes(x=mc_dry, y=g_pol_kg_fuel, shape=type, color=pol)) +
       facet_wrap(~pol, ncol=3, scales="free_y") + 
       # add data
       geom_point(size=2, alpha=0.7) +
@@ -303,21 +225,21 @@ Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `val
             axis.ticks = element_line(color="black"),
             legend.position = "none")
   
-  ggsave(filename="emissions_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.1)
+  ggsave(filename="../figures/emissions_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.1)
 ```
 
 ```{r, fig.width=6.5, fig.height=8.25, fig.align='center'}
   
-  df_ef_subset <- dplyr::filter(emission_factors, pol %in% c("formaldehyde","acetaldehyde","acetone",
-                                                             "acrolein","propionaldehyde","crotonaldehyde",
-                                                             "butanone","methacrolein","butyraldehyde",
-                                                             "benzaldehyde","isovaleraldehyde","valeraldehyde",
-                                                             "o_tolualdehyde","m_p_tolualdehyde","hexaldehyde")) %>%
+  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("formaldehyde","acetaldehyde","acetone",
+                                                  "acrolein","propionaldehyde","crotonaldehyde",
+                                                  "butanone","methacrolein","butyraldehyde",
+                                                  "benzaldehyde","isovaleraldehyde","valeraldehyde",
+                                                  "o_tolualdehyde","m_p_tolualdehyde","hexaldehyde")) %>%
                    dplyr::mutate(pol  = ifelse(pol=="o_tolualdehyde","o-tolualdehyde",pol),
                                  pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
 
   ggplot(df_ef_subset, 
-         aes(x=mean_mc, y=g_pol_kg_fuel, shape=type)) +
+         aes(x=mc_dry, y=g_pol_kg_fuel, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
          facet_wrap(~pol, scales="free_y", ncol=3) +
          # format plot
@@ -342,20 +264,20 @@ Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `val
                legend.title = element_text(size=10, color='black'),
                legend.key   = element_blank())
   
-  ggsave(filename="aldehydes_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
+  ggsave(filename="../figures/aldehydes_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
 ```
 
 ```{r, fig.width=6.5, fig.height=4.5, fig.align='center'}
   
-  df_ef_subset <- dplyr::filter(emission_factors, pol %in% c("benzene", "toluene", "ethylbenzene",
-                                                             "m+p-xylene", "o-xylene")) %>%
+  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("benzene", "toluene", "ethylbenzene",
+                                                  "m+p-xylene", "o-xylene")) %>%
                    dplyr::mutate(pol  = factor(pol, levels=c("benzene", "toluene", "ethylbenzene",
                                                              "m+p-xylene", "o-xylene")),
                                  type = forcats::fct_recode(type, "Split"   = "field",
                                                                    "Milled" = "lab"))
 
   ggplot(df_ef_subset, 
-         aes(x=mean_mc, y=g_pol_kg_fuel, shape=type)) +
+         aes(x=mc_dry, y=g_pol_kg_fuel, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
          facet_wrap(~pol, scales="free_y", ncol=3) +
          # format plot
@@ -381,186 +303,12 @@ Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `val
                legend.key   = element_blank(),
                legend.position = "none")
   
-  ggsave(filename="voc_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.5)
+  ggsave(filename="../figures/voc_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.5)
 ```
-
-```{r}
-  df_table <- dplyr::filter(emission_factors, pol %in% c("co2","co","ch4","grav","ec","oc", 
-                                                         "acetaldehyde","formaldehyde",
-                                                         "benzene", "toluene", "ethylbenzene",
-                                                         "m+p-xylene", "o-xylene")) %>%
-              dplyr::mutate(pol = factor(pol, levels=c("co2","co","ch4","grav","ec","oc", 
-                                                       "acetaldehyde","formaldehyde",
-                                                       "benzene", "toluene", "ethylbenzene",
-                                                       "m+p-xylene", "o-xylene"))) %>%
-              group_by(pol, mc_level) %>%
-              summarise(median = median(g_pol_kg_fuel),
-                        mean   = mean(g_pol_kg_fuel),
-                        sd     = sd(g_pol_kg_fuel))
-```
-
-```{r, echo=FALSE}
-  kable(df_table, format="markdown", digits=4,
-        col.names=c("Pollutant","Moisture level","Median (g/kg)","Mean (g/kg)","SD (g/kg)"))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="co2")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="co")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="ch4")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="grav")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="ec")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="oc")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="acetaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="formaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="benzene")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="toluene")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="ethylbenzene")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="m+p-xylene")))
-```
-
-```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(emission_factors, pol=="o-xylene")))
-```
-
-## Gravimetric analysis
-
-```{r}
- df <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
-       dplyr::mutate(type = as.factor(type),
-                     mc_level = as.factor(mc_level)) %>%
-       dplyr::filter(pol == "grav") %>%
-       dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_")) %>%
-       dplyr::mutate(pol = "PM2.5")
- 
- f <- formula(mass_pol_mass_fuel ~ mc_level + type + mc_level*type)
- 
- mod_grav <- glm(f, data = df)
-```
-
-```{r}
-  mod_grav$formula
-```
-
-```{r}
-  summary(mod_grav)
-```
-
-```{r}
-  grav_mean <- df %>%
-               dplyr::group_by(test_fuel_type) %>%
-               dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
-
-  grav_mean_wide <- grav_mean %>%
-                    tidyr::spread(test_fuel_type, mass_pol_mass_fuel)
-
-  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "none")
-
-  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "bonf")
-
-  pairwise.t.test(df$mass_pol_mass_fuel, df$test_fuel_type, p.adj = "holm")
-
-  pairwise.t.test(df$mass_pol_mass_fuel, df$mc_level, p.adj = "holm")
-
-  TukeyHSD(aov(mass_pol_mass_fuel ~ test_fuel_type, df))
-
-  TukeyHSD(aov(mass_pol_mass_fuel ~ mc_level, df))
-```
-
-```{r}
-   plot(mod_grav)
-```
-
-```{r}
-df_grav <- group_by(fuel_prep_clean,id) %>%
-           summarise(mean_mc = mean(mc_actual))
-           
-
-df_grav <- left_join(df, df_grav)
-df_grav_plot <- df_grav %>%
-                dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-                dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type)#dplyr::filter(df_grav, type == "lab")
-  
-ggplot(df, aes(mc_level, mass_pol_mass_fuel, color = "darkblue")) +
-  geom_boxplot(outlier.size = NA) +
-  geom_point() +
-  theme_bw() +
-  theme(legend.position = "none") +
-  ylab("g pol / kg fuel") + xlab("moisture content") +
-  facet_wrap(~pol, scales = "free")
-
-```
-
-```{r}
-ggplot(df_grav_plot, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 3.5) +
-  theme_bw() +
-  theme(text = element_text(size=15)) +
-  #theme(legend.position = "none") +
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
-  #title("Milled Fuel PM2.5") +
-  facet_wrap(~pol, scales = "free") +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  scale_x_continuous(breaks = c(5, 15, 25))
-```
-
-## ecoc
-
-I updated the next two chunks of code on Dec. 4, 2018. -- J.T. 
 
 ```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
 
-  ecoc <- emissions_long %>%
-          dplyr::filter(pol %in% c("ec", "oc"), metric %in% "conc") %>%
-          dplyr::select(-inst)
-          
-  ecoc <- unique(ecoc) %>%
-          tidyr::spread(pol, value) %>%
-          dplyr::mutate(ratio = ec / oc) %>%
-          dplyr::right_join(samples, by = "id") %>%
-          dplyr::filter(type != "bg") %>%
-          dplyr::mutate(mc_level       = forcats::fct_relevel(mc_level, "low","med","high"),
-                        test_fuel_type = paste(type, mc_level, sep = "_")) %>%
-          dplyr::left_join(mean_mc_df, by=c("id")) %>%
-          dplyr::mutate(type = forcats::fct_recode(type, "Split"  = "field",
-                                                         "Milled" = "lab")) %>%
-          dplyr::filter(!grepl("FH2", id))
-
-  ggplot(ecoc, aes(x=mean_mc, y=ratio, shape=type)) +
+  ggplot(df_ecoc, aes(x=mc_dry, y=ratio, shape=type)) +
     geom_point(size=3, alpha=0.7) +
     coord_cartesian(xlim=c(4,30)) +
     scale_x_continuous(breaks=seq(5,30,10)) + 
@@ -584,345 +332,153 @@ I updated the next two chunks of code on Dec. 4, 2018. -- J.T.
           legend.box.background = element_rect(color="black", size=0.6),
           legend.position = c(0.8,0.8))
   
-  ggsave(filename="ecoc_ratio.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
+  ggsave(filename="../figures/ecoc_ratio.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
+```
 
+# Compare emission factors
+
+### Between different fuel moisture levels and shapes
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="co2")))
 ```
 
 ```{r}
-  df_ecoc_summary <- group_by(ecoc, mc_level) %>%
-                     summarise(median = median(ratio),
-                               mean   = mean(ratio),
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="co")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ch4")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="grav")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ec")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="oc")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="acetaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="formaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="benzene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="toluene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ethylbenzene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="m+p-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="o-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(ratio ~ fuel_shape_mc, df_ecoc))
+```
+
+### Between different fuel moisture levels
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="co2")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="co")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="toluene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ethylbenzene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="m+p-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="o-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(ratio ~ mc_level, df_ecoc))
+```
+
+# Summarize EFs by fuel moisture level
+
+```{r}
+  df_table <- dplyr::filter(df_ef, pol %in% c("co2","co","ch4","grav","ec","oc", 
+                                              "acetaldehyde","formaldehyde",
+                                              "benzene", "toluene", "ethylbenzene",
+                                              "m+p-xylene", "o-xylene")) %>%
+              dplyr::mutate(pol = factor(pol, levels=c("co2","co","ch4","grav","ec","oc", 
+                                                       "acetaldehyde","formaldehyde",
+                                                       "benzene", "toluene", "ethylbenzene",
+                                                       "m+p-xylene", "o-xylene"))) %>%
+              group_by(pol, mc_level) %>%
+              summarise(mean   = mean(g_pol_kg_fuel),
+                        sd     = sd(g_pol_kg_fuel))
+```
+
+```{r, echo=FALSE}
+  kable(df_table, format="markdown", digits=4,
+        col.names=c("Pollutant","Moisture level","Mean (g/kg)","SD (g/kg)"))
+```
+
+```{r}
+  df_ecoc_summary <- group_by(df_ecoc, mc_level) %>%
+                     summarise(mean   = mean(ratio),
                                sd     = sd(ratio))
 
   kable(df_ecoc_summary, format="markdown", digits=4,
-        col.names=c("Moisture level", "Median","Mean","SD"))
+        col.names=c("Moisture level","Mean","SD"))
 ```
-
-```{r}
-  TukeyHSD(aov(ratio ~ mc_level, ecoc))
-```
-
-```{r}
- df_ecoc <- dplyr::select(ecoc, ratio, type, mc_level, id) %>%
-            dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_"))
-
- median_ecoc <- group_by(df_ecoc, mc_level) %>%
-                summarise(med_ecoc = median(ratio))
- 
- f_ecoc <- formula(ratio ~ mc_level + type + mc_level*type)
- 
- mod_ecoc <- glm(f_ecoc, data = df_ecoc)
- 
- ecoc_mean <- df_ecoc %>%
-              dplyr::group_by(test_fuel_type) %>%
-              dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
-
- ecoc_mean_wide <- ecoc_mean %>%
-                   tidyr::spread(test_fuel_type, ratio)
-
- pairwise.t.test(df_ecoc$ratio, df_ecoc$test_fuel_type, p.adj = "none")
-
- pairwise.t.test(df_ecoc$ratio, df_ecoc$test_fuel_type, p.adj = "bonf")
-
- pairwise.t.test(df_ecoc$ratio, df_ecoc$test_fuel_type, p.adj = "holm")
-
- pairwise.t.test(df_ecoc$ratio, df_ecoc$mc_level, p.adj = "none")
-
- TukeyHSD(aov(ratio ~ test_fuel_type, df_ecoc))
-
- TukeyHSD(aov(ratio ~ df_ecoc$mc_level, df_ecoc))
-```
-
-
-## Plot emissions by moisture content
-
-```{r}
-mean_mc_df <- select(df_grav, id, mean_mc)
-
-saveRDS(mean_mc_df, "../r_files/mean_mc_df.RDS")
-
-p_data_ <- dplyr::filter(p_data, grepl("ec|oc",pol), !grepl("FH2", id))
-
-p_data_ <- dplyr::left_join(p_data_, mean_mc_df) %>%
-           dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-           dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type) %>%
-           dplyr::mutate(pol = as.factor(pol)) %>%
-           dplyr::mutate(pol = forcats::fct_recode(pol, "Elemental Carbon" = "ec",
-                                                      "Organic Carbon" = "oc"))
-
-  ecoc_fig_kg <- ggplot(p_data_, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 3.5) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + #legend.position = "none", 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, scales = "free_y") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-  
-  ggsave(filename = "ecoc_fig_kg.svg", plot = ecoc_fig_kg, device = "svg", width = 8, height = 4, units = "in")
-```
-
-## Plot emissions by moisture content and fuel type
-
-```{r}
-library(forcats) 
- 
-p_data_gas <- dplyr::filter(p_data, pol %in% c("co", "co2", "ch4"), !grepl("FH2", id)) %>%
-             dplyr::mutate(pol = factor(pol)) %>%
-             dplyr::left_join(mean_mc_df, by = "id") %>%
-             dplyr::mutate(pol = forcats::fct_recode(pol, "Carbon Monoxide" = "co",
-                                                     "Carbon Dioxide" = "co2",
-                                                     "Methane" = "ch4"))%>%
-             dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-             dplyr::rename(`Fuel Shape` = type, `MC Level` = mc_level)
-           
-
-  ggplot(p_data_gas, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 3.5) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, scales = "free_y", ncol = 2) +
-  scale_x_continuous(breaks = c(5, 15, 25))
-
-```
-
-## Plot tc vs grav
-
-```{r, echo = FALSE, fig.width = 12, fig.height = 8}
-  data_grav_tc <- dplyr::filter(emissions_long,
-                               (pol == "grav" | pol == "tc") & metric == "conc") %>%
-                  dplyr::select(-inst)%>%
-                  tidyr::spread(pol, value)
-
-  p <- ggplot(data_grav_tc, aes(grav, tc)) +
-       geom_point(aes(color = id)) +
-       theme_bw() +
-       theme(legend.position = "top") +
-       geom_abline(slope = 1, intercept = 0) +
-       geom_text(aes(label = id), nudge_x = 200)
-
-  p
-```
-
-```{r}
-ultrafines <- filter(emissions_long, metric == "num_emitted") %>%
-              filter(!grepl("^BG[1-9]", id)) %>%
-              left_join(df_carbon, by = "id") %>%
-              left_join(select(df_grav, id, mc_level, type), by = "id") %>%
-              filter(!is.na(mc_level)) %>%
-              mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab"))
-              #rename(`Fuel Shape` = type, `MC Level` = mc_level)
-
-ggplot(ultrafines, aes(x = mean_mc, y = value, color = mc_level, shape = type)) +
-  geom_point(size = 3.5) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-```
-
-
-# Save
-
-```{r}
-  saveRDS(carbon_emitted, file = "../r_files/carbon_emitted.RDS")
-  saveRDS(emission_factors, file = "../r_files/emission_factors.RDS")
-```
- 
- * VOC EF's
- 
-```{r}
-p_data_voc <- dplyr::filter(p_data, pol %in% c("benzene", "toluene", "ethylbenzene",
-                                        "m+p-xylene", "o-xylene")) %>%
-             dplyr::mutate(pol = factor(pol)) %>%
-             dplyr::left_join(mean_mc_df, by = "id") %>%
-             dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-             dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type) %>%
-             dplyr::mutate(pol = as.factor(pol)) %>%
-             dplyr::mutate(pol = forcats::fct_relevel(pol, "benzene",
-                                                      "toluene",
-                                                      "ethylbenzene",
-                                                      "m+p-xylene",
-                                                      "o-xylene"))
-
-  btex_kg <- ggplot(p_data_voc, aes(x = mean_mc, y = mass_pol_mass_fuel*1000, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 3) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + #legend.position = "none", 
-  ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, scales = "free_y") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-  
-  ggsave(filename = "btex_kg.svg", plot = btex_kg, device = "svg", width = 8, height = 4, units = "in")
-
-```
-
-```{r}
-  p_data_carb <- dplyr::filter(p_data, grepl("formaldehyde|acetaldehyde",pol), !grepl("FH2", id)) %>%
-                 dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-                 dplyr::left_join(mean_mc_df, by = "id") %>%
-                 dplyr::mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) %>%
-                 dplyr::rename(`MC Level` = mc_level, `Fuel Shape` = type) %>%
-                 dplyr::mutate(pol = as.factor(pol)) %>%
-                 dplyr::mutate(pol = forcats::fct_recode(pol, "Acetaldehyde" = "acetaldehyde",
-                                                      "Formaldehyde" = "formaldehyde"))
-
-  ggplot(p_data_carb, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 4) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + 
-  ylab("EF [g pol / kg fuel]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, scales = "free_y") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-
-```
-
-```{r eval= FALSE}
-efs_spread <- dplyr::select(emission_factors, id, pol, mass_pol_mass_fuel) %>%
-              dplyr::filter(!grepl("^BG|G", id)) %>%
-              tidyr::spread(key = pol, value = mass_pol_mass_fuel)
-
-library(ggraph)
-
-test_data_dend <- efs_spread %>% 
-  select(2:29) %>% 
-  as.matrix() %>% 
-  t() %>% 
-  dist() %>% 
-  hclust() %>% 
-  as.dendrogram()
-
-ggraph(test_data_dend, layout = "dendrogram") + 
-  geom_edge_diagonal()
-```
-
-```{r}
-emissions_long <- mutate(emissions_long, id = as.factor(id)) %>%
-                  filter(!grepl("^BG|G", id))
-
-anova_test <- dplyr::select(p_data, id, mc_level, type) %>%
-              dplyr::distinct(id, mc_level, type)
-
-anova_test <- dplyr::inner_join(emissions_long, anova_test) %>%
-              dplyr::select(mc_level, type, pol, value) %>%
-              dplyr::mutate(type = as.factor(type), pol = as.factor(pol))
-
-anova_model <- anova_test %>%
-                 filter(pol == "ch4") # , mc_level != "med")
-
-                df_2way <- tidy(aov(value ~ mc_level + type + mc_level*type, data = anova_model))
-                 
-                df_1way <- tidy(aov(value ~ mc_level, data = anova_model)) 
-
-#anova_test <- group_by(anova_test, pol) %>%
- #             summarise(two_way_model)
-```
-
-```{r}
-# anova tests for pollutants efs               
-df_anova <- dplyr::select(p_data, mass_pol_mass_fuel, type, mc_level, pol, id) %>%
-       dplyr::mutate(type = as.factor(type),
-                     mc_level = as.factor(mc_level)) %>%
-       dplyr::filter(pol == "formaldehyde") %>%
-       dplyr::mutate(test_fuel_type = paste(type, mc_level, sep = "_"))
-                
-#TukeyHSD(aov(mass_pol_mass_fuel ~ test_fuel_type, df_anova))
-#TukeyHSD(aov(mass_pol_mass_fuel ~ mc_level, df_anova))
-pairwise.t.test(df_anova$mass_pol_mass_fuel, df_anova$test_fuel_type, p.adj = "none")
-pairwise.t.test(df_anova$mass_pol_mass_fuel, df_anova$test_fuel_type, p.adj = "holm")
-pairwise.t.test(df_anova$mass_pol_mass_fuel, df_anova$mc_level, p.adj = "holm")
-```
-
-```{r}
-mean_emissions <- select(p_data, mc_level, pol, mass_pol_mass_fuel) %>%
-                  group_by(mc_level, pol) %>%
-                  summarize(sd_pol = sd(mass_pol_mass_fuel))
-```
-
-```{r fig.height= 10, fig.width=8}
-#plot of all carbonyls
-
-carb_plot <- filter(p_data, !grepl("ec|oc|co2|co|ch4|benzene|toluene|ethylbenzene|o-xylene|m+p-xylene|tc|grav|2_5_dimethylbenzaldehyde", pol)) %>%
-  left_join(mean_mc_df, by = "id") %>%
-  rename(`MC Level` = mc_level, `Fuel Shape` = type)
-             #rename(dimethylbenzaldehyde = `)
-
-carb_fig_kg <- ggplot(carb_plot, aes(x = mean_mc, y = mass_pol_mass_fuel, color = `MC Level`, shape = `Fuel Shape`)) +
-  geom_point(size = 2) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 12)) + 
-  ylab("EF [mg pol / kg fuel]") + xlab("Moisture Content (%)") +
-  facet_wrap(~pol, scales = "free_y", ncol = 3) +
-  scale_x_continuous(breaks = c(5, 15, 25))
-
-ggsave(filename = "carb_fig_kg.svg", plot = carb_fig_kg, device = "svg", width = 8, height = 10, units = "in")
-```
-
-```{r}
-# for  ISO tier comparisons
-
-dur <- select(grav, id, start, end) %>%
-       filter(!is.na(start)) %>%
-       mutate(dur = (end - start)/60)
-
-iso_pm <- filter(p_data, grepl("grav", pol)) %>%
-          left_join(dur, by = "id") %>%
-          select(id, type, mc_level, value, dur) %>%
-          left_join(mean_mc_df, by = "id") %>%
-          mutate(mg_per_min = (value/10^3)/dur) %>%
-          mutate(type = as.factor(type)) %>%
-          mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab")) #%>%
-          #rename(MC Level = mc_level, Fuel Shape = type)
-
-iso_pm_mean <- group_by(iso_pm, mc_level) %>%
-              summarise(med_pm = mean(mg_per_min))
-
-  ggplot(iso_pm, aes(x = mean_mc, y = mg_per_min, color = mc_level, shape = type)) +
-  geom_point(size = 4) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorchid3", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + 
-  ylab("PM2.5 [mg/min]") + xlab("Moisture Content (%)") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-```
-
-```{r}
-iso_co <- filter(p_data, grepl("co", pol)) %>%
-          filter(!grepl("co2", pol)) %>%
-          left_join(dur, by = "id") %>%
-          select(id, type, mc_level, value, dur) %>%
-          left_join(mean_mc_df, by = "id") %>%
-          mutate(g_per_min = (value/10^6)/dur)%>%
-          mutate(type = as.factor(type)) %>%
-          mutate(type = forcats::fct_recode(type, "Split" = "field",
-                                                      "Milled" = "lab"))
-
-iso_co_mean <- group_by(iso_co, mc_level) %>%
-              summarise(mean_co = mean(g_per_min))
-
-ggplot(iso_co, aes(x = mean_mc, y = g_per_min, color = mc_level, shape = type)) +
-  geom_point(size = 4) +
-  theme_bw() +
-  scale_color_manual(values = c("darkorange", "darkorchid3", "blue")) +
-  theme(text = element_text(size = 15)) + 
-  ylab("CO [g/min]") + xlab("Moisture Content (%)") +
-  scale_x_continuous(breaks = c(5, 15, 25))
-```
-
-```{r}
-
-```
-
