@@ -1,0 +1,354 @@
+---
+title: "Emission Factor Map"
+subtitle: "June 2017"
+author: "Jessica Tryner"
+date: "December 11, 2018"
+output: html_document
+---
+
+```{r, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(lubridate) 
+
+  library(maps)
+  library(sp)
+  library(rworldmap)
+
+  library(ncdf4)
+  library(ncdf4.helpers)
+  library(PCICt)
+```
+
+# Load data
+
+Load the energy-based emission factors (g/MJ~d~).
+
+```{r}
+  df_ef <- readRDS("../r_files/ef_energy.RDS")
+```
+
+Open a connection to the netCDF file that contains data on the surface (2m) temperature and dewpoint temperature.
+
+```{r}
+  nc_file <- nc_open("../data/era5/ERA5_Reanalysis_T2m_Td2m_201706.nc")
+```
+
+Look at the file metadata.
+
+```{r}
+  nc_file
+```
+
+Store the latitude, longitude, and time dimensions associated with the temperature and relative humidity data. 
+
+```{r}
+  lon  <- ncvar_get(nc_file, varid="longitude")
+  lat  <- ncvar_get(nc_file, varid="latitude")
+  time <- nc.get.time.series(nc_file, v="t", time.dim.name="time")
+```
+
+* The longitude vector has a length of `r length(lon)` and consists of values that range from `r min(lon)` to `r max(lon)`.  
+* The latitude vector has a length of `r length(lat)` and consists of values that range from `r min(lat)` to `r max(lat)`.  
+* The time vector has a length of `r length(time)`.  
+
+Create a dataframe of all longitude and latitude combinations in which to store the tempearture and relative humidity data.  
+
+```{r}
+  df_lon_lat <- expand.grid(lon, lat) %>%
+                rename(lon=Var1, lat=Var2)
+```
+
+Use the temperature ($T$) and dewpoint temperature ($T_d$) data at each timestamp to calculate relative humidity ($h$) using the [August-Roche-Magnus formula](https://en.wikipedia.org/wiki/Clausius%E2%80%93Clapeyron_relation#Meteorology_and_climatology):  
+
+$$h = \frac{e_s(T_d)}{e_s(T)} = \frac{exp\left(\frac{17.625T_d}{T_d + 243.04}\right)}{exp\left(\frac{17.625T}{T + 243.04}\right)}$$
+
+Then, average the hourly temperature and relative humidity data over the entire month of June 2017.  
+
+```{r}
+  if(file.exists("../r_files/df_temp_rh_201706.RData")){ # If the averaged data already exists,
+    load("../r_files/df_temp_rh_201706.RData")           # load it.          
+  }else{                                      # Otherwise,...
+    for (i in 1:length(time)) { # for each timestamp in the netCDF file
+
+      # get temperature and dewpoint temperature data at timestamp i
+      t2m_i <- nc.get.var.subset.by.axes(nc_file, "t2m", axis.indices=list(T=i))
+      d2m_i <- nc.get.var.subset.by.axes(nc_file, "d2m", axis.indices=list(T=i))
+  
+      # create a dataframe with the temperature and RH data at timestamp i
+      df_i <- mutate(df_lon_lat, t2m_i = as.vector(t2m_i), # Kelvin
+                                 d2m_i = as.vector(d2m_i), # Kelvin
+                                 t2m_i = t2m_i - 273.15,   # Celsius
+                                 d2m_i = d2m_i - 273.15,   # Celsius
+                                 t2m_i = ifelse(t2m_i > 50, NA, t2m_i), # August-Roche-Magnus formula NA above 50 deg C
+                                 rh_i  = exp((17.625*d2m_i)/(d2m_i+243.04))/
+                                         exp((17.625*t2m_i)/(t2m_i+243.04)))  
+    
+      # add the temperature and RH data at timestamp i to a running sum
+      # of the temperature and RH data at each timestamp
+      if(i==1){
+        df <- df_i
+        df <- rename(df, t2m_sum=t2m_i, rh_sum=rh_i)
+      }else{
+        df <- left_join(df, df_i, by=c("lon","lat")) %>%
+              mutate(t2m_sum = t2m_sum + t2m_i,
+                     rh_sum  = rh_sum  + rh_i) %>%
+              dplyr::select(lon, lat, t2m_sum, rh_sum)
+      }
+    }
+
+    # calculate the average temperature and relative humidity
+    df <- mutate(df, t2m_sum = t2m_sum/length(time),
+                     rh_sum  = rh_sum/length(time)) %>%
+          rename(temp=t2m_sum, rh=rh_sum)
+  
+    # save the averaged data
+    save(df, file="../r_files/df_temp_rh_201706.RData")
+  }
+```
+
+Close the connection to the netCDF file.
+
+```{r}
+  nc_close(nc_file)
+```
+
+# Calculate the wood moisture content
+
+Calculate the equilibrium moisture content ($EMC$; %, dry basis) of wood at the average temperature ($T$; Celsius) and relative humidity ($h$; %/100) calculated for each latitude and longitude.  Use the equation from [Glass and Zelinka (2010)](https://www.fpl.fs.fed.us/documnts/fplgtr/fpl_gtr190.pdf):  
+
+$$EMC = \frac{1800}{W}\left(\frac{Kh}{1-Kh} + \frac{{K_1}Kh + 2{K_1}{K_2}{K^2}{h^2}}{1 + {K_1}Kh + {K_1}{K_2}{K^2}{h^2}}\right)$$
+$$W = 349 + 1.29T + 0.0135{T^2}$$
+$$K = 0.805 + 0.000736T - 0.00000273{T^2}$$
+
+$$K_1 = 6.27 - 0.00938T - 0.000303{T^2}$$
+$$K_2 = 1.91 + 0.0407T - 0.000293{T^2}$$ 
+
+The August-Roche-Magnus formula is only applicable over the range of -40 to 50 degrees Celsius.  The EMC equation is only applicable over the range of -1.1 to 65.6 degrees Celsius. Filter the data to match that range before calculating the EMC.
+ 
+```{r}
+  df <- mutate(df,
+               temp = ifelse(temp < -1.1, NA, temp), # EMC eq. NA below -1.1 deg C
+               W  = 349   + (1.29*temp)     + (0.0135*(temp^2)),
+               K  = 0.805 + (0.000736*temp) - (0.00000273*(temp^2)),
+               K1 = 6.27  - (0.00938*temp)  - (0.000303*(temp^2)),
+               K2 = 1.91  + (0.0407*temp)   - (0.000293*(temp^2)),
+               EMC = (1800/W)*(((K*rh)/(1-(K*rh)))+
+                               (((K1*K*rh)+(2*K1*K2*(K^2)*(rh^2)))/(1+(K1*K*rh)+(K1*K2*(K^2)*(rh^2))))))
+```
+
+# Relate EMC to PM2.5 emission factor
+
+```{r}
+  mod_pm <- lm(1000*g_pol_mjd ~ mc_dry, 
+               dplyr::filter(df_ef, pol=="grav", !is.na(mc_dry)))
+  summary(mod_pm)
+```
+
+```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
+  par(mfrow = c(2, 2))
+  plot(mod_pm)
+```
+
+```{r}
+  df <- mutate(df, pm_ef = mod_pm$coefficients[1] + (mod_pm$coefficients[2]*EMC))
+```
+
+# Plot the results
+
+Convert longitudes between 0 and 360 degrees to longitudes between -180 and 180 degrees ([see example](https://cran.r-project.org/web/packages/futureheatwaves/vignettes/starting_from_netcdf.html)).  
+
+```{r}
+  df <- mutate(df, lon  = ifelse(lon > 180, -(360-lon), lon))
+```
+
+Find out which country each latitude and longitude point in the data frame is located within.  This code is based on the example provided [here](https://stackoverflow.com/questions/14334970/convert-latitude-and-longitude-coordinates-to-country-name-in-r).   
+
+```{r}
+  sp_countries <- getMap(resolution='low')
+
+  # Columns 1 and 2 of the dataframe input to this function must contain 
+  # the longitude and latitude, respectively, in degrees
+  sp_points = SpatialPoints(dplyr::select(df, lon, lat),
+                            proj4string=CRS(proj4string(sp_countries))) 
+  
+  df_countries = over(sp_points, sp_countries)
+```
+
+1. Add the country names to the data frame of moisture contents.  
+2. Remove entries for which the country is 'NA' (i.e., entries that are in the ocean).  
+
+```{r}
+  df$country <- df_countries$ADMIN # 1
+
+  df_filt <- dplyr::filter(df, !is.na(country)) # 2
+```
+
+Colors to use on the map.
+
+```{r}
+  purple <- "#330099"
+  gold   <- "#FF9900"
+  teal1  <- "#33CC99" 
+  teal2  <- "#339999" 
+  teal3  <- "#0099CC" 
+  orange <- "#FF6633"
+  pink1  <- "#CC0066"
+  pink2  <- "#FF3366"
+```
+
+Create color scale.
+
+```{r}
+  title_ef <- expression(PM[2.5] ~ (mg * plain('\u00b7') * MJ[d]^-1))
+  palette_ef <- colorRampPalette(c(purple,teal3,teal2,gold,orange,pink2,pink1))
+  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), limits=c(200,820), name=title_ef)
+```
+
+```{r}
+  world <- map_data("world") %>%
+           dplyr::filter(region != "Antarctica")
+```
+
+```{r}
+  lon_dehli <- 77.0688994
+  lat_dehli <- 28.5272181
+  
+  lon_lagos <-  3.1438725
+  lat_lagos <-  6.5480357
+  
+  lon_khartoum <- 32.5025559
+  lat_khartoum <- 15.5015341
+```
+
+```{r, fig.width=6.5, fig.height=3.25, fig.align = 'center'}
+  ggplot(df_filt, aes(x=lon, y=lat, fill=pm_ef)) + 
+        geom_raster() +
+          scale_ef + 
+        geom_map(data=world, map=world, inherit.aes=FALSE,
+                 aes(x=long, y=lat, map_id=region, group=group),
+                 color="black", fill=NA, size=0.05) + 
+        xlab("Longitude") +
+        ylab("Latitude") +
+        coord_cartesian(xlim=c(-170,180),ylim=c(-60,85), expand=FALSE) +
+        scale_x_continuous(breaks=seq(-160,160,20)) + 
+        scale_y_continuous(breaks=seq( -80, 80,20)) + 
+        theme(aspect.ratio = 0.45,
+              panel.grid.major = element_line(color=NA),
+              panel.grid.minor = element_line(color=NA),
+              panel.border = element_rect(fill=NA),
+              panel.background = element_rect(fill='white'),
+              axis.text =element_text(size=9, color='black'),
+              axis.title=element_text(size=9, color='black'),
+              legend.text=element_text(size=9, color='black'),
+              legend.title=element_text(size=9, color='black'),
+              legend.key.height = unit(0.55,"cm"),
+              axis.ticks = element_line(color='black'),
+              legend.position=c(0.092,0.29)) + 
+        geom_point(data=NULL, aes(x=lon_dehli, y=lat_dehli), 
+                   color="black", fill="white", size=1.6, shape=21) + 
+        geom_point(data=NULL, aes(x=lon_lagos, y=lat_lagos), 
+                   color="black", fill="white", size=1.6, shape=22) + 
+        geom_point(data=NULL, aes(x=lon_khartoum, y=lat_khartoum), 
+                   color="black", fill="white", size=1.6, shape=24)   
+
+  ggsave('../figures/map_pm_ef.pdf', plot=last_plot(), width=16.5/2.54, height=8.25/2.54) # inches
+```
+
+# Get data for New Dehli, Lagos, and Khartoum
+
+## Relate EMC to EFs
+
+### Carbon monoxide
+
+```{r}
+  mod_co <- lm(1000*g_pol_mjd ~ mc_dry, 
+               dplyr::filter(df_ef, pol=="co", !is.na(mc_dry)))
+  summary(mod_co)
+```
+
+```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
+  par(mfrow = c(2, 2))
+  plot(mod_co)
+```
+
+```{r}
+  df <- mutate(df, co_ef = mod_co$coefficients[1] + (mod_co$coefficients[2]*EMC))
+```
+
+### Formaldehyde
+
+```{r}
+  mod_ch2o <- lm(1000*g_pol_mjd ~ mc_dry, 
+                 dplyr::filter(df_ef, pol=="formaldehyde", !is.na(mc_dry)))
+  summary(mod_ch2o)
+```
+
+```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
+  par(mfrow = c(2, 2))
+  plot(mod_ch2o)
+```
+
+```{r}
+  df <- mutate(df, formaldehyde_ef = mod_ch2o$coefficients[1] + (mod_ch2o$coefficients[2]*EMC))
+```
+
+### Benzene
+
+```{r}
+  mod_bz <- lm(1000*g_pol_mjd ~ mc_dry, 
+               dplyr::filter(df_ef, pol=="benzene", !is.na(mc_dry)))
+  summary(mod_bz)
+```
+
+```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
+  par(mfrow = c(2, 2))
+  plot(mod_bz)
+```
+
+```{r}
+  df <- mutate(df, benzene_ef = mod_bz$coefficients[1] + (mod_bz$coefficients[2]*EMC))
+```
+
+## Get metrics for each city
+
+```{r}
+  df_dehli <- dplyr::mutate(df,
+                            lon_dist = abs(lon - lon_dehli),
+                            lat_dist = abs(lat - lat_dehli)) %>%
+              dplyr::filter(lon_dist == min(lon_dist),
+                            lat_dist == min(lat_dist))
+```
+
+* The EMC in New Dehli, India is `r round(df_dehli$EMC, digits=1)`.  
+* The PM~2.5~ EF in New Dehli, India is `r round(df_dehli$pm_ef, digits=0)` mg/MJ~d~.  
+* The CO EF in New Dehli, India is `r round(df_dehli$co_ef/1000, digits=1)` g/MJ~d~.  
+* The formaldehyde EF in New Dehli, India is `r round(df_dehli$formaldehyde_ef, digits=0)` mg/MJ~d~.  
+* The benzene EF in New Dehli, India is `r round(df_dehli$benzene_ef, digits=0)` mg/MJ~d~.  
+
+```{r}
+  df_lagos <- dplyr::mutate(df,
+                            lon_dist = abs(lon - lon_lagos),
+                            lat_dist = abs(lat - lat_lagos)) %>%
+              dplyr::filter(lon_dist == min(lon_dist),
+                            lat_dist == min(lat_dist))
+```
+
+* The EMC in Lagos, Nigeria is `r round(df_lagos$EMC, digits=1)`.  
+* The PM~2.5~ EF in Lagos, Nigeria is `r round(df_lagos$pm_ef, digits=0)` mg/MJ~d~.  
+* The CO EF in Lagos, Nigeria is `r round(df_lagos$co_ef/1000, digits=1)` g/MJ~d~.  
+* The formaldehyde EF in Lagos, Nigeria is `r round(df_lagos$formaldehyde_ef, digits=0)` mg/MJ~d~.  
+* The benzene EF in Lagos, Nigeria is `r round(df_lagos$benzene_ef, digits=0)` mg/MJ~d~.  
+
+```{r}
+  df_khart <- dplyr::mutate(df,
+                            lon_dist = abs(lon - lon_khartoum),
+                            lat_dist = abs(lat - lat_khartoum)) %>%
+              dplyr::filter(lon_dist == min(lon_dist),
+                            lat_dist == min(lat_dist))
+```
+
+* The EMC in Khartoum, Sudan is `r round(df_khart$EMC, digits=1)`.  
+* The PM~2.5~ EF in Khartoum, Sudan is `r round(df_khart$pm_ef, digits=0)` mg/MJ~d~.  
+* The CO EF in Khartoum, Sudan is `r round(df_khart$co_ef/1000, digits=1)` g/MJ~d~.  
+* The formaldehyde EF in Khartoum, Sudan is `r round(df_khart$formaldehyde_ef, digits=0)` mg/MJ~d~.  
+* The benzene EF in Khartoum, Sudan is `r round(df_khart$benzene_ef, digits=0)` mg/MJ~d~.  
