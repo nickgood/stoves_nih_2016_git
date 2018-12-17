@@ -1,5 +1,7 @@
 ---
 title: "Emission Factor Summary"
+author: "Jessica Tryner"
+date: "December 16, 2018"
 output:
   html_document:
     toc: true
@@ -9,166 +11,102 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
-  library(forcats)
 ```
 
-# Load and tidy data
+# Load
 
-* Load data and meta data
+* sample info
+
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+```
+
+* Emissions data
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  load("../r_files/emission_factors.Rda")
-  load("../r_files/samples.Rda")
+  data_energy    <- readRDS("../r_files/ef_energy.RDS")
+  data_fuel      <- readRDS("../r_files/ef_fuel.RDS")
+  data_emissions <- readRDS("../r_files/emissions_long.RDS")
 ```
 
-* Load functions
+# Clean data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  source("../r_scripts/R_functions.R")
+### Test metadata
+
+```{r}
+  df_samples <- dplyr::select(samples,
+                              id, date, stove, fuel, type, mc_level, mc_dry) %>%
+                dplyr::filter(type != "bg",
+                              id   != "FH2") %>%
+                dplyr::mutate(type = ifelse(type=="lab", "milled", "split"))
 ```
 
-* Output emissions factors column names 
+### Mass per unit energy delivered
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(emission_factors)
+Grams of pollutant per megajoule of energy delivered to the cooking surface.
+
+```{r}
+  df_ef_energy <- dplyr::select(data_energy,
+                                id, pol, g_pol_mjd) %>%
+                  dplyr::mutate(metric = "g_MJd") %>%
+                  plyr::rename(c("g_pol_mjd"="value"))
 ```
 
-* Add stove/fuel information
+### Mass per mass of fuel burned
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::left_join(emission_factors, 
-                                       dplyr::select(samples, id, stove, fuel,
-                                                              fuelcat, stovecat),
-                                       by = "id")
+Grams of pollutant per kilogram of fuel burned. 
+
+```{r}
+  df_ef_fuel <- dplyr::select(data_fuel,
+                              id, pol, g_pol_kg_fuel) %>%
+                dplyr::mutate(metric = "g_pol_kg_fuel") %>%
+                plyr::rename(c("g_pol_kg_fuel"="value"))           
 ```
 
-* Add combined stove/fuel variable
+### Mass of carbon emitted
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Tricked you Nick!
+```{r}
+  df_emissions <- dplyr::filter(data_emissions, metric=="mass_carbon",
+                                                substr(id,1,2) != "BG",
+                                                substr(id,1,1) != "G",
+                                                id != "FH2") %>%
+                  dplyr::select(-inst) %>%
+                  dplyr::mutate(metric = "g_carbon",
+                                id     = as.factor(id))
 ```
 
-* Use carbon balance method for missing emissions factors
+# Combine data
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # Better variable name?
-  emission_factors <- dplyr::mutate(emission_factors, 
-                                    mass_ef_comb = 
-                                      ifelse(is.na(mass_ef),
-                                             mass_c_ef, mass_ef)) %>%
-                      dplyr::mutate(energy_ef_comb =
-                                      ifelse(is.na(energy_ef), energy_c_ef,
-                                             energy_ef))
+```{r}
+  df_summary <- dplyr::bind_rows(df_ef_energy, df_ef_fuel) %>%
+                plyr::rename(c("pol"="pollutant")) %>%
+                dplyr::filter(pollutant %in% c("co2","co","ch4","grav","ec","oc",
+                                 "acetaldehyde",     "acetone",          "acrolein",
+                                 "benzaldehyde",     "butanone",         "butyraldehyde",
+                                 "crotonaldehyde",   "formaldehyde",     "hexaldehyde",
+                                 "isovaleraldehyde", "m_p_tolualdehyde", "methacrolein",
+                                 "o_tolualdehyde",   "propionaldehyde",  "valeraldehyde",
+                                 "benzene",          "toluene",          "ethylbenzene",
+                                 "m+p-xylene",       "o-xylene")) %>%
+                dplyr::mutate(pollutant = ifelse(pollutant=="grav", "pm2_5", pollutant))
+
+  df_summary <- dplyr::left_join(df_samples, df_summary, by=c("id")) %>%
+                plyr::rename(c("id"     = "test_id",
+                               "type"   = "fuel_type",
+                               "mc_dry" = "fuel_mc_dry"))            %>%
+                dplyr::mutate(mc_level = as.factor(mc_level))
+  
+  levels(df_summary$mc_level) <- c("low","medium","high")
+  
+  df_summary <- dplyr::arrange(df_summary, metric, pollutant, mc_level, fuel_type)
 ```
 
-* Remove outliers
+# Save
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  emission_factors <- dplyr::filter(emission_factors, mass_ef_comb > 0)
+```{r}
+  saveRDS(df_summary, file = "../r_files/ef_summary.RDS")
+  write_csv(df_summary, "../r_files/ef_summary.csv", na="NA", append=FALSE)
 ```
 
-# Plot summary data
 
-* Calculate summary statistics 
-* Plot emissions factors by mass
-* Error bars represent min and max values
 
-## CO data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^co$', pol)), "Carbon monoxide")
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^co$', pol)), "Carbon monoxide")
-```
-
-## PM data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('grav$', pol)), 'Particulate matter')
-```
-
-## VOC data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 'Benzene')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Toluene')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^voc_toluene$', pol)), 'Toluene')
-```
-
-## Carbonyl data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 'Formaldehyde')
-```
-
-## EC and OC data
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^ec$', pol)), 'Elemental carbon')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_box(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 8}
-  plot_ef_bar(dplyr::filter(emission_factors, grepl('^oc$', pol)), 'Organic carbon')
-```
-
-# Exploring pollutant relationships
-
-## CO vs formaldehyde
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
-                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
-                   'Carbon monoxide', 'Formaldehyde')
-```
-
-## PM vs formaldehyde
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
-                   dplyr::filter(emission_factors, grepl('^formaldehyde$', pol)), 
-                   'Carbon monoxide', 'Formaldehyde')
-```
-
-## CO vs benzene
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_correlation(dplyr::filter(emission_factors, grepl('^co$', pol)),
-                   dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
-                   'Carbon monoxide', 'Toluene')
-```
-
-## PM vs benzene
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width = 14,  fig.height = 10}
-  plot_correlation(dplyr::filter(emission_factors, grepl('^grav$', pol)),
-                   dplyr::filter(emission_factors, grepl('^voc_benzene$', pol)), 
-                   'Particulate matter', 'Benzene')
-```

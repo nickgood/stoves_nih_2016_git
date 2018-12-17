@@ -78,7 +78,9 @@ Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `val
 
   df_ef <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted"), 
                             dplyr::select(df_fuel, id, m_fuel_dry), by =c("id")) %>%
-           dplyr::mutate(g_pol_kg_fuel = ((1e-3) * value / m_fuel_dry)) # g/kg
+           plyr::rename(c("value"="mass_emitted"))                               %>% # g
+           dplyr::mutate(g_pol_kg_fuel = ((1e-3) * mass_emitted / m_fuel_dry))   %>% # g/kg
+           dplyr::select(-metric)
 ```
 
 Add test metadata.
@@ -106,7 +108,7 @@ Add test metadata.
 Save the data.
 
 ```{r}
-  saveRDS(df_ef, file = "../r_files/emission_factors.RDS")
+  saveRDS(df_ef, file = "../r_files/ef_fuel.RDS")
 ```
 
 # Calculate EC/OC ratio

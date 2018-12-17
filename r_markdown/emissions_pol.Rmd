@@ -547,8 +547,9 @@ Calculate MCE:
                                                                     "med",
                                                                     "high")) %>%
             # Filter data
-            dplyr::filter(type != "bg", id != "FH2") %>%
-            dplyr::select(-co2, -co, -ch4)
+            dplyr::filter(type != "bg", id != "FH2")
+
+  saveRDS(df_mce, file = "../r_files/df_mce.RDS")
 ```
 
 Calculate the mean MCE and standard deviation at each moisture level.  
