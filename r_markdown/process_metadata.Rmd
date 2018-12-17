@@ -40,8 +40,6 @@ output:
   test_log <- readRDS(file = "../r_files/mc_test_log.RDS")
   
   fuel <- readRDS("../r_files/data_fuel_prep.RDS")
-  
-  fuel_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
 ```
 
 # Sample data
@@ -58,28 +56,18 @@ output:
 ```{r, message=FALSE, warning=FALSE}
   samples <- test_log %>%
              dplyr::select(id, date, stove, fuel, type, mc_level, notes) %>%
-             dplyr::mutate(mc_level = as.factor(mc_level)) 
-
-  df_mc <- dplyr::group_by(fuel_clean, id) %>%
-           dplyr::summarise(mc_target = mean(mc_target),
-                            mc_dry    = mean(mc_dry))
-  
-  samples <- dplyr::left_join(samples, df_mc, by=c("id")) %>%
-             dplyr::mutate(mc_target = as.factor(mc_target),
-                           fuel      = ifelse(type=="bg", NA, as.character(fuel))) %>%
-             dplyr::select(id, date, stove, fuel, type, mc_level, mc_target, mc_dry, notes)
-
-  saveRDS(samples, "../r_files/samples.RDS")
+             dplyr::mutate(mc_level = as.factor(mc_level),
+                           mc_level = forcats::fct_relevel(mc_level,"low","med","high")) 
 ```
 
 Plot test IDs:
 
 ```{r, echo=FALSE}
   test_list <- samples %>%
-               dplyr::group_by(mc_target, type) %>%
+               dplyr::group_by(mc_level, type) %>%
                dplyr::summarise(id = paste(id, collapse = ", "))
 
-  ggplot(test_list, aes(y = mc_target, type)) + 
+  ggplot(test_list, aes(y = mc_level, type)) + 
     geom_tile(colour = "white", width = 0.9, height = 0.9, aes(fill = id)) +
     scale_fill_discrete(na.value = 'grey95') +
     theme_bw(base_size = 14) +
@@ -89,36 +77,55 @@ Plot test IDs:
 
 # Clean and save metadata
 
-## fuel weights
+## Fuel weights
+
+Remove moisture contents that were calculated in Excel and recalculate.
 
 ```{r}
+  # Remove values that were calculated in Excel
+  df_fuel_prep <- dplyr::select(fuel, id, date, mc_target, order,
+                                      mass_kiln_pre, mass_kiln_post, 
+                                      mass_start, mass_wet, mass_end) %>%
 
-  # select "m_dry" and variables needed to match with fuel data
-  mass_dry_new <- dplyr::select(fuel_clean, id, test_order, mass_original, m_dry) %>%
-                  plyr::rename(c("test_order"    = "order",
-                                 "m_dry"         = "mass_dry_new",
-                                 "mass_original" = "mass_start"))
-
-  # Add "mass_dry_new" to the fuel data frame
-  fuel_mass <- dplyr::left_join(fuel, mass_dry_new, by=c("id","order","mass_start")) %>%
-               dplyr::select(-mass_wet, -date_wet_start, -time_wet_start, 
-                             -date_wet_end, -time_wet_end, -dur_wt, -notes)          %>%
-    
-               # Removed FH2 rep 3 because the fuel was not burned
-               dplyr::filter((id=="FH2" & order==3) == FALSE)                        %>%
-    
-               # Select only mass data and sum masses over the test
-               dplyr::select(id, order, starts_with("mass"))                         %>%
-               dplyr::group_by(id)                                                   %>%
-               dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first))      %>%
-               dplyr::select(1:8) %>%
-               tidyr::gather("var", "val", 2:8)
+    # Calculate:
+    # 1. The moisture content of the reference piece of fuel (on a dry mass basis).  
+    # 2. The dry weight of the test fuel.  
+    # 3. The actual moisture content of the test fuel (on a dry mass basis). 
+    dplyr::mutate(kiln_mc  = (mass_kiln_pre - mass_kiln_post)/mass_kiln_post, # dry basis
+                  mass_dry = mass_start/(kiln_mc + 1),
+                  mc_dry   = 100*(mass_end - mass_dry)/mass_dry) %>% # dry basis
+  
+    # Removed FH2 rep 3 because the fuel was not burned
+    dplyr::filter((id=="FH2" & order==3) == FALSE) 
 ```
 
+Add moisture content data to sample data and save.
+
+```{r}
+  
+  df_mc <- dplyr::group_by(df_fuel_prep, id) %>%
+           dplyr::summarise(mc_target = mean(mc_target),
+                            mc_dry    = mean(mc_dry)) 
+  
+  samples <- dplyr::left_join(samples, df_mc, by=c("id")) %>%
+             dplyr::mutate(mc_target = as.factor(mc_target),
+                           fuel      = ifelse(type=="bg", NA, as.character(fuel))) %>%
+             dplyr::select(id, date, stove, fuel, type, mc_level, mc_target, mc_dry, notes)
+
+  saveRDS(samples, "../r_files/samples.RDS")
+```
+
+Select only fuel mass data, sum masses over the test, and plot
+
 ```{r, echo=FALSE, fig.height=8}
-  p_data <- dplyr::left_join(fuel_mass, samples, by = "id") %>%
-            dplyr::filter(!is.na(val)) %>%
-            dplyr::group_by(var, mc_target) %>%
+  p_data <- dplyr::select(df_fuel_prep, id, order, starts_with("mass"))            %>%
+            dplyr::select(-mass_wet, -mass_kiln_pre, -mass_kiln_post, -mass_start) %>%
+            dplyr::group_by(id)                                                    %>%
+            dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first))       %>%
+            tidyr::gather("var", "val", 2:5)                                       %>%
+            dplyr::left_join(samples, by=c("id"))                                  %>%
+            dplyr::filter(!is.na(val))                                             %>%
+            dplyr::group_by(var, mc_target)                                        %>%
             dplyr::mutate(value_norm = (val - mean(val)) / sd(val),
                           outlier = ifelse(is_outlier(val), as.character(id), NA))
 

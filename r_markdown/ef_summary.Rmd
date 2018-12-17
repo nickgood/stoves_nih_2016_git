@@ -1,7 +1,7 @@
 ---
 title: "Emission Factor Summary"
 author: "Jessica Tryner"
-date: "December 16, 2018"
+date: "December 17, 2018"
 output:
   html_document:
     toc: true
@@ -93,10 +93,7 @@ Grams of pollutant per kilogram of fuel burned.
   df_summary <- dplyr::left_join(df_samples, df_summary, by=c("id")) %>%
                 plyr::rename(c("id"     = "test_id",
                                "type"   = "fuel_type",
-                               "mc_dry" = "fuel_mc_dry"))            %>%
-                dplyr::mutate(mc_level = as.factor(mc_level))
-  
-  levels(df_summary$mc_level) <- c("low","medium","high")
+                               "mc_dry" = "fuel_mc_dry"))
   
   df_summary <- dplyr::arrange(df_summary, metric, pollutant, mc_level, fuel_type)
 ```

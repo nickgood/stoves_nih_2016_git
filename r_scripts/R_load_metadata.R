@@ -17,7 +17,7 @@
 # file <- "../data/logs/Fuel Prep Final.xlsx"
 # sheet <- "Fuel Prep"
 # out <- load_fuel_prep(file)
-  load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final.xlsx", sheet = "Fuel Prep"){
+  load_fuel_prep <- function(file = "../data/logs/Fuel Prep Final Edited.xlsx", sheet = "Fuel Prep"){
    # load raw file
    out <- read_excel(path = file, sheet = sheet, col_names = TRUE, skip = 0)
    # clean up
@@ -25,24 +25,24 @@
    out <- dplyr::filter(out, !is.na(fuel_id))
    # rename
    out <- dplyr::rename(out,
-                        id = fuel_id,
-                        date = test_date,
-                        order = test_order,
-                        mc_meas = mc_actual_test,
-                        mass_end = mass_final,
-                        mass_target = target_mass,
-                        mass_start = mass_original,
-                        mass_kiln_pre = kiln_wood_original,
+                        id             = fuel_id,
+                        date           = test_date,
+                        order          = test_order,
+                        mc_meas        = mc_actual_test,
+                        mass_end       = mass_final,
+                        mass_target    = target_mass,
+                        mass_start     = mass_original,
+                        mass_kiln_pre  = kiln_wood_original,
                         mass_kiln_post = kiln_wood_post,
-                        mc_start = kiln_based_original_mc,
-                        mass_dry = calculated_kiln_dry_mass,
-                        mass_wet = weight_after_soak,
+                        mc_start       = kiln_based_original_mc,
+                        mass_dry       = calculated_kiln_dry_mass,
+                        mass_wet       = weight_after_soak,
                         date_wet_start = date_into_water_a,
                         time_wet_start = time_into_water_a,
-                        date_wet_end = date_out_water_a,
-                        time_wet_end = time_out_water_a,
-                        dur_wt = soak_hours_a,
-                        notes = notes)
+                        date_wet_end   = date_out_water_a,
+                        time_wet_end   = time_out_water_a,
+                        dur_wt         = soak_hours_a,
+                        notes          = notes)
    # classes
    out <- dplyr::mutate_at(out,
                            .cols = vars(starts_with("date")),
@@ -51,8 +51,6 @@
                      .funs = as.numeric) %>%
     dplyr::mutate_at(.cols = vars(starts_with("time")),
                      .funs = excel_time)
-   
-   # split fuel id string
    
    # return
    return(out)
