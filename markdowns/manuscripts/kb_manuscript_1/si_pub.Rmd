@@ -63,12 +63,14 @@ output:
 ```
 
 \begin{center}
-\LARGE{Household Cookstoves: A Comprehensive Laboratory Assessment of Air Pollutant Emissions}
+\LARGE{A Laboratory Assessment of 120 Air Pollutant Emissions from Biomass and Fossil-Fuel Cookstoves}
 \end{center}
 
 Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobian, Pierre Herckes, Christian L’Orange, John Mehaffy, Amy Sullivan, Jessica Tryner, Lizette Van Zyl, Ethan Walker, Ander Wilson, Jennifer L. Peel, John Volckens
 
 \tableofcontents
+\newpage
+
 \newpage
 
 # SI 1: Stove type information
@@ -85,7 +87,7 @@ Make and model of each stove type.
                                       "Ceramic jiko",
                                       "Metal jiko",
                                       "Wick kerosene",
-                                      "Pressurized kerosene",
+                                      "Pressure kerosene",
                                       "Liquefied petroleum gas (LPG) stove"),
                      "Stove make" = c("Artisan",
                                 "Artisan",
@@ -114,92 +116,11 @@ Make and model of each stove type.
     kable_styling(latex_options = c("striped"), position = "center", font_size = 10)
 ```
 
-# SI 2: Fuel use by stove type
-
-Fuel use, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
-
-```{r}
-  fuel_burnt %>%
-    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise(fuel_mass = mean(mass_fuel_comb, na.rm = TRUE),
-                     min = min(mass_fuel_comb, na.rm = TRUE),
-                     max = max(mass_fuel_comb, na.rm = TRUE)) %>%
-    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
-    ggplot(aes(x = stove, y = fuel_mass)) +
-      geom_point(size = 2) +
-      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
-      coord_flip() +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            axis.title.y = element_blank()) +
-      ylab("Fuel burned (grams)")
-```
-
 \newpage
 
-# SI 3: Emissions measurement duration by stove type
+# SI 2: Test setup and emissions measurement
 
-Emissions measurement duration by stove type, where the mean and range are indicated by the point markers and lines, respectively.
-
-```{r}
-  test_duration <-
-    times %>%
-      dplyr::filter(var == "sample" | var == "refuel_1" | var == "shutdown") %>%
-      dplyr::mutate(var = as.character(var),
-                    var = ifelse(var == "refuel_1", "sample", var)) %>%
-      tidyr::spread(var, value) %>%
-      dplyr::mutate(duration = (shutdown - sample) / 60)
-
-  test_duration %>%
-    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
-    dplyr::group_by(stove) %>%
-    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
-    dplyr::summarise(dur = mean(duration, na.rm = TRUE),
-                     min = min(duration, na.rm = TRUE),
-                     max = max(duration, na.rm = TRUE)) %>%
-    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
-    ggplot(aes(x = stove, y = dur)) +
-      geom_point(size = 2) +
-      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
-      coord_flip() +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            axis.title.y = element_blank()) +
-      ylab("Test duration (minutes)")
-```
-
-\newpage
-
-# SI 4: Test-averaged firepower by stove type
-
-Average firepower, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively. The sample-averaged firepower was calculated using the average fuel burn rate (SI 2 & SI 3) and the lower heating value of the fuel (SI 13).
-
-```{r}
-  fuel_burnt %>%
-    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
-    dplyr::left_join(test_duration, by = "id") %>%
-    dplyr::mutate(fp = lhv * ((mass_fuel_comb / 1000) / (duration * 60))) %>%
-    dplyr::group_by(stove) %>%
-    dplyr::summarise(firepower = mean(fp, na.rm = TRUE),
-                     min = min(fp, na.rm = TRUE),
-                     max = max(fp, na.rm = TRUE)) %>%
-    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
-    ggplot(aes(x = stove, y = firepower)) +
-      geom_point(size = 2) +
-      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
-      coord_flip() +
-      theme_bw() +
-      theme(text = element_text(size = 12),
-            axis.title.y = element_blank()) +
-      ylab("Firepower (kilowatts)")
-```
-
-\newpage
-
-# SI 5: Test setup and emissions measurement
-
-## SI 5.1: Test setup
+## SI 2.1: Test setup
 
 Schematic of the testing setup. See SI 5.2 and SI 5.3 for details about the sampling media and analysis instrumentation.
 
@@ -207,9 +128,11 @@ Schematic of the testing setup. See SI 5.2 and SI 5.3 for details about the samp
   knitr::include_graphics("images/schematic.pdf")
 ```
 
-## SI 5.2: Emissions measurement
+\newpage
 
-Information about the sampling media and analysis instrumentation used to measure each cookstove smoke constituent. See SI 5.1 for instrumentation schematic.
+## SI 2.2: Emissions measurement
+
+Information about the sampling media and analysis instrumentation used to measure each cookstove smoke constituent. See SI 2.1 for instrumentation schematic.
 
 ```{r}
   tibble::data_frame("Smoke constituent" = c("Fine particulate matter",
@@ -254,8 +177,8 @@ Information about the sampling media and analysis instrumentation used to measur
                                                 "Test integrated",
                                                 "Test integrated",
                                                 "Test integrated",
-                                                "$\\sim$0.0055 hertz",
-                                                "1.0 hertz")) %>%
+                                                "$\\sim$0.0055 Hertz",
+                                                "1.0 Hertz")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
           linesep = "", longtable = TRUE) %>%
     kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
@@ -264,11 +187,9 @@ Information about the sampling media and analysis instrumentation used to measur
     column_spec(3, width = "10em")
 ```
 
-\newpage
+## SI 2.3: Additional instrumentation
 
-## SI 5.3: Additional instrumentation
-
-Instrumentation that was used for either quality control or as part of the test setup. See SI 5.1 for instrumentation schematic.
+Instrumentation that was used for either quality control or as part of the test setup. See SI 2.1 for instrumentation schematic.
 
 ```{r}
   tibble::data_frame("Instrumentation" = c("Hot-wire anemometer",
@@ -279,7 +200,7 @@ Instrumentation that was used for either quality control or as part of the test 
                                            "HEPA filters",
                                            "Needle valves",
                                            "Rotometers",
-                                           "Diaphragm Pump"),
+                                           "Diaphragm pump"),
                      "Details" = c("Velometer AVM430-A; TSI Alnor; Huntington Beach, CA",
                                    "mini-Buck Calibrator M-30; A.P. Buck, Inc; Orlando, FL",
                                    "16.7 liters per minute, 2.5 µm cutpoint; URG; Chapel Hill, NC",
@@ -294,10 +215,10 @@ Instrumentation that was used for either quality control or as part of the test 
                                    "Removing particles above 2.5 µm for filter-based measurements",
                                    "Measure dilution ratio of Venturi pump dilution system",
                                    "Measure water temperature and flame temperature",
-                                   "Various (see SI 5.1)",
-                                   "Various (see SI 5.1)",
+                                   "Various (see SI 2.1)",
+                                   "Various (see SI 2.1)",
                                    "Monitoring flow rates",
-                                   "Various (see SI 5.1)")) %>%
+                                   "Various (see SI 2.1)")) %>%
     kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
           linesep = "") %>%
     kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
@@ -308,9 +229,9 @@ Instrumentation that was used for either quality control or as part of the test 
 
 \newpage
 
-# SI 6: Cookstove smoke constituents
+# SI 3: Cookstove smoke constituents
 
-Cookstove smoke constituents with associated grouping category. List includes 121 constituents, because organic matter and organic carbon are listed seperately.
+Cookstove smoke constituents with associated grouping category. List includes 121 constituents, because organic matter and organic carbon are listed seperately. (Note: The alkyne category only includes one pollutant: ethyne.)
 
 ```{r}
   emissions %>%
@@ -361,6 +282,7 @@ Cookstove smoke constituents with associated grouping category. List includes 12
                   pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
                   pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
                   pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("alkynes", "alkyne", pol), 
                   pol_category = gsub("carbohydrates", "carbohydrates", pol_category)) %>%
     dplyr::select(pol, pol_subcategory, pol_category) %>%
     dplyr::arrange(pol) %>%
@@ -373,9 +295,9 @@ Cookstove smoke constituents with associated grouping category. List includes 12
 
 \newpage
 
-# SI 7: Particle number penetration through the Venturi pump
+# SI 4: Particle number penetration through the Venturi pump
 
-Fraction of particles that penetrated the venturi pump (i.e., number penetration) at two different dilution ratios (DR). The venturi pump was upstream of the scanning mobility particle sizer and used to dilute the emissions sample. Although, there is substantial scatter at smaller particle sizes, these results suggest that the majority of particles lost in the Venturi pump are greater than 200 nm. Thus, the number concentration of ultrafines (particles less than 100 nm) will likely not be substantially affected by losses in the Venturi pump.
+Fraction of particles that penetrated the venturi pump (i.e., number penetration) at two different dilution ratios (DR) as a function of particle size (D$_p$). The venturi pump was upstream of the scanning mobility particle sizer and used to dilute the emissions sample. Although, there is substantial scatter at smaller particle sizes, these results suggest that the majority of particles lost in the Venturi pump are greater than 200 nm. Thus, the number concentration of ultrafines (particles less than 100 nm) will likely not be substantially affected by losses in the Venturi pump.(Note: Penetration efficiencies above one can be explained by low particle count statistics.)
 
 ```{r, echo=FALSE, out.width = '100%'}
   knitr::include_graphics("images/num_penetration.png")
@@ -383,17 +305,7 @@ Fraction of particles that penetrated the venturi pump (i.e., number penetration
 
 \newpage
 
-# SI 8: Particle-phase emissions mass balance
-
-PM$_{2.5}$ versus the sum of inorganic ions, elemental carbon, and organic matter. Error bars represent propagated uncertainty from the Sunset OCEC analyzer. The black line represent the equation $y = x$.
-
-```{r, echo=FALSE, out.width = '75%', fig.align="center"}
-  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
-```
-
-\newpage
-
-# SI 9: Carcinogenic compound classifications
+# SI 5: Carcinogenic compound classifications
 
 ```{r}
   tibble::data_frame("pollutant" = c("benzene",
@@ -458,11 +370,11 @@ PM$_{2.5}$ versus the sum of inorganic ions, elemental carbon, and organic matte
 
 \newpage
 
-# SI 10: Number of measurements by stove type
+# SI 6: Number of measurements by stove type
 
 The number of per-energy-delivered emissions factors used in the analysis for each type of pollutant. The number of attempted measurements, by stove type, are listed in the footnote. See Figure q for breakdown by fuel type. Missing measurements are due to measurement issues or erroneous data. (The number of measurements include both measurements that were below the limit of detection or below the study-averaged laboratory background level.)
 
-## SI 10.1: Wood stoves
+## SI 6.2: Wood stoves
 
 ```{r}
   three_stone <-
@@ -607,7 +519,7 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
 
 \newpage
 
-## SI 10.2: Pellet, charcoal, and fossil-fuel stoves
+## SI 6.2: Pellet, charcoal, and fossil-fuel stoves
 
 ```{r}
   gasifier <-
@@ -774,11 +686,9 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
     dplyr::bind_rows(pah_lod)
 ```
 
-# SI 11: Fraction of measurements below limit of detection
+# SI 7: Fraction of measurements below limit of detection
 
-Fraction of measurements that were below the limit of detection (LOD) by smoke constituent. Refer to SI 11 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations).
-
-## SI 11.1: Wood stoves
+Fraction of measurements that were below the limit of detection (LOD) by smoke constituent. Refer to SI 6 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations). Pollutants not included in the table do not have any measurements below the LOD.
 
 ```{r}
   three_stone <-
@@ -790,7 +700,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Three-stone fire" = "all")
 
   mud_chulha <-
@@ -802,7 +712,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Mud chulha" = "all")
 
   rocket <-
@@ -814,7 +724,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Rocket elbow" = "all")
 
   plancha <-
@@ -826,7 +736,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Built-in plancha" = "all")
 
   fan_rocket <-
@@ -838,42 +748,9 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Fan rocket elbow" = "all")
-
-  three_stone %>%
-    dplyr::bind_cols(dplyr::select(mud_chulha, -pol)) %>%
-    dplyr::bind_cols(dplyr::select(rocket, -pol)) %>%
-    dplyr::bind_cols(dplyr::select(plancha, -pol)) %>%
-    dplyr::bind_cols(dplyr::select(fan_rocket, -pol)) %>%
-    dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
-                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
-                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
-                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
-      dplyr::rename(" " = "pol") %>%
-      kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
-            linesep = "") %>%
-      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-      column_spec(1, width = "12em")
-```
-
-\newpage
-
-## SI 11.2: Pellet, charcoal, and fossil-fuel stoves
-
-```{r}
+  
   gasifier <-
     emissions %>%
     dplyr::left_join(samples %>%
@@ -883,7 +760,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Gasifier" = "all")
 
   ceramic <-
@@ -895,7 +772,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Ceramic jiko" = "all")
 
   metal <-
@@ -907,7 +784,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Metal jiko" = "all")
 
   wick <-
@@ -919,7 +796,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Wick kerosene" = "all")
   
   pressure <-
@@ -931,9 +808,9 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Pressure kerosene" = "all")
-
+  
   lpg <-
     emissions %>%
       dplyr::left_join(samples %>%
@@ -943,35 +820,51 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, lod) %>%
     dplyr::summarise(all = sum(lod == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
+    #dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("LPG" = "all")
 
-    gasifier %>%
-      bind_cols(dplyr::select(ceramic, -pol)) %>%
-      bind_cols(dplyr::select(metal, -pol)) %>%
-      bind_cols(dplyr::select(wick, -pol)) %>%
-      bind_cols(dplyr::select(pressure, -pol)) %>%
-      bind_cols(dplyr::select(lpg, -pol)) %>%
-    dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
-                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
-                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
-                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+    three_stone %>%
+      dplyr::bind_cols(dplyr::select(mud_chulha, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(rocket, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(plancha, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(fan_rocket, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(gasifier, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(ceramic, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(metal, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(wick, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(pressure, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(lpg, -pol)) %>%
+      dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
+                    pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                    pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                    pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                    pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                    pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                    pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                    pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                    pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                    pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                    pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                    pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                    pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+    tidyr::gather("stove", "val", 2:ncol(.)) %>%
+    dplyr::filter(!is.na(val), val != 0) %>%
+    dplyr::mutate(val = format(round(val, digits = 2), nsmall = 2)) %>%
+    tidyr::spread("stove", "val") %>%
+    tidyr::gather("stove", "val", 2:ncol(.)) %>%
+    dplyr::mutate(val = ifelse(is.na(val), " ", val))%>%
+    tidyr::spread("stove", "val") %>%
+    dplyr::select("pol", "Three-stone fire", "Mud chulha", "Rocket elbow", "Built-in plancha",
+                  "Fan rocket elbow", "Gasifier", "Ceramic jiko", "Metal jiko", "Wick kerosene",
+                  "Pressure kerosene", "LPG") %>%
       dplyr::rename(" " = "pol") %>%
       kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
             linesep = "") %>%
-      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+      row_spec(0, angle = 90) %>%
+      kable_styling(latex_options = c("striped"), position = "center", font_size = 8.5) %>%
       column_spec(1, width = "12em")
 ```
 
@@ -987,11 +880,11 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
   
 ```
 
-# SI 12: Fraction of measurements below background
+\newpage
 
-Fraction of measurements that were below the study-averaged background by smoke constituent. Refer to SI 11 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations).
+# SI 8: Fraction of measurements below background
 
-## SI 12.1: Wood stoves
+Fraction of measurements that were below the study-averaged background by smoke constituent. Refer to SI 6 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations). Pollutants not included in the table do not have any measurements below the study-averaged background.
 
 ```{r}
   three_stone <-
@@ -1003,7 +896,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Three-stone fire" = "all")
 
   mud_chulha <-
@@ -1015,7 +907,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Mud chulha" = "all")
 
   rocket <-
@@ -1027,7 +918,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Rocket elbow" = "all")
 
   plancha <-
@@ -1039,7 +929,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Built-in plancha" = "all")
 
   fan_rocket <-
@@ -1051,42 +940,8 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Fan rocket elbow" = "all")
 
-  three_stone %>%
-    bind_cols(dplyr::select(mud_chulha, -pol)) %>%
-    bind_cols(dplyr::select(rocket, -pol)) %>%
-    bind_cols(dplyr::select(plancha, -pol)) %>%
-    bind_cols(dplyr::select(fan_rocket, -pol)) %>%
-    dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
-                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
-                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
-                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
-      dplyr::rename(" " = "pol") %>%
-      kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
-            linesep = "") %>%
-      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-      column_spec(1, width = "12em")
-```
-
-\newpage
-
-## SI 12.2: Pellet, charcoal, and fossil-fuel stoves
-
-```{r}
   gasifier <-
     emissions %>%
       dplyr::left_join(samples %>%
@@ -1096,7 +951,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Gasifier" = "all")
 
   ceramic <-
@@ -1108,7 +962,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Ceramic jiko" = "all")
 
   metal <-
@@ -1120,7 +973,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Metal jiko" = "all")
 
   wick <-
@@ -1132,7 +984,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Wick kerosene" = "all")
   
   pressure <-
@@ -1144,7 +995,6 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("Pressure kerosene" = "all")
 
   lpg <-
@@ -1156,43 +1006,68 @@ Fraction of measurements that were below the study-averaged background by smoke 
     dplyr::group_by(pol) %>%
     dplyr::select(id, pol, bg) %>%
     dplyr::summarise(all = sum(bg == "below") / n()) %>%
-    dplyr::mutate(all = format(round(all, digits = 2), nsmall = 2)) %>%
     dplyr::rename("LPG" = "all")
 
-    gasifier %>%
-      bind_cols(dplyr::select(ceramic, -pol)) %>%
-      bind_cols(dplyr::select(metal, -pol)) %>%
-      bind_cols(dplyr::select(wick, -pol)) %>%
-      bind_cols(dplyr::select(pressure, -pol)) %>%
-      bind_cols(dplyr::select(lpg, -pol)) %>%
-    dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
-                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol = ifelse(grepl("^om$", pol), "organic matter", pol),
-                  pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
-                  pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
-      dplyr::rename(" " = "pol") %>%
+     three_stone %>%
+      dplyr::bind_cols(dplyr::select(mud_chulha, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(rocket, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(plancha, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(fan_rocket, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(gasifier, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(ceramic, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(metal, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(wick, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(pressure, -pol)) %>%
+      dplyr::bind_cols(dplyr::select(lpg, -pol)) %>%
+      dplyr::mutate(pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
+                    pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                    pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                    pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                    pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                    pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                    pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
+                    pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
+                    pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                    pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                    pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                    pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                    pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                    pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol)) %>%
+    tidyr::gather("stove", "val", 2:ncol(.)) %>%
+    dplyr::filter(!is.na(val), val != 0) %>%
+    dplyr::mutate(val = format(round(val, digits = 2), nsmall = 2)) %>%
+    tidyr::spread("stove", "val") %>%
+    tidyr::gather("stove", "val", 2:ncol(.)) %>%
+    dplyr::mutate(val = ifelse(is.na(val), " ", val))%>%
+    tidyr::spread("stove", "val") %>%
+    dplyr::select("pol", "Three-stone fire", "Mud chulha", "Rocket elbow", "Built-in plancha",
+                  "Fan rocket elbow", "Gasifier", "Ceramic jiko", "Metal jiko", "Wick kerosene",
+                  "Pressure kerosene", "LPG") %>%
+    dplyr::rename(" " = "pol") %>%
       kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
             linesep = "") %>%
-      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+      row_spec(0, angle = 90) %>%
+      kable_styling(latex_options = c("striped"), position = "center", font_size = 8.5) %>%
       column_spec(1, width = "12em")
 ```
 
 \newpage
 
-# SI 13: Fuel properties
+# SI 9: Particle-phase emissions mass balance
 
-Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany), proximate properties (Hazen Research Inc.; Golden, CO), and ultimate properties (Soil-Water-Plant laboratory at Colorado State University; Fort Collins, CO) of all fuels tested except the LPG. LPG properties were derived from the Phyllis database (https://phyllis.nl/). Fuel hydrogen contents from the Phyllis database (https://phyllis.nl/) and higher heating values (HHV) were used to calculate the lower heating values (LHV) of the fuels. Moisture content is reported on a wet basis, while all other measurements are reported on a dry basis. 
+PM$_{2.5}$ emission factors (EF) versus the sum of inorganic ions, elemental carbon, and organic matter. Error bars represent propagated uncertainty from the Sunset OCEC analyzer. The black line represent the equation $y = x$.
+
+```{r, echo=FALSE, out.width = '75%', fig.align="center"}
+  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
+```
+
+\newpage
+
+# SI 10: Fuel properties
+
+Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany), proximate properties (Hazen Research Inc.; Golden, CO), and ultimate properties (Soil-Water-Plant laboratory at Colorado State University; Fort Collins, CO) of all fuels tested except the LPG. LPG properties were derived from the Phyllis database (https://phyllis.nl/). Fuel hydrogen contents from the Phyllis database (https://phyllis.nl/) and higher heating values (HHV) were used to calculate the lower heating values (LHV) of the fuels. Moisture content is reported on a wet basis, while all other measurements are reported on a dry basis. (Note: Due to a sample shortage, measurements are missing for the eucalyptus pellet fuel.)
 
 ```{r, echo=FALSE}
   fuels %>%
@@ -1225,6 +1100,89 @@ Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany)
     kable_styling(latex_options = c("striped"), position = "center", font_size = 12) %>%
     footnote(general_title = "Notes: ", threeparttable = TRUE, escape = FALSE) %>%
     row_spec(0, angle = 90)
+```
+
+\newpage
+
+# SI 11: Fuel use by stove type
+
+Fuel use, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
+
+```{r}
+  fuel_burnt %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(fuel_mass = mean(mass_fuel_comb, na.rm = TRUE),
+                     min = min(mass_fuel_comb, na.rm = TRUE),
+                     max = max(mass_fuel_comb, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = fuel_mass)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      ylab("Fuel burned (grams)")
+```
+
+\newpage
+
+# SI 12: Emissions measurement duration by stove type
+
+Emissions measurement duration by stove type, where the mean and range are indicated by the point markers and lines, respectively. (Note: The range is smaller than the size of the marker for the pressure kerosene and LPG stoves.)
+
+```{r}
+  test_duration <-
+    times %>%
+      dplyr::filter(var == "sample" | var == "refuel_1" | var == "shutdown") %>%
+      dplyr::mutate(var = as.character(var),
+                    var = ifelse(var == "refuel_1", "sample", var)) %>%
+      tidyr::spread(var, value) %>%
+      dplyr::mutate(duration = (shutdown - sample) / 60)
+
+  test_duration %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::group_by(stove) %>%
+    dplyr::filter(!grepl("^27|^28|^29|^30", id)) %>%
+    dplyr::summarise(dur = mean(duration, na.rm = TRUE),
+                     min = min(duration, na.rm = TRUE),
+                     max = max(duration, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = dur)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      ylab("Test duration (minutes)")
+```
+
+\newpage
+
+# SI 13: Test-averaged firepower by stove type
+
+Average firepower, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively. The sample-averaged firepower was calculated using the average fuel burn rate (SI 11 & SI 12) and the lower heating value of the fuel (SI 10).
+
+```{r}
+  fuel_burnt %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::left_join(test_duration, by = "id") %>%
+    dplyr::mutate(fp = lhv * ((mass_fuel_comb / 1000) / (duration * 60))) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(firepower = mean(fp, na.rm = TRUE),
+                     min = min(fp, na.rm = TRUE),
+                     max = max(fp, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = firepower)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      ylab("Firepower (kilowatts)")
 ```
 
 \newpage
@@ -1268,4 +1226,3 @@ List of stove types that were excluded from the regression analysis by pollutant
       column_spec(1, width = "12em") %>%
       column_spec(2, width = "30em")
 ```
-
