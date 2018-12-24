@@ -139,7 +139,7 @@ The August-Roche-Magnus formula is only applicable over the range of -40 to 50 d
 # Relate EMC to PM2.5 emission factor
 
 ```{r}
-  mod_pm <- lm(1000*g_pol_mjd ~ mc_dry, 
+  mod_pm <- lm(1000*ef ~ mc_dry, 
                dplyr::filter(df_ef, pol=="grav", !is.na(mc_dry)))
   summary(mod_pm)
 ```
@@ -261,7 +261,7 @@ Create color scale.
 ### Carbon monoxide
 
 ```{r}
-  mod_co <- lm(1000*g_pol_mjd ~ mc_dry, 
+  mod_co <- lm(1000*ef ~ mc_dry, 
                dplyr::filter(df_ef, pol=="co", !is.na(mc_dry)))
   summary(mod_co)
 ```
@@ -278,7 +278,7 @@ Create color scale.
 ### Formaldehyde
 
 ```{r}
-  mod_ch2o <- lm(1000*g_pol_mjd ~ mc_dry, 
+  mod_ch2o <- lm(1000*ef ~ mc_dry, 
                  dplyr::filter(df_ef, pol=="formaldehyde", !is.na(mc_dry)))
   summary(mod_ch2o)
 ```
@@ -295,7 +295,7 @@ Create color scale.
 ### Benzene
 
 ```{r}
-  mod_bz <- lm(1000*g_pol_mjd ~ mc_dry, 
+  mod_bz <- lm(1000*ef ~ mc_dry, 
                dplyr::filter(df_ef, pol=="benzene", !is.na(mc_dry)))
   summary(mod_bz)
 ```
