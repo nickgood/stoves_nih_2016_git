@@ -1,0 +1,145 @@
+---
+title: "Test Metadata"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE)
+```
+
+```{r load_libraries, echo=FALSE, include=FALSE}
+  library(tidyverse)
+  library(gridExtra)
+```
+
+```{r}
+  source("../r_scripts/R_functions.R")
+```  
+ 
+# Load data
+
+```{r load_files}
+  test_log   <- readRDS("../r_files/mc_test_log.RDS")
+  fuel       <- readRDS("../r_files/data_fuel_prep.RDS")
+```
+
+# Sample data
+
+```{r}
+  samples <- test_log %>%
+             dplyr::select(id, date, stove, fuel, notes) %>%
+             dplyr::mutate(type = ifelse(substr(id,1,1)=="L",  "Milled", "Split"),
+                           type = ifelse(substr(id,1,2)=="BG", NA, type),
+                           type = as.factor(type), 
+                           mc_level = ifelse(grepl("^LL|^FL", id), "Low", "Medium"),
+                           mc_level = ifelse(grepl("^LH|^FH", id), "High", mc_level),
+                           mc_level = ifelse(grepl("^B", id), NA, mc_level),
+                           mc_level = as.factor(mc_level),
+                           mc_level = forcats::fct_relevel(mc_level,"High","Medium","Low"))
+```
+
+Plot test IDs:
+
+```{r, echo=FALSE, fig.width=7, fig.height=3.15, fig.align='center'}
+  test_list <- samples %>%
+               dplyr::group_by(mc_level, type) %>%
+               dplyr::summarise(id = paste(id, collapse = ", "))
+
+  ggplot(test_list, aes(x = type, y = mc_level)) + 
+    geom_tile(colour = "white", width = 0.98, height = 0.9, aes(fill = id)) +
+    geom_text(aes(label = id), size = 3) + 
+    scale_fill_discrete(na.value = 'grey95') +
+    xlab("Fuel shape") + 
+    ylab("Fuel moisture level") + 
+    theme_bw() + 
+    theme(aspect.ratio = 0.41,
+          legend.position = "none", 
+          text = element_text(size = 10))
+    
+```
+
+* The `r samples$stove[1]` stove was tested with `r samples$fuel[1]` fuel.  
+* A total of `r nrow(samples)` tests were completed.   
+* `r nrow(dplyr::filter(samples, type=="Milled"))` tests were conducted with milled fuel.   
+* `r nrow(dplyr::filter(samples, type=="Split"))` tests were conducted with split fuel.  
+* `r nrow(dplyr::filter(samples, is.na(type)))` background tests were conducted.  
+* The tests were conducted between `r min(samples$date)` and `r max(samples$date)`.  
+
+# Fuel weights
+
+Remove moisture contents that were calculated in Excel and recalculate.
+
+```{r}
+  # Remove values that were calculated in Excel
+  df_fuel_prep <- dplyr::select(fuel, id, date, mc_target, order,
+                                      mass_kiln_pre, mass_kiln_post, 
+                                      mass_start, mass_wet, mass_end) %>%
+
+    # Calculate:
+    # 1. The moisture content of the reference piece of fuel (on a dry mass basis).  
+    # 2. The dry weight of the test fuel.  
+    # 3. The actual moisture content of the test fuel (on a dry mass basis). 
+    dplyr::mutate(kiln_mc  = (mass_kiln_pre - mass_kiln_post)/mass_kiln_post, # dry basis
+                  mass_dry = mass_start/(kiln_mc + 1),
+                  mc_dry   = 100*(mass_end - mass_dry)/mass_dry) %>% # dry basis
+  
+    # Removed FH2 rep 3 because the fuel was not burned
+    dplyr::filter((id=="FH2" & order==3) == FALSE)
+
+  saveRDS(df_fuel_prep, "../r_files/data_fuel_prep_clean.RDS")
+```
+
+Add moisture content data to sample data and save.
+
+```{r}
+  
+  df_mc <- dplyr::group_by(df_fuel_prep, id) %>%
+           dplyr::summarise(mc_target = mean(mc_target),
+                            mc_dry    = mean(mc_dry)) 
+  
+  samples <- dplyr::left_join(samples, df_mc, by=c("id")) %>%
+             dplyr::mutate(mc_target = as.factor(mc_target),
+                           fuel      = ifelse(type=="bg", NA, as.character(fuel))) %>%
+             dplyr::select(id, date, stove, fuel, type, mc_level, mc_target, mc_dry, notes)
+
+  saveRDS(samples, "../r_files/samples.RDS")
+```
+
+Select only fuel mass data, sum masses over the test, and plot. 
+
+```{r, echo=FALSE, warning=FALSE, fig.width=7, fig.height=5.5, fig.align='center'}
+
+  p_data <- dplyr::select(df_fuel_prep, id, order, starts_with("mass"))            %>%
+            dplyr::select(-mass_wet, -mass_kiln_pre, -mass_kiln_post, -mass_start) %>%
+            dplyr::group_by(id)                                                    %>%
+            dplyr::summarise_at(vars(starts_with("mass")), funs(sum, first))       %>%
+            tidyr::gather("var", "val", 2:5)                                       %>%
+            dplyr::left_join(samples, by=c("id"))                                  %>%
+            dplyr::filter(!is.na(val))                                             %>%
+            dplyr::group_by(var, mc_target)                                        %>%
+            dplyr::mutate(value_norm = (val - mean(val)) / sd(val),
+                          outlier = ifelse(is_outlier(val), as.character(id), NA))
+
+  p_hist <- ggplot(p_data, aes(x = val, fill = mc_target)) +
+              geom_histogram(binwidth = 5, alpha = 0.5, color = "black") +
+              facet_grid(~var, scales = "free") + 
+              xlab("mass (g)") + 
+              theme_bw()
+              theme(aspect.ratio = 1, 
+                    text = element_text(size = 10))
+
+  p_box <- ggplot(p_data, aes(x = var, y = value_norm)) +
+             geom_boxplot() +
+             geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+             facet_grid(~mc_target) + 
+             xlab("") + 
+             ylab("z score normalized value") +
+             theme_bw() +
+             theme(axis.text.x = element_text(size = 10, angle = 45, hjust=1))
+  
+  grid.arrange(p_hist, p_box, ncol = 1)
+```

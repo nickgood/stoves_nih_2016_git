@@ -1,6 +1,6 @@
 ---
 title: "Fivegas Data Processing"
-date: "December 11, 2018"
+date: "December 21, 2018"
 output:
   html_document:
     toc: true
@@ -14,8 +14,7 @@ output:
 ```
 
 ```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE,
-                        fig.width=10, fig.height = 4, cache = FALSE)
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE)
 ```
 
 ```{r}
@@ -28,13 +27,20 @@ output:
 Test metadata:
 
 ```{r}
-  samples <- readRDS("../r_files/samples.RDS")
+  samples    <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
 ```
 
 Five gas data logged in ppm units:
 
 ```{r}
   fivegas <- readRDS("../r_files/fivegas.RDS")
+```
+
+Constants:
+
+```{r}
+  pol_properties <- readRDS("../r_files/pol_properties.RDS")
 ```
 
 # Reformat data
@@ -60,59 +66,15 @@ Remove NO~x~ and oxygen rows (these channels were not used during the study)
  fivegas_merged <- dplyr::filter(fivegas_merged, pol != "nox", pol != "o2")
 ```
 
-# QC
+The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no fivegas data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.  
 
-Extract notes relevant to the five gas analyzer.
-
-```{r}
-  # notes <- dplyr::filter(notes, grepl("fivegas|all", notes$inst) == TRUE)
-```
-
-Flag bad data from notes and plots.
-
-```{r}
-  # notes$qc[] <- "ok"
-```
-
-Make one flag per test precidented from bad to ok.
-
-```{r}
-  # flags <- dplyr::select(notes, id, qc) %>%
-  #          dplyr::group_by(id) %>%
-  #          dplyr::arrange(qc) %>%
-  #          dplyr::summarise(qc = first(qc))
-```
-
-Merge with data
-
-```{r}
-  # fivegas_merged <- dplyr::left_join(fivegas_merged, flags, by = "id") %>%
-  #                   dplyr::mutate(id = as.factor(id),
-  #                                 qc = as.factor(ifelse(is.na(qc),
-  #                                                "ok", as.character(qc))))
-
-```
-
-Additional bad tests
-
-```{r}
-  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
-  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
-  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
-  # fivegas_merged$qc[fivegas_merged$id == ""] <- "bad"
-```
-
-# Save merged file
+Save the data.  
 
 ```{r}
   saveRDS(fivegas_merged, file = "../r_files/fivegas_merged.RDS")
 ```
 
-# Summary
-
-The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no fivegas data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.
-
-# Plot the data
+# Plot data
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width=6.5, fig.height=16, fig.align='center'}
   
@@ -149,4 +111,200 @@ The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` exper
           axis.title = element_text(size=10, color='black'),
           axis.ticks = element_line(color='black'),
           legend.position = "top") 
+```
+
+# Background
+
+### Get start and end times
+
+1. Select the background start and end times.  
+2. Trim the first and last minute.  
+
+```{r}
+  times_pre <- dplyr::filter(test_times,
+                             var == "bg_pre_start_fivegas" | var == "bg_pre_end_fivegas") %>%
+               tidyr::spread(var, value) %>%
+               dplyr::rename(start = bg_pre_start_fivegas,
+                             end   = bg_pre_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end   = end   - 60) %>%
+               dplyr::select(id, start, end)
+
+  times_post <- dplyr::filter(test_times,
+                             var == "bg_post_start_fivegas" | var == "bg_post_end_fivegas") %>%
+               tidyr::spread(var, value) %>%
+               dplyr::rename(start = bg_post_start_fivegas,
+                             end   = bg_post_end_fivegas) %>%
+               dplyr::mutate(start = start + 60,
+                             end   = end   - 60) %>%
+               dplyr::select(id, start, end)
+```
+
+### Filter the data
+
+```{r}
+  df_pre <- filter_times(times_pre, fivegas_merged)
+  df_pre <- dplyr::mutate(df_pre, type = "pre")
+
+  df_post <- filter_times(times_post, fivegas_merged)
+  df_post <- dplyr::mutate(df_post, type = "post")
+```
+
+### Calculate mean concentrations
+
+Calculate the mean background concentration (for each pollutant for each test) in ppmv and $\mu$g/m^3^:  
+
+1. Combine pre- and post-test background data.  
+2. Average background mixing ratios over pre- and post-test background samples.  
+3. Average pre- and post-test average mixing ratios.  
+4. Convert background mixing ratios (ppmv) to mass concentrations ($\mu$g/m^3^)
+
+```{r}
+  df_bg <- dplyr::bind_rows(df_pre, df_post) %>% # 1
+           dplyr::group_by(pol, id, type)    %>% 
+           dplyr::summarise(ppm_bg = mean(ppm, na.rm = TRUE))    %>% # 2
+           dplyr::summarise(ppm_bg = mean(ppm_bg, na.rm = TRUE)) %>% # 3
+           dplyr::left_join(pol_properties, by=c("pol"))         %>% # 4
+           dplyr::mutate(conc_bg = convert_ppmv_ugpmc(ppm_bg, mw, 25, 84)) # ug/m3
+```
+
+```{r}
+  saveRDS(df_bg, file = "../r_files/fivegas_background.RDS")
+```
+
+### QC plots
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.15, fig.align='center'}
+
+  p_data <- dplyr::group_by(df_bg, pol) %>%
+            dplyr::mutate(value_norm = (conc_bg - mean(conc_bg)) / sd(conc_bg),
+                          outlier = ifelse(is_outlier(conc_bg), as.character(id), NA))
+
+  ggplot(p_data, aes(x = pol, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-3,3)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         xlab("") + 
+         ylab("z score normalized value") +
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text   = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"))
+```
+
+```{r, fig.width=7.0, fig.height=8, fig.align='center'}
+  
+  p_data <- dplyr::bind_rows(df_pre, df_post) %>% 
+            dplyr::group_by(pol, id, type)    %>% 
+            dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
+            dplyr::ungroup() %>%
+            dplyr::mutate(pol  = forcats::fct_relevel(pol,"co2","co","ch4"),
+                          type = forcats::fct_relevel(type,"pre","post"))
+
+  ggplot(p_data, aes(x=id, y=ppm, colour=type)) +
+        geom_point() +
+        facet_wrap(~pol, ncol=1, scales="free_y") +
+        xlab("") + 
+        ylab("Background mixing ratio (ppmv)") + 
+        theme(aspect.ratio = 0.35,
+              panel.border = element_rect(fill=NA, color="black"),
+              panel.background = element_rect(fill="white"),
+              panel.grid.major = element_line(color="gray95"),
+              panel.grid.minor = element_line(color="gray95"),
+              axis.ticks  = element_line(color="black"),
+              axis.text.x = element_text(size=8, color="black"),
+              axis.text.y = element_text(size=9, color="black"),
+              axis.title  = element_text(size=9, color="black"),
+              legend.text = element_text(size=9, color="black"),
+              legend.title = element_text(size=9, color="black"),
+              legend.position = c(0.92,0.94))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=11.5, eval=TRUE}
+  p_data <- dplyr::bind_rows(df_pre, df_post) %>% 
+            dplyr::mutate(type = forcats::fct_relevel(type,"pre","post"))
+
+  ggplot(dplyr::filter(p_data, pol=="co2"), 
+         aes(datetime, ppm, colour = type, group = type)) + 
+    geom_line() +
+    scale_colour_manual(values = c("pre" = "mediumaquamarine",
+                                   "post" = "mistyrose4")) +
+    facet_wrap(~id, ncol=4, scale="free_x") +
+    xlab("") +
+    ylab("Background mixing ratio (ppmv)") + 
+    ggtitle("CO2") + 
+    theme(aspect.ratio = 1,
+              panel.border = element_rect(fill=NA, color="black"),
+              panel.background = element_rect(fill="white"),
+              panel.grid.major = element_line(color="gray95"),
+              panel.grid.minor = element_line(color="gray95"),
+              axis.ticks  = element_line(color="black"),
+              axis.text.x = element_text(size=6, color="black"),
+              axis.text.y = element_text(size=9, color="black"),
+              axis.title  = element_text(size=9, color="black"),
+              legend.text = element_text(size=9, color="black"),
+              legend.title = element_text(size=9, color="black"),
+              legend.position = "none",
+              plot.title = element_text(size=9, color="black"))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=12.5, eval=TRUE}
+  p_data <- dplyr::bind_rows(df_pre, df_post) %>% 
+            dplyr::mutate(type = forcats::fct_relevel(type,"pre","post"))
+
+  ggplot(dplyr::filter(p_data, pol=="co"), 
+         aes(datetime, ppm, colour = type, group = type)) + 
+    geom_line() +
+    scale_colour_manual(values = c("pre" = "mediumaquamarine",
+                                   "post" = "mistyrose4")) +
+    facet_wrap(~id, ncol=4, scale="free_x") +
+    xlab("") +
+    ylab("Background mixing ratio (ppmv)") + 
+    ggtitle("CO") + 
+    theme(aspect.ratio = 1,
+              panel.border = element_rect(fill=NA, color="black"),
+              panel.background = element_rect(fill="white"),
+              panel.grid.major = element_line(color="gray95"),
+              panel.grid.minor = element_line(color="gray95"),
+              axis.ticks  = element_line(color="black"),
+              axis.text.x = element_text(size=6, color="black"),
+              axis.text.y = element_text(size=9, color="black"),
+              axis.title  = element_text(size=9, color="black"),
+              legend.text = element_text(size=9, color="black"),
+              legend.title = element_text(size=9, color="black"),
+              legend.position = "none",
+              plot.title = element_text(size=9, color="black"))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=11.5, eval=TRUE}
+  p_data <- dplyr::bind_rows(df_pre, df_post) %>% 
+            dplyr::mutate(type = forcats::fct_relevel(type,"pre","post"))
+
+  ggplot(dplyr::filter(p_data, pol=="ch4"), 
+         aes(datetime, ppm, colour = type, group = type)) + 
+    geom_line() +
+    scale_colour_manual(values = c("pre" = "mediumaquamarine",
+                                   "post" = "mistyrose4")) +
+    facet_wrap(~id, ncol=4, scale="free_x") +
+    xlab("") +
+    ylab("Background mixing ratio (ppmv)") + 
+    ggtitle("CH4") + 
+    theme(aspect.ratio = 1,
+              panel.border = element_rect(fill=NA, color="black"),
+              panel.background = element_rect(fill="white"),
+              panel.grid.major = element_line(color="gray95"),
+              panel.grid.minor = element_line(color="gray95"),
+              axis.ticks  = element_line(color="black"),
+              axis.text.x = element_text(size=6, color="black"),
+              axis.text.y = element_text(size=9, color="black"),
+              axis.title  = element_text(size=9, color="black"),
+              legend.text = element_text(size=9, color="black"),
+              legend.title = element_text(size=9, color="black"),
+              legend.position = "none",
+              plot.title = element_text(size=9, color="black"))
 ```

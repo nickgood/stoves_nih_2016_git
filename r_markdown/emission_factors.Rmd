@@ -27,31 +27,24 @@ output:
 
 # Load
 
-* sample info
+Test metadata: 
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
 ```
 
-* emissions
-
-```{r}
-  emissions_long <- readRDS("../r_files/emissions_long.RDS")
-  grav           <- readRDS("../r_files/grav_merged.RDS")
-  pol_properties <- readRDS("../r_files/pol_properties.RDS")
-```
-
-* hood flow
+Constants: 
 
 ```{r}
   hood_flow <- readRDS("../r_files/hood_flow.RDS")
+  pol_properties  <- readRDS("../r_files/pol_properties.RDS")
+  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
 ```
 
-* fuel information
+Emissions
 
 ```{r}
-  fuel_properties <- readRDS("../r_files/fuel_properties.RDS")
-  fuel_prep_clean <- readRDS("../r_files/fuel_prep_clean.RDS")
+  emissions_long <- readRDS("../r_files/emissions_long.RDS")
 ```
 
 # Caclulate mass of fuel burned
@@ -72,15 +65,27 @@ Calculate the dry mass of fuel burned from the mass of carbon measured as CO~2~,
 
 # Calculate emission factors
 
-Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `value` has units of micrograms and `m_fuel_dry` has units of grams.  
+Calculate the mass of pollutant emitted per mass of fuel burned.  Note that `value` has units of micrograms (for mass emitted) or number (for number emitted).  Note that `m_fuel_dry` has units of grams.  
+
+1. Select the `mass_emitted` and `num_emitted` metrics for actual tests.  
+2. Add the mass of dry fuel burned to the dataframe.  
+3. Calculate the emission factors as $\mu$g/g or number/g.  
+4. Convert mass-based emission factors to g/MJ~d~.  
+5. Convert number-based emission factors to number/kg.  
+6. Add a column with units.  
  
 ```{r}
 
-  df_ef <- dplyr::left_join(dplyr::filter(emissions_long, metric == "mass_emitted"), 
-                            dplyr::select(df_fuel, id, m_fuel_dry), by =c("id")) %>%
-           plyr::rename(c("value"="mass_emitted"))                               %>% # g
-           dplyr::mutate(g_pol_kg_fuel = ((1e-3) * mass_emitted / m_fuel_dry))   %>% # g/kg
-           dplyr::select(-metric)
+  df_ef <- dplyr::filter(emissions_long, metric %in% c("mass_emitted", # 1
+                                                       "num_emitted"),
+                                         !grepl("^BG|G", id)) %>%
+           dplyr::left_join(dplyr::select(df_fuel, id, m_fuel_dry), by =c("id")) %>% # 2
+           dplyr::mutate(ef = value / m_fuel_dry, # ug/g or number/g     3
+                         ef = ifelse(metric == "mass_emitted",         # 4, 5
+                                     ef * (1e-3), ef * (1e3)), # g/kg or number/kg
+                         units = ifelse(metric == "mass_emitted",      # 6
+                                       "g_pol_kg_fuel", "num_kg_fuel")) %>%
+           dplyr::select(-metric, -value)
 ```
 
 Add test metadata.
@@ -90,19 +95,17 @@ Add test metadata.
   # Add metadata to data frame
   df_ef <- dplyr::left_join(df_ef, dplyr::select(samples, id, type, mc_level, mc_dry),
                             by=c("id")) %>% 
-           dplyr::mutate(type     = forcats::fct_recode(type, "Split"   = "field",
-                                                              "Milled"  = "lab"),
-                         mc_level = forcats::fct_relevel(mc_level, "low","med","high"),
-                         id       = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
+           dplyr::ungroup() %>%
+           dplyr::mutate(id       = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
                                                              "FM1", "FM2", "FM3", "FM4",
                                                              "FH1", "FH2", "FH3", "FH4",
                                                              "LL1", "LL2", "LL3", "LL4",
                                                              "LM1", "LM2", "LM3", "LM4",
                                                              "LH1", "LH2", "LH3","LH4"),
-                         fuel_shape_mc = paste(type, mc_level, sep="_")) %>%
+                         fuel_mc_shape = paste(type, mc_level, sep="_")) %>%
     
-          dplyr::filter(type != "bg", # remove background tests
-                        id   != "FH2")
+          dplyr::filter(!is.na(type), # remove background tests
+                        id != "FH2")
 ```
 
 Save the data.
@@ -122,12 +125,13 @@ Save the data.
              tidyr::spread(pol, value) %>%
              dplyr::mutate(ratio = ec / oc) %>%
              dplyr::left_join(dplyr::select(samples, id, type, mc_level, mc_dry), by=c("id")) %>%
-             dplyr::mutate(type     = forcats::fct_recode(type, "Split"  = "field",
-                                                                 "Milled" = "lab"),
-                           mc_level = forcats::fct_relevel(mc_level, "low","med","high"),
-                           fuel_shape_mc = paste(type, mc_level, sep = "_")) %>%
+             dplyr::mutate(fuel_mc_shape = paste(mc_level, type, sep = "_")) %>%
              dplyr::filter(type != "bg",
                            id   != "FH2") 
+  
+  df_ecoc_summary <- dplyr::group_by(df_ecoc, group_by=mc_level) %>%
+                     dplyr::summarise(ratio_mean = mean(ratio))
+  df_ecoc_summary  
 ```
 
 # Plot results
@@ -158,7 +162,7 @@ Save the data.
                                              "benzene", "toluene", "ethylbenzene",
                                              "m+p-xylene", "o-xylene"))
 
-  ggplot(df_plot, aes(id, g_pol_kg_fuel, color=pol)) +
+  ggplot(df_plot, aes(id, ef, color=pol)) +
     geom_point(size = 3) +
     xlab("Test ID") + 
     ylab(expression(Emission ~ factor ~ "(" * g ~ kg^-1*")")) + 
@@ -186,12 +190,12 @@ Save the data.
                                                             "grav","ec","oc")))
 
   # dummy data used to ensure that y-axis goes to zero on all panels except CO, PM, and CH4
-  df_dummy <- data.frame(pol=levels(df_ef_subset$pol),
-                         mc_dry=c(5),
-                         g_pol_kg_fuel=c(1740,10,1.4,0.9,0,0),
-                         type=c("Milled"))
+  df_dummy <- data.frame(pol    = levels(df_ef_subset$pol),
+                         mc_dry = c(5),
+                         ef     = c(1820,10,4,0.9,0,0),
+                         type   = c("Milled"))
 
-  ggplot(df_ef_subset, aes(x=mc_dry, y=g_pol_kg_fuel, shape=type, color=pol)) +
+  ggplot(df_ef_subset, aes(x=mc_dry, y=ef, shape=type, color=pol)) +
       facet_wrap(~pol, ncol=3, scales="free_y") + 
       # add data
       geom_point(size=2, alpha=0.7) +
@@ -203,11 +207,11 @@ Save the data.
       ylab(expression(Emission ~ factor ~ "(" * g ~ kg^-1*")")) + 
       scale_color_manual(values = c("black", pink2, purple, gold, teal1, teal2)) +
       # label panels
-      geom_text(aes(label="CO[2]",   x=30, y=1740), data=subset(df_ef_subset, pol=="co2"),
+      geom_text(aes(label="CO[2]",   x=30, y=1820), data=subset(df_ef_subset, pol=="co2"),
                 color="black", hjust="right", vjust="bottom", size=3.5, parse=TRUE) +
       geom_text(aes(label="CO",      x=30, y=10),   data=subset(df_ef_subset, pol=="co"),
               color="black", hjust="right", vjust="bottom", size=3.5) +
-      geom_text(aes(label="CH[4]",   x=30, y= 1.4), data=subset(df_ef_subset, pol=="ch4"),
+      geom_text(aes(label="CH[4]",   x=30, y= 1.1), data=subset(df_ef_subset, pol=="ch4"),
                 color="black", hjust="right", vjust="bottom", size=3.5, parse=TRUE) +
       geom_text(aes(label="PM[2.5]", x=30, y= 0.9), data=subset(df_ef_subset, pol=="grav"),
                 color="black", hjust="right", vjust="bottom", size=3.5, parse=TRUE) +
@@ -241,7 +245,7 @@ Save the data.
                                  pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
 
   ggplot(df_ef_subset, 
-         aes(x=mc_dry, y=g_pol_kg_fuel, shape=type)) +
+         aes(x=mc_dry, y=ef, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
          facet_wrap(~pol, scales="free_y", ncol=3) +
          # format plot
@@ -279,7 +283,7 @@ Save the data.
                                                                    "Milled" = "lab"))
 
   ggplot(df_ef_subset, 
-         aes(x=mc_dry, y=g_pol_kg_fuel, shape=type)) +
+         aes(x=mc_dry, y=ef, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
          facet_wrap(~pol, scales="free_y", ncol=3) +
          # format plot
@@ -306,6 +310,33 @@ Save the data.
                legend.position = "none")
   
   ggsave(filename="../figures/voc_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.5)
+```
+
+
+```{r, fig.width=3.15, fig.height=2.8, fig.align='center'}
+
+  ggplot(dplyr::filter(df_ef, pol=="ultrafines"), 
+         aes(x=mc_dry, y=ef, shape=type)) +
+      geom_point(size=3, alpha=0.7) +
+      coord_cartesian(xlim=c(4,30), ylim=c(0,2.5e16)) + 
+      scale_x_continuous(breaks=seq(5,30,10)) + 
+      #scale_y_continuous(breaks=seq(0.1,1.0,0.1)) + 
+      xlab("Moisture content (%)") + 
+      ylab(expression(Ultrafine ~ particles ~ "(" * "#" ~ kg^-1*")")) + 
+      labs(shape = "Fuel shape") + 
+      theme(aspect.ratio=1,
+            panel.border     = element_rect(fill=NA),
+            panel.background = element_rect(fill='white'),
+            axis.text  = element_text(size=10, color='black'),
+            axis.title = element_text(size=10, color='black'),
+            axis.ticks = element_line(color='black'),
+            legend.text  = element_text(size=10, color='black'),
+            legend.title = element_text(size=10, color='black'),
+            legend.key   = element_blank(),
+            legend.box.background = element_rect(color="black", size=0.6),
+            legend.position = c(0.79,0.215)) 
+
+  ggsave(filename="../figures/ufp_fuel.pdf", plot=last_plot(), device="pdf", width=3.15, height=2.8)
 ```
 
 ```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
@@ -342,113 +373,121 @@ Save the data.
 ### Between different fuel moisture levels and shapes
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="co2")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="co2")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="co")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="co")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ch4")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ch4")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="grav")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="grav")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ec")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ultrafines")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="oc")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ec")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="acetaldehyde")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="oc")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="formaldehyde")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="acetaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="benzene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="formaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="toluene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="benzene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ethylbenzene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="toluene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="m+p-xylene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ethylbenzene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="o-xylene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="m+p-xylene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(ratio ~ fuel_shape_mc, df_ecoc))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="o-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(ratio ~ fuel_mc_shape, df_ecoc))
 ```
 
 ### Between different fuel moisture levels
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="co2")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="co2")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="co")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="co")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ultrafines")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="toluene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="ethylbenzene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="toluene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="m+p-xylene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ethylbenzene")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_kg_fuel ~ mc_level, dplyr::filter(df_ef, pol=="o-xylene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="m+p-xylene")))
+```
+
+```{r}
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="o-xylene")))
 ```
 
 ```{r}
@@ -467,8 +506,8 @@ Save the data.
                                                        "benzene", "toluene", "ethylbenzene",
                                                        "m+p-xylene", "o-xylene"))) %>%
               group_by(pol, mc_level) %>%
-              summarise(mean   = mean(g_pol_kg_fuel),
-                        sd     = sd(g_pol_kg_fuel))
+              summarise(mean   = mean(ef),
+                        sd     = sd(ef))
 ```
 
 ```{r, echo=FALSE}

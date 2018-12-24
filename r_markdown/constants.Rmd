@@ -1,5 +1,6 @@
 ---
 title: "Constants"
+date: "December 21, 2018"
 output:
   html_document:
     toc: true
@@ -33,29 +34,15 @@ output:
 
 # Fuel properties
 
+Properties of Douglas Fir are from [Tryner et al., 2016](dx.doi.org/10.1021/acs.est.6b00440)
+
 ```{r}
-  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir",
-                                                 "Eucalyptus",
-                                                 "Oak",
-                                                 "Coconut Charcoal",
-                                                 "Lump Hardwood (Med.)",
-                                                 "Lump Hardwood (Sm.)",
-                                                 "Eucalyptus Pellets",
-                                                 "West Slope Pellets",
-                                                 "Kerosene",
-                                                 "Liquefied Petroleum Gas"),
-                                         lhv = c(18658, 19427, 18658, 16628,
-                                                 28611, 28611, 17501, 17501,
-                                                 43100, 46100),  # kJ/kg
-                                         carbon_fraction = c(0.497733333, 0.521166667,
-                                                             0.5, 0.488, 0.840833333,
-                                                             0.840833333, 0.4852,
-                                                             0.4852, 0.82, 0.82))  # kg_C/kg_fuel
+  fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir"),
+                                        lhv  = c(19320),              # kJ/kg, dry basis
+                                        carbon_fraction = c(0.5217))  # kg_C/kg_fuel, dry basis
 
   saveRDS(fuel_properties, file = "../r_files/fuel_properties.RDS")
 ```
-
-# Molecular formula and weight 
 
 # Molecular formula and weight 
 
@@ -177,7 +164,7 @@ output:
   pol_properties <- dplyr::mutate(pol_properties, mw = calc_mw(pol_properties)) %>%
                     dplyr::select(pol, mw, num_c)
 
-  mw_c <- 12.0106
+  mw_c <- 12.0106 # g/mol
 ```
 
 ```{r}
@@ -188,9 +175,9 @@ output:
 # Instrument specific
 
 ```{r}
-  filter_area <- 11.79  # cm^2
-  voc_flow <- 0.0135  # L/min
-  smps_dlogdp <- 0.015625355  # dlogDp
+  filter_area <- 11.79       # cm^2
+  voc_flow    <- 0.0135      # L/min
+  smps_dlogdp <- 0.015625355 # dlogDp
 
   saveRDS(filter_area, file = "../r_files/filter_area.RDS")
   saveRDS(voc_flow, file = "../r_files/voc_flow.RDS")
@@ -201,8 +188,8 @@ output:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   hfg_water <- 2257  # J/g
-  c_water <- 4.186  # J/g C
-  R <- 8.314  # J/K mol
+  c_water   <- 4.186 # J/g C
+  R         <- 8.314 # J/K mol
 
   saveRDS(hfg_water, file = "../r_files/hfg_water.RDS")
   saveRDS(c_water, file = "../r_files/c_water.RDS")

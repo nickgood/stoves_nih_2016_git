@@ -42,31 +42,45 @@ tidy_date <- function(df, regex, namesub){
 #________________________________________________________
 
 #________________________________________________________
+# smps, iso, carb
+split_flows <- function(df){
+  # split variable
+  out <- dplyr::mutate(df, type = sub("flow.*", "", df$var),
+                           rep  = as.integer(gsub("[^0-9]", "", df$var))) %>%
+    dplyr::select(-var)
+  
+  # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
+# filter flows
+split_filter_flows <- function(df){
+  # split variable
+  out <- dplyr::mutate(df, type   = sub("flow.*", "", var), 
+                           colour = gsub("[^_]*_[^_]*_|_[^_]*$", "", var),
+                           rep    = as.integer(gsub("[^0-9]", "", var))) %>%
+    dplyr::select(-var)
+  
+  # return
+  return(out)
+}
+#________________________________________________________
+
+#________________________________________________________
 # pax
 split_pax_flows <- function(df){
  # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("flow.*", "", df$var)), 
-                           loc=as.factor(ifelse(grepl("paxexit", df$var), "exit", "inlet")),
-                           rep=as.factor(gsub("[^0-9]", "", df$var)))
+  out <- dplyr::mutate(df, type = sub("flow.*", "", df$var), 
+                           loc  = ifelse(grepl("exit", df$var), "exit", "inlet"),
+                           rep  = as.integer(gsub("[^0-9]", "", df$var)))
 
  # drop original variable      
   out <- dplyr::select(out, -var)
  
  # return
     return(out)
-}
-#________________________________________________________
-
-#________________________________________________________
-# smps, iso, carb
-split_flows <- function(df){
- # split variable
-  out <- dplyr::mutate(df, type=as.factor(sub("flow.*", "", df$var)),
-                           rep=as.factor(gsub("[^0-9]", "", df$var))) %>%
-         dplyr::select(-var)
-
- # return
-  return(out)
 }
 #________________________________________________________
 
@@ -111,20 +125,6 @@ split_co2_cal <- function(df){
 #________________________________________________________
 
 #________________________________________________________
-# filter flows
-split_filter_flows <- function(df){
- # split variable
-  out <- dplyr::mutate(df, type = as.factor(sub("flow.*", "", var)), 
-                           colour = as.factor(gsub("[^_]*_[^_]*_|_[^_]*$", "", var)),
-                           rep = as.factor(gsub("[^0-9]", "", var))) %>%
-          dplyr::select(-var)
-
- # return
-  return(out)
-}
-#________________________________________________________
-
-#________________________________________________________
 # filter times
 split_filter_times <- function(df){
  # split variable
@@ -160,20 +160,20 @@ map_id <- function(df, test_times){
   
   for(i in 1:nrow(test_times)){
     # extract data for time period
-      tmp <- dplyr::filter(df, (df$date == test_times$date[i] & df$time >= test_times$start[i] & df$time <= test_times$end[i]))
+      tmp <- dplyr::filter(df, date == test_times$date[i],
+                               time >= test_times$start[i],
+                               df$time <= test_times$end[i]) %>%
+             dplyr::mutate(id = test_times$id[i])
       
     # output in first instance
       if(exists("out", inherits = FALSE) == FALSE & nrow(tmp) > 0){
-        tmp$id <- test_times$id[i]
         out <- tmp
       }
       
     # output
       if(exists("out", inherits = FALSE) == TRUE & nrow(tmp) > 0){
-        tmp$id <- test_times$id[i]
         out <- rbind(out, tmp)
       }
-
   }
  # return
   return(out)

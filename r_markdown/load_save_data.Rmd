@@ -21,6 +21,53 @@ output:
 
 # Pollutant data
 
+### Five gas
+
+Loads inidividual files that contain the CO~2~ mixing ratio (% vol), CO mixing ratio (ppmv), and CH~4~ mixing ratio (ppmv) in the main fume hood exhaust line.  Combines the individual files and saves the data as a single .RDS file containing the mixing ratios, timestamps, and the test ID.  
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_fivegas <- load_fivegas()
+  saveRDS(data_fivegas, file = "../r_files/fivegas.RDS")
+```
+
+### Gravimetric
+
+Loads filter mass data and resaves as .RDS.  Al filter masses are in $\mu$g. 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  data_grav <- load_grav_file() 
+  saveRDS(data_grav, file = "../r_files/grav.RDS")
+```
+
+### EC/OC
+
+Loads the data file from the Sunset Laboratory OC-EC Aerosol Analyzer and saves as an .RDS.  This data file contains the concentration of elemental carbon (EC), organic carbon (OC), and total carbon (TC) on the quartz filters in units of $\mu$g/cm^2^.  
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  ecoc <- load_ecoc_file()
+  head(ecoc, 5)
+  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
+``` 
+
+### Carbonyls
+
+Loads the carbonyl data and resaves data as .RDS.  All values are in $\mu$g.  
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  carbonyls <- load_singlefiles("carbonyls")
+  saveRDS(carbonyls, file = "../r_files/carbonyls.RDS")
+```
+
+### SMPS
+
+Loads and resaves data as an .RDS.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
+  smps <- load_multifile(fldr = "../data/smps",
+                         pattern = "_SMPS.txt$", inst = "smps")
+  saveRDS(smps, file = "../r_files/smps.RDS")
+```
+
 ### CO~2~
 
 Loads and saves the CO2 voltage data (`calibration?`)
@@ -32,43 +79,6 @@ Loads and saves the CO2 voltage data (`calibration?`)
   saveRDS(co2, file = "../r_files/co2.RDS")
 ```
 
-### EC/OC
-
-Loads ecoc data file and saves
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  ecoc <- load_ecoc_file()
-  ecoc
-  saveRDS(ecoc, file = "../r_files/ecoc.RDS")
-```  
-
-### Five gas
-
-Loads fivegas mixing ratio files and resaves.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_fivegas <- load_fivegas()
-  saveRDS(data_fivegas, file = "../r_files/fivegas.RDS")
-```
-
-### Gravimetric
-
-Loads filter weight data and resaves as .RDS.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  data_grav <- load_grav_file() 
-  saveRDS(data_grav, file = "../r_files/grav.RDS")
-```
-
-### Carbonyls
-
-Loads and resaves data as .RDS.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  carbonyls <- load_singlefiles("carbonyls")
-  saveRDS(carbonyls, file = "../r_files/carbonyls.RDS")
-```
-
 ### PAX
 
 Loads and resaves data as .RDS.
@@ -78,16 +88,6 @@ Loads and resaves data as .RDS.
                         pattern = "ALLDAY_PAX.csv$", inst = "pax")
 
   saveRDS(pax, file = "../r_files/pax.RDS")
-```
-
-### SMPS
-
-Loads and resaves data as an .RDS.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE} 
-  smps <- load_multifile(fldr = "../data/smps",
-                         pattern = "_SMPS.txt$", inst = "smps")
-  saveRDS(smps, file = "../r_files/smps.RDS")
 ```
 
 ### Temperature
@@ -154,4 +154,3 @@ Loads the microgram sheet and resaves data as an .RDS.
   mc_test_log <- load_test_log()
   saveRDS(mc_test_log, file = "../r_files/mc_test_log.RDS")
 ```
-

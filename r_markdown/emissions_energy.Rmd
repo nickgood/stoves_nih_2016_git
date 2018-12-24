@@ -20,28 +20,28 @@ output:
 
 # Load data
 
-Test metadata
+Test metadata: 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   samples     <- readRDS("../r_files/samples.RDS")
-  test_times  <- readRDS("../r_files/test_times.RDS")
+  test_times  <- readRDS("../r_files/test_times_all.RDS") 
   mc_test_log <- readRDS("../r_files/mc_test_log.RDS")
 ```
 
-Constants
+Constants: 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   c_water <- readRDS("../r_files/c_water.RDS")
   hfg_water <- readRDS("../r_files/hfg_water.RDS")
 ```
 
-Emissions data
+Emissions data: 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   emissions_long <- readRDS("../r_files/emissions_long.RDS")
 ```
 
-Temperature data
+Temperature data: 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp_merged <- readRDS("../r_files/temp_merged.RDS")
@@ -61,10 +61,10 @@ Temperature data
 Get the pot weights. Then calculate: (1) the starting mass of water in the pot and (2) the mass of water evaporated.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  df_weights <- select(mc_test_log, id, wgt_pot_a, wgt_on_1, wgt_off_1) %>%
-                mutate(mass_h2o  = wgt_on_1 - wgt_pot_a,     # g
-                       mass_evap = wgt_on_1 - wgt_off_1) %>% # g
-                filter(!is.na(wgt_on_1)) # remove background tests
+  df_weights <- select(mc_test_log, id, wgt_pot, wgt_on, wgt_off) %>%
+                mutate(mass_h2o  = wgt_on - wgt_pot,     # g
+                       mass_evap = wgt_on - wgt_off) %>% # g
+                filter(!is.na(wgt_on)) # remove background tests
 ```
 
 Select water temperatures recorded during the test.
@@ -72,7 +72,7 @@ Select water temperatures recorded during the test.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
   df_temp <- mutate(temp_merged, time = time + 3600) %>%
-             dplyr::filter(loc == "stove")
+             dplyr::filter(loc == "water")
 
   df_temp <- filter_temp(df_times, df_temp)
 ```
@@ -98,15 +98,25 @@ Combine the water mass and temperature data. Then, calculate the mass of energy 
 
 # Calculate emission factors
 
-Calculate the mass of pollutant emitted per unit energy delivered to the cooking surface.
+Calculate the amount of each pollutant emitted per unit energy delivered to the cooking surface:  
+
+1. Select the `mass_emitted` and `num_emitted` metrics for actual tests.  
+2. Add the number of megajoules delivered to the dataframe.  
+3. Calculate the emission factors as $\mu$g/MJ~d~ or number/MJ~d~.  
+4. Convert mass-based emission factors to g/MJ~d~.  
+5. Add a column with units.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- df_ef <- dplyr::filter(emissions_long, metric=="mass_emitted",
+ df_ef <- dplyr::filter(emissions_long, metric %in% c("mass_emitted", # 1
+                                                      "num_emitted"),
                                         !grepl("^BG|G", id)) %>%
-          plyr::rename(c("value"="mass_emitted")) %>% # g
-          dplyr::left_join(dplyr::select(df_energy, id, mj_d), by=c("id")) %>%
-          dplyr::mutate(g_pol_mjd = (mass_emitted * 1e-6) / mj_d) %>% # g/MJd
-          dplyr::select(-metric)
+          dplyr::left_join(dplyr::select(df_energy, id, mj_d), by=c("id")) %>% # 2
+          dplyr::mutate(ef = value / mj_d, # ug/MJd or #/MJd          # 3
+                        ef = ifelse(metric == "mass_emitted",         # 4
+                                    ef * (1e-6), ef), # g/MJd
+                        units = ifelse(metric == "mass_emitted",      # 5
+                                       "g_MJd", "num_MJd")) %>% 
+          dplyr::select(-metric, -value)
 ```
 
 Add test metadata to the data frame.
@@ -115,19 +125,17 @@ Add test metadata to the data frame.
   df_ef <- dplyr::left_join(df_ef,
                             dplyr::select(samples, id, type, mc_level, mc_dry), 
                             by=c("id")) %>% 
-           dplyr::mutate(type     = forcats::fct_recode(type, "Split"   = "field",
-                                                              "Milled"  = "lab"),
-                         mc_level = forcats::fct_relevel(mc_level, "low","med","high"),
-                         id       = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
-                                                             "FM1", "FM2", "FM3", "FM4",
-                                                             "FH1", "FH2", "FH3", "FH4",
-                                                             "LL1", "LL2", "LL3", "LL4",
-                                                             "LM1", "LM2", "LM3", "LM4",
-                                                             "LH1", "LH2", "LH3","LH4"),
-                         fuel_shape_mc = paste(type, mc_level, sep="_")) %>%
+           dplyr::ungroup() %>%
+           dplyr::mutate(id = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
+                                                       "FM1", "FM2", "FM3", "FM4",
+                                                       "FH1", "FH2", "FH3", "FH4",
+                                                       "LL1", "LL2", "LL3", "LL4",
+                                                       "LM1", "LM2", "LM3", "LM4",
+                                                       "LH1", "LH2", "LH3","LH4"),
+                         fuel_mc_shape = paste(mc_level, type, sep="_")) %>%
     
-          dplyr::filter(type != "bg", # remove background tests
-                        id   != "FH2")
+          dplyr::filter(!is.na(type), # remove background tests
+                        id != "FH2")
 ```
 
 Save the data.
@@ -148,23 +156,6 @@ Save the data.
   orange <- "#FF6633"
   pink1  <- "#CC0066"
   pink2  <- "#FF3366"
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=12, fig.align='center'}
-  ggplot(df_temp, aes(x=datetime, y=t_oc)) +
-         geom_line() +
-         facet_wrap(~id, ncol=4, scales="free_x") +
-        
-         # Format the plot
-         xlab("Time") + 
-         ylab(expression(Water ~ temperature ~ "(" * degree * C * ")")) + 
-         theme(aspect.ratio=1,
-               panel.border     = element_rect(fill=NA),
-               panel.background = element_rect(fill='white'),
-               text       = element_text(size=10, color='black'),
-               axis.text  = element_text(size= 9, color='black'),
-               axis.title = element_text(size=10, color='black'),
-               axis.ticks = element_line(color='black')) 
 ```
 
 ```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
@@ -202,10 +193,10 @@ Save the data.
   # dummy data used to ensure that y-axis goes to zero on all panels except CO and CH4
   df_dummy <- data.frame(pol=levels(df_ef_subset$pol),
                          mc_dry=c(5),
-                         g_pol_mjd=c(5,0,0,0,0.3,0,0,0),
+                         ef=c(5,0,0,0,0.3,0,0,0),
                          type=c("Milled"))
 
-  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*g_pol_mjd, shape=type, color=pol)) +
+  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*ef, shape=type, color=pol)) +
       facet_wrap(~pol, ncol=4, scales="free_y") + 
     # add lines for CO tiers
     geom_hline(aes(yintercept=11500), size=0.5, data=subset(df_ef_subset, pol=="co"), linetype=2, color="gray75") +
@@ -250,18 +241,18 @@ Save the data.
                 color="black", hjust="left", vjust="top", size=3.5) +
       geom_text(aes(label="PM[2.5]",      x= 4, y= 1100), data=subset(df_ef_subset, pol=="grav"),
                 color="black", hjust="left", vjust="bottom", size=3.5, parse=TRUE) +
-      geom_text(aes(label="EC",           x= 4, y=    0), data=subset(df_ef_subset, pol=="ec"),
-                color="black", hjust="left", vjust="bottom", size=3.5) +
-      geom_text(aes(label="OC",           x=30, y=    0), data=subset(df_ef_subset, pol=="oc"),
-                color="black", hjust="right", vjust="bottom", size=3.5) +
-      geom_text(aes(label="CH[4]",        x=30, y=  300), data=subset(df_ef_subset, pol=="ch4"),
-                color="black", hjust="right", vjust="bottom", size=3.5, parse=TRUE) +
-      geom_text(aes(label="Formaldehyde", x=30, y=    0), data=subset(df_ef_subset, pol=="formaldehyde"),
-                color="black", hjust="right", vjust="bottom", size=3.5) +
-      geom_text(aes(label="Acetaldehyde", x=30, y=    0), data=subset(df_ef_subset, pol=="acetaldehyde"),
-                color="black", hjust="right", vjust="bottom", size=3.5) +
-      geom_text(aes(label="Benzene",      x=30, y=    0), data=subset(df_ef_subset, pol=="benzene"),
-                color="black", hjust="right", vjust="bottom", size=3.5) +
+      geom_text(aes(label="EC",           x=30, y=  225), data=subset(df_ef_subset, pol=="ec"),
+                color="black", hjust="right", vjust="top", size=3.5) +
+      geom_text(aes(label="OC",           x= 4, y=  700), data=subset(df_ef_subset, pol=="oc"),
+                color="black", hjust="left", vjust="top", size=3.5) +
+      geom_text(aes(label="CH[4]",        x= 4, y= 1050), data=subset(df_ef_subset, pol=="ch4"),
+                color="black", hjust="left", vjust="top", size=3.5, parse=TRUE) +
+      geom_text(aes(label="Formaldehyde", x= 4, y=  290), data=subset(df_ef_subset, pol=="formaldehyde"),
+                color="black", hjust="left", vjust="top", size=3.5) +
+      geom_text(aes(label="Acetaldehyde", x= 4, y=  110), data=subset(df_ef_subset, pol=="acetaldehyde"),
+                color="black", hjust="left", vjust="top", size=3.5) +
+      geom_text(aes(label="Benzene",      x= 4, y=   62), data=subset(df_ef_subset, pol=="benzene"),
+                color="black", hjust="left", vjust="top", size=3.5) +
       # format plot
       theme(aspect.ratio=1,
             panel.border     = element_rect(fill=NA),
@@ -289,19 +280,13 @@ Save the data.
                            pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
 
   # dummy data used to ensure that y-axis goes to zero on all panels except CO and CH4
-  df_dummy <- data.frame(pol       = unique(df_ef_subset$pol),
-                         mc_dry    = c(5),
-                         g_pol_mjd = c(0),
-                         type      = c("Milled"))
+  df_dummy <- data.frame(pol    = unique(df_ef_subset$pol),
+                         mc_dry = c(5),
+                         ef     = c(0),
+                         type   = c("Milled"))
 
-  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*g_pol_mjd, shape=type, color=pol)) +
-         geom_point(size=3, alpha=0.7) +
-            scale_color_manual(values=c(orange,"black","black",
-                                        "black","black","black",
-                                        "black",pink1,"black",
-                                        "black","black","black",
-                                        "black","black","black"),
-                                         guide=FALSE) +
+  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*ef, shape=type)) +
+         geom_point(size=3, alpha=0.7, color="black") +
          geom_blank(data=df_dummy) + 
          facet_wrap(~pol, scales = "free_y", ncol = 3) +
          
@@ -340,9 +325,8 @@ Save the data.
                                                         "ethylbenzene",
                                                         "m+p-xylene","o-xylene")))
 
-  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*g_pol_mjd, shape=type, color=pol)) +
-         geom_point(size=3, alpha=0.7) +
-            scale_color_manual(values=c(teal3,"black","black","black","black"), guide=FALSE) +
+  ggplot(df_ef_subset, aes(x=mc_dry, y=1000*ef, shape=type)) +
+         geom_point(size=3, alpha=0.7, color="black") +
          facet_wrap(~pol, scales="free_y", ncol=3) +
     
          # format plot
@@ -371,76 +355,107 @@ Save the data.
   ggsave(filename="../figures/voc_energy.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.8)
 ```
 
+```{r, fig.width=3.15, fig.height=2.8, fig.align='center'}
 
+  ggplot(dplyr::filter(df_ef, pol=="ultrafines"), 
+         aes(x=mc_dry, y=ef, shape=type)) +
+      geom_point(size=3, alpha=0.7) +
+      coord_cartesian(xlim=c(4,30), ylim=c(0,7.2e15)) + # 
+      scale_x_continuous(breaks=seq(5,30,10)) + 
+      xlab("Moisture content (%)") + 
+      ylab(expression(Ultrafine ~ particles ~ "(" * "#" ~ MJ[delivered]^-1*")")) + 
+      labs(shape = "Fuel shape") + 
+      theme(aspect.ratio=1,
+            panel.border     = element_rect(fill=NA),
+            panel.background = element_rect(fill='white'),
+            axis.text  = element_text(size=10, color='black'),
+            axis.title = element_text(size=10, color='black'),
+            axis.ticks = element_line(color='black'),
+            legend.text  = element_text(size=10, color='black'),
+            legend.title = element_text(size=10, color='black'),
+            legend.key   = element_blank(),
+            legend.box.background = element_rect(color="black", size=0.6),
+            legend.position = c(0.80,0.205)) 
+
+  ggsave(filename="../figures/ufp_energy.pdf", plot=last_plot(), device="pdf", width=3.15, height=2.8)
+```
 
 # Compare emission factors
 
 ### Between different fuel moisture levels and shapes
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="co")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="co")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="grav")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="grav")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ec")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ec")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="oc")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="oc")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="ch4")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ultrafines")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="formaldehyde")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ch4")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="acetaldehyde")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="formaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ fuel_shape_mc, dplyr::filter(df_ef, pol=="benzene")))
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="acetaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="benzene")))
 ```
 
 ### Between different fuel moisture levels
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="co")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="co")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ultrafines")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
 ```
 
 ```{r}
-  TukeyHSD(aov(g_pol_mjd ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
+```
+
+```{r}
+  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
 ```
 
 # Summarize EFs by fuel moisture level
@@ -451,10 +466,10 @@ Save the data.
               dplyr::mutate(pol = factor(pol, levels=c("co","grav","ec","oc","ch4",
                                                        "acetaldehyde","formaldehyde","benzene"))) %>%
               group_by(pol, mc_level) %>%
-              summarise(mean = mean(1000 * g_pol_mjd),
-                        sd   = sd(1000 * g_pol_mjd),
-                        min  = min(1000 * g_pol_mjd),
-                        max  = max(1000 * g_pol_mjd))
+              summarise(mean = mean(1000 * ef),
+                        sd   = sd(1000 * ef),
+                        min  = min(1000 * ef),
+                        max  = max(1000 * ef))
 ```
 
 ```{r, echo=FALSE}
@@ -467,17 +482,17 @@ Save the data.
 ```{r}
   df_co <- dplyr::filter(df_ef, pol=="co") %>%
            group_by(mc_level) %>%
-           dplyr::summarise(mean  = mean(g_pol_mjd),
-                            sd    = sd(g_pol_mjd),
-                            n     = length(g_pol_mjd)) %>%
+           dplyr::summarise(mean  = mean(ef),
+                            sd    = sd(ef),
+                            n     = length(ef)) %>%
            dplyr::mutate(ci_lower = mean - (qt(.95,df=n-1)*sd/sqrt(n)),
                          ci_upper = mean + (qt(.95,df=n-1)*sd/sqrt(n)))
 
   df_pm <- dplyr::filter(df_ef, pol=="grav") %>%
            group_by(mc_level) %>%
-           dplyr::summarise(mean  = mean(1000 * g_pol_mjd),
-                            sd    = sd(1000 * g_pol_mjd),
-                            n     = length(g_pol_mjd)) %>%
+           dplyr::summarise(mean  = mean(1000 * ef),
+                            sd    = sd(1000 * ef),
+                            n     = length(ef)) %>%
            dplyr::mutate(ci_lower = mean - (qt(.95,df=n-1)*sd/sqrt(n)),
                          ci_upper = mean + (qt(.95,df=n-1)*sd/sqrt(n)))
 ```

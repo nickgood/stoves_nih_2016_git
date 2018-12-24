@@ -36,9 +36,8 @@ output:
 ```{r}
   df_samples <- dplyr::select(samples,
                               id, date, stove, fuel, type, mc_level, mc_dry) %>%
-                dplyr::filter(type != "bg",
-                              id   != "FH2") %>%
-                dplyr::mutate(type = ifelse(type=="lab", "milled", "split"))
+                dplyr::filter(!is.na(type),  # remove background tests
+                              id   != "FH2")
 ```
 
 ### Mass per unit energy delivered
@@ -47,9 +46,8 @@ Grams of pollutant per megajoule of energy delivered to the cooking surface.
 
 ```{r}
   df_ef_energy <- dplyr::select(data_energy,
-                                id, pol, g_pol_mjd) %>%
-                  dplyr::mutate(metric = "g_MJd") %>%
-                  plyr::rename(c("g_pol_mjd"="value"))
+                                id, pol, ef, units) %>%
+                  dplyr::rename(vaule = ef)
 ```
 
 ### Mass per mass of fuel burned
@@ -58,9 +56,8 @@ Grams of pollutant per kilogram of fuel burned.
 
 ```{r}
   df_ef_fuel <- dplyr::select(data_fuel,
-                              id, pol, g_pol_kg_fuel) %>%
-                dplyr::mutate(metric = "g_pol_kg_fuel") %>%
-                plyr::rename(c("g_pol_kg_fuel"="value"))           
+                              id, pol, ef, units) %>%
+                  dplyr::rename(vaule = ef)         
 ```
 
 ### Mass of carbon emitted
@@ -70,9 +67,8 @@ Grams of pollutant per kilogram of fuel burned.
                                                 substr(id,1,2) != "BG",
                                                 substr(id,1,1) != "G",
                                                 id != "FH2") %>%
-                  dplyr::select(-inst) %>%
-                  dplyr::mutate(metric = "g_carbon",
-                                id     = as.factor(id))
+                  dplyr::mutate(units = "g_carbon") %>%
+                  dplyr::select(-inst, -metric) 
 ```
 
 # Combine data
@@ -81,6 +77,7 @@ Grams of pollutant per kilogram of fuel burned.
   df_summary <- dplyr::bind_rows(df_ef_energy, df_ef_fuel) %>%
                 plyr::rename(c("pol"="pollutant")) %>%
                 dplyr::filter(pollutant %in% c("co2","co","ch4","grav","ec","oc",
+                                 "ultrafines",
                                  "acetaldehyde",     "acetone",          "acrolein",
                                  "benzaldehyde",     "butanone",         "butyraldehyde",
                                  "crotonaldehyde",   "formaldehyde",     "hexaldehyde",
@@ -95,7 +92,7 @@ Grams of pollutant per kilogram of fuel burned.
                                "type"   = "fuel_type",
                                "mc_dry" = "fuel_mc_dry"))
   
-  df_summary <- dplyr::arrange(df_summary, metric, pollutant, mc_level, fuel_type)
+  df_summary <- dplyr::arrange(df_summary, units, pollutant, mc_level, fuel_type)
 ```
 
 # Save

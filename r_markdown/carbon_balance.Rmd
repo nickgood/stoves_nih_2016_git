@@ -1,7 +1,7 @@
 ---
 title: "Carbon Balance"
 author: "Jessica Tryner"
-date: "December 11, 2018"
+date: "December 21, 2018"
 output:
   html_document:
     toc: true
@@ -49,24 +49,15 @@ Constants
 CO~2~, CO, and CH~4~
 
 ```{r}
- # fivegas data
   data_fivegas <- readRDS("../r_files/fivegas_merged.RDS")
-
- # background co
-  data_bg_co <- readRDS("../r_files/background_co.RDS")
-
- # background co2
-  data_bg_co2 <- readRDS("../r_files/background_co2.RDS")
-
- # background ch4
-  data_bg_ch4 <- readRDS("../r_files/background_ch4.RDS")
+  df_bg        <- readRDS("../r_files/fivegas_background.RDS")
 ```
 
 Fuel
 
 ```{r}
   data_fuel_prop <- readRDS("../r_files/fuel_properties.RDS")
-  data_fuel      <- readRDS("../r_files/fuel_prep_clean.RDS")
+  data_fuel      <- readRDS("../r_files/data_fuel_prep_clean.RDS")
   data_test_log  <- readRDS("../r_files/mc_test_log.RDS")
 ```
 
@@ -109,26 +100,12 @@ Merge the pollutant concentration data with the test start and end times, then c
                 dplyr::mutate(dur = end - start) # seconds
 ```
 
-Get the background concentration for each pollutant for each test.  If the background concentration for a given test is unavailable, use the mean value from all tests. 
+Get the background concentration for each pollutant for each test.
 
 ```{r}
-
-  df_bg_co2 <- dplyr::mutate(data_bg_co2$bg,
-                             conc_bg = ifelse(!is.na(conc), conc, data_bg_co2$mean$conc),
-                             pol     = "co2")
-
-  df_bg_co  <- dplyr::mutate(data_bg_co$bg,
-                             conc_bg = ifelse(!is.na(conc), conc, data_bg_co$mean$conc),
-                             pol     = "co")
-
-  df_bg_ch4 <- dplyr::mutate(data_bg_ch4$bg,
-                             conc_bg = ifelse(!is.na(conc), conc, data_bg_ch4$mean$conc),
-                             pol     = "ch4")
-
-  df_bg <- dplyr::bind_rows(df_bg_co2, df_bg_co, df_bg_ch4) %>%
-           dplyr::select(id, pol, conc_bg)
-  
-  df_fivegas <- dplyr::left_join(df_fivegas, df_bg, by=c("id","pol"))
+  df_fivegas <- dplyr::left_join(df_fivegas,
+                                 dplyr::select(df_bg, id, pol, ppm_bg, conc_bg),
+                                 by=c("pol","id"))
 ```
 
 Calculate the mass of each pollutant emitted and the mass of carbon emitted during each test. 
@@ -162,7 +139,7 @@ Caclulate the dry mass of fuel burned using a carbon balance on the CO~2~, CO, a
 ```{r, warning=FALSE}
 
   df_fuel <- dplyr::group_by(data_fuel, id)              %>%
-             dplyr::summarise(m_fuel_dry = sum(m_dry),
+             dplyr::summarise(m_fuel_dry = sum(mass_dry),
                               mc_dry = mean(mc_dry)/100) %>%
              
              # get mass of shims, unburned fuel, and char
@@ -195,7 +172,7 @@ Calculate dry mass of shims and dry mass of unburned fuel.
   df_fuel <- df_fuel %>%
              dplyr::mutate(m_shims_dry  = m_shims_wet/(1+mc_low_dry),
                            m_unused_dry = m_unused_wet/(1+mc_dry),
-                           y_c_char     = 0.90) # assumed mass fraction of carbon in char
+                           y_c_char     = 0.95) # assumed mass fraction of carbon in char
 ```
 
 Calculate the dry mass of fuel burned. 
@@ -243,9 +220,9 @@ Calculate the dry mass of fuel burned.
     geom_vline(xintercept=1, size=1) + 
     geom_histogram(na.rm=TRUE, breaks=seq(0.825,1.175,0.05),
                    color="black") +
-    coord_cartesian(xlim=c(0.8,1.2), ylim=c(0,10)) + 
+    coord_cartesian(xlim=c(0.8,1.2), ylim=c(0,12)) + 
     scale_x_continuous(breaks=seq(0.7,1.3,0.1)) + 
-    scale_y_continuous(breaks=seq(0,10,2)) + 
+    scale_y_continuous(breaks=seq(0,24,2)) + 
     xlab("(C as CO2 + CO + CH4)/(C in weighed fuel)") + 
     ylab("Count") +
     theme(aspect.ratio=1,
@@ -255,8 +232,3 @@ Calculate the dry mass of fuel burned.
           axis.title = element_text(size=10, color='black'),
           axis.ticks = element_line(color='black'))
 ```
-
-There are two potential explanations for why the mass of fuel carbon measured as CO~2~, CO, and CH~4~ in the exhaust is sligtly higher than the mass of fuel weighed at the start and end of the test:  
-
-  1. The assumed hood exhaust temperature (25 C) is too low (and therefore the calculated exhaust density is too high).  
-  2. The assumed mass fraction of carbon in the char (`r df_c_bal$y_c_char[1]`) is too high.  

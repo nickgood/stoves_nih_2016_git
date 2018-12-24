@@ -1,0 +1,229 @@
+---
+title: "CO2 Dilution"
+author: "Jessica Tryner"
+date: "December 23, 2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r global_options, include=FALSE}
+  knitr::opts_chunk$set(fig.path = 'figures/', warning = FALSE, message = FALSE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+  library(tidyverse)
+  library(knitr)
+  library(lubridate)
+```
+
+```{r}
+  source("../r_scripts/R_functions.R")
+  source("../r_scripts/R_tidy.R")
+```
+
+---
+
+# Load data
+
+Metadata
+
+```{r}
+  data_samples <- readRDS("../r_files/samples.RDS")
+  data_times   <- readRDS("../r_files/test_times_all.RDS")
+  cal_two      <- readRDS("../r_files/data_cal_two.RDS")
+```
+
+CO~2~, CO, and CH~4~ data from fivegas analyzer
+
+```{r}
+  data_fivegas <- readRDS("../r_files/fivegas_merged.RDS")
+```
+
+CO2 dilution data
+
+```{r}
+  data_co2 <- readRDS("../r_files/co2.RDS")
+```
+
+# CO~2~ monitor calibration
+
+Rename zero concentration variable to ease formatting.
+
+```{r}
+  cal_two <- dplyr::rename(cal_two,
+                           zero_1_conc = zero_1,
+                           zero_2_conc = zero_2) %>%
+             dplyr::mutate(zero_1_conc = 0,
+                           zero_2_conc = 0)
+```
+
+Calibration data for the sensor that measured laboratory concentrations. 
+
+```{r}
+  df_cal_lab <- tidy_date(cal_two, "^zero_1|^co2_1", "_1") %>%
+                dplyr::filter(!is.na(value)) %>%
+                split_co2_cal %>%
+                dplyr::mutate(value = as.numeric(value))
+```
+
+Calibration data for the sensor that measured sample line concentrations.
+
+```{r}
+  df_cal_sample <- tidy_date(cal_two, "^zero_2|^co2_2", "_2") %>%
+                   dplyr::filter(!is.na(value)) %>%
+                   split_co2_cal() %>%
+                   dplyr::mutate(value = as.numeric(value))
+```
+
+# Filter data
+
+Get start and end times for integrated samples.
+
+```{r}
+  df_times <- dplyr::filter(data_times, var == "start_filters" | var == "end_filters") %>%
+              tidyr::spread(var, value) %>%
+              dplyr::select(-date) %>%
+              dplyr::rename(start = start_filters, end = end_filters)
+```
+
+### Dilution
+
+Select on CO~2~ dilution data that was recorded during a test.
+
+```{r}
+  df_co2 <- filter_times(df_times, data_co2)
+```
+
+Rename columns to reflect the location where the measurements were taken. Then, remove unused columns.  
+
+* V2 = ambient CO~2~ concentration in lab (V)  
+* V3 = CO~2~ concentration in SMPS sample line (V)  
+
+```{r}
+  df_co2 <- dplyr::rename(df_co2, lab_v    = v2,
+                                  sample_v = v3) %>%
+            dplyr::select(-v1, -v4)
+```
+
+### Fivegas
+
+Select CO~2~ data from fivegas data
+
+```{r}
+  df_fivegas <- dplyr::filter(data_fivegas, pol=="co2")
+```
+
+Filter out data recorded outside the emissions sampling period.  
+
+```{r}
+  df_fivegas <- filter_times(df_times, df_fivegas) %>%
+                dplyr::distinct() 
+```
+
+# Convert dilution data to ppm
+
+Get the mixing ratio of CO~2~ in the gas used to span the sensors. 
+
+```{r}
+  df_span_lab    <- dplyr::filter(df_cal_lab,    pol=="co2", type=="conc") %>%
+                    dplyr::rename(span_ppm_lab = value) %>%
+                    dplyr::select(-pol, -type)
+  
+  df_span_sample <- dplyr::filter(df_cal_sample, pol=="co2", type=="conc") %>%
+                    dplyr::rename(span_ppm_sample = value) %>%
+                    dplyr::select(-pol, -type)
+```
+
+Convert voltages to ppm (5 V range).
+
+```{r}
+  df_co2 <- dplyr::left_join(df_co2, df_span_lab, by=c("date")) %>%
+            dplyr::left_join(df_span_sample,      by=c("date")) %>%
+            dplyr::mutate(lab_ppm    = lab_v    * span_ppm_lab    / 5, 
+                          sample_ppm = sample_v * span_ppm_sample / 5) %>%
+            arrange(id)
+```
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width=6.5, fig.height=16, fig.align='center'}
+
+  df_plot <- dplyr::select(df_co2, id, time, sample_ppm, lab_ppm) %>%
+             dplyr::rename(sample = sample_ppm,
+                           lab    = lab_ppm) %>%
+             tidyr::gather("location", "ppm", 3:4)
+
+  df_plot_fivegas <- dplyr::select(df_fivegas, id, time, ppm) %>%
+                     dplyr::mutate(location = "hood")
+  
+  df_plot <- bind_rows(df_plot, df_plot_fivegas) 
+  
+  log10_breaks <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,
+                    1,2,3,4,5,6,7,8,9,
+                    10,20,30,40,50,60,70,80,90,
+                    100,200,300,400,500,600,700,800,900,
+                    1000,2000,3000,4000,5000)
+
+  ggplot(df_plot, aes(x=time, y=ppm, group=location, color=location)) + 
+    geom_line() +
+    facet_wrap(~id, ncol=4, scale="free_x") +
+    coord_cartesian(ylim=c(300,5000)) + 
+    scale_y_log10(breaks=c(200,500,1000,2000,5000),
+                  minor_breaks=log10_breaks) +
+    scale_colour_manual(values = c("lab" = "mediumaquamarine",
+                                   "sample"  = "mediumorchid1",
+                                   "hood" = "darkorange1")) +
+    xlab("Time (s)") +
+    ylab("Mixing ratio (ppmv)") + 
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          panel.grid.major = element_line(color="gray90"),
+          panel.grid.minor = element_line(color="gray90"),
+          text        = element_text(size=10, color='black'),
+          axis.text.x = element_text(size= 6, color='black'),
+          axis.text.y = element_text(size= 9, color='black'),
+          axis.title  = element_text(size= 9, color='black'),
+          axis.ticks  = element_line(color='black'),
+          legend.position = "top") 
+```
+
+# Average
+
+Calculate the average mixing ratio (ppmv) recorded in each location (hood exhaust, SMPS sample line, and lab ambient) during each test. 
+
+```{r}
+  df_fivegas <- dplyr::group_by(df_fivegas, id) %>%
+                dplyr::summarise(hood_ppm = mean(ppm, na.rm = TRUE)) 
+```
+
+```{r}
+  df_co2 <- dplyr::group_by(df_co2, id) %>%
+                dplyr::summarise(sample_ppm = mean(sample_ppm, na.rm=TRUE),
+                                 lab_ppm    = mean(lab_ppm, na.rm = TRUE)) 
+```
+
+# Dilution
+
+Combine the data and calculate the dilution ratio. 
+
+```{r}
+  df_dilution <- dplyr::left_join(df_fivegas, df_co2, by=c("id")) %>%
+                 dplyr::mutate(dilution = (hood_ppm - lab_ppm) / (sample_ppm - lab_ppm))
+```
+
+```{r}
+  saveRDS(df_dilution, "../r_files/dilution.RDS")
+```
+
+Select only dilution ratios that were measured during tests.
+
+```{r}
+  df_dilution_test <- dplyr::filter(df_dilution, substr(id,1,2) != "BG")
+```
+
+* The minimum dilution ratio was `r round(min(df_dilution_test$dilution))`.  
+* The maximum dilution ratio was `r round(max(df_dilution_test$dilution))`.  
+* The mean dilution ratio was `r round(mean(df_dilution_test$dilution))`.  
+* The median dilution ratio was `r round(median(df_dilution_test$dilution))`.  

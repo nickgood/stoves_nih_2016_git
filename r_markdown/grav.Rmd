@@ -1,5 +1,6 @@
 ---
-title: "gravimetric"
+title: "Gravimetric PM2.5 Samples"
+date:  "December 21, 2018"
 output:
   html_document:
     toc: true
@@ -7,311 +8,261 @@ output:
     theme: united
 ---
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.path = 'figures/',
-                        warning = FALSE,
-                        message = FALSE,
-                        fig.width=10, fig.height = 4,
-                        cache = FALSE)
-```
-
 ```{r, echo=FALSE, include=FALSE}
   library(tidyverse)
-  library(forcats)
+  library(gridExtra)
 ```
 
 ```{r}
   source("../r_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
 ```
 
 # Load data
 
-* gravimetric
-
-```{r}
-  grav <- readRDS("../r_files/grav.RDS")
-```
-
-* metadata
+Test metadata:
 
 ```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  filter_times <- readRDS("../r_files/filter_times.RDS")
-  filter_flows <- readRDS("../r_files/filter_flows.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
+  times   <- readRDS("../r_files/test_times_all.RDS")
+  flows   <- readRDS("../r_files/flow_rates.RDS")
 ```
 
-# Organize
-
-## filter tests
-
-* select stove and background tests only. Remove pre-calculated LOD.
+Log data:
 
 ```{r}
-  grav_merged <- dplyr::select(grav, -lod, -phpa_pre, -phpa_post) %>%
-                 dplyr::mutate(type = ifelse(grepl("^BG[0-9]", id), "bg", NA),
-                               type = ifelse(grepl("^G[0-9]", id), "test_blank", type),
-                               type = ifelse(grepl("^F|^L", id), "test", type))
+  tester_one <- readRDS("../r_files/data_tester_one.RDS")
 ```
 
-# Metadata
-
-* match cassette flows to id
+Gravimetric PM~2.5~ data:
 
 ```{r}
-  flows <- dplyr::select(filter_flows, -date) %>%
-           dplyr::filter(colour == "white") %>%
-           dplyr::group_by(id, type, colour) %>%
-           dplyr::summarise(flow = mean(value, na.rm = TRUE)) %>%
-           dplyr::group_by(id, colour) %>%
-           dplyr::summarise(flow = mean(flow, na.rm = TRUE)) %>%
-           dplyr::select(-colour)
+  data_grav    <- readRDS("../r_files/grav.RDS")
 ```
 
-* match cassette timestamps to id
+# Organize and combine
+
+### Filter weights
+
+1. Remove values that are (a) unavailable or (b) were calculated in the Excel data file.  
+2. Specify the filter type (background, test blank, or test).  
 
 ```{r}
-  times <- dplyr::select(filter_times, -date) %>%
-           dplyr::filter(color == "white") %>%
-           tidyr::spread(type, value) %>%
-           dplyr::select(-color)
+  df_grav <- dplyr::select(data_grav, -phpa_pre, -phpa_post, 
+                                      -wgt_pre_avg, -wgt_post_avg, -wgt_dif, -lod) %>%
+             dplyr::mutate(filter_type = ifelse(grepl("^BG[0-9]", id), "bg", NA),
+                           filter_type = ifelse(grepl("^G[0-9]", id), "test_blank", filter_type),
+                           filter_type = ifelse(grepl("^F|^L", id), "test", filter_type))
 ```
 
-* merge gravimetric with metadata
+Calculate the change in mass for: (a) the test filter, (b) the calibration weight, and (c) the lab blank filter.  
 
 ```{r}
-  grav_merged <- dplyr::left_join(grav_merged,
-                                  flows,
-                                  by = "id") %>%
-                 dplyr::left_join(times,
-                                  by = "id")
+  df_grav <- dplyr::mutate(df_grav,
+                        mass_pre    = (wgt_pre_1  + wgt_pre_2  + wgt_pre_3)  / 3,
+                        mass_post   = (wgt_post_1 + wgt_post_2 + wgt_post_3) / 3,
+                        d_mass      = mass_post - mass_pre,       # ug
+                        d_cal       = wgt_cal_post - wgt_cal_pre, # ug 
+                        d_lab_blank = wgt_blank_avg_post - wgt_blank_avg_pre, # ug
+                        pol         = "grav") 
 ```
 
-# Reformat
-
-* pre-average #code calculates preweight DO THIS
+### Flow rates
 
 ```{r}
-  grav_pre <- dplyr::select(grav_merged, wgt_pre_1, wgt_pre_2, wgt_pre_3, id) %>%
-              tidyr::gather("var", "val", wgt_pre_1, wgt_pre_2, wgt_pre_3) %>%
-              dplyr::filter(!is.na(val)) %>%
-              dplyr::group_by(id) %>%
-              dplyr::summarise(wgt_pre = mean(val))
+  df_flows <- flows %>%
+              dplyr::filter(instrument == "filters", colour=="white") %>%
+              dplyr::ungroup() %>%
+              dplyr::select(-colour, -loc, -instrument)
 ```
 
-* post-average #code calculates preweights - makes it longer vs more columns DO THIS
+### Start and end times
+
+Get the starting and ending times for the filter sample associate with each test.  
 
 ```{r}
-  grav_post <- dplyr::select(grav_merged, wgt_post_1, wgt_post_2, wgt_post_3, id) %>%
-               tidyr::gather("var", "val", wgt_post_1, wgt_post_2, wgt_post_3) %>%
-               dplyr::filter(!is.na(val)) %>%
-               dplyr::group_by(id) %>%
-               dplyr::summarise(wgt_post = mean(val))
+  df_times <- dplyr::filter(times, var %in% c("start_filters","end_filters")) %>%
+              tidyr::spread(var, value) %>%
+              dplyr::select(-date) 
 ```
 
-* merge averages 
+### Combine
+
+Merge filter weights, flow rates, start and end times, and test metadata.
 
 ```{r}
-  grav_merged <- dplyr::left_join(grav_merged, grav_pre, by = "id") %>%
-                 dplyr::left_join(grav_post, by = "id")
+  df_grav_merged <- dplyr::left_join(df_grav, df_flows, by = "id") %>%
+                    dplyr::left_join(df_times, by = "id")          %>%
+                    dplyr::left_join(dplyr::select(samples, id, type, mc_level), 
+                                     by = "id")                    %>%
+                    dplyr::rename(test_type = type)
 ```
 
-* mass added to test, bg, and test_blank filters
+# LOD/LOQ
+
+Select test blanks:  
 
 ```{r}
-  grav_merged <- dplyr::mutate(grav_merged, 
-                            wgt_delta = wgt_post - wgt_pre)
+  df_lod <-  filter(df_grav_merged, filter_type == "test_blank")
 ```
 
-* change in calibration weight
-
-```{r}
-  grav_merged <- dplyr::mutate(grav_merged,
-                            wgt_cal_delta = wgt_cal_post - wgt_cal_pre)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=3.15, fig.height=3.15, fig.align='center'}
+  ggplot(df_lod, aes(id, d_mass)) +
+    geom_point(size = 3) +
+    coord_cartesian(ylim=c(-8,8)) + 
+    scale_y_continuous(breaks=seq(-10,10,2)) + 
+    xlab("Blank filter ID") + 
+    ylab("Change in test blank mass (ug)") + 
+    theme(aspect.ratio = 1,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks = element_line(color="black"),
+          axis.text  = element_text(size=9, color="black"),
+          axis.title = element_text(size=9, color="black"))
 ```
 
-* change in lab blank weight 
-
-```{r}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               wgt_blank_delta = wgt_blank_avg_post - wgt_blank_avg_pre)
-```
-
-* add pollutant variable `pol`
-
-```{r}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               pol = "grav")
-```
-
-* break out by field/lab/blank/background
+Calculate the limit of detection (LOD) and limit of quanitification (LOQ). 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # note fix two type variables
-  grav_merged <- left_join(grav_merged,
-                           dplyr::rename(dplyr::select(samples, id, type),
-                                          test_type = type),
-                           by = "id")
-```
 
-* break out by low, medium, high MC
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged<- dplyr::mutate(grav_merged,mc_level=ifelse(grepl("^G[1-9]",id)== TRUE, "none",
-                                                          ifelse(grepl("^BG[1-9]",id) == TRUE, "none",
-                                                          ifelse(grepl("^[A-Z]L[1-9]",id) == TRUE, "low",
-                                                          ifelse(grepl("^[A-Z]M[1-9]",id) == TRUE, "medium","high")))))
-```
-
-# QC
-
-* extract notes for gravimetric data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("grav|all", inst) == TRUE)
-```
-
-* mark `bad` tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
- # notes$qc[] <- "bad"
- # notes$qc[] <- "bad"
-```
-
-* apply flags: `bad` preceeds `maybe` preceeds `good`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # flags <- dplyr::select(notes, id, qc) %>%
-  #          dplyr::group_by(id) %>%
-  #          dplyr::arrange(qc) %>%
-  #          dplyr::summarise(qc = first(qc))
-```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # grav_merged <- dplyr::left_join(grav_merged, flags, by = "id") %>%
-  #                dplyr::mutate(id = as.factor(id)) %>%
-  #                dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
-Additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # grav_merged$qc[grav_merged$id == ""] <- "bad"
-  # grav_merged$qc[grav_merged$id == ""] <- "bad"
-  # grav_merged$qc[grav_merged$id == ""] <- "bad"
-```
-
-* remove backgrounds and bad data then calculate the limit of detection and quantification
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_lod <- grav_merged %>%
-              filter(type == "test_blank") %>%
-              #dplyr::filter(qc != "bad") %>%
-              dplyr::summarise(lod = sd(wgt_delta) * 3 + mean(wgt_delta),
-                               loq = sd(wgt_delta) * 10 + mean(wgt_delta),
-                               delta = mean(wgt_delta))
+  df_lod <- dplyr::summarise(df_lod,
+                             lod = mean(d_mass) + ( 3 * sd(d_mass)),
+                             loq = mean(d_mass) + (10 * sd(d_mass)))
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  lod_var <- grav_lod$lod[1]
-  loq_var <- grav_lod$loq[1]
+  lod_var <- df_lod$lod[1]
+  loq_var <- df_lod$loq[1]
 ```
 
-The LOD is `r lod_var`, the LOQ is `r loq_var`.
+The LOD is `r ceiling(lod_var)` $\mu$g. The LOQ is `r ceiling(loq_var)` $\mu$g.
 
-* flag the measurements
+Flag each filter sample as being either above or below the LOD and LOQ.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- dplyr::mutate(grav_merged,
-                               lod = ifelse(wgt_delta >= lod_var, "above", "below"),
-                               loq = ifelse(wgt_delta >= loq_var, "above", "below"))
+  df_grav_merged <- dplyr::mutate(df_grav_merged,
+                                  lod = ifelse(d_mass >= lod_var, "above", "below"),
+                                  loq = ifelse(d_mass >= loq_var, "above", "below"))
 ```
 
-# Background analysis
+* The mass accumulated on the filter was above the LOD for `r nrow(dplyr::filter(df_grav_merged, filter_type == "test", lod == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "test"))` tests (background tests not included).  
+* The mass accumulated on the filter was above the LOQ for `r nrow(dplyr::filter(df_grav_merged, filter_type == "test", loq == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "test"))` tests (background tests not included).  
 
-* extract background data
-* remove missing data
+* The mass accumulated on the filter was above the LOD for `r nrow(dplyr::filter(df_grav_merged, filter_type == "bg", lod == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "bg"))` background samples.  
+* The mass accumulated on the filter was above the LOQ for `r nrow(dplyr::filter(df_grav_merged, filter_type == "bg", loq == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "bg"))` background samples.  
+
+# Background 
+
+1. Select background tests.  
+2. Remove tests for which data is incomplete.  
+3. Calculate background concentration.  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  bg <- dplyr::filter(grav_merged, type == "bg") %>% #, qc == "ok") %>%
-        dplyr::select(id, flow,
-                      start, end,
-                      wgt_delta) %>%
-        na.omit() %>%
-        dplyr::mutate(dur = (end - start) / 60,
-                      conc = wgt_delta * 1000 / (flow * dur))
+  df_bg <- dplyr::filter(df_grav_merged, is.na(test_type)) %>% # 1
+           dplyr::select(id, flow, start_filters, end_filters, d_mass, lod, loq) %>%
+           na.omit() %>% # 2
+           dplyr::mutate(dur  = (end_filters - start_filters) / 60, # minutes
+                         conc = d_mass / ((flow * dur)/1000)) # ug/m3
 ```
 
-```{r, fig.width = 6, fig.height = 4}
-  ggplot(bg, aes(id, conc)) +
-  geom_point() +
-  theme_minimal() +
-  ylab(expression(PM[2.5]~~mu~g/m^3))
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=3.15, fig.height=3.15, fig.align='center'}
+  ggplot(df_bg, aes(id, conc)) +
+    geom_point(size = 3) +
+    xlab("Test ID") + 
+    ylab(expression(PM[2.5]~concentration~"("*mu*g/m^3*")")) + 
+    coord_cartesian(ylim=c(0,300)) + 
+    scale_y_continuous(breaks=seq(0,300,50)) + 
+    theme(aspect.ratio = 1,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks = element_line(color="black"),
+          axis.text  = element_text(size=9, color="black"),
+          axis.title = element_text(size=9, color="black"))
 ```
 
-* calculate average concentration emitted (and other stats)
+Calculate the mean background concentration.
 
 ```{r}
-  bg_summary <- bg %>%
-                dplyr::summarise(mean_bg = mean(conc),
-                                 sd = sd(conc),
-                                 min = min(conc),
-                                 max = max(conc),
-                                 n = n()) %>%
-                dplyr::mutate(type = factor("bg", "bg"))
+  bg_summary <- df_bg %>%
+                dplyr::summarise(mean = mean(conc),
+                                 sd   = sd(conc),
+                                 min  = min(conc),
+                                 max  = max(conc),
+                                 n    = n())
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  knitr::kable(bg_summary, "markdown", digits = 2)
+  knitr::kable(bg_summary, "markdown", digits = 0)
 ```
 
-* add background to main dataframe
+Add the mean background concentration to the main dataframe. 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav_merged <- grav_merged %>%
-                 dplyr::mutate(conc_bg = bg_summary$mean_bg)
+  df_grav_merged <- dplyr::mutate(df_grav_merged, conc_bg = bg_summary$mean)
 ```
 
-# Summary 
+# Calculate concentration
 
-Gravimetric data was collected during `r length(unique(grav_merged$id))` experiments between `r min(grav_merged$date, na.rm = TRUE)` and `r max(grav_merged$date, na.rm = TRUE)`. There is no Gravimetric data for tests: `r #setdiff(as.character(samples$id), as.character(grav_merged$id))`.
+Calculate the PM~2.5~ concentration in the hood exhaust.
 
-Gravimetric data is expected to be missing for: no tests.
+```{r}
+  df_grav_conc <- df_grav_merged %>%
+                  dplyr::filter(substr(id,1,1) != "G",      # reomve test blanks
+                                substr(id,1,2) != "BG") %>% # remove background tests
+                  dplyr::mutate(dur  = (end_filters - start_filters) / 60, # minutes
+                  conc = d_mass / ((flow * dur)/1000)) # ug/m3
+```
 
-# Save merged file
+# Save
+
+Gravimetric data was collected during `r nrow(dplyr::filter(df_grav_merged, !is.na(test_type)))` experiments between `r min(df_grav_merged$date, na.rm = TRUE)` and `r max(df_grav_merged$date, na.rm = TRUE)`. Gravimetric data is missing for: no tests.  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(grav_merged, file = "../r_files/grav_merged.RDS")
+  saveRDS(df_grav_conc, file = "../r_files/grav_conc.RDS")
 ```
 
-# Plots
+# QC Plots
 
-## Test blanks
+Change in mass of calibration weight:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(dplyr::filter(grav_merged, type == "test_blank"), aes(id, wgt_delta)) +
-  geom_point() +
-  theme_minimal()
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=8, fig.height=3.15, fig.align='center'}
+  ggplot(df_grav_conc, aes(id, d_cal)) +
+    geom_point(size = 3) +
+    coord_cartesian(ylim=c(-2,2)) + 
+    scale_y_continuous(breaks=seq(-5,5,1)) + 
+    xlab("Filter ID") + 
+    ylab("Change in calibration weight mass (ug)") + 
+    theme(aspect.ratio = 0.35,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks  = element_line(color="black"),
+          axis.text.x = element_text(size=6, color="black"),
+          axis.text.y = element_text(size=9, color="black"),
+          axis.title  = element_text(size=9, color="black"))
 ```
 
-## calibration
+Change in mass of calibration weight:
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_cal_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Cal weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
-```
-
-## blanks
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=8}
-  ggplot(grav_merged, aes(id, wgt_blank_delta)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Blanks weight delta (mg)") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1)) 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=8, fig.height=3.15, fig.align='center'}
+  ggplot(df_grav_conc, aes(id, d_lab_blank)) +
+    geom_point(size = 3) +
+    coord_cartesian(ylim=c(-3,3)) + 
+    scale_y_continuous(breaks=seq(-5,5,1)) + 
+    xlab("Filter ID") + 
+    ylab("Change in lab blank mass (ug)") + 
+    theme(aspect.ratio = 0.35,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks  = element_line(color="black"),
+          axis.text.x = element_text(size=6, color="black"),
+          axis.text.y = element_text(size=9, color="black"),
+          axis.title  = element_text(size=9, color="black"))
 ```

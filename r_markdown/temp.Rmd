@@ -1,5 +1,6 @@
 ---
-title: "temp"
+title: "Temperature Data"
+date: "December 22, 2018"
 output:
   html_document:
     toc: true
@@ -17,136 +18,132 @@ output:
 
 # Load data
 
-* pot and hood temperature
+Test metadata: 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  samples    <- readRDS("../r_files/samples.RDS")
+  notes      <- readRDS("../r_files/notes.RDS")
+```
+
+Temperature data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   temp <- readRDS("../r_files/temp.RDS")
 ```
 
-* metadata
+# Label temperatures
+
+Select only temperature data that was recorded (`t_1` and `t_2`).  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- readRDS(file = "../r_files/samples.RDS")
-  notes <- readRDS("../r_files/notes.RDS")
-  test_times <- readRDS("../r_files/test_times_all.RDS")
+  df_temp <- tidyr::gather(temp, loc, t_oc, t_1, t_2, t_3, t_4) %>%
+             dplyr::filter(!is.na(t_oc))
 ```
 
-# Tidy
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- tidyr::gather(temp, loc, t_oc,
-                               t_1, t_2, t_3, t_4) %>%
-                 dplyr::arrange(id)
-```
-
-# Switch probes
-
-* filter out `NAs`
+Specify the temperature measured using each probe (`t_1` and `t_2`).
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_merged <- dplyr::filter(temp_merged, !is.na(t_oc))
-```
+  df_flipped <- dplyr::filter(df_temp, id %in% c("FL2","FM2","LL2","LL4","LM4","FH4")) %>%
+                dplyr::mutate(loc = ifelse(loc == "t_1", "water",   loc),
+                              loc = ifelse(loc == "t_2", "exhaust", loc))
 
-* one pot stoves
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  flipped_tests <- dplyr::filter(temp_merged,
-                           id =="FL2" |id =="FM2" |id == "LL2" |id == "LL4" |id == "LM4" |id == "FH4") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "stove", loc),
-                           loc = ifelse(loc == "t_2", "pot", loc))
-
-  regular <- dplyr::filter(temp_merged, id !="FL2" & id !="FM2" & id !="LL2" & id !="LL4" & id !="LM4" & id !="FH4") %>%
-             dplyr::mutate(loc = ifelse(loc == "t_1", "pot", loc),
-                           loc = ifelse(loc == "t_2", "stove", loc))
+  df_regular <- dplyr::filter(df_temp, (id %in% c("FL2","FM2","LL2","LL4","LM4","FH4") == FALSE)) %>%
+                dplyr::mutate(loc = ifelse(loc == "t_1", "exhaust", loc),
+                              loc = ifelse(loc == "t_2", "water",   loc))
 
 ```
 
-* combine
+Recombine the data with the temperatures labeled. 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval=TRUE}
-  temp_merged <- dplyr::bind_rows(regular,
-                                  flipped_tests)
-
+  df_temp <- dplyr::bind_rows(df_regular,
+                              df_flipped)
 ```
 
 # QC
 
-## flags from notes
-
-* extract notes
+Select relevant notes
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
+  df_notes <- dplyr::filter(notes, grepl("temp|all", inst) == TRUE)
 ```
 
-* apply flags: `bad` preceeds `maybe` preceeds `good`
+Apply flags: `bad` preceeds `maybe` preceeds `good`
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
+  flags <- dplyr::select(df_notes, id, qc) %>%
            dplyr::group_by(id) %>%
            dplyr::arrange(qc) %>%
            dplyr::summarise(qc = first(qc))
 ```
 
-* merge flags with data
+Merge flags with data
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  temp_merged <- dplyr::left_join(temp_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
-## additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # temp_merged$qc[temp_merged$id == ""] <- "bad"
+  df_temp <- dplyr::left_join(df_temp, flags, by = "id") %>%
+             dplyr::mutate(qc = ifelse(is.na(qc), "ok", qc))
 ```
 
 # Save merged file
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(temp_merged, file = "../r_files/temp_merged.RDS")
-```
-
-```{r}
-min_pot_temp <- select(temp_merged, id, loc, t_oc) %>%
-                filter(grepl("stove", loc)) %>%
-                group_by(id) %>%
-                summarise(min = min(t_oc))
- 
+  saveRDS(df_temp, file = "../r_files/temp_merged.RDS")
 ```
 
 # Summary
 
-Temperature was measured for `r length(unique(temp_merged$id))` experiments between `r min(temp_merged$date, na.rm = TRUE)` and `r max(temp_merged$date, na.rm = TRUE)`. There is no temperature data for tests: `r setdiff(as.character(samples$id), as.character(temp_merged$id))`.
+Temperature was measured for `r length(unique(df_temp$id))` experiments between `r min(df_temp$date, na.rm = TRUE)` and `r max(df_temp$date, na.rm = TRUE)`. 
 
-Temperature data is expected to be missing for: 
-All "G" and "BG" tests. We did not collect stove/pot temperature for background tests as no stove was operated.
+There are no temperature data for tests: `r setdiff(as.character(samples$id), as.character(df_temp$id))`. Temperature data are expected to be missing for: All "G" and "BG" tests. We did not collect stove/pot temperature for background tests as no stove was operated. 
 
+```{r}
+  df_temp_min <- dplyr::filter(df_temp, loc=="water") %>%
+                 group_by(id) %>%
+                 summarise(min = min(t_oc))
+```
+
+* The starting water temperature ranged from `r min(df_temp_min)` to `r max(df_temp_min)` degrees Celsius.  
+* Water temperatures ranged from `r min(dplyr::filter(df_temp, loc=="water")$t_oc)` to `r max(dplyr::filter(df_temp, loc=="water")$t_oc)` degrees Celsius.  
+* The temperature at the combustion chamber outlet ranged from `r min(dplyr::filter(df_temp, loc=="exhaust")$t_oc)` to `r max(dplyr::filter(df_temp, loc=="exhaust")$t_oc)` degrees Celsius.  
 
 # Plots
 
-## all
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=50}
-  ggplot(temp_merged, aes(datetime, t_oc, color = loc)) +
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=12, fig.align='center'}
+  ggplot(dplyr::filter(df_temp, loc=="exhaust"), aes(datetime, t_oc)) +
          geom_line() +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         theme_minimal() +
-         theme(legend.position = "top") +
-         ylab("degrees celsius")
+         facet_wrap(~id, ncol = 4, scales = "free_x") +
+         ylab("degrees Celsius") + 
+         xlab("Time") + 
+         ggtitle("Temperature at combustion chamber outlet") + 
+         theme(aspect.ratio=1,
+               panel.border     = element_rect(fill=NA),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray90"),
+               panel.grid.minor = element_line(color="gray90"),
+               text        = element_text(size=9, color="black"),
+               axis.text.x = element_text(size=7, color="black"),
+               axis.text.y = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               axis.ticks  = element_line(color="black"),
+               plot.title  = element_text(size=11, color="black")) 
 ```
 
-```{r}
-times <- rename(test_times, time = value) %>%
-         select(id, var, time)
-#temp_merged1 <-
-
-temps_times <- filter(temp_merged, loc == "stove") %>%
-               select(time, id, t_oc) %>%
-               left_join(times, by = c("id", "time"))
-
-temps_times <- filter_times(times, temp_merged)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=12, fig.align='center'}
+  ggplot(dplyr::filter(df_temp, loc=="water"), aes(datetime, t_oc)) +
+         geom_line() +
+         facet_wrap(~id, ncol = 4, scales = "free_x") +
+         ylab("degrees Celsius") + 
+         xlab("Time") + 
+         ggtitle("Water temperature") + 
+         theme(aspect.ratio=1,
+               panel.border     = element_rect(fill=NA),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray90"),
+               panel.grid.minor = element_line(color="gray90"),
+               text        = element_text(size=9, color="black"),
+               axis.text.x = element_text(size=7, color="black"),
+               axis.text.y = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               axis.ticks  = element_line(color="black"),
+               plot.title  = element_text(size=11, color="black")) 
 ```
-

@@ -1,0 +1,520 @@
+---
+title: "Flow Rates"
+author: "Jessica Tryner"
+date: "December 22, 2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r load_libraries, echo=FALSE, include=FALSE}
+  library(tidyverse)
+  library(lubridate)
+  library(gridExtra)
+```
+
+```{r load_functions}
+  source("../R_scripts/R_tidy.R")
+  source("../r_scripts/R_functions.R")
+```
+
+# Load data
+
+Test metadata: 
+
+```{r}
+  samples <- readRDS("../r_files/samples.RDS")
+```
+
+Log data: 
+
+```{r}
+  tester_one <- readRDS("../r_files/data_tester_one.RDS")
+  tester_two <- readRDS("../r_files/data_tester_two.RDS")
+  cal_two    <- readRDS("../r_files/data_cal_two.RDS")
+```
+
+# Oraganize 
+
+### Isokinetic sample line
+
+```{r}
+  df_iso <- tidy_id_date(tester_two, "_iso_.*[^avg]$", "_iso_") %>%
+            dplyr::filter(!is.na(value)) %>%
+            split_flows() %>%
+            dplyr::mutate(instrument = "isokinetic")
+```
+
+### Filters
+
+```{r}
+  df_filter <- tidy_id_date(tester_one, "^preflow_.*[^avg]$|postflow.*[^avg]$", "") %>%
+               dplyr::filter(!is.na(value))     %>%
+               split_filter_flows()             %>%
+               dplyr::mutate(instrument = "filters")
+```
+
+### Carbonyls
+
+```{r}
+  df_carb <- tidy_id_date(tester_two, "_carb_.*[^avg]$", "_carb_") %>%
+             dplyr::filter(!is.na(value)) %>%
+             split_flows() %>%
+             dplyr::mutate(instrument = "carbonyls")
+```
+
+### SMPS
+
+```{r}
+  df_smps <- tidy_date(cal_two, "^smps", "") %>%
+             dplyr::filter(!is.na(value))    %>%
+             split_flows() %>%
+             dplyr::mutate(instrument = "smps",
+                           type = ifelse(type=="smps_pre", "pre", "post"))
+```
+
+### DustTrak
+
+```{r}
+  df_dust <- tidy_date(cal_two, "^dust", "") %>%
+             dplyr::filter(!is.na(value))    %>%
+             split_flows() %>%
+             dplyr::mutate(instrument = "dusttrak",
+                           type = ifelse(type=="dusttrak_pre", "pre", "post"))
+```
+
+### PAX
+
+```{r}
+  df_pax <- tidy_date(cal_two, "^pax", "") %>%
+            dplyr::filter(!is.na(value))   %>%
+            split_pax_flows() %>%
+            dplyr::mutate(instrument = "pax",
+                          type = ifelse(type=="pax_pre", "pre", "post"))
+```
+
+# Combine and Average
+
+Select flow rates that were measured before and after each test (and are therefore associated with a test ID).  Then, average: (1) the three pre-test flow rate measurements and (2) the three post-test flow rate measurements. 
+
+```{r}
+  df_flows_id <- dplyr::bind_rows(df_iso,
+                                  df_filter,
+                                  df_carb) %>%
+                 dplyr::mutate(type = forcats::fct_relevel(type,"pre","post")) %>%
+                 dplyr::group_by(id, instrument, colour, type) %>%
+                 dplyr::summarise(flow = mean(value, na.rm = TRUE)) 
+```
+
+Select flow rates that were measured once per day (and are therefore associated with a date and not a test ID).  Then, average: (1) the three pre-test flow rate measurements and (2) the three post-test flow rate measurements. 
+
+```{r}
+  df_flows_date <- dplyr::bind_rows(df_smps,
+                                    df_dust,
+                                    df_pax) %>%
+                   dplyr::mutate(type = forcats::fct_relevel(type,"pre","post")) %>%
+                   dplyr::group_by(date, instrument, loc, type) %>%
+                   dplyr::summarise(flow = mean(value, na.rm = TRUE)) 
+```
+
+Average the pre- and post-test flow rate measurements. Also, add dates back into the data frame with test IDs.
+
+```{r}
+  df_flows_id_avg   <- dplyr::summarise(df_flows_id,   flow = mean(flow, na.rm = TRUE)) %>%
+                       dplyr::left_join(dplyr::select(samples, id, date), by=c("id"))
+
+  df_flows_date_avg <- dplyr::summarise(df_flows_date, flow = mean(flow, na.rm = TRUE))
+```
+
+Combine the two sets of flow rate data. 
+
+```{r}
+  df_flow_avg <- bind_rows(df_flows_id_avg, df_flows_date_avg) %>%
+                 dplyr::ungroup() %>%
+                 dplyr::select(id, date, instrument, colour, loc, flow)
+```
+
+# Save
+
+```{r}
+  saveRDS(df_flow_avg, file="../r_files/flow_rates.RDS")
+```
+
+# QC plots
+
+Calculate z scores and check for outliers.  
+
+```{r}
+  df_flows_id <- dplyr::ungroup(df_flows_id) %>%
+                 dplyr::group_by(instrument, colour, type) %>%
+                 dplyr::mutate(value_norm = (flow - mean(flow)) / sd(flow),
+                               outlier    = ifelse(is_outlier(flow), as.character(id), NA))
+
+  df_flows_date <- dplyr::ungroup(df_flows_date) %>%
+                   dplyr::group_by(instrument, loc, type) %>%
+                   dplyr::mutate(value_norm = (flow - mean(flow)) / sd(flow),
+                                 outlier    = ifelse(is_outlier(flow), as.character(date), NA))
+```
+
+### Isokinetic sample line
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_id, instrument=="isokinetic"), aes(x=flow)) +
+         geom_vline(xintercept = 16.7, color = "black", linetype = 2) +
+         geom_histogram(breaks=seq(15.65,17.25,0.1), color = "black") +
+         facet_grid(~type) +
+         scale_x_continuous(breaks = seq(15.8,17.2,0.3),
+                            minor_breaks = seq(15.8,17.2,0.3)) + 
+         scale_y_continuous(breaks=seq(0,10,2)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("Isokinetic sample line") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_id, instrument=="isokinetic"),
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label=outlier), na.rm=TRUE, hjust=-0.3, size=3) +
+         coord_cartesian(ylim=c(-3,3)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("Isokinetic sample line") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+### Filters
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_id, instrument=="filters", colour=="white"),
+         aes(x=flow)) +
+         geom_vline(xintercept = 8.35, color = "black", linetype = 2) +
+         geom_histogram(breaks=seq(7.5,9.1,0.1), color = "black") +
+         facet_grid(~type) +
+         scale_x_continuous(breaks=seq(7.45,9.2,0.3)) + 
+         scale_y_continuous(breaks=seq(0,16,2)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("Filter cartidges: PTFE and quartz back") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_id, instrument=="filters", colour=="white"), 
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-4,4)) + 
+         scale_y_continuous(breaks=seq(-4,4,2)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("Filter cartidges: PTFE and QB") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_id, instrument=="filters", colour=="orange"),
+         aes(x=flow)) +
+         geom_vline(xintercept = 8.35, color = "black", linetype = 2) +
+         geom_histogram(breaks=seq(7.5,9.1,0.1), color = "black") +
+         facet_grid(~type) +
+         scale_x_continuous(breaks=seq(7.45,9.2,0.3)) + 
+         scale_y_continuous(breaks=seq(0,24,2)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("Filter cartidges: Quartz front") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_id, instrument=="filters", colour=="orange"),
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-4,4)) + 
+         scale_y_continuous(breaks=seq(-4,4,2)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("Filter cartidges: Quartz front") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+### Carbonyls
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_id, instrument=="carbonyls"), aes(x=flow)) +
+         geom_histogram(breaks=seq(0.6,1.3,0.1), color = "black") + 
+         facet_grid(~type) +
+         scale_x_continuous(breaks = seq(0.6,1.3,0.2)) + 
+         scale_y_continuous(breaks=seq(0,16,4)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("Carbonyls") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_id, instrument=="carbonyls"), 
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-3.5,3.5)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("Carbonyls") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+### SMPS
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_date, instrument=="smps"), aes(x=flow)) +
+         geom_histogram(breaks=seq(0.621,0.632,0.001), color = "black") + 
+         facet_grid(~type) +
+         scale_x_continuous(breaks = seq(0.620,0.632,0.002)) + 
+         scale_y_continuous(breaks=seq(0,4,1)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("SMPS") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_date, instrument=="smps"), 
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label=outlier), na.rm=TRUE, hjust=-0.3, size=3) +
+         coord_cartesian(ylim=c(-2,2)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("SMPS") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+### DustTrak
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_date, instrument=="dusttrak"), aes(x=flow)) +
+         geom_histogram(breaks=seq(0.78,1.79,0.1), color = "black") + 
+         facet_grid(~type) +
+         scale_x_continuous(breaks = seq(0.8,1.8,0.2)) + 
+         scale_y_continuous(breaks=seq(0,8,1)) + 
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("DustTrak") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_date, instrument=="dusttrak"), 
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label=outlier), na.rm=TRUE, hjust=-0.3, size=3) +
+         coord_cartesian(ylim=c(-2.5,2.5)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("DustTrak") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+### PAX
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_date, instrument=="pax", loc=="inlet"),
+         aes(x=flow)) +
+         geom_histogram(breaks=seq(1.07,1.14,0.01), color = "black") +
+         facet_grid(~type) +
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("PAX inlet") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_date, instrument=="pax", loc=="inlet"), 
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-3,3)) + 
+         scale_y_continuous(breaks=seq(-4,4,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("PAX inlet") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=5.4, fig.height=3.4, fig.align='center'}
+                          
+  ggplot(dplyr::filter(df_flows_date, instrument=="pax", loc=="exit"),
+         aes(x=flow)) +
+         geom_histogram(color = "black", breaks=seq(1.07,1.14,0.01)) + # 
+         facet_grid(~type) +
+         xlab("Flow rate (L/min)") +
+         ylab("Count") + 
+         ggtitle("PAX exit") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks = element_line(color="black"),
+               axis.text  = element_text(size= 9, color="black"),
+               axis.title = element_text(size= 9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.4, fig.align='center'}
+
+  ggplot(dplyr::filter(df_flows_date, instrument=="pax", loc=="exit"),
+         aes(x = type, y = value_norm)) +
+         geom_boxplot() +
+         geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3, size = 3) +
+         coord_cartesian(ylim=c(-3,3)) + 
+         scale_y_continuous(breaks=seq(-3,3,1)) + 
+         ylab("z score normalized value") +
+         xlab("") +
+         ggtitle("PAX exit") + 
+         theme(aspect.ratio = 1,
+               panel.border = element_rect(fill=NA, color="black"),
+               panel.background = element_rect(fill="white"),
+               panel.grid.major = element_line(color="gray95"),
+               panel.grid.minor = element_line(color="gray95"),
+               axis.ticks  = element_line(color="black"),
+               axis.text = element_text(size=9, color="black"),
+               axis.title  = element_text(size=9, color="black"),
+               plot.title = element_text(size=11, color="black", face="bold"))
+```
+

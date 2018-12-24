@@ -19,7 +19,7 @@ load_co2_file <- function(file){
  # read file
   out <- read_csv(file = file, col_names = FALSE, skip = 7)
  # name columns
-  names(out) <- c("date", "time", "ch1", "ch2", "ch3", "ch4")
+  names(out) <- c("date", "time", "v1", "v2", "v3", "v4")
  # classes
   out <- dplyr::mutate(out,
                        datetime = as.POSIXct(date, format = "%m/%d/%Y"),
@@ -37,42 +37,43 @@ load_co2_file <- function(file){
 #file <- "../data/ecoc/nih_mc.csv"
 load_ecoc_file <- function(file = "../data/ecoc/nih_mc.csv"){
 
-  readr::read_csv(file,
-                         skip = 4,
+  readr::read_csv(file, skip = 4,
                          
-                         col_names = c("filter_id",	"optics_mode","oc_ugsqcm",
-                                       "oc_unc",	"ec_ugsqcm","ec_unc",
-                                       "cc_ugsqcm","cc_unc","tc_ugsqcm","tc_unc","ectc_ratio",
-                                       "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
-                                       "pyrolc_ugsqcm","ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
-                                       "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm","date","time","cal_const",
-                                       "puch_area_cm2","fid1","fid2","calibration_area","num_points","splittime_sec",
-                                       "manual_split_sec","init_abs","abs_coef","inst_name","atmpres_mmHg","optical_ec",
-                                       "analyst","laser_correction","begin_int","end_int","tran_time","parameter_file",
-                                       "empty1", "empty2"),
-                         col_types = 
-                          cols(
-                           .default = col_double(),
-                           filter_id = col_character(),
-                           optics_mode = col_character(),
-                           date = col_date(format = "%m/%d/%y"),
-                           time = col_time(format = ""),
-                           fid1 = col_character(),
-                           fid2 = col_character(),
-                           manual_split_sec = col_character(),
-                           inst_name = col_character(),
-                           analyst = col_character(),
-                           parameter_file = col_character(),
-                           empty1 = col_character(),
-                           empty2 = col_character()
-                          ),
-                         na = c("", "na", "-")
-         ) %>%
+                        col_names = c("filter_id","optics_mode",
+                                      "oc_ug_cm2","oc_unc",	"ec_ug_cm2","ec_unc",
+                                      "cc_ug_cm2","cc_unc","tc_ug_cm2","tc_unc","ectc_ratio",
+                                      "pk1c_ugsqcm","pk2c_ugsqcm","pk3c_ugsqcm","pk4c_ugsqcm",
+                                      "pyrolc_ugsqcm",
+                                      "ec1c_ugsqcm","ec2c_ugsqcm","ec3c_ugsqcm",
+                                      "ec4c_ugsqcm","ec5c_ugsqcm","ec6c_ugsqcm",
+                                      "date","time","cal_const","punch_area_cm2",
+                                      "fid1","fid2","calibration_area","num_points",
+                                      "splittime_sec","manual_split_sec",
+                                      "init_abs","abs_coef",
+                                      "inst_name","atmpres_mmHg","optical_ec","analyst",
+                                      "laser_correction","begin_int","end_int",
+                                      "tran_time","parameter_file",
+                                      "empty1", "empty2"),
+                  
+                        col_types = cols(.default    = col_double(),
+                                         filter_id   = col_character(),
+                                         optics_mode = col_character(),
+                                         date        = col_date(format = "%m/%d/%y"),
+                                         time        = col_time(format = ""),
+                                         fid1        = col_character(),
+                                         fid2        = col_character(),
+                                         manual_split_sec = col_character(),
+                                         inst_name   = col_character(),
+                                         analyst     = col_character(),
+                                         parameter_file = col_character(),
+                                         empty1      = col_character(),
+                                         empty2      = col_character()),
+                  
+                         na = c("", "na", "-")) %>%
   dplyr::mutate(datetime = as.POSIXct(paste(date, time), 
-                                      format = "%Y-%m-%d %H:%M:%S"),
-                time = as.numeric(hms(time)) # convert time to secs in day
-  )
-
+                                      format = "%Y-%m-%d %H:%M:%S",
+                                      tz = "America/Denver"),
+                time     = as.numeric(hms(time))) # convert time to secs in day
 }
 #_______________________________________________________________________________
 
@@ -370,7 +371,7 @@ load_smps_file <- function(file){
  # clean up column names
   out <- clean_names(out)
  # organize size distributions
-  out <- tidyr::gather(out, "size_nm", "dw", 10:ncol(out)) %>%
+  out <- tidyr::gather(out, "size_nm", "dw", 10:201) %>%
          dplyr::filter(!is.na(dw)) %>%
          dplyr::arrange(sample, size_nm) %>%
          dplyr::mutate(size_nm = as.numeric(sub("_", ".", size_nm)),
@@ -378,9 +379,12 @@ load_smps_file <- function(file){
                                   as.character(seconds_to_period(as.numeric(start_time)))),
                                   format = "%F %HH %MM %SS"),
                        sample_file = basename(file)) %>%
-         dplyr::select(-diameter_midpoint_nm)
+         dplyr::select(-diameter_midpoint_nm, -title, -user_name, -sample_id, 
+                       -instrument_id, -lab_id, -leak_test_and_leakage_rate, 
+                       -comment, -x231, -`td_+_0_5_s`)
  # organize header
-  out_head <- tidyr::spread(out_head, var, val) %>% clean_names()
+  out_head <- tidyr::spread(out_head, var, val) %>% 
+              clean_names()
  # combine
   out <- left_join(out, out_head, by = "sample_file")
  # return

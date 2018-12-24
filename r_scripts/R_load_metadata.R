@@ -261,113 +261,50 @@ load_cal_two <- function(file = "../data/logs/Tester 2 Cal Log Final.xlsx"){
 # df <- load_test_log(file)
 load_test_log <- function(file = "../data/logs/MC Test Log.csv"){
  
- df <- read_csv(file, skip = 0, col_names = FALSE)
+  # read .csv file
+  out <- read_csv(file, skip = 0, col_names = FALSE)
 
- df <- as.data.frame(t(df[c(-1,-2,-3)]))
+  # transpose data
+  out <- as_tibble(t(out[c(-1,-2,-3)]))
+  
+  # many columns are not used
+  out <- dplyr::select(out, 1:5, 9, 12:19, 22:23, 26:27, 68:72)
  
- names(df) <- c("id",
-                "stove",
-                "fuel",
-                "date",
-                "tester",
-                "lab_t",
-                "lab_p",
-                "lab_rh",
-                "wgt_pot_a",
-                "wgt_pot_b",
-                "wgt_fuel",
-                "wgt_starter",
-                "time_ignite",
-                "time_set_1",
-                "time_shims_out",
-                "time_set_2",
-                "time_set_1_out",
-                "time_set_3",
-                "time_set_2_out",
-                "holder_1",
-                "holder_2",
-                "time_end",
-                "wgt_on_1",
-                "time_start_1",
-                "time_end_1",
-                "wgt_off_1",
-                "pot_1",
-                "wgt_on_2",
-                "time_start_2",
-                "time_end_2",
-                "wgt_off_2",
-                "pot_2",
-                "wgt_on_3",
-                "time_start_3",
-                "time_end_3",
-                "wgt_off_3",
-                "pot_3",
-                "wgt_on_4",
-                "time_start_4",
-                "time_end_4",
-                "wgt_off_4",
-                "pot_4",
-                "wgt_on_5",
-                "time_start_5",
-                "time_end_5",
-                "wgt_off_5",
-                "pot_5",
-                "wgt_on_6",
-                "time_start_6",
-                "time_end_6",
-                "wgt_off_6",
-                "pot_6",
-                "wgt_on_7",
-                "time_start_7",
-                "time_end_7",
-                "wgt_off_7",
-                "pot_7",
-                "wgt_on_8",
-                "time_start_8",
-                "time_end_8",
-                "wgt_off_8",
-                "pot_8",
-                "wgt_on_9",
-                "time_start_9",
-                "time_end_9",
-                "wgt_off_9",
-                "pot_9",
-                "wgt_ashpot_lid",
-                "wgt_ashpot_unusedfuel",
-                "wgt_ashpot_char_ash",
-                "other_stoves",
-                "notes")
+  names(out) <- c("id",     # 1
+                 "stove",   # 2
+                 "fuel",    # 3
+                 "date",    # 4
+                 "tester",  # 5
+                 "wgt_pot", # 9
+                 "wgt_starter",    # 12
+                 "time_ignite",    # 13
+                 "time_set_1",     # 14
+                 "time_shims_out", # 15
+                 "time_set_2",     # 16
+                 "time_set_1_out", # 17
+                 "time_set_3",     # 18
+                 "time_set_2_out", # 19
+                 "time_end", # 22
+                 "wgt_on",   # 23
+                 "wgt_off",  # 26
+                 "pot_1",    # 27
+                 "wgt_ashpot_lid",        # 68
+                 "wgt_ashpot_unusedfuel", # 69
+                 "wgt_ashpot_char_ash",   # 70
+                 "other_stoves",          # 71
+                 "notes")                 # 72
  
- df_dat <- subset(df, select = date)
- 
- df_dat$date <- as.Date(as.character(df_dat$date), format = "%m/%d/%Y")
- 
- cols <- subset(colnames(df), grepl("^wgt|^lab",colnames(df))==TRUE)
- 
- df_num <- subset(df, select = cols)
- 
- df_num <- as.data.frame(lapply(df_num, 
-                                function(x) as.numeric(as.character(x))))
- 
- cols <- subset(colnames(df), grepl("^time",colnames(df))==TRUE)
- 
- df_time <- subset(df, select = cols)
- 
- df_time <- as.data.frame(lapply(df_time, 
-                                 function(x) as.numeric(hms(x)))) 
- 
- df_char <- subset(df, select = notes)
- 
- df_char <- as.data.frame(lapply(df_char,
-                                 function(x) as.character(x)), stringsAsFactors=FALSE)
- 
- cols <- subset(colnames(df), grepl("^id$|^stove$|^fuel$|^person$|^pot|^other_stoves$", colnames(df))==TRUE)
- 
- df_fac <- subset(df, select = cols)
- 
- out <- as_data_frame(dplyr::bind_cols(df_dat, df_num, df_time, df_char, df_fac))
- 
- # return
+  out <- dplyr::mutate(out, 
+                       date = as.Date(date, format="%m/%d/%Y")) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("lab")),
+                          .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("wgt")),
+                          .funs = as.numeric) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                          .funs = hms) %>%
+         dplyr::mutate_at(.cols = vars(starts_with("time")),
+                          .funs = as.numeric)
+    
  return(out)
 }
 #________________________________________________________

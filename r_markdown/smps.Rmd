@@ -1,5 +1,6 @@
 ---
-title: "smps"
+title: "SMPS"
+date: "December 23, 2018"
 output:
   html_document:
     toc: true
@@ -9,7 +10,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
-  library(gridExtra)
+  #library(gridExtra)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -19,160 +20,26 @@ output:
 
 # Load data
 
-Test metadata
+Test metadata:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  samples <- readRDS("../r_files/samples.RDS")
-  cal_2   <- readRDS("../r_files/data_cal_two.RDS")
-  notes   <- readRDS("../r_files/notes.RDS")
-  
-  test_times        <- readRDS("../r_files/test_times.RDS")
-  smps_pax_bg_times <- readRDS("../r_files/smps_pax_bg_times.RDS")
+  samples    <- readRDS("../r_files/samples.RDS")
+  test_times <- readRDS("../r_files/test_times_all.RDS")
+  notes      <- readRDS("../r_files/notes.RDS")
 ```
 
-SMPS
+SMPS: 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   smps     <- readRDS("../r_files/smps.RDS")
   dilution <- readRDS("../r_files/dilution.RDS")
 ```
 
-Constants
+Constants: 
 
 ```{r}
   hood_flow <- readRDS("../r_files/hood_flow.RDS") # m3/min
-  const     <- 0.015625355
-```
-
-# Organize
-
-* extract test times
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
-                tidyr::spread(var, value)
-```
-
-
-* extract measured flows.
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_flows <- tidy_date(cal_2, "^smps_preflow_[0-9]|^smps_postflow_[0-9]", "")
-
-  smps_flows <- split_flows(smps_flows)
-```
-
-* average flows
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_flows <- dplyr::arrange(group_by(smps_flows, date, type), date) %>%
-                dplyr::mutate(mean = mean(value, na.rm = TRUE),
-                              sd = sd(value, na.rm = TRUE)) %>%
-                dplyr::filter(rep == 1) %>%
-                dplyr::select(-rep, -value) %>%
-                tidyr::gather(temp, val, mean, sd) %>%
-                tidyr::unite(temp1, type, temp, sep = "_") %>%
-                tidyr::spread(temp1, val)
-```
-
-* map ids to smps files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  test_times_renamed <- dplyr::rename(test_times, start = set_1)  
-  smps <- dplyr::rename(smps, time = start_time)
-  smps_merged <-  map_id(smps, test_times_renamed) # used to be smps_id
-  
-  # smps_noid <- dplyr::setdiff(smps, select(smps_id, -id)) %>%
-              # dplyr::mutate(id = NA)
-  
-  # merged file is too long and contains duplicate rows and datetime for unknown reason(s)
-  # smps_merged <- dplyr::arrange(rbind(smps_id, smps_noid), datetime)
-```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps_merged, smps_flows, "date") %>%
-                 dplyr::mutate(sample = as.factor(sample))
-```
-
-# QC
-
-* notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- dplyr::filter(notes, grepl("smps|all", inst))
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval = FALSE}
-  knitr::kable(dplyr::filter(notes, grepl(".*smps.*", inst)) %>%
-               dplyr::select(-inst, -date),
-               "markdown", digits = 2)
-```
-
-* apply flags: `bad` preceeds `maybe` preceeds `good`
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
-```
-
-* merge
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_merged <- dplyr::left_join(smps_merged, flags, by = "id") %>%
-                 dplyr::mutate(id = as.factor(id)) %>%
-                 dplyr::mutate(qc = as.factor(ifelse(is.na(qc),
-                                                     "ok",
-                                                     as.character(qc)))) %>%
-                 dplyr::mutate(type = ifelse(grepl("^[A-Z][A-Z][0-9]", id), "test", NA),
-                               type = ifelse(grepl("^BG[0-9]", id), "bg", type))
-```
-
-* error from instrument
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-   # smps_merged <- dplyr::mutate(smps_merged,
-   #                              qc = ifelse(grepl("^Normal Scan$", instrument_errors),
-   #                                          as.character(qc),
-   #                                          "bad"))
-```
-
-* additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-   # smps_merged$qc[smps_merged$id == ""] <- "bad"
-```
-
-```{r}
-  types <- dplyr::select(samples, id, type, mc_level) %>%
-           dplyr::mutate(id = as.factor(id))
-
-  dilution <- dplyr::mutate(dilution, id = as.factor(id))
-
-  smps_dilution <- dplyr::select(smps_merged, id, size_nm, dw) %>%
-                   dplyr::filter(!is.na(size_nm))     %>%
-                   dplyr::mutate(dw = as.numeric(dw)) %>%
-                   group_by(id, size_nm)              %>%
-                   summarise(dw_mean = mean(dw))      %>%
-                   ungroup()                          %>%
-                   left_join(types,    by=c("id"))    %>%
-                   left_join(dilution, by=c("id"))    %>%
-                   dplyr::mutate(dndlogdp = dw_mean*median_dilution) %>%
-                   dplyr::filter(type != "bg")        %>%
-                   dplyr::mutate(mc_level = as.character(mc_level),
-                                 mc_level = ifelse(mc_level=="high", "High",   mc_level),
-                                 mc_level = ifelse(mc_level=="med",  "Medium", mc_level),
-                                 mc_level = ifelse(mc_level=="low",  "Low",    mc_level),
-                                 mc_level = as.factor(mc_level),
-                                 mc_level = forcats::fct_relevel(mc_level, "High","Medium","Low"))
-  
-  df_smps_avg <- smps_dilution %>%
-                 group_by(mc_level, size_nm) %>%
-                 summarise(dndlogdp_avg = mean(dndlogdp),
-                           dndlogdp_sd  = sd(dndlogdp))
+  dlogdp    <- readRDS("../r_files/smps_dlogdp.RDS")
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -187,7 +54,205 @@ Constants
   pink2  <- "#FF3366"
 ```
 
-```{r, fig.width=3.54, fig.height=3.15, fig.align='center'}
+# Organize
+
+### Times
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df_times <- dplyr::filter(test_times, var == "set_1" | var == "end") %>%
+              tidyr::spread(var, value) %>%
+              dplyr::rename(start = set_1)  
+```
+
+### SMPS
+
+Map test IDs to SMPS data.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  df_smps <- dplyr::rename(smps, time = start_time) %>%
+             dplyr::mutate(dw = as.numeric(dw))
+
+  df_smps <-  map_id(df_smps, df_times) 
+```
+
+### Notes
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df_notes <- dplyr::filter(notes, grepl("smps|all", inst))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, eval = FALSE}
+  knitr::kable(dplyr::filter(df_notes, grepl(".*smps.*", inst)) %>%
+               dplyr::select(-inst, -date),
+               "markdown", digits = 2)
+```
+
+Apply flags: `bad` preceeds `maybe` preceeds `good`
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  flags <- dplyr::select(df_notes, id, qc) %>%
+           dplyr::group_by(id) %>%
+           dplyr::arrange(qc) %>%
+           dplyr::summarise(qc = first(qc))
+```
+
+### Combine
+
+Combine the SMPS data with the QC flags. 
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df_smps_merged <- dplyr::left_join(df_smps, flags, by=c("id")) %>%
+                    dplyr::mutate(qc     = ifelse(is.na(qc), "ok", qc),
+                                  sample = as.factor(sample),
+                                  time   = as.numeric(time))   
+```
+
+* The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`.  
+* There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.  
+* SMPS data is expected to be missing for: the first test day.  
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width=6.5, fig.height=14, fig.align='center'}
+
+  df_plot <- df_smps_merged %>%
+             dplyr::select(id, sample, size_nm, dw) %>%
+             dplyr::bind_rows(data.frame(id = c("BG1","LL1"),
+                                         size_nm = NA,
+                                         dw = NA))
+
+  ggplot(df_plot, aes(x=size_nm, y=dw, group=sample)) + 
+    geom_line(color = pink2) +
+    facet_wrap(~id, ncol=4) +
+    xlab("Particle size (nm)") + 
+    ylab(expression("dN/dlog("*D[p]*")")) +
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          text        = element_text(size=10, color='black'),
+          axis.text.x = element_text(size= 6, color='black'),
+          axis.text.y = element_text(size= 9, color='black'),
+          axis.title  = element_text(size= 9, color='black'),
+          axis.ticks  = element_line(color='black')) 
+```
+
+# Average
+
+Average the particle number concentrations (dN/dlog(Dp)) in each size bin over each test.  In other words, average the individual scans from each test.  
+
+```{r}
+  df_smps_test <- df_smps_merged %>%
+                  dplyr::select(id, size_nm, dw)                   %>%
+                  dplyr::group_by(id, size_nm)                     %>%
+                  dplyr::summarise(dw_mean = mean(dw, na.rm=TRUE)) %>%  
+                  dplyr::ungroup()                                 
+```
+
+# Background
+
+Compare the particle number size distributions measured during background tests and regular tests.  
+
+```{r, echo=FALSE, fig.width=3.54, fig.height=3.15, fig.align='center'}
+
+  df_plot <- dplyr::mutate(df_smps_test,
+                           test_type = ifelse(substr(id, 1, 2) == "BG",
+                                              "Background",
+                                              "Test"))
+
+  log10_breaks <- c(10,20,30,50,60,70,80,90,
+                    100,200,300,400,500)
+
+  ggplot(df_plot, aes(x = size_nm, y = dw_mean, group = id, color = test_type)) +
+      geom_line() +
+    scale_color_manual(values  = c(pink1, teal3)) +
+    xlab("Particle size (nm)") + 
+    ylab(expression("dN/dlog("*D[p]*")")) +
+    labs(color="Test type") +
+    scale_x_log10(breaks=c(10,20,50,100,200,500), minor_breaks=log10_breaks) + 
+    theme(aspect.ratio=1,
+          panel.grid.major.x = element_line(color="gray95"),
+          panel.grid.minor.x = element_line(color="gray95"),
+          panel.grid.major.y = element_line(color="gray95"),
+          panel.grid.minor.y = element_line(color="gray95"),
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          axis.text  = element_text(size=10, color='black'),
+          axis.title = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black'),
+          legend.text  = element_text(size=10, color='black'),
+          legend.title = element_text(size=10, color='black'),
+          legend.key   = element_blank(),
+          legend.position = c(0.75,0.79))
+```
+
+Compare the number concentration of ultrafine particles in the SMPS sample line during background tests and regular tests.  
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+
+  df_ufp_bg <- dplyr::filter(df_smps_test, size_nm <= 100) %>%
+               dplyr::mutate(num_conc = dw_mean * dlogdp)  %>%
+               dplyr::group_by(id)                         %>%
+               dplyr::summarise(num_conc = sum(num_conc))  %>%
+               dplyr::mutate(test_type = ifelse(substr(id, 1, 2) == "BG",
+                                                "Background",
+                                                "Test")) 
+```
+
+```{r, echo=FALSE, fig.width=7.5, fig.height=3.15, fig.align='center'}
+
+  ggplot(df_ufp_bg, aes(x = id, y = num_conc, color = test_type, fill = test_type)) +
+      geom_col() +
+    scale_fill_manual(values  = c(pink1, teal3)) +
+    xlab("Test ID") + 
+    ylab(expression(Ultrafine ~ particles ~ "("*"#"/cm^3*")")) +
+    labs(color="Test type", fill = "Test type") +
+    theme(aspect.ratio=0.40,
+          panel.grid.major.x = element_line(color="gray95"),
+          panel.grid.minor.x = element_line(color="gray95"),
+          panel.grid.major.y = element_line(color="gray95"),
+          panel.grid.minor.y = element_line(color="gray95"),
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          axis.text.x = element_text(size=7, color='black'),
+          axis.text.y = element_text(size=9, color='black'),
+          axis.title = element_text(size=9, color='black'),
+          axis.ticks = element_line(color='black'),
+          legend.text  = element_text(size=9, color='black'),
+          legend.title = element_text(size=9, color='black'),
+          legend.key   = element_blank(),
+          legend.position = c(0.13,0.79))
+```
+
+# Correct for dilution
+
+Corect the concentrations measured during actual tests (non-background tests) for the dilution ratio.  
+
+1. Remove background tests.  
+2. Add dilution ratios to data frame.  
+3. Multiply the dN/dlog(Dp) values recorded by SMPS by the dilution ratio.  
+4. Add test metadata.  
+
+```{r}
+  df_smps_test <- dplyr::filter(df_smps_test, substr(id,1,2) != "BG") %>% # 1
+                  dplyr::left_join(dplyr::select(dilution, id, dilution), # 2
+                                   by=c("id"))                        %>%
+                  dplyr::mutate(dndlogdp = dw_mean*dilution)          %>% # 3
+                  dplyr::left_join(dplyr::select(samples, id, type, mc_level), 
+                                   by=c("id"))                            # 4
+```
+
+Calculate the average particle number concentration (dN/dlog(Dp)), for each particle size, at each fuel moisture level. 
+
+```{r}
+  df_smps_avg <- dplyr::group_by(df_smps_test, mc_level, size_nm) %>%
+                 summarise(dndlogdp_avg = mean(dndlogdp),
+                           dndlogdp_sd  = sd(dndlogdp))
+```
+
+Plot the particle number size distribution for each fuel moisture level.  The values shown in the figure have been corrected for the dilution ratio but have not been background corrected.  Background concentrations were negligible.
+
+```{r, echo=FALSE, fig.width=3.54, fig.height=3.15, fig.align='center'}
 
   log10_breaks <- c(10,20,30,50,60,70,80,90,
                     100,200,300,400,500)
@@ -231,214 +296,55 @@ Constants
 * For the medium-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Medium")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Medium")$dndlogdp_avg)]` nm.  
 * For the high-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="High")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="High")$dndlogdp_avg)]` nm.  
 
+# Ultrafine particles  
+
+Calculate the number concentration of ultrafine particles in each size bin (for each test):  
+
+1. Select particles smaller than 100 nm.  
+2. Calculate particle number concentration in each size bin (i.e., convert from dN/dlog(Dp) to number of particles per cubic centimeter).  
+3. Add test start and end times to the dataframe.  
+4. Calculate the test duration (in minutes).  
+
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
 
-  test_times_renamed <- dplyr::mutate(test_times_renamed,
-                                      dur = end - start) # seconds
-
-                  # Calculate the number of UFPs emitted per test
-  df_ufp <- dplyr::filter(smps_dilution, size_nm <= 100) %>% # get particles smaller than 100 nm
-            dplyr::left_join(test_times_renamed, by=c("id")) %>%   # get test duration in seconds
-            dplyr::mutate(num_conc = dndlogdp * const,             # number of particles/cm3
-                          num = num_conc*(hood_flow/60)*dur*(10^6)) %>% # number of particles
-            dplyr::group_by(id) %>%
-            summarise(num = mean(num)) %>%
-    
-            # Add test metadata
-            dplyr::left_join(dplyr::select(samples, id, type, mc_level, mc_dry), by=c("id")) %>%
-            dplyr::mutate(type = ifelse(type=="lab", "Milled", "Split"))  %>%
-            dplyr::filter(id != "FH2")
+  df_ufp <- dplyr::filter(df_smps_test, size_nm <= 100) %>% # 1
+            dplyr::mutate(num_conc = dndlogdp * dlogdp) %>% # 2
+            dplyr::left_join(df_times, by=c("id"))      %>% # 3
+            dplyr::mutate(dur = (end - start)/60)           # 4
 ```
 
-```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
-
-  ggplot(data=df_ufp, aes(x=mc_dry, y=num, shape=type)) + 
-         geom_point(size=3, alpha=0.7) +
-         coord_cartesian(xlim=c(4,30), ylim=c(1e13,8.2e13)) +
-         scale_x_continuous(breaks=seq(5,30,10)) + 
-         xlab("Moisture content (%)") + 
-         ylab("Number of ultrafine particles emitted") +
-         labs(shape = "Fuel shape") + 
-         theme(aspect.ratio=1,
-               panel.grid.major.x = element_line(color="gray95"),
-               panel.grid.minor.x = element_line(color="gray95"),
-               panel.grid.major.y = element_line(color="gray95"),
-               panel.grid.minor.y = element_line(color="gray95"),
-               panel.border     = element_rect(fill=NA),
-               panel.background = element_rect(fill='white'),
-               axis.text  = element_text(size=10, color='black'),
-               axis.title = element_text(size=10, color='black'),
-               axis.ticks = element_line(color='black'),
-               legend.text  = element_text(size=10, color='black'),
-               legend.title = element_text(size=10, color='black'),
-               legend.key   = element_blank(),
-               legend.box.background = element_rect(color="black", size=0.6),
-               legend.position = c(0.2,0.8)) 
-
-  ggsave(filename="../figures/ufp.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
-```
+Save data. 
 
 ```{r}
-  df_ufp_summary <- group_by(df_ufp, mc_level) %>%
-                    summarise(mean = mean(num),
-                              sd   = sd(num))
+  saveRDS(df_ufp, file = "../r_files/smps_ultrafine.RDS")
 ```
 
-```{r}
-  TukeyHSD(aov(num ~ mc_level, df_ufp))
-```
+Ultrafine particle concentration in SMPS sample line per scan.
 
-# Ultrafine number
+```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width=6.5, fig.height=14, fig.align='center'}
 
-## per scan 
+  df_plot <- dplyr::filter(df_smps_merged, size_nm <= 100) %>%
+             dplyr::mutate(num_conc = dw * dlogdp)         %>%
+             dplyr::group_by(id, sample)                   %>%
+             dplyr::summarise(num_conc = sum(num_conc))    %>%
+             dplyr::mutate(sample = as.numeric(sample))    %>%
+             dplyr::bind_rows(data.frame(id = c("BG1","LL1"),
+                                         sample = NA,
+                                         num_conc = NA))
 
-* select sub-100nm data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::select(smps_merged, id, dw, size_nm, time, sample) %>%
-                    dplyr::filter(size_nm <= 100)
-```
-
-* get timestamps
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times <- dplyr::select(test_times, -date) %>%
-           dplyr::rename(start = set_1)
-```
-
-* filter by test time window
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- filter_times(times, smps_ultrafine)
-```
-
-* calculate number concentration over each scan
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine <- dplyr::group_by(smps_ultrafine, id, sample) %>%
-                    dplyr::summarise(number_conc = sum(as.numeric(dw) * 0.015625355))
-```
-
-* plot timeseries for each experiment
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=40} 
-  ggplot(smps_ultrafine, aes(sample, number_conc)) +
-         geom_point() +
-         facet_wrap(~id, ncol = 3, scales = "free") +
-         scale_y_log10() +
-         theme_minimal() + 
-         ylab("number per cc") +
-         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-         theme(legend.position = "top") +
-         scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                        "maybe" = "mediumorchid",
-                                        "bad" = "mistyrose4"))
-         
-```
-
-## test average
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_avg <- dplyr::filter(smps_ultrafine) %>%
-                    dplyr::group_by(id) %>%
-                    dplyr::summarise(mean_number_conc = mean(number_conc)) #,
-                                     #qc = first(qc))
-```
-
-* plot test average
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=6} 
-  ggplot(smps_ultrafine_avg, aes(id, mean_number_conc)) +
-         geom_point() +
-         scale_y_log10() +
-         theme_minimal() + 
-         ylab("sub 100 nm - mean number per cc") +
-         theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-         theme(legend.position = "top") +
-         scale_colour_manual(values = c("ok" = "mediumaquamarine",
-                                        "maybe" = "mediumorchid",
-                                        "bad" = "mistyrose4"))
-```
-
-# Background (BG tests)
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <-  dplyr::filter(smps_merged, size_nm <= 100, type == "bg") %>%
-                        dplyr::select(id, dw, size_nm, time, sample, type)
-```
-
-* reformat time data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  times_bg <- dplyr::filter(smps_pax_bg_times, !grepl("^G", id), type == "sample") %>%
-              tidyr::spread(time_point, value) %>%
-              dplyr::select(-date)
-```
-
-* filter by test time window START HERE 8/10/17
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <- filter_times(times_bg, smps_ultrafine_bg)
-```
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  smps_ultrafine_bg <- dplyr::group_by(smps_ultrafine_bg, id, sample) %>%
-                       dplyr::summarise(number_conc = sum(as.numeric(dw)) * 0.015625355) %>%
-                                       # n_bad = sum(qc == "bad")) %>%
-                                        # qc = first(qc)) %>%
-                       dplyr::ungroup()
-```
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=10}
-  ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = id)) +
-            geom_point() +
-            theme_minimal() +
-            scale_y_log10() +
-            theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-            theme(legend.position = "top")
-
-  # p_qc <- ggplot(smps_ultrafine_bg, aes(sample, number_conc, group_by(id), colour = qc)) +
-  #           geom_point() +
-  #           theme_minimal() +
-  #           scale_y_log10() +
-  #           theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  #           theme(legend.position = "top") +
-  #           scale_colour_manual(values = c("ok" = "mediumaquamarine",
-  #                                          "maybe" = "mediumorchid",
-  #                                          "bad" = "mistyrose4"))
-  # 
-  # grid.arrange(p_id, p_qc, ncol = 1)
-```
-
-# Save files
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(smps_merged, file = "../r_files/smps_merged.RDS")
-
-  saveRDS(smps_ultrafine, file = "../r_files/smps_ultrafine.RDS")
-
-  saveRDS(smps_ultrafine_bg, file = "../r_files/smps_ultrafine_bg.RDS")
-```
-
-# Summary
-
-The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`. There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.
-
-SMPS data is expected to be missing for: first test day
-
-# Plots
-
-## qc (optional)
-
-* all scans
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=12, fig.height=80, eval=FALSE}
-  # ggplot(smps_merged, aes(size, value, group = sample, colour = qc)) +
-  #        geom_line() +
-  #        facet_wrap(~id, ncol = 3, scales = "free") +
-  #        theme_minimal() +
-  #        scale_x_log10() + scale_y_log10() +
-  #        ylab("dN/dlogDp") +
-  #        xlab("nm") +
-  #        theme(legend.position = "none")
+  ggplot(df_plot, aes(x=sample, y=num_conc, group=id)) + 
+    geom_point(size = 1) +
+    facet_wrap(~id, ncol=4) +
+    xlab("Scan number") +
+    ylab(expression(Ultrafine ~ particles ~ "("*"#"/cm^3*")")) +
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          text        = element_text(size=10, color='black'),
+          axis.text.x = element_text(size= 6, color='black'),
+          axis.text.y = element_text(size= 9, color='black'),
+          axis.title  = element_text(size= 9, color='black'),
+          axis.ticks  = element_line(color='black')) 
 ```
