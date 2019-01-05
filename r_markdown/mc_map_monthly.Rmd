@@ -141,7 +141,7 @@ The August-Roche-Magnus formula is only applicable over the range of -40 to 50 d
 # Relate EMC to PM2.5 emission factor
 
 ```{r}
-  mod_pm <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="grav"))
+  mod_pm <- lm(log10(1000*ef) ~ mc_dry, dplyr::filter(df_ef, pol=="grav"))
   summary(mod_pm)
 ```
 
@@ -150,20 +150,8 @@ The August-Roche-Magnus formula is only applicable over the range of -40 to 50 d
   plot(mod_pm)
 ```
 
-Check for homoscedasticity of the residuals: 
-
 ```{r}
-  lmtest::bptest(mod_pm)
-```
-
-Check that the residuals are normally distributed.
-
-```{r}
-  shapiro.test(mod_pm$residuals)
-```
-
-```{r}
-  df <- mutate(df, pm_ef = mod_pm$coefficients[1] + (mod_pm$coefficients[2]*EMC))
+  df <- mutate(df, pm_ef = 10^(mod_pm$coefficients[1] + (mod_pm$coefficients[2]*EMC)))
 ```
 
 # Plot the results
@@ -214,7 +202,7 @@ Create color scale.
 ```{r}
   title_ef <- expression(PM[2.5] ~ (mg * plain('\u00b7') * MJ[d]^-1))
   palette_ef <- colorRampPalette(c(purple,teal3,teal2,gold,orange,pink2,pink1))
-  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), limits=c(200,820), name=title_ef)
+  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), limits=c(235,800), name=title_ef)
 ```
 
 ```{r}
@@ -283,18 +271,6 @@ Create color scale.
   plot(mod_co)
 ```
 
-Check for homoscedasticity of the residuals: 
-
-```{r}
-  lmtest::bptest(mod_co)
-```
-
-Check that the residuals are normally distributed.
-
-```{r}
-  shapiro.test(mod_co$residuals)
-```
-
 ```{r}
   df <- mutate(df, co_ef = mod_co$coefficients[1] + (mod_co$coefficients[2]*EMC))
 ```
@@ -311,18 +287,6 @@ Check that the residuals are normally distributed.
   plot(mod_ch2o)
 ```
 
-Check for homoscedasticity of the residuals: 
-
-```{r}
-  lmtest::bptest(mod_ch2o)
-```
-
-Check that the residuals are normally distributed.
-
-```{r}
-  shapiro.test(mod_ch2o$residuals)
-```
-
 ```{r}
   df <- mutate(df, formaldehyde_ef = mod_ch2o$coefficients[1] + (mod_ch2o$coefficients[2]*EMC))
 ```
@@ -337,18 +301,6 @@ Check that the residuals are normally distributed.
 ```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
   par(mfrow = c(2, 2))
   plot(mod_bz)
-```
-
-Check for homoscedasticity of the residuals: 
-
-```{r}
-  lmtest::bptest(mod_bz)
-```
-
-Check that the residuals are normally distributed.
-
-```{r}
-  shapiro.test(mod_bz$residuals)
 ```
 
 ```{r}
