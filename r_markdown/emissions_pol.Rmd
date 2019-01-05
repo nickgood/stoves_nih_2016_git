@@ -13,6 +13,7 @@ output:
   library(knitr)
   library(lubridate)
   library(chron)
+  library(car)
 ```
 
 ```{r global_options, include=FALSE}
@@ -259,8 +260,23 @@ Convert mixing ratios (ppbv) to mass concentrations ($\mu$g/m^3^). Then, calcula
                        conc_bg = convert_ppmv_ugpmc(ppm_bg, mw, 25, 84),  # ug/m3
                        mass_emitted = (conc - conc_bg) * hood_flow * dur, # ug
                        mass_emitted = ifelse(mass_emitted < 0, 0, mass_emitted),
-                       mass_carbon  = mass_emitted * (mw_c * num_c / mw),
-                       inst = "voc") 
+                       mass_carbon  = mass_emitted * (mw_c * num_c / mw)) 
+```
+
+Combine m+p-xylenes and o-xylenes
+
+```{r}
+
+  voc <- voc %>%
+         dplyr::select(id, pol, conc, conc_bg, mass_emitted, mass_carbon) %>%
+         dplyr::mutate(pol = if_else(pol == "m+p-xylene", "xylenes", pol),
+                       pol = if_else(pol == "o-xylene",   "xylenes", pol)) %>%
+         dplyr::group_by(pol, id) %>%
+         dplyr::summarise(conc         = sum(conc, na.rm=TRUE),
+                          conc_bg      = sum(conc_bg, na.rm=TRUE),
+                          mass_emitted = sum(mass_emitted, na.rm=TRUE),
+                          mass_carbon  = sum(mass_carbon,  na.rm=TRUE))   %>%
+         dplyr::mutate(inst = "voc")
 ```
 
 * output
@@ -328,9 +344,33 @@ Calculate MCE:
             # Add test metadata to dataframe
             dplyr::left_join(select(samples, id, type, mc_level, mc_dry),
                              by=c("id")) %>%
-            dplyr::filter(id != "FH2")
+            dplyr::filter(id != "FH2")   
 
   saveRDS(df_mce, file = "../r_files/df_mce.RDS")
+```
+
+Perform a two-way ANOVA to see if fuel moisture level, fuel shape, and the interaction between these two factors have significant effects on the modified combustion efficiency. 
+
+```{r}
+  mod_mce <- lm(mce ~ mc_level * type, df_mce)
+
+  leveneTest(mod_mce)
+  
+  shapiro.test(mod_mce$residuals)
+
+  Anova(mod_mce, type=c("III"))
+```
+
+Use Tukey's test to determine whether the differences between the MCEs at different fuel moisture levels are significant. 
+
+```{r}
+  aov_mce <- aov(mce ~ mc_level, df_mce)
+
+  leveneTest(aov_mce)
+  
+  shapiro.test(aov_mce$residuals)
+
+  TukeyHSD(aov_mce)
 ```
 
 Calculate the mean MCE and standard deviation at each moisture level.  
@@ -342,12 +382,6 @@ Calculate the mean MCE and standard deviation at each moisture level.
 
   kable(df_mce_summary, format="markdown", digits=c(2,1),
         col.names=c("Moisture level", "Mean (%)","SD (%)"))
-```
-
-Test for significant differences between the MCEs at different moisture levels using Tukey's test. 
-
-```{r}
-  TukeyHSD(aov(mce ~ mc_level, df_mce))
 ```
 
 ### Compare MCE and exhaust temperature
@@ -373,17 +407,6 @@ Extract temperature for periods of interest
 
   pearson_r <- cor.test(df_mce_temp$temp_mean, df_mce_temp$mce, method="pearson", conf.level=0.95)
   pearson_r
-```
-
-```{r}
-  mod_mce_temp <- lm(mce ~ temp_mean, df_mce_temp)
-
-  summary(mod_mce_temp)
-```
-
-```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
-  par(mfrow = c(2, 2))
-  plot(mod_mce_temp)
 ```
 
 ### Plots

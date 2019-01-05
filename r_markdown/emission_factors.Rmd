@@ -23,6 +23,7 @@ output:
   library(tidyverse)
   library(knitr)
   library(broom)
+  library(car)
 ```
 
 # Load
@@ -96,14 +97,12 @@ Add test metadata.
   df_ef <- dplyr::left_join(df_ef, dplyr::select(samples, id, type, mc_level, mc_dry),
                             by=c("id")) %>% 
            dplyr::ungroup() %>%
-           dplyr::mutate(id       = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
-                                                             "FM1", "FM2", "FM3", "FM4",
-                                                             "FH1", "FH2", "FH3", "FH4",
-                                                             "LL1", "LL2", "LL3", "LL4",
-                                                             "LM1", "LM2", "LM3", "LM4",
-                                                             "LH1", "LH2", "LH3","LH4"),
-                         fuel_mc_shape = paste(type, mc_level, sep="_")) %>%
-    
+           dplyr::mutate(id = forcats::fct_relevel(id, "FL1", "FL2", "FL3", "FL4",
+                                                       "FM1", "FM2", "FM3", "FM4",
+                                                       "FH1", "FH2", "FH3", "FH4",
+                                                       "LL1", "LL2", "LL3", "LL4",
+                                                       "LM1", "LM2", "LM3", "LM4",
+                                                       "LH1", "LH2", "LH3","LH4")) %>%
           dplyr::filter(!is.na(type), # remove background tests
                         id != "FH2")
 ```
@@ -118,19 +117,17 @@ Save the data.
 
 ```{r}
   df_ecoc <- emissions_long %>%
-             dplyr::filter(pol %in% c("ec", "oc"), metric %in% "conc") %>%
-             dplyr::select(-inst)
-          
-  df_ecoc <- unique(df_ecoc) %>%
-             tidyr::spread(pol, value) %>%
+             dplyr::filter(pol %in% c("ec", "oc"), metric %in% "mass_emitted") %>%
+             dplyr::select(-inst)           %>%
+             tidyr::spread(pol, value)      %>%
              dplyr::mutate(ratio = ec / oc) %>%
              dplyr::left_join(dplyr::select(samples, id, type, mc_level, mc_dry), by=c("id")) %>%
-             dplyr::mutate(fuel_mc_shape = paste(mc_level, type, sep = "_")) %>%
              dplyr::filter(type != "bg",
                            id   != "FH2") 
   
   df_ecoc_summary <- dplyr::group_by(df_ecoc, group_by=mc_level) %>%
-                     dplyr::summarise(ratio_mean = mean(ratio))
+                     dplyr::summarise(ratio_mean = mean(ratio),
+                                      ratio_sd   = sd(ratio))
   df_ecoc_summary  
 ```
 
@@ -273,19 +270,19 @@ Save the data.
   ggsave(filename="../figures/aldehydes_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
 ```
 
-```{r, fig.width=6.5, fig.height=4.5, fig.align='center'}
+```{r, fig.width=5.4, fig.height=5.5, fig.align='center'}
   
-  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("benzene", "toluene", "ethylbenzene",
-                                                  "m+p-xylene", "o-xylene")) %>%
-                   dplyr::mutate(pol  = factor(pol, levels=c("benzene", "toluene", "ethylbenzene",
-                                                             "m+p-xylene", "o-xylene")),
+  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("benzene", "toluene",
+                                                  "ethylbenzene", "xylenes")) %>%
+                   dplyr::mutate(pol  = factor(pol, levels=c("benzene", "toluene",
+                                                             "ethylbenzene", "xylenes")),
                                  type = forcats::fct_recode(type, "Split"   = "field",
                                                                    "Milled" = "lab"))
 
   ggplot(df_ef_subset, 
          aes(x=mc_dry, y=ef, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
-         facet_wrap(~pol, scales="free_y", ncol=3) +
+         facet_wrap(~pol, scales="free_y", ncol=2) +
          # format plot
          coord_cartesian(xlim=c(4,30)) + 
          scale_x_continuous(breaks=seq(5,25,10)) +
@@ -309,7 +306,7 @@ Save the data.
                legend.key   = element_blank(),
                legend.position = "none")
   
-  ggsave(filename="../figures/voc_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.5)
+  ggsave(filename="../figures/voc_fuel.pdf", plot=last_plot(), device="pdf", width=5.4, height=5.5)
 ```
 
 
@@ -345,7 +342,7 @@ Save the data.
     geom_point(size=3, alpha=0.7) +
     coord_cartesian(xlim=c(4,30)) +
     scale_x_continuous(breaks=seq(5,30,10)) + 
-    scale_y_continuous(breaks=seq(0,2,0.5)) + 
+    scale_y_continuous(breaks=seq(0,3,0.5)) + 
     xlab("Moisture content (%)") + 
     ylab("EC/OC") +
     labs(shape="Fuel shape") + 
@@ -368,130 +365,181 @@ Save the data.
   ggsave(filename="../figures/ecoc_ratio.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
 ```
 
-# Compare emission factors
+# Two-way ANOVAs
 
-### Between different fuel moisture levels and shapes
+```{r, warning=FALSE}
+
+  df_ecoc_anova <- dplyr::select(df_ecoc, id, ratio, type, mc_level, mc_dry) %>%
+                   dplyr::rename(ef = ratio) %>%
+                   dplyr::mutate(pol = "ecoc")
+
+  df_ef_anova <- dplyr::filter(df_ef,
+                               pol %in% c("co2","co","grav","ec","oc","ch4",
+                                          "formaldehyde","acetaldehyde",
+                                          "benzene","toluene","ethylbenzene","xylenes")) %>%
+                 dplyr::bind_rows(df_ecoc_anova) %>%
+                 dplyr::mutate(log_ef = log10(ef))
+
+  pol_list <- unique(df_ef_anova$pol)
+```
+
+Reference: http://www.sthda.com/english/wiki/two-way-anova-test-in-r
 
 ```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="co2")))
+
+  for(i in 1:length(pol_list)){
+
+    pol_i <- pol_list[i]
+    
+    # define the model
+    mod_i <- lm(ef ~ mc_level * type, dplyr::filter(df_ef_anova, pol==pol_i))
+    
+    # Two-way ANOVA
+    anova_i <- Anova(mod_i, type=c("III"))
+    
+    # Get the p-values for each effect from the ANOVA
+    # Check that the residuals have equal variances (Levene test)
+    # Check that the residuals are normally distributed (Shapiro-Wilk test)
+    df_i <- data.frame(pol_i) %>%
+            dplyr::mutate(pol_i   = as.character(pol_i),
+                          p_mc    = anova_i["mc_level","Pr(>F)"],
+                          p_shape = anova_i["type","Pr(>F)"],
+                          p_inter = anova_i["mc_level:type","Pr(>F)"],
+                          levene  = leveneTest(mod_i)["group","Pr(>F)"],
+                          shapiro = shapiro.test(mod_i$residuals)$p.value)
+    
+    if(i==1){
+      df_anova2 <- df_i
+    }else{
+      df_anova2 <- dplyr::bind_rows(df_anova2,df_i)
+    }
+  }
 ```
 
 ```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="co")))
+
+  pol_list_log <- dplyr::filter(df_anova2, (levene  < 0.05) | (shapiro < 0.05))$pol_i
+
+  for(i in 1:length(pol_list_log)){
+  
+    pol_i <- pol_list_log[i]
+    
+    # define the model
+    mod_i <- lm(log_ef ~ mc_level * type, dplyr::filter(df_ef_anova, pol==pol_i))
+    
+    # Two-way ANOVA
+    anova_i <- Anova(mod_i, type=c("III"))
+    
+    # Get the p-values for each effect from the ANOVA
+    # Check that the residuals have equal variances (Levene test)
+    # Check that the residuals are normally distributed (Shapiro-Wilk test)
+    df_i <- data.frame(pol_i) %>%
+            dplyr::mutate(pol_i       = as.character(pol_i),
+                          p_mc_log    = anova_i["mc_level","Pr(>F)"],
+                          p_shape_log = anova_i["type","Pr(>F)"],
+                          p_inter_log = anova_i["mc_level:type","Pr(>F)"],
+                          levene_log  = leveneTest(mod_i)["group","Pr(>F)"],
+                          shapiro_log = shapiro.test(mod_i$residuals)$p.value)
+    
+    if(i==1){
+      df_anova2_log <- df_i
+    }else{
+      df_anova2_log <- dplyr::bind_rows(df_anova2_log, df_i)
+    }
+  }
+
+  df_anova2 <- dplyr::left_join(df_anova2, df_anova2_log, by=c("pol_i"))
 ```
 
 ```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ch4")))
+  df_anova2_shape <- dplyr::filter(df_anova2,
+                                   (p_shape < 0.05) | (p_inter < 0.05))
+```
+
+Neither the fuel shape effect nor the interaction term were significant for any pollutants included in the ANOVA, except: `r df_anova2_shape$pol_i`. 
+
+# One-way ANOVAs
+
+```{r}
+
+  for(i in 1:length(pol_list)){
+
+    pol_i <- pol_list[i]
+    
+    # one-way ANOVA
+    aov_i <- aov(ef ~ mc_level, dplyr::filter(df_ef_anova, pol==pol_i))
+    
+    # Tukey's test
+    tukey_i <- TukeyHSD(aov_i)$mc_level
+    
+    # Get the p-values for the difference between each moisture level
+    # Check that the residuals have equal variances (Levene test)
+    # Check that the residuals are normally distributed (Shapiro-Wilk test)
+    df_i <- data.frame(pol_i) %>%
+            dplyr::mutate(pol_i   = as.character(pol_i),
+                          p_low_med  = tukey_i["Low-Medium", "p adj"],
+                          p_med_high = tukey_i["Medium-High","p adj"],
+                          p_low_high = tukey_i["Low-High",   "p adj"],
+                          levene  = leveneTest(aov_i)["group","Pr(>F)"],
+                          shapiro = shapiro.test(aov_i$residuals)$p.value)
+    
+    if(i==1){
+      df_anova1 <- df_i
+    }else{
+      df_anova1 <- dplyr::bind_rows(df_anova1,df_i)
+    }
+  }
 ```
 
 ```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="grav")))
+
+  pol_list_log <- dplyr::filter(df_anova1, (levene  < 0.05) | (shapiro < 0.05))$pol_i
+
+  for(i in 1:length(pol_list_log)){
+  
+    pol_i <- pol_list_log[i]
+    
+    # one-way ANOVA
+    aov_i <- aov(log_ef ~ mc_level, dplyr::filter(df_ef_anova, pol==pol_i))
+    
+    # Tukey's test
+    tukey_i <- TukeyHSD(aov_i)$mc_level
+    
+    # Get the p-values for the difference between each moisture level
+    # Check that the residuals have equal variances (Levene test)
+    # Check that the residuals are normally distributed (Shapiro-Wilk test)
+    df_i <- data.frame(pol_i) %>%
+            dplyr::mutate(pol_i   = as.character(pol_i),
+                          p_low_med_log  = tukey_i["Low-Medium", "p adj"],
+                          p_med_high_log = tukey_i["Medium-High","p adj"],
+                          p_low_high_log = tukey_i["Low-High",   "p adj"],
+                          levene_log  = leveneTest(aov_i)["group","Pr(>F)"],
+                          shapiro_log = shapiro.test(aov_i$residuals)$p.value)
+    
+    if(i==1){
+      df_anova1_log <- df_i
+    }else{
+      df_anova1_log <- dplyr::bind_rows(df_anova1_log, df_i)
+    }
+  }
+
+  df_anova1 <- dplyr::left_join(df_anova1, df_anova1_log, by=c("pol_i"))
 ```
 
 ```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ultrafines")))
-```
+  df_anova1_table <- df_anova1 %>%
+                     dplyr::mutate(pol_i = as.factor(pol_i),
+                                   pol_i = forcats::fct_relevel(pol_i,
+                                              "co2","co","grav","ec","oc","ch4",
+                                              "formaldehyde","acetaldehyde",
+                                              "benzene","toluene","ethylbenzene",
+                                              "xylenes")) %>%
+                     dplyr::arrange(pol_i) %>%
+                     dplyr::filter((levene  > 0.05) | (levene_log  > 0.05),
+                                   (shapiro > 0.05) | (shapiro_log > 0.05)) %>%
+                     dplyr::select(-levene, -shapiro, -levene_log, -shapiro_log)
 
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ec")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="oc")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="acetaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="formaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="benzene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="toluene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="ethylbenzene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="m+p-xylene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ fuel_mc_shape, dplyr::filter(df_ef, pol=="o-xylene")))
-```
-
-```{r}
-  TukeyHSD(aov(ratio ~ fuel_mc_shape, df_ecoc))
-```
-
-### Between different fuel moisture levels
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="co2")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="co")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ch4")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="grav")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ultrafines")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ec")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="oc")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="acetaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="formaldehyde")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="benzene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="toluene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="ethylbenzene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="m+p-xylene")))
-```
-
-```{r}
-  TukeyHSD(aov(ef ~ mc_level, dplyr::filter(df_ef, pol=="o-xylene")))
-```
-
-```{r}
-  TukeyHSD(aov(ratio ~ mc_level, df_ecoc))
+  kable(df_anova1_table, format="markdown", digits=4)
 ```
 
 # Summarize EFs by fuel moisture level
@@ -500,11 +548,11 @@ Save the data.
   df_table <- dplyr::filter(df_ef, pol %in% c("co2","co","ch4","grav","ec","oc", 
                                               "acetaldehyde","formaldehyde",
                                               "benzene", "toluene", "ethylbenzene",
-                                              "m+p-xylene", "o-xylene")) %>%
+                                              "xylenes")) %>%
               dplyr::mutate(pol = factor(pol, levels=c("co2","co","ch4","grav","ec","oc", 
                                                        "acetaldehyde","formaldehyde",
                                                        "benzene", "toluene", "ethylbenzene",
-                                                       "m+p-xylene", "o-xylene"))) %>%
+                                                       "xylenes"))) %>%
               group_by(pol, mc_level) %>%
               summarise(mean   = mean(ef),
                         sd     = sd(ef))

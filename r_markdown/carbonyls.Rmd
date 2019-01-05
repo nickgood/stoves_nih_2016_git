@@ -41,15 +41,15 @@ Carbonyls:
 
 ```{r}
   df_flows <- dplyr::filter(flows, instrument == "carbonyls") %>%
-              dplyr::select(-colour, -loc, -instrument)
+              dplyr::select(id, flow)
 ```
 
 ### Timestamps
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   df_times <- dplyr::filter(times, var %in% c("start_carb", "end_carb")) %>%
-              tidyr::spread(var, value) %>%
               dplyr::select(-date)      %>%
+              tidyr::spread(var, value) %>%
               dplyr::rename(start = start_carb,
                             end   = end_carb)
 ```

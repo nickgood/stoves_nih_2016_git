@@ -2,7 +2,7 @@
 title: "Emission Factor Map"
 subtitle: "June 2017"
 author: "Jessica Tryner"
-date: "December 11, 2018"
+date: "January 1, 2019"
 output: html_document
 ---
 
@@ -17,6 +17,8 @@ output: html_document
   library(ncdf4)
   library(ncdf4.helpers)
   library(PCICt)
+
+  library(lmtest)
 ```
 
 # Load data
@@ -139,14 +141,25 @@ The August-Roche-Magnus formula is only applicable over the range of -40 to 50 d
 # Relate EMC to PM2.5 emission factor
 
 ```{r}
-  mod_pm <- lm(1000*ef ~ mc_dry, 
-               dplyr::filter(df_ef, pol=="grav", !is.na(mc_dry)))
+  mod_pm <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="grav"))
   summary(mod_pm)
 ```
 
 ```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
   par(mfrow = c(2, 2))
   plot(mod_pm)
+```
+
+Check for homoscedasticity of the residuals: 
+
+```{r}
+  lmtest::bptest(mod_pm)
+```
+
+Check that the residuals are normally distributed.
+
+```{r}
+  shapiro.test(mod_pm$residuals)
 ```
 
 ```{r}
@@ -261,14 +274,25 @@ Create color scale.
 ### Carbon monoxide
 
 ```{r}
-  mod_co <- lm(1000*ef ~ mc_dry, 
-               dplyr::filter(df_ef, pol=="co", !is.na(mc_dry)))
+  mod_co <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="co"))
   summary(mod_co)
 ```
 
 ```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
   par(mfrow = c(2, 2))
   plot(mod_co)
+```
+
+Check for homoscedasticity of the residuals: 
+
+```{r}
+  lmtest::bptest(mod_co)
+```
+
+Check that the residuals are normally distributed.
+
+```{r}
+  shapiro.test(mod_co$residuals)
 ```
 
 ```{r}
@@ -278,14 +302,25 @@ Create color scale.
 ### Formaldehyde
 
 ```{r}
-  mod_ch2o <- lm(1000*ef ~ mc_dry, 
-                 dplyr::filter(df_ef, pol=="formaldehyde", !is.na(mc_dry)))
+  mod_ch2o <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="formaldehyde"))
   summary(mod_ch2o)
 ```
 
 ```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
   par(mfrow = c(2, 2))
   plot(mod_ch2o)
+```
+
+Check for homoscedasticity of the residuals: 
+
+```{r}
+  lmtest::bptest(mod_ch2o)
+```
+
+Check that the residuals are normally distributed.
+
+```{r}
+  shapiro.test(mod_ch2o$residuals)
 ```
 
 ```{r}
@@ -295,14 +330,25 @@ Create color scale.
 ### Benzene
 
 ```{r}
-  mod_bz <- lm(1000*ef ~ mc_dry, 
-               dplyr::filter(df_ef, pol=="benzene", !is.na(mc_dry)))
+  mod_bz <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="benzene"))
   summary(mod_bz)
 ```
 
 ```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
   par(mfrow = c(2, 2))
   plot(mod_bz)
+```
+
+Check for homoscedasticity of the residuals: 
+
+```{r}
+  lmtest::bptest(mod_bz)
+```
+
+Check that the residuals are normally distributed.
+
+```{r}
+  shapiro.test(mod_bz$residuals)
 ```
 
 ```{r}
