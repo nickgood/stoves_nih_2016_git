@@ -93,10 +93,27 @@ Convert to longer format:
                           -id, -flow, -start, -end, -qc)
 ```
 
+# LOD
+
+Define the lod.
+
+```{r}
+  lod <- 0.01 # ug
+```
+
+Replace `NA` values and values below the LOD with LOD/$\sqrt(2)$.
+
+```{r}
+  df_carb <- dplyr::mutate(df_carb,
+                           mass_ug = ifelse(mass_ug < lod,  lod/sqrt(2), mass_ug),
+                           mass_ug = ifelse(is.na(mass_ug), lod/sqrt(2), mass_ug))
+```
+
 # Calculate concentration
 
 ```{r}
-   df_carb <- dplyr::mutate(df_carb, dur = (end - start) / 60, # minutes
+   df_carb <- dplyr::mutate(df_carb, 
+                            dur  = (end - start) / 60, # minutes
                             conc = mass_ug / ((flow * dur) / 1000)) # ug/m3
 ```
 
@@ -105,7 +122,7 @@ Convert to longer format:
 Select background tests and calculate average concentration ($\mu$g/m^3^)
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  df_bg <- dplyr::filter(df_carb, grepl("^BG", id), qc != "bad") %>%
+  df_bg <- dplyr::filter(df_carb, substr(id,1,2) == "BG", qc != "bad") %>%
            dplyr::group_by(pol) %>%
            dplyr::summarise(mean = mean(conc),
                             sd   = sd(conc),
@@ -122,11 +139,10 @@ Add background concentrations to main data frame.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   df_bg <- dplyr::select(df_bg, pol, mean) %>%
-           dplyr::rename(conc_bg = mean)  
+           dplyr::rename(conc_bg = mean)
 
   df_carb <- dplyr::left_join(df_carb, df_bg, by = "pol") %>%
-             dplyr::mutate(conc_bg = ifelse(is.na(conc_bg), 0, conc_bg)) %>%
-             dplyr::filter(grepl("^BG", id) == FALSE) %>%
+             dplyr::filter(substr(id,1,2) != "BG") %>%
              dplyr::select(id, qc, flow, start, end, dur, pol, mass_ug, conc, conc_bg)
 ```
 

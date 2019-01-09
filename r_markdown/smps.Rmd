@@ -10,7 +10,7 @@ output:
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
-  #library(gridExtra)
+  library(knitr)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -108,8 +108,8 @@ Combine the SMPS data with the QC flags.
                                   time   = as.numeric(time))   
 ```
 
-* The SMPS measured during `r length(unique(smps_merged$id))` experiments between `r min(smps_merged$date, na.rm = TRUE)` and `r max(smps_merged$date, na.rm = TRUE)`.  
-* There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(smps_merged$id))`.  
+* The SMPS measured during `r length(unique(df_smps_merged$id))` experiments between `r min(df_smps_merged$date, na.rm = TRUE)` and `r max(df_smps_merged$date, na.rm = TRUE)`.  
+* There is no $SMPS$ data for tests: `r setdiff(as.character(samples$id), as.character(df_smps_merged$id))`.  
 * SMPS data is expected to be missing for: the first test day.  
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE, results = 'markup', cache=FALSE, fig.width=6.5, fig.height=14, fig.align='center'}
@@ -242,6 +242,8 @@ Corect the concentrations measured during actual tests (non-background tests) fo
                                    by=c("id"))                            # 4
 ```
 
+# Particle size distribution
+
 Calculate the average particle number concentration (dN/dlog(Dp)), for each particle size, at each fuel moisture level. 
 
 ```{r}
@@ -292,9 +294,35 @@ Plot the particle number size distribution for each fuel moisture level.  The va
   ggsave(filename="../figures/smps.pdf", plot=last_plot(), device="pdf", width=9/2.54, height=8/2.54)
 ```
 
-* For the low-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Low")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Low")$dndlogdp_avg)]` nm.  
-* For the medium-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="Medium")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="Medium")$dndlogdp_avg)]` nm.  
-* For the high-moisture fuel, the peak in the particle number size distribution was `r dplyr::filter(smps_dilution, mc_level=="High")$size_nm[which.max(dplyr::filter(smps_dilution, mc_level=="High")$dndlogdp_avg)]` nm.  
+Calculate the geometric mean diameter:
+
+```{r}
+
+  df_smps_dg <- df_smps_test %>%
+                dplyr::mutate(dn    = dndlogdp * dlogdp,
+                              dnlnd = dn*log(size_nm)) %>%
+                dplyr::group_by(id)                    %>%
+                dplyr::summarise(n = sum(dn),
+                                 sum_nlnd = sum(dnlnd),
+                                 d_g = exp(sum_nlnd/n)) %>%
+                dplyr::left_join(dplyr::select(samples, id, mc_level), 
+                                 by = c("id")) %>%
+                dplyr::group_by(mc_level) %>%
+                dplyr::summarise(dg_mean = mean(d_g),
+                                 dg_sd   = sd(d_g))
+```
+
+```{r, echo=FALSE}
+  kable(df_smps_dg, format="markdown", digits=0,
+        col.names=c("Moisture level","Mean (nm)","SD (nm)"),
+        caption="Geometric mean diameter")
+```
+
+Calculate the number mode diameter:  
+
+* For the low-moisture fuel, the mode diameter was `r dplyr::filter(df_smps_avg, mc_level=="Low")$size_nm[which.max(dplyr::filter(df_smps_avg, mc_level=="Low")$dndlogdp_avg)]` nm.  
+* For the medium-moisture fuel, the mode diameter was `r dplyr::filter(df_smps_avg, mc_level=="Medium")$size_nm[which.max(dplyr::filter(df_smps_avg, mc_level=="Medium")$dndlogdp_avg)]` nm.  
+* For the high-moisture fuel, the mode diameter was `r dplyr::filter(df_smps_avg, mc_level=="High")$size_nm[which.max(dplyr::filter(df_smps_avg, mc_level=="High")$dndlogdp_avg)]` nm.  
 
 # Ultrafine particles  
 

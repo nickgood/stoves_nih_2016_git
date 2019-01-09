@@ -142,9 +142,11 @@ The LOD is `r ceiling(lod_var)` $\mu$g. The LOQ is `r ceiling(loq_var)` $\mu$g.
 Flag each filter sample as being either above or below the LOD and LOQ.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  df_grav_merged <- dplyr::mutate(df_grav_merged,
-                                  lod = ifelse(d_mass >= lod_var, "above", "below"),
-                                  loq = ifelse(d_mass >= loq_var, "above", "below"))
+  df_grav_merged <- dplyr::filter(df_grav_merged,
+                                  filter_type != "test_blank") %>%
+                    dplyr::mutate(lod = ifelse(d_mass >= lod_var, "above", "below"),
+                                  loq = ifelse(d_mass >= loq_var, "above", "below"),
+                                  d_mass = ifelse(lod == "below", lod_var/sqrt(2), d_mass))
 ```
 
 * The mass accumulated on the filter was above the LOD for `r nrow(dplyr::filter(df_grav_merged, filter_type == "test", lod == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "test"))` tests (background tests not included).  
@@ -153,18 +155,25 @@ Flag each filter sample as being either above or below the LOD and LOQ.
 * The mass accumulated on the filter was above the LOD for `r nrow(dplyr::filter(df_grav_merged, filter_type == "bg", lod == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "bg"))` background samples.  
 * The mass accumulated on the filter was above the LOQ for `r nrow(dplyr::filter(df_grav_merged, filter_type == "bg", loq == "above"))`/`r nrow(dplyr::filter(df_grav_merged, filter_type == "bg"))` background samples.  
 
+# Calculate concentration
+
+Calculate the PM~2.5~ concentration in the hood exhaust.
+
+```{r}
+  df_grav_conc <- df_grav_merged %>%
+                  dplyr::mutate(dur = (end_filters - start_filters) / 60, # minutes
+                  conc = d_mass / ((flow * dur)/1000)) # ug/m3
+```
+
 # Background 
 
 1. Select background tests.  
 2. Remove tests for which data is incomplete.  
-3. Calculate background concentration.  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  df_bg <- dplyr::filter(df_grav_merged, is.na(test_type)) %>% # 1
-           dplyr::select(id, flow, start_filters, end_filters, d_mass, lod, loq) %>%
-           na.omit() %>% # 2
-           dplyr::mutate(dur  = (end_filters - start_filters) / 60, # minutes
-                         conc = d_mass / ((flow * dur)/1000)) # ug/m3
+  df_bg <- dplyr::filter(df_grav_conc, is.na(test_type)) %>% # 1
+           dplyr::select(id, conc) %>%
+           na.omit() # 2
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=3.15, fig.height=3.15, fig.align='center'}
@@ -202,28 +211,21 @@ Calculate the mean background concentration.
 Add the mean background concentration to the main dataframe. 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  df_grav_merged <- dplyr::mutate(df_grav_merged, conc_bg = bg_summary$mean)
-```
-
-# Calculate concentration
-
-Calculate the PM~2.5~ concentration in the hood exhaust.
-
-```{r}
-  df_grav_conc <- df_grav_merged %>%
-                  dplyr::filter(substr(id,1,1) != "G",      # reomve test blanks
-                                substr(id,1,2) != "BG") %>% # remove background tests
-                  dplyr::mutate(dur  = (end_filters - start_filters) / 60, # minutes
-                  conc = d_mass / ((flow * dur)/1000)) # ug/m3
+  df_grav_conc <- dplyr::mutate(df_grav_conc, conc_bg = bg_summary$mean)
 ```
 
 # Save
 
-Gravimetric data was collected during `r nrow(dplyr::filter(df_grav_merged, !is.na(test_type)))` experiments between `r min(df_grav_merged$date, na.rm = TRUE)` and `r max(df_grav_merged$date, na.rm = TRUE)`. Gravimetric data is missing for: no tests.  
+```{r}
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  df_grav_conc <- df_grav_conc %>%
+                  dplyr::filter(substr(id,1,1) != "G",  # reomve test blanks
+                                substr(id,1,2) != "BG") # remove background tests
+
   saveRDS(df_grav_conc, file = "../r_files/grav_conc.RDS")
 ```
+
+Gravimetric data was collected during `r nrow(dplyr::filter(df_grav_merged, !is.na(test_type)))` experiments between `r min(df_grav_merged$date, na.rm = TRUE)` and `r max(df_grav_merged$date, na.rm = TRUE)`. Gravimetric data is missing for: no tests.  
 
 # QC Plots
 

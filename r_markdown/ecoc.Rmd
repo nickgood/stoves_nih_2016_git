@@ -79,7 +79,7 @@ Separate the filter ID from the data file into an ID column and a filter type (e
 ```{r}
   df_ecoc <- dplyr::select(df_ecoc,
                            id, cassette, oc_ug_cm2, ec_ug_cm2, tc_ug_cm2,
-                           punch_area_cm2, datetime, date, time, analyst)
+                           punch_area_cm2, datetime, date, time, parameter_file)
 ```
 
 ### Flow rates
@@ -92,7 +92,7 @@ Match filter type to color:
 ```{r}
   df_flows <- dplyr::filter(flows, instrument == "filters") %>%
               dplyr::mutate(cassette = ifelse(colour == "white", "qb", "qf")) %>%
-              dplyr::select(-colour, -loc, -instrument)
+              dplyr::select(-colour, -loc, -instrument, -date)
 ```
 
 ### Start and end times
@@ -168,13 +168,24 @@ Select test blanks. Then, calculate the limit of detection (LOD) and limit of qu
 * The OC LOD is `r round(dplyr::filter(df_lod, pol == "oc")$lod[1], 2)` $\mu$ g/cm^2^.  
 * The OC LOQ is `r round(dplyr::filter(df_lod, pol == "oc")$loq[1], 2)` $\mu$ g/cm^2^.  
 
-Flag each filter sample as being either above or below the LOD and LOQ.
+Replace measurements below the LOD with LOD/sqrt(2). 
 
 ```{r}
-  df_ecoc_merged <- dplyr::left_join(df_ecoc_merged, df_lod, by=c("pol")) %>%
-                    dplyr::mutate(lod = ifelse(ug_sq_cm >= lod, "above", "below"),
-                                  loq = ifelse(ug_sq_cm >= loq, "above", "below"))
+  df_ecoc_merged <- dplyr::filter(df_ecoc_merged,
+                                  (cassette == "qf") | (cassette == "qb"),
+                                  substr(id,1,1) != "G")  %>%
+                    dplyr::left_join(df_lod, by=c("pol")) %>%
+                    dplyr::mutate(lod_flag = ifelse(ug_sq_cm >= lod, "above", "below"),
+                                  ug_sq_cm = ifelse(lod_flag == "below", lod/sqrt(2), ug_sq_cm))
 ```
+
+* The EC concentration on the front quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qf", pol=="ec", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qf", pol=="ec"))` tests (background tests not included).  
+* The OC concentration on the front quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qf", pol=="oc", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qf", pol=="oc"))` tests (background tests not included).  
+* The OC concentration on the back quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qb", pol=="oc", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) != "BG", cassette == "qb", pol=="oc"))` tests (background tests not included).  
+ 
+* The EC concentration on the front quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qf", pol=="ec", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qf", pol=="ec"))` background samples.  
+* The OC concentration on the front quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qf", pol=="oc", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qf", pol=="oc"))` background samples.  
+* The OC concentration on the back quartz filter was above the LOD for `r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qb", pol=="oc", lod_flag == "above"))`/`r nrow(dplyr::filter(df_ecoc_merged, substr(id,1,2) == "BG", cassette == "qb", pol=="oc"))` background samples.  
 
 # Calculate concentration
 
@@ -263,7 +274,7 @@ Both the test concentrations and the background concentrations have been correct
   test_data <- dplyr::filter(df_ecoc_merged, qc == "ok",
                                              cassette == "qf")
 
-  ggplot(test_data, aes(id, ug_sq_cm, colour = lod)) +
+  ggplot(test_data, aes(id, ug_sq_cm, colour = lod_flag)) +
     geom_point(size=3) +
     theme_minimal() +
     theme(legend.position = "top") +

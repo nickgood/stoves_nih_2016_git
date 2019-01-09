@@ -268,15 +268,21 @@ Save the data.
   ggsave(filename="../figures/main_fig.pdf", plot=last_plot(), device="pdf", width=19/2.54, height=9/2.54)
 ```
 
-```{r, fig.width=6.5, fig.height=8.25, fig.align='center'}
-  df_ef_subset <- dplyr::filter(df_ef, 
-                      pol %in% c("acetaldehyde",     "acetone",          "acrolein",
-                                 "benzaldehyde",     "butanone",         "butyraldehyde",
-                                 "crotonaldehyde",   "formaldehyde",     "hexaldehyde",
-                                 "isovaleraldehyde", "m_p_tolualdehyde", "methacrolein",
-                                 "o_tolualdehyde",   "propionaldehyde",  "valeraldehyde")) %>%
-             dplyr::mutate(pol  = ifelse(pol=="o_tolualdehyde","o-tolualdehyde",pol),
-                           pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
+```{r, fig.width=6.5, fig.height=6.7, fig.align='center'}
+
+  df_ef_subset <- dplyr::filter(df_ef, inst == "carbs") %>%
+    dplyr::mutate(pol  = ifelse(pol=="2_5_dimethylbenzaldehyde","2,5-dimethylben...",pol),
+                  pol  = ifelse(pol=="o_tolualdehyde","o-tolualdehyde",pol),
+                  pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
+
+  df_ef_carbs <- dplyr::group_by(df_ef_subset, pol) %>%
+                 dplyr::summarise(ef = mean(ef))    %>%
+                 dplyr::arrange(-ef)
+  
+  carb_levels <- df_ef_carbs$pol
+  
+  df_ef_subset <- dplyr::mutate(df_ef_subset, 
+                                pol = factor(pol, levels = carb_levels))
 
   # dummy data used to ensure that y-axis goes to zero on all panels except CO and CH4
   df_dummy <- data.frame(pol    = unique(df_ef_subset$pol),
@@ -287,7 +293,7 @@ Save the data.
   ggplot(df_ef_subset, aes(x=mc_dry, y=1000*ef, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
          geom_blank(data=df_dummy) + 
-         facet_wrap(~pol, scales = "free_y", ncol = 3) +
+         facet_wrap(~pol, scales = "free_y", ncol = 4) +
          
          # format plot
          coord_cartesian(xlim=c(4,30)) + 
@@ -309,16 +315,15 @@ Save the data.
                axis.ticks   = element_line(color="black"),
                legend.text  = element_text(size=10, color='black'),
                legend.title = element_text(size=10, color='black'),
-               legend.key   = element_blank())
+               legend.key   = element_blank(),
+               legend.position = "none")
 
-  ggsave(filename="../figures/carbonyls_energy.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
+  ggsave(filename="../figures/carbonyls_energy.pdf", plot=last_plot(), device="pdf", width=6.5, height=6.7)
 ```
 
 ```{r, fig.width=5.4, fig.height=5.5, fig.align='center'}
 
-  df_ef_subset <- dplyr::filter(df_ef, 
-                    pol %in% c("benzene", "toluene", 
-                               "ethylbenzene","xylenes")) %>%
+  df_ef_subset <- dplyr::filter(df_ef, inst == "voc") %>%
                   dplyr::mutate(pol = factor(pol,
                                              levels = c("benzene","toluene",
                                                         "ethylbenzene","xylenes")))

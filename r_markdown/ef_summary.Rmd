@@ -1,7 +1,7 @@
 ---
 title: "Emission Factor Summary"
 author: "Jessica Tryner"
-date: "December 17, 2018"
+date: "January 7, 2019"
 output:
   html_document:
     toc: true
@@ -77,22 +77,22 @@ Grams of pollutant per kilogram of fuel burned.
   df_summary <- dplyr::bind_rows(df_ef_energy, df_ef_fuel) %>%
                 plyr::rename(c("pol"="pollutant")) %>%
                 dplyr::filter(pollutant %in% c("co2","co","ch4","grav","ec","oc",
-                                 "ultrafines",
                                  "acetaldehyde",     "acetone",          "acrolein",
                                  "benzaldehyde",     "butanone",         "butyraldehyde",
                                  "crotonaldehyde",   "formaldehyde",     "hexaldehyde",
                                  "isovaleraldehyde", "m_p_tolualdehyde", "methacrolein",
                                  "o_tolualdehyde",   "propionaldehyde",  "valeraldehyde",
-                                 "benzene",          "toluene",          "ethylbenzene",
-                                 "m+p-xylene",       "o-xylene")) %>%
-                dplyr::mutate(pollutant = ifelse(pollutant=="grav", "pm2_5", pollutant))
+                                 "2_5_dimethylbenzaldehyde",             "benzene", 
+                                 "toluene",          "ethylbenzene",     "xylenes")) %>%
+                dplyr::mutate(pollutant = ifelse(pollutant=="grav", "pm2_5", pollutant),
+                              id        = as.character(id))
 
   df_summary <- dplyr::left_join(df_samples, df_summary, by=c("id")) %>%
                 plyr::rename(c("id"     = "test_id",
-                               "type"   = "fuel_type",
+                               "type"   = "fuel_shape",
                                "mc_dry" = "fuel_mc_dry"))
   
-  df_summary <- dplyr::arrange(df_summary, units, pollutant, mc_level, fuel_type)
+  df_summary <- dplyr::arrange(df_summary, units, pollutant, mc_level, fuel_shape)
 ```
 
 # Save

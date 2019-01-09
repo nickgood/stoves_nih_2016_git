@@ -1,0 +1,315 @@
+---
+title: "Emission Factor Map"
+subtitle: "Weekly 2017"
+author: "Jessica Tryner"
+date: "January 8, 2019"
+output: html_document
+---
+
+```{r, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  library(tidyverse)
+  library(lubridate) 
+
+  # for working with netCDF files
+  library(ncdf4)
+  library(ncdf4.helpers)
+  library(PCICt)
+
+  # for making maps
+  library(maps)
+  library(sp)
+  library(rworldmap)
+
+  # for making videos
+  library(imager)
+```
+
+# Relate EMC to PM2.5 emission factor
+
+Load the energy-based emission factors (g/MJ~d~).
+
+```{r}
+  df_ef <- readRDS("../r_files/ef_energy.RDS")
+```
+
+```{r}
+  df_ef <- dplyr::filter(df_ef, pol=="grav", !is.na(mc_dry))
+```
+
+```{r}
+  mod_ef <- lm(log10(1000*ef) ~ mc_dry, df_ef)
+  summary(mod_ef)
+```
+
+```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
+  par(mfrow = c(2, 2))
+  plot(mod_ef)
+```
+
+# Load and average climate model data 
+
+```{r}
+    
+  if(!file.exists("../r_files/df_temp_rh_201712_daily.RDS")){   
+    
+      file_list <- list.files('../data/era5/', pattern="\\.nc$", full.names=TRUE)
+      n_i <- length(file_list) # number of files to read
+      n_k <- 24                # hours per day
+      
+      for (i in 1:n_i){ # for each file
+        
+        # open a connection to the netCDF file
+        nc_file <- nc_open(file_list[i])
+        
+        # store the longitude, latitude, and time dimensions
+        lon  <- ncvar_get(nc_file, varid="longitude")
+        lat  <- ncvar_get(nc_file, varid="latitude")
+        time <- nc.get.time.series(nc_file, v="t", time.dim.name="time")
+        n_j <- length(time)/24 # number of days
+        
+        # create a dataframe of all longitude and latitude combinations
+        df_lon_lat <- expand.grid(lon, lat) %>%
+                      dplyr::rename(lon=Var1, lat=Var2)
+        
+        for (j in 1:n_j){ # for each day in the file
+          
+            for (k in 1:n_k){ # for each hour in the day
+          
+              t_jk <- (n_k*(j-1)) + k # index in time dimension
+        
+              # get temperature and dewpoint temperature data at the given timestamp
+              t2m_k <- nc.get.var.subset.by.axes(nc_file, "t2m", axis.indices=list(T=t_jk))
+              d2m_k <- nc.get.var.subset.by.axes(nc_file, "d2m", axis.indices=list(T=t_jk))
+          
+              # create a dataframe with the temperature and and dewpoint temperature at hour k 
+              # convert the temperature and dewpoint tempeature from Kelvin to degrees Celsius
+              # convert temperatures above 50 degrees C to NAs
+              # calculate relative humidity from the temperature and dewpoint temperature
+              df_k <- df_lon_lat %>%
+                      mutate(t2m_k = as.vector(t2m_k), # Kelvin
+                             d2m_k = as.vector(d2m_k), # Kelvin
+                             t2m_k = t2m_k - 273.15,     # Celsius
+                             d2m_k = d2m_k - 273.15,     # Celsius
+                             t2m_k = ifelse(t2m_k > 50, NA, t2m_k), # August-Roche-Magnus formula NA above 50 deg C
+                             rh_k  = exp((17.625*d2m_k)/(d2m_k+243.04))/
+                                     exp((17.625*t2m_k)/(t2m_k+243.04))) 
+              
+              # add the temperature and RH data at hour k to a running sum
+              if(k==1){
+                df_j <- df_k
+                df_j <- rename(df_j, t2m=t2m_k, rh=rh_k) %>%
+                        dplyr::select(lon, lat, t2m, rh)
+              }else{
+                df_j <- left_join(df_j, df_k, by=c("lon","lat")) %>%
+                        mutate(t2m = t2m + t2m_k,
+                               rh  = rh  + rh_k) %>%
+                        dplyr::select(lon, lat, t2m, rh)
+              }
+            }
+             
+            # calculate the average temperature and relative humidity on day j
+            df_j <- dplyr::mutate(df_j, t2m  = t2m/n_k,
+                                        rh   = rh/n_k,
+                                        date = date(time[t_jk]),
+                                        week = isoweek(date))
+            
+            # add the data for day j to the dataframe for month i
+            if(j==1){
+              df_i <- df_j
+            }else{
+              df_i <- dplyr::bind_rows(df_i, df_j)
+            }
+        }
+      
+        # close the connection to netCDF file i
+        nc_close(nc_file)
+        
+        name_i <- sprintf("../r_files/df_temp_rh_2017%02d_daily.RDS",i)
+        
+        # save the averaged data
+        saveRDS(df_i, file=name_i)
+      }
+      
+      rm(df_i, df_j, df_k, df_lon_lat, nc_file, d2m_k, t2m_k, lat, lon, time)
+  }
+```
+
+```{r}
+
+  if(!file.exists("../r_files/df_temp_rh_2017_weekly.RDS")){ 
+
+    file_list <- list.files('../r_files/', pattern="*_daily*\\.RDS", full.names=TRUE)
+    n_i <- length(file_list) # number of files to read
+    
+    for (i in 1:n_i){ # for each file
+       
+      df_i <- readRDS(file_list[i])
+      
+      first_week <- unique(df_i$week)[1]
+      last_week  <- unique(df_i$week)[length(unique(df_i$week))]
+  
+      # for complete weeks
+      df_complete_i <- dplyr::filter(df_i, week != first_week, week != last_week) %>%
+                       dplyr::group_by(lon, lat, week) %>%
+                       dplyr::summarise(t2m = mean(t2m),
+                                        rh  = mean(rh))
+      # incomplete weeks
+      df_incomplete_i <- dplyr::filter(df_i, week == first_week | week == last_week)
+        
+      if(i==1){
+        df_complete   <- df_complete_i
+        df_incomplete <- df_incomplete_i
+      }else{
+        df_complete   <- dplyr::bind_rows(df_complete,   df_complete_i)
+        df_incomplete <- dplyr::bind_rows(df_incomplete, df_incomplete_i)
+      }
+    }
+    
+    rm(df_i, df_complete_i, df_incomplete_i)
+    
+    # remove first partial week (week 52 from 2016), then average over weeks
+    df_incomplete <- dplyr::filter(df_incomplete, date > as.Date("2017-01-08")) %>%
+                     dplyr::group_by(lon, lat, week) %>%
+                     dplyr::summarise(t2m = mean(t2m),
+                                      rh  = mean(rh))
+    
+    df_week <- dplyr::bind_rows(df_complete, df_incomplete)
+  
+    rm(df_complete, df_incomplete)
+    
+    saveRDS(df_week, file="../r_files/df_temp_rh_2017_weekly.RDS")
+    
+  }else{
+    
+    if(!file.exists("../r_files/df_pm_2017_weekly.RDS")){ 
+    
+      df_week <- readRDS("../r_files/df_temp_rh_2017_weekly.RDS")
+      
+      # convert temperatures below -1.1 degrees Celsius to NAs
+      # calculate equilibrium moisture content from temperature and relative humidity
+      # calculate the PM2.5 emission factor (mg/MJd) from the EMC
+      df_week <- df_week %>%
+                 dplyr::mutate(t2m = ifelse(t2m < -1.1, NA, t2m), # EMC eq. NA below -1.1 deg C
+                               W  = 349   + (1.29*t2m)     + (0.0135*(t2m^2)),
+                               K  = 0.805 + (0.000736*t2m) - (0.00000273*(t2m^2)),
+                               K1 = 6.27  - (0.00938*t2m)  - (0.000303*(t2m^2)),
+                               K2 = 1.91  + (0.0407*t2m)   - (0.000293*(t2m^2)),
+                               EMC = (1800/W)*(((K*rh)/(1-(K*rh))) +
+                                      (((K1*K*rh)+(2*K1*K2*(K^2)*(rh^2)))/(1+(K1*K*rh)+(K1*K2*(K^2)*(rh^2))))),
+                               pm = 10^(mod_ef$coefficients[1] + (mod_ef$coefficients[2]*EMC))) %>%
+                 dplyr::select(lon, lat, week, pm)
+
+      saveRDS(df_week, file="../r_files/df_pm_2017_weekly.RDS")
+      
+    }else{
+      
+      df <- readRDS("../r_files/df_pm_2017_weekly.RDS")
+    }
+  }
+```
+
+# Plot the results
+
+Convert longitudes between 0 and 360 degrees to longitudes between -180 and 180 degrees ([see example](https://cran.r-project.org/web/packages/futureheatwaves/vignettes/starting_from_netcdf.html)).  
+
+```{r}
+  df <- dplyr::ungroup(df) %>%
+        dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
+```
+
+Find out which country each latitude and longitude point in the data frame is located within.  This code is based on the example provided [here](https://stackoverflow.com/questions/14334970/convert-latitude-and-longitude-coordinates-to-country-name-in-r). 
+
+```{r}
+  sp_countries <- getMap(resolution='low')
+
+  df_lon_lat <- dplyr::filter(df, week == 1) %>%
+                dplyr::select(lon, lat)
+  
+  sp_points = SpatialPoints(df_lon_lat, proj4string=CRS(proj4string(sp_countries)))
+  
+  df_countries = over(sp_points, sp_countries)
+```
+
+Then, add the country names to the data frame of moisture contents.  
+
+```{r}
+  df_lon_lat$country <- df_countries$ADMIN 
+
+  df <- left_join(df, df_lon_lat, by=c("lon","lat")) %>%
+        dplyr::filter(!is.na(country))
+  
+  rm(sp_countries, sp_points, df_countries)
+```
+
+```{r}
+  # Volckens group colors
+  purple <- "#330099"
+  gold   <- "#FF9900"
+  teal1  <- "#33CC99" 
+  teal2  <- "#339999" 
+  teal3  <- "#0099CC" 
+  orange <- "#FF6633"
+  pink1  <- "#CC0066"
+  pink2  <- "#FF3366"
+```
+
+```{r}
+  title_ef <- expression(PM[2.5] ~ (mg * plain('\u00b7') * MJ[d]^-1))
+  palette_ef <- colorRampPalette(c(purple,teal3,teal2,gold,orange,pink2,pink1))
+  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), 
+                                   limits=c(235,910), 
+                                   breaks=seq(200,900,100),
+                                   name=title_ef)
+```
+
+```{r}
+  world <- map_data("world") %>%
+           dplyr::filter(region != "Antarctica")
+```
+
+Create and save a plot for each day of the year.
+
+```{r, fig.width=6.2, fig.height=3.25, fig.align = 'center', warning=FALSE}
+
+  if(!file.exists("../figures/maps/pm52.png")){ 
+    
+    for (i in 1:52){ # for each day of the year
+    
+      # select data to plot
+      df_filt <- dplyr::filter(df, week == i)
+                 
+      # get date for plot title
+      week_name <- sprintf("Week %d", i)
+    
+      ggplot(df_filt, aes(x=lon, y=lat, fill=pm)) + 
+            geom_raster() +
+              scale_ef + 
+            geom_map(data=world, map=world, inherit.aes=FALSE,
+                     aes(map_id=region, group=group),
+                     color="black", fill=NA, size=0.05) + 
+            xlab("Longitude") +
+            ylab("Latitude") +
+            coord_cartesian(xlim=c(-170,180),ylim=c(-60,85), expand=FALSE) +
+            scale_x_continuous(breaks=seq(-160,160,20)) + 
+            scale_y_continuous(breaks=seq( -80, 80,20)) + 
+            ggtitle(week_name) + 
+            theme(aspect.ratio = 0.45,
+                  panel.grid.major = element_line(color=NA),
+                  panel.grid.minor = element_line(color=NA),
+                  panel.border = element_rect(fill=NA),
+                  panel.background = element_rect(fill='white'),
+                  axis.text =element_text(size=10, color='black'),
+                  axis.title=element_text(size=10, color='black'),
+                  legend.text=element_text(size=10, color='black'),
+                  legend.title=element_text(size=10, color='black'),
+                  legend.key.height = unit(0.8, "cm"),
+                  axis.ticks = element_line(color='black'),
+                  plot.title=element_text(size=11, color='black', face="bold"),
+                  legend.position=c(0.09,0.30)) 
+    
+      # save the plot
+      fname <- sprintf("../figures/maps/pm%02d.png",i)
+      ggsave(fname, plot=last_plot(), width=8.5, height=4.45) # inches
+    }
+  }
+```

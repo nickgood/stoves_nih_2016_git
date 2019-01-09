@@ -56,6 +56,42 @@ Remove tests with missing values and convert timestamps.
                                            flow_rate_cc_per_min)) 
 ```
 
+### Timestamps
+
+Compare the timestamps from the master timestamp .RDS file to the start and stop times from the VOC data file.  
+
+First, select and combine the timestamps from the two sources. 
+
+```{r}
+  df_times <- dplyr::filter(times, var %in% c("ignite","set_1","end",
+                                              "start_voc","end_voc")) %>%
+              tidyr::spread(var, value) %>%
+              dplyr::select(id,ignite,set_1,start_voc,end_voc,end) %>%
+              dplyr::left_join(dplyr::select(df_voc, id, start_time, stop_time),
+                               by = c("id")) %>%
+              dplyr::distinct() 
+```
+
+Round each timestamp to the nearest second. Then, compare the starting and ending timestamps for the VOC samples. 
+
+```{r}
+  df_times <- dplyr::mutate(df_times,
+                            start_voc   = round(start_voc),
+                            end_voc     = round(end_voc),
+                            start_time  = round(start_time),
+                            stop_time   = round(stop_time),
+                            start_equal = ifelse(start_voc == start_time, TRUE, FALSE),
+                            end_equal   = ifelse(end_voc   == stop_time,  TRUE, FALSE))
+```
+
+Select tests for which timestamps do not agree:
+
+```{r}
+  df_unequal <- dplyr::filter(df_times, (start_equal == FALSE) | (end_equal == FALSE))
+```
+
+There is only one test for which the timestamps in the master timestamp dataframe do not agree with the timestamps in the VOC data file.  The ending timestamp from the master timestamp dataframe is clearly wrong, since is is before the test start time.  The ending timestamp from the VOC data file matches the ending time for the test. 
+
 ### Notes
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}

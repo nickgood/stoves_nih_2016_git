@@ -231,20 +231,26 @@ Save the data.
   ggsave(filename="../figures/emissions_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.1)
 ```
 
-```{r, fig.width=6.5, fig.height=8.25, fig.align='center'}
+```{r, fig.width=6.5, fig.height=6.5, fig.align='center'}
   
-  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("formaldehyde","acetaldehyde","acetone",
-                                                  "acrolein","propionaldehyde","crotonaldehyde",
-                                                  "butanone","methacrolein","butyraldehyde",
-                                                  "benzaldehyde","isovaleraldehyde","valeraldehyde",
-                                                  "o_tolualdehyde","m_p_tolualdehyde","hexaldehyde")) %>%
-                   dplyr::mutate(pol  = ifelse(pol=="o_tolualdehyde","o-tolualdehyde",pol),
-                                 pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
+  df_ef_subset <- dplyr::filter(df_ef, inst == "carbs") %>%
+    dplyr::mutate(pol  = ifelse(pol=="2_5_dimethylbenzaldehyde","2,5-dimethylben...",pol),
+                  pol  = ifelse(pol=="o_tolualdehyde","o-tolualdehyde",pol),
+                  pol  = ifelse(pol=="m_p_tolualdehyde","m+p-tolualdehyde",pol))
+
+  df_ef_carbs <- dplyr::group_by(df_ef_subset, pol) %>%
+                 dplyr::summarise(ef = mean(ef))    %>%
+                 dplyr::arrange(-ef)
+  
+  carb_levels <- df_ef_carbs$pol
+  
+  df_ef_subset <- dplyr::mutate(df_ef_subset, 
+                                pol = factor(pol, levels = carb_levels))
 
   ggplot(df_ef_subset, 
          aes(x=mc_dry, y=ef, shape=type)) +
          geom_point(size=3, alpha=0.7, color="black") +
-         facet_wrap(~pol, scales="free_y", ncol=3) +
+         facet_wrap(~pol, scales="free_y", ncol=4) +
          # format plot
          coord_cartesian(xlim=c(4,30)) + 
          scale_x_continuous(breaks=seq(5,25,10)) +
@@ -260,24 +266,24 @@ Save the data.
                panel.grid.minor.x = element_line(color="gray95"),
                panel.grid.major.y = element_line(color="gray95"),
                panel.grid.minor.y = element_line(color="gray95"),
-               axis.text    = element_text(size=10, color="black"),
+               axis.text    = element_text(size=8, color="black"),
                axis.title   = element_text(size=10, color="black"),
                axis.ticks   = element_line(color="black"),
                legend.text  = element_text(size=10, color='black'),
                legend.title = element_text(size=10, color='black'),
-               legend.key   = element_blank())
+               legend.key   = element_blank(),
+               legend.position = "none")
   
-  ggsave(filename="../figures/aldehydes_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
+  ggsave(filename="../figures/carbonyls_fuel.pdf", plot=last_plot(), device="pdf", width=6.5, height=6.5)
 ```
 
 ```{r, fig.width=5.4, fig.height=5.5, fig.align='center'}
   
-  df_ef_subset <- dplyr::filter(df_ef, pol %in% c("benzene", "toluene",
-                                                  "ethylbenzene", "xylenes")) %>%
-                   dplyr::mutate(pol  = factor(pol, levels=c("benzene", "toluene",
-                                                             "ethylbenzene", "xylenes")),
-                                 type = forcats::fct_recode(type, "Split"   = "field",
-                                                                   "Milled" = "lab"))
+  df_ef_subset <- dplyr::filter(df_ef, inst == "voc") %>%
+                  dplyr::mutate(pol  = factor(pol, levels=c("benzene", "toluene",
+                                                            "ethylbenzene", "xylenes")),
+                                type = forcats::fct_recode(type, "Split"   = "field",
+                                                                 "Milled" = "lab"))
 
   ggplot(df_ef_subset, 
          aes(x=mc_dry, y=ef, shape=type)) +
