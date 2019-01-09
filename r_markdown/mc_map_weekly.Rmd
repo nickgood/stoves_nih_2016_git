@@ -19,9 +19,6 @@ output: html_document
   library(maps)
   library(sp)
   library(rworldmap)
-
-  # for making videos
-  library(imager)
 ```
 
 # Relate EMC to PM2.5 emission factor
@@ -47,6 +44,8 @@ Load the energy-based emission factors (g/MJ~d~).
 ```
 
 # Load and average climate model data 
+
+### Over each day
 
 ```{r}
     
@@ -134,6 +133,8 @@ Load the energy-based emission factors (g/MJ~d~).
   }
 ```
 
+### Over each week
+
 ```{r}
 
   if(!file.exists("../r_files/df_temp_rh_2017_weekly.RDS")){ 
@@ -208,6 +209,56 @@ Load the energy-based emission factors (g/MJ~d~).
   }
 ```
 
+### Over each month
+
+```{r}
+
+  if(!file.exists("../r_files/df_pm_2017_monthly.RDS")){ 
+
+    file_list <- list.files('../r_files/', pattern="*_daily*\\.RDS", full.names=TRUE)
+    n_i <- length(file_list) # number of files to read
+    
+    for (i in 1:n_i){ # for each file
+       
+      df_i <- readRDS(file_list[i])
+  
+      # for complete weeks
+      df_month_i <- dplyr::group_by(df_i, lon, lat) %>%
+                    dplyr::summarise(t2m = mean(t2m),
+                                     rh  = mean(rh)) %>%
+                    dplyr::mutate(month = month(df_i$date[1]))
+        
+      if(i==1){
+        df_month <- df_month_i
+      }else{
+        df_month <- dplyr::bind_rows(df_month, df_month_i)
+      }
+    }
+    
+    rm(df_i, df_month_i)
+    
+    # convert temperatures below -1.1 degrees Celsius to NAs
+    # calculate equilibrium moisture content from temperature and relative humidity
+    # calculate the PM2.5 emission factor (mg/MJd) from the EMC
+    df_month <- df_month %>%
+                dplyr::mutate(t2m = ifelse(t2m < -1.1, NA, t2m), # EMC eq. NA below -1.1 deg C
+                              W  = 349   + (1.29*t2m)     + (0.0135*(t2m^2)),
+                              K  = 0.805 + (0.000736*t2m) - (0.00000273*(t2m^2)),
+                              K1 = 6.27  - (0.00938*t2m)  - (0.000303*(t2m^2)),
+                              K2 = 1.91  + (0.0407*t2m)   - (0.000293*(t2m^2)),
+                              EMC = (1800/W)*(((K*rh)/(1-(K*rh))) +
+                                     (((K1*K*rh)+(2*K1*K2*(K^2)*(rh^2)))/(1+(K1*K*rh)+(K1*K2*(K^2)*(rh^2))))),
+                              pm = 10^(mod_ef$coefficients[1] + (mod_ef$coefficients[2]*EMC))) %>%
+                dplyr::select(lon, lat, month, pm)
+
+    saveRDS(df_month, file="../r_files/df_pm_2017_monthly.RDS")
+    
+  }else{
+    
+    df_month <- readRDS("../r_files/df_pm_2017_monthly.RDS")
+  }
+```
+
 # Plot the results
 
 Convert longitudes between 0 and 360 degrees to longitudes between -180 and 180 degrees ([see example](https://cran.r-project.org/web/packages/futureheatwaves/vignettes/starting_from_netcdf.html)).  
@@ -215,6 +266,9 @@ Convert longitudes between 0 and 360 degrees to longitudes between -180 and 180 
 ```{r}
   df <- dplyr::ungroup(df) %>%
         dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
+
+  df_month <- dplyr::ungroup(df_month) %>%
+              dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
 ```
 
 Find out which country each latitude and longitude point in the data frame is located within.  This code is based on the example provided [here](https://stackoverflow.com/questions/14334970/convert-latitude-and-longitude-coordinates-to-country-name-in-r). 
@@ -230,13 +284,16 @@ Find out which country each latitude and longitude point in the data frame is lo
   df_countries = over(sp_points, sp_countries)
 ```
 
-Then, add the country names to the data frame of moisture contents.  
+Then, add the country names to the data frame of emission factors.  
 
 ```{r}
   df_lon_lat$country <- df_countries$ADMIN 
 
   df <- left_join(df, df_lon_lat, by=c("lon","lat")) %>%
         dplyr::filter(!is.na(country))
+  
+  df_month <- left_join(df_month, df_lon_lat, by=c("lon","lat")) %>%
+              dplyr::filter(!is.na(country))
   
   rm(sp_countries, sp_points, df_countries)
 ```
@@ -251,25 +308,22 @@ Then, add the country names to the data frame of moisture contents.
   orange <- "#FF6633"
   pink1  <- "#CC0066"
   pink2  <- "#FF3366"
-```
-
-```{r}
+  
   title_ef <- expression(PM[2.5] ~ (mg * plain('\u00b7') * MJ[d]^-1))
   palette_ef <- colorRampPalette(c(purple,teal3,teal2,gold,orange,pink2,pink1))
-  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), 
-                                   limits=c(235,910), 
-                                   breaks=seq(200,900,100),
-                                   name=title_ef)
-```
-
-```{r}
+  
   world <- map_data("world") %>%
            dplyr::filter(region != "Antarctica")
 ```
 
-Create and save a plot for each day of the year.
+Create and save a plot for each week of the year.
 
-```{r, fig.width=6.2, fig.height=3.25, fig.align = 'center', warning=FALSE}
+```{r, fig.width=8.5, fig.height=5.5, fig.align = 'center', warning=FALSE}
+
+  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), 
+                                   limits=c(235,910), 
+                                   breaks=seq(200,900,100),
+                                   name=title_ef)
 
   if(!file.exists("../figures/maps/pm52.png")){ 
     
@@ -293,6 +347,7 @@ Create and save a plot for each day of the year.
             scale_x_continuous(breaks=seq(-160,160,20)) + 
             scale_y_continuous(breaks=seq( -80, 80,20)) + 
             ggtitle(week_name) + 
+            labs(caption = "\nPotential variability in fine particulate matter emission factors for the Envirofit G-3300 due to changes in the equilibrium moisture \ncontent of wood fuel with geographic location and time. Data are shown for each week of 2017. \n\nVan Zyl, L.; Tryner, J.; Bilsback, K. R.; Good, N.; Hecobian, A.; Sullivan, A.; Zhou, Y; Peel, J. L.; Volckens, J. Effects of fuel \nmoisture content on emissions from a rocket-elbow cookstove. 2019.") + 
             theme(aspect.ratio = 0.45,
                   panel.grid.major = element_line(color=NA),
                   panel.grid.minor = element_line(color=NA),
@@ -305,11 +360,66 @@ Create and save a plot for each day of the year.
                   legend.key.height = unit(0.8, "cm"),
                   axis.ticks = element_line(color='black'),
                   plot.title=element_text(size=11, color='black', face="bold"),
+                  plot.caption = element_text(size = 10, hjust = 0),
                   legend.position=c(0.09,0.30)) 
     
       # save the plot
       fname <- sprintf("../figures/maps/pm%02d.png",i)
-      ggsave(fname, plot=last_plot(), width=8.5, height=4.45) # inches
+      ggsave(fname, plot=last_plot(), width=8.5, height=5.5, dpi=600) # inches
+    }
+  }
+```
+
+Create and save a plot for each month of the year. 
+
+```{r, fig.width=8.5, fig.height=5.5, fig.align = 'center', warning=FALSE}
+
+  scale_ef <- scale_fill_gradientn(colours=palette_ef(100), 
+                                   limits=c(235,870), 
+                                   breaks=seq(200,900,100),
+                                   name=title_ef)
+
+  if(!file.exists("../figures/maps/pm_month_12.png")){ 
+    
+    for (i in 1:12){ # for each month of the year
+    
+      # select data to plot
+      df_filt <- dplyr::filter(df_month, month == i)
+                 
+      # get date for plot title
+      month_name <- sprintf("%s 2017", month.name[i])
+    
+      ggplot(df_filt, aes(x=lon, y=lat, fill=pm)) + 
+            geom_raster() +
+              scale_ef + 
+            geom_map(data=world, map=world, inherit.aes=FALSE,
+                     aes(map_id=region, group=group),
+                     color="black", fill=NA, size=0.05) + 
+            xlab("Longitude") +
+            ylab("Latitude") +
+            coord_cartesian(xlim=c(-170,180),ylim=c(-60,85), expand=FALSE) +
+            scale_x_continuous(breaks=seq(-160,160,20)) + 
+            scale_y_continuous(breaks=seq( -80, 80,20)) + 
+            ggtitle(month_name) + 
+            labs(caption = "\nPotential variability in fine particulate matter emission factors for the Envirofit G-3300 due to changes in the equilibrium moisture \ncontent of wood fuel with geographic location and time. \n\nVan Zyl, L.; Tryner, J.; Bilsback, K. R.; Good, N.; Hecobian, A.; Sullivan, A.; Zhou, Y; Peel, J. L.; Volckens, J. Effects of fuel \nmoisture content on emissions from a rocket-elbow cookstove. 2019.") + 
+            theme(aspect.ratio = 0.45,
+                  panel.grid.major = element_line(color=NA),
+                  panel.grid.minor = element_line(color=NA),
+                  panel.border = element_rect(fill=NA),
+                  panel.background = element_rect(fill='white'),
+                  axis.text =element_text(size=10, color='black'),
+                  axis.title=element_text(size=10, color='black'),
+                  legend.text=element_text(size=10, color='black'),
+                  legend.title=element_text(size=10, color='black'),
+                  legend.key.height = unit(0.8, "cm"),
+                  axis.ticks = element_line(color='black'),
+                  plot.title=element_text(size=11, color='black', face="bold"),
+                  plot.caption = element_text(size = 10, hjust = 0),
+                  legend.position=c(0.09,0.30)) 
+    
+      # save the plot
+      fname <- sprintf("../figures/maps/pm_month_%02d.png",i)
+      ggsave(fname, plot=last_plot(), width=8.5, height=5.5, dpi=600) # inches
     }
   }
 ```
