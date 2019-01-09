@@ -10,6 +10,7 @@ output:
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   library(tidyverse)
   library(forcats)
+  library(readxl)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -116,6 +117,24 @@ Loads the microgram sheet and resaves data as an .RDS.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
   #voc <- load_singlefiles("voc")
   #save(voc, file = "../r_files/voc.RDS")
+```
+
+```{r}
+  old_voc   <- read_xls("../data/voc/old_VOC.xls",   range = "C1:H17")
+
+  new_voc   <- read_xlsx("../data/voc/new_VOC.xlsx", range = "H17:M33")
+
+  voc_rates <- read_xlsx("../data/voc/new_VOC.xlsx", range = "A1:G33")
+
+  voc <- dplyr::bind_rows(old_voc, new_voc) %>%
+         dplyr::left_join(voc_rates, by=c("id")) %>%
+         tidyr::separate(start_time, sep = " ", into = c("start_date", "start_time")) %>%
+         tidyr::separate(stop_time,  sep = " ", into = c("stop_date",  "stop_time"))  %>%
+         dplyr::select(id, date, start_time, stop_time, start_reading, stop_reading,
+                       flow_rate_cc_per_min, benzene, toluene, ethylbenzene,
+                       `m+p-xylene`, `o-xylene`)
+
+  saveRDS(voc, file = "../r_files/voc.RDS")
 ```
 
 # Metadata

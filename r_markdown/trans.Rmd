@@ -1,7 +1,7 @@
 ---
-title: "trans"
-author: "Nicholas Good"
-date: "11/21/2016"
+title: "Transmissometer"
+author: "Nicholas Good and Jessica Tryner"
+date: "January 9, 2019"
 output: html_document
 ---
 
@@ -13,196 +13,173 @@ output: html_document
   source("../r_scripts/R_tidy.R")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+# Load data
+
+Test metadata:
+
+```{r}
   samples <- readRDS("../r_files/samples.RDS")
-  filter_times <- readRDS("../r_files/filter_times.RDS")
-  filter_flows <- readRDS("../r_files/filter_flows.RDS")
+  notes   <- readRDS("../r_files/notes.RDS")
 ```
 
-## Get mean flows and turn flowrate/ duration into total volume of air through filter
+Transmissometer data:
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  filter_vol <- dplyr::group_by(filter_flows, id, colour) %>%
-                dplyr::summarise(mean_flow = mean(value) * 60) %>%
-                dplyr::filter(colour == "white")
-
-  filter_dur <- dplyr::filter(filter_times, color =="white") %>%
-                dplyr::group_by(id) %>%
-                tidyr::spread(type, value)
-  
-  filter_dur <- dplyr::mutate(filter_dur, dur = end - start)
-  
-  filter_dur_1 <- dplyr::select(filter_dur, id, dur)
-  
-  filter_vol_1 <- dplyr::select(filter_vol, id, mean_flow)
-  
-  filter_cc_merged <- dplyr::left_join(filter_dur_1, filter_vol_1)
-  
-  filter_cc_merged <- dplyr::mutate(filter_cc_merged, total_cc = dur * mean_flow)
-```
-
-
-## Load transmissometer data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   trans <- readRDS("../r_files/trans.RDS")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  colnames(trans)
+Gravimetric PM~2.5~ data:
+
+```{r}
+  grav_merged <- readRDS("../r_files/grav_merged.RDS")
 ```
 
-## Load filter id numbers
+# Organize and combine
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  grav <- readRDS("../r_files/grav.RDS") 
+Calculate total volume of airflow through each filter. 
 
-  filter_info <- dplyr::select(grav, id, id_filter) %>%
-                 dplyr::rename(filter_id = id_filter)
+```{r}
+  df_grav <- dplyr::select(grav_merged, id, id_filter, flow, dur, d_mass) %>%
+             dplyr::rename(filter_id = id_filter) %>%
+             dplyr::mutate(vol_m3 = (flow / 1000) * dur)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(filter_info, 2)
+Check to make sure that there are transmissometer data for all filters.
+
+```{r}
+  df_missing <- dplyr::anti_join(df_grav, 
+                                 dplyr::select(trans, filter_id),
+                                 by=c("filter_id"))
 ```
 
-## Merge data with id
+Notes.
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans, filter_info, "filter_id") %>%
-                  dplyr::mutate(id = as.factor(id))
+```{r}
+  df_flags <- dplyr::filter(notes, grepl("trans|all", inst) == TRUE) %>%
+              dplyr::select(id, qc) %>%
+              dplyr::group_by(id) %>%
+              dplyr::arrange(qc) %>%
+              dplyr::summarise(qc = first(qc))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  head(trans_merged, 2)
-```
+Combine transmissometer data with filter data.
 
-## Filters without matches - NONE FOUND FOR MC STUDY
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # trans_no_match <- dplyr::anti_join(dplyr::select(filter_info, filter_id),
-  #                                    dplyr::select(trans, filter_id),
-  #                                    by = "filter_id")
-  # 
-  # saveRDS(trans_no_match, file = "../r_files/trans_no_match.RDS")
-```
-
-## Melt
-
-Make longer and remove missing values *THIS CHUNK NOW WORKS BUT NOT SURE WHAT IT DOES?
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged_ <- dplyr::filter(trans_merged, !is.na(test_id)) %>%
-                  dplyr::filter(!grepl("Pilot", test_id)) %>%
-                  tidyr::gather_("var", "val", grep("^*ir*|^*uv*", colnames(trans_merged), value = TRUE)) %>%
-                  dplyr::mutate(lamda = sub("_.*", "", var)) %>%
-                  dplyr::mutate(pos = sub(".*_", "", var)) %>%
-                  dplyr::mutate(type = gsub(".*_(.*)_.*","\\1", var))
+```{r, warning=FALSE}
+  df_trans <- dplyr::left_join(df_grav, trans, by=c("filter_id")) %>%
+              dplyr::left_join(df_flags, by=c("id")) %>%
+              dplyr::select(-description, -test_id)  %>%
+              dplyr::mutate(post_blankir  = as.numeric(post_blankir),
+                            post_sampleir = as.numeric(post_sampleir),
+                            post_blankuv  = as.numeric(post_blankuv),
+                            post_sampleuv = as.numeric(post_sampleuv),
+                            qc = ifelse(is.na(qc), "ok", as.character(qc)),
+                            id = as.factor(id),
+                            id = forcats::fct_relevel(id,"G1","G2","G3","G4","G5","G6","G7","G8",
+                                                         "BG1","BG2","BG3","BG4","BG5","BG6","BG7","BG8",
+                                                         "LL1","LL2","LL3","LL4","FL1","FL2","FL3","FL4",
+                                                         "LM1","LM2","LM3","LM4","FM1","FM2","FM3","FM4",
+                                                         "LH1","LH2","LH3","LH4","FH1","FH2","FH3","FH4"))
 ```
 
 # Recalculate attenuations
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::mutate(trans_merged, uv_atn_pre = 100 * log(blankuv/sampleuv)) %>%
-                  dplyr::mutate(ir_atn_pre = 100 * log(blankir/sampleir)) %>%
-                  dplyr::mutate(uv_atn_post = 100 * log(as.numeric(post_blankuv)/as.numeric(post_sampleuv))) %>%
-                  dplyr::mutate(ir_atn_post = 100 * log(as.numeric(post_blankir)/as.numeric(post_sampleir)))
+```{r}
+  df_trans <- dplyr::select(df_trans, -atn_ir, -atn_uv, -atn_ir_2, -atn_uv_2) %>%
+              dplyr::mutate(uv_atn_pre   = 100 * log(blankuv/sampleuv),
+                            ir_atn_pre   = 100 * log(blankir/sampleir),
+                            uv_atn_post  = 100 * log(post_blankuv/post_sampleuv),
+                            ir_atn_post  = 100 * log(post_blankir/post_sampleir),
+                            delta_uv_atn = (uv_atn_post - uv_atn_pre)/uv_atn_pre)
 ```
 
-## Adjust attenuations by dividing by total volume of air through filter
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::rename(trans_merged, id = val)
-
-  trans_merged <- dplyr::left_join(trans_merged, filter_cc_merged)
-  
-  trans_merged <- dplyr::mutate(trans_merged, delta_ir_over_vol = (ir_atn_post - ir_atn_pre)/(total_cc/(10^6))) %>%
-                  dplyr::mutate(delta_uv_over_vol = (uv_atn_post - uv_atn_pre)/(total_cc/(10^6)))
-```
-
-
-## QC
-
-Load notes
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  notes <- readRDS("../r_files/notes.RDS")
-
-  notes <- dplyr::filter(notes, grepl("trans|all", notes$inst) == TRUE)
-```
-
-Set one flag per test
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  flags <- dplyr::select(notes, id, qc) %>%
-           dplyr::group_by(id) %>%
-           dplyr::arrange(qc) %>%
-           dplyr::summarise(qc = first(qc))
-```
-
-Merge with data
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  trans_merged <- dplyr::left_join(trans_merged, flags, by = "id") %>%
-                  dplyr::mutate(id = as.factor(id)) %>%
-                  dplyr::mutate(qc = as.factor(ifelse(is.na(qc), "ok", as.character(qc))))
-```
-
-Additional bad tests
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  # trans_merged$qc[trans_merged$id == ""] <- "bad"
-```
-
-## Save merged file
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  saveRDS(trans_merged, file = "../r_files/trans_merged.RDS")
-```
-
-## Data summary
-
-Transmissometer was was collected for `r length(unique(trans_merged$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(trans_merged$id))`.
-
-#plots
+Adjust attenuations by dividing by total volume of air through filter
 
 ```{r}
-  ggplot(trans_merged, aes(id, uv_atn_pre)) +
-  geom_point() +
-  theme_minimal() +
-  ylab("Pre Test UV Attenuation") +
-  theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+  df_trans <- df_trans %>%
+              dplyr::mutate(delta_ir_over_vol = (ir_atn_post - ir_atn_pre) / vol_m3,
+                            delta_uv_over_vol = (uv_atn_post - uv_atn_pre) / vol_m3)
 ```
 
-```{r}
-  trans_no_err <- dplyr::filter(trans_merged, !grepl("^ERR60", atn_uv_2))
+# Save
 
-  ggplot(trans_no_err, aes(id, uv_atn_post)) +
-    geom_point() +
-    theme_minimal() +
-    ylab("Post Test UV Attenuation") +
-    theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+  saveRDS(df_trans, file = "../r_files/trans_merged.RDS")
 ```
 
-#Percentage change in UV: (uv_atn_post/uv_atn_pre)/uv_atn_pre
+Transmissometer was was collected for `r length(unique(df_trans$id))` experiments. There is no transmissometer data for tests: `r setdiff(as.character(samples$id), as.character(df_trans$id))`.
+
+# Plot data
+
+Select just UV attenuation data: 
 
 ```{r}
-  trans_no_err <- dplyr::mutate(trans_no_err, delta_uv_atn = (uv_atn_post - uv_atn_pre)/uv_atn_pre)
-
-  ggplot(trans_no_err, aes(id, delta_uv_atn)) +
-    geom_point() +
-    theme_minimal() +
-    ylab("Post Test UV Attenuation") +
-    theme(text = element_text(size=8), axis.text.x = element_text(angle=-45, hjust=1))
+  df_atn_uv <- dplyr::select(df_trans, id, uv_atn_pre, uv_atn_post) %>%
+               dplyr::rename(`Pre-test`  = uv_atn_pre,
+                             `Post-test` = uv_atn_post) %>%
+               tidyr::gather("type", "uv_atn", c(`Pre-test`, `Post-test`)) 
 ```
 
-# Plot delta uv divided by total m^3 of air through filter
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=8, fig.height=3.15, fig.align='center'}
 
-```{r}
-    ggplot(trans_no_err, aes(id, delta_uv_over_vol)) +
-    geom_point() +
-    theme_minimal() +
-    ylab("Post Test UV Attenuation") +
-    theme(text = element_text(size=8), axis.text.x = element_text(angle=45, hjust=.5))
+  ggplot(df_atn_uv, aes(x=id, y=uv_atn, shape=type)) +
+    geom_point(size=3, color="black") +
+      scale_shape_manual(values = c(19,1)) +
+    scale_y_continuous(breaks=seq(0,500,100)) + 
+    xlab("Filter ID") + 
+    ylab("UV attenuation") + 
+    labs(shape=NULL) + 
+    theme(aspect.ratio = 0.35,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks  = element_line(color="black"),
+          axis.text.x = element_text(size=6, color="black"),
+          axis.text.y = element_text(size=9, color="black"),
+          axis.title  = element_text(size=9, color="black"),
+          legend.text  = element_text(size=10, color='black'),
+          legend.key   = element_blank(),
+          legend.position = c(0.07,0.85))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=8, fig.height=3.15, fig.align='center'}
+
+  ggplot(df_trans, aes(x=id, y=delta_uv_atn)) +
+    geom_point(size = 3) +
+    scale_y_continuous(breaks=seq(0,100,10)) + 
+    xlab("Filter ID") + 
+    ylab("Change in UV attenuation (%)") +
+    theme(aspect.ratio = 0.35,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks  = element_line(color="black"),
+          axis.text.x = element_text(size=6, color="black"),
+          axis.text.y = element_text(size=9, color="black"),
+          axis.title  = element_text(size=9, color="black"),
+          legend.position = c(0.1,0.8))
+```
+
+### Plot delta uv divided by total m^3 of air through filter
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=8, fig.height=3.15, fig.align='center'}
+
+  ggplot(df_trans, aes(id, delta_uv_over_vol)) +
+    geom_point(size = 3) +
+    scale_y_continuous(breaks=seq(0,3000,500)) + 
+    xlab("Filter ID") + 
+    ylab("Change in UV attenuation per m3 of air") +
+    theme(aspect.ratio = 0.35,
+          panel.border = element_rect(fill=NA, color="black"),
+          panel.background = element_rect(fill="white"),
+          panel.grid.major = element_line(color="gray95"),
+          panel.grid.minor = element_line(color="gray95"),
+          axis.ticks  = element_line(color="black"),
+          axis.text.x = element_text(size=6, color="black"),
+          axis.text.y = element_text(size=9, color="black"),
+          axis.title  = element_text(size=9, color="black"),
+          legend.position = c(0.1,0.8))
 ```
 
 Note: in pre UV plot: all 5 filters around the 35 mark are from the same batch of filters which were trans'd on a later date than the original filters; all 6 filters around the 11 mark are from a batch of filters which were trans'd on a different date from originals; ERR60's (too dark) have been removed for plot visuals

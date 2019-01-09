@@ -37,7 +37,7 @@ Log data:
 Gravimetric PM~2.5~ data:
 
 ```{r}
-  data_grav    <- readRDS("../r_files/grav.RDS")
+  data_grav <- readRDS("../r_files/grav.RDS")
 ```
 
 # Organize and combine
@@ -78,24 +78,27 @@ Calculate the change in mass for: (a) the test filter, (b) the calibration weigh
 
 ### Start and end times
 
-Get the starting and ending times for the filter sample associate with each test.  
+Get the starting and ending times for the filter sample associated with each test.  Then, calculate the duration of the test in minutes.  
 
 ```{r}
   df_times <- dplyr::filter(times, var %in% c("start_filters","end_filters")) %>%
               tidyr::spread(var, value) %>%
-              dplyr::select(-date) 
+              dplyr::select(-date)      %>%
+              dplyr::mutate(dur = (end_filters - start_filters) / 60) # minutes
 ```
 
 ### Combine
 
-Merge filter weights, flow rates, start and end times, and test metadata.
+Merge filter weights, flow rates, start and end times, and test metadata. 
 
 ```{r}
   df_grav_merged <- dplyr::left_join(df_grav, df_flows, by = "id") %>%
                     dplyr::left_join(df_times, by = "id")          %>%
                     dplyr::left_join(dplyr::select(samples, id, type, mc_level), 
                                      by = "id")                    %>%
-                    dplyr::rename(test_type = type)
+                    dplyr::rename(test_type = type) 
+
+  saveRDS(df_grav_merged, file = "../r_files/grav_merged.RDS")
 ```
 
 # LOD/LOQ
@@ -125,14 +128,13 @@ Select test blanks:
 
 Calculate the limit of detection (LOD) and limit of quanitification (LOQ). 
 
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-
+```{r}
   df_lod <- dplyr::summarise(df_lod,
                              lod = mean(d_mass) + ( 3 * sd(d_mass)),
                              loq = mean(d_mass) + (10 * sd(d_mass)))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
+```{r}
   lod_var <- df_lod$lod[1]
   loq_var <- df_lod$loq[1]
 ```
@@ -160,9 +162,7 @@ Flag each filter sample as being either above or below the LOD and LOQ.
 Calculate the PM~2.5~ concentration in the hood exhaust.
 
 ```{r}
-  df_grav_conc <- df_grav_merged %>%
-                  dplyr::mutate(dur = (end_filters - start_filters) / 60, # minutes
-                  conc = d_mass / ((flow * dur)/1000)) # ug/m3
+  df_grav_conc <- dplyr::mutate(df_grav_merged, conc = d_mass / ((flow * dur)/1000)) # ug/m3
 ```
 
 # Background 

@@ -175,7 +175,7 @@ Convert voltages to ppm (5 V range).
                                    "sample"  = "mediumorchid1",
                                    "hood" = "darkorange1")) +
     xlab("Time (s)") +
-    ylab("Mixing ratio (ppmv)") + 
+    ylab("Mole fraction (ppmv)") + 
     theme(aspect.ratio=1,
           panel.border     = element_rect(fill=NA),
           panel.background = element_rect(fill='white'),

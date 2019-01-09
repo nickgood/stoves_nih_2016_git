@@ -11,7 +11,6 @@ output:
   library(tidyverse)
   library(forcats)
   library(lubridate)
-  #library(chron)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
@@ -51,9 +50,8 @@ Remove tests with missing values and convert timestamps.
                           id != "NA",
                           stop_reading != "X",
                           stop_reading != 0) %>%
-            tidyr::gather("pol", "ppb", -c(id, date, start_time, stop_time,
-                                           start_reading, stop_reading,
-                                           flow_rate_cc_per_min)) 
+            tidyr::gather("pol", "ppb", c(benzene, toluene, ethylbenzene,
+                                          `m+p-xylene`, `o-xylene`)) 
 ```
 
 ### Timestamps
