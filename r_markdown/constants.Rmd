@@ -38,9 +38,10 @@ Properties of Douglas Fir are from [Tryner et al., 2016](dx.doi.org/10.1021/acs.
 
 ```{r}
   fuel_properties <- tibble::data_frame(fuel = c("Douglas Fir"),
-                                        lhv  = c(19320),              # kJ/kg, dry basis
-                                        carbon_fraction = c(0.5217))  # kg_C/kg_fuel, dry basis
-
+                                        lhv  = c(19320),               # kJ/kg, dry basis
+                                        carbon_fraction = c(0.5217),   # kg_C/kg_fuel, dry basis
+                                        hydrogen_fraction = c(0.0611)) # kg_H/kg_fuel, dry basis
+                                        
   saveRDS(fuel_properties, file = "../r_files/fuel_properties.RDS")
 ```
 

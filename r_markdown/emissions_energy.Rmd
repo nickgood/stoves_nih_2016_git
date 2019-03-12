@@ -132,7 +132,10 @@ Add test metadata to the data frame.
                                                        "FH1", "FH2", "FH3", "FH4",
                                                        "LL1", "LL2", "LL3", "LL4",
                                                        "LM1", "LM2", "LM3", "LM4",
-                                                       "LH1", "LH2", "LH3","LH4")) %>%
+                                                       "LH1", "LH2", "LH3","LH4"),
+                         mc_target = 25,
+                         mc_target = ifelse(mc_level == "Medium", 15, mc_target),
+                         mc_target = ifelse(mc_level == "Low",     5, mc_target)) %>%
           dplyr::filter(!is.na(type), # remove background tests
                         id != "FH2")
 ```
@@ -157,7 +160,7 @@ Save the data.
   pink2  <- "#FF3366"
 ```
 
-```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
+```{r, echo=FALSE, fig.width=3.15, fig.height=3.15, fig.align='center'}
 
   ggplot(df_ef, aes(x=mc_dry, y=mj_d, shape=type)) +
       geom_point(size=3, alpha=0.7) +
@@ -180,7 +183,7 @@ Save the data.
             legend.position = c(0.80,0.20)) 
 ```
 
-```{r, fig.width=7.48, fig.height=3.54, fig.align='center'}
+```{r, echo=FALSE, fig.width=7.48, fig.height=3.54, fig.align='center'}
 
   df_ef_subset <- dplyr::filter(df_ef, pol %in% c("co","grav","ec","oc","ch4",
                                                   "formaldehyde","acetaldehyde","benzene")) %>%
@@ -250,8 +253,9 @@ Save the data.
                 color="black", hjust="left", vjust="top", size=3.5) +
       geom_text(aes(label="Acetaldehyde", x= 4, y=  110), data=subset(df_ef_subset, pol=="acetaldehyde"),
                 color="black", hjust="left", vjust="top", size=3.5) +
-      geom_text(aes(label="Benzene",      x= 4, y=   62), data=subset(df_ef_subset, pol=="benzene"),
+      geom_text(aes(label="Benzene",      x= 4, y=   70), data=subset(df_ef_subset, pol=="benzene"),
                 color="black", hjust="left", vjust="top", size=3.5) +
+
       # format plot
       theme(aspect.ratio=1,
             panel.border     = element_rect(fill=NA),
@@ -268,7 +272,7 @@ Save the data.
   ggsave(filename="../figures/main_fig.pdf", plot=last_plot(), device="pdf", width=19/2.54, height=9/2.54)
 ```
 
-```{r, fig.width=6.5, fig.height=6.7, fig.align='center'}
+```{r, echo=FALSE, fig.width=6.5, fig.height=6.7, fig.align='center'}
 
   df_ef_subset <- dplyr::filter(df_ef, inst == "carbs") %>%
     dplyr::mutate(pol  = ifelse(pol=="2_5_dimethylbenzaldehyde","2,5-dimethylben...",pol),
@@ -321,7 +325,7 @@ Save the data.
   ggsave(filename="../figures/carbonyls_energy.pdf", plot=last_plot(), device="pdf", width=6.5, height=6.7)
 ```
 
-```{r, fig.width=5.4, fig.height=5.5, fig.align='center'}
+```{r, echo=FALSE, fig.width=5.4, fig.height=5.5, fig.align='center'}
 
   df_ef_subset <- dplyr::filter(df_ef, inst == "voc") %>%
                   dplyr::mutate(pol = factor(pol,
@@ -356,31 +360,6 @@ Save the data.
               legend.position = "none")
   
   ggsave(filename="../figures/voc_energy.pdf", plot=last_plot(), device="pdf", width=5.4, height=5.5)
-```
-
-```{r, fig.width=3.15, fig.height=2.8, fig.align='center'}
-
-  ggplot(dplyr::filter(df_ef, pol=="ultrafines"), 
-         aes(x=mc_dry, y=ef, shape=type)) +
-      geom_point(size=3, alpha=0.7) +
-      coord_cartesian(xlim=c(4,30), ylim=c(0,7.2e15)) + # 
-      scale_x_continuous(breaks=seq(5,30,10)) + 
-      xlab("Moisture content (%)") + 
-      ylab(expression(Ultrafine ~ particles ~ "(" * "#" ~ MJ[delivered]^-1*")")) + 
-      labs(shape = "Fuel shape") + 
-      theme(aspect.ratio=1,
-            panel.border     = element_rect(fill=NA),
-            panel.background = element_rect(fill='white'),
-            axis.text  = element_text(size=10, color='black'),
-            axis.title = element_text(size=10, color='black'),
-            axis.ticks = element_line(color='black'),
-            legend.text  = element_text(size=10, color='black'),
-            legend.title = element_text(size=10, color='black'),
-            legend.key   = element_blank(),
-            legend.box.background = element_rect(color="black", size=0.6),
-            legend.position = c(0.80,0.205)) 
-
-  ggsave(filename="../figures/ufp_energy.pdf", plot=last_plot(), device="pdf", width=3.15, height=2.8)
 ```
 
 # Two-way ANOVAs
@@ -479,8 +458,10 @@ Neither the fuel shape effect nor the interaction term were significant for any 
 
     pol_i <- pol_list[i]
     
+    df_i  <- dplyr::filter(df_ef, pol==pol_i)
+    
     # one-way ANOVA
-    aov_i <- aov(ef ~ mc_level, dplyr::filter(df_ef, pol==pol_i))
+    aov_i <- aov(ef ~ mc_level, df_i)
     
     # Tukey's test
     tukey_i <- TukeyHSD(aov_i)$mc_level
@@ -490,6 +471,7 @@ Neither the fuel shape effect nor the interaction term were significant for any 
     # Check that the residuals are normally distributed (Shapiro-Wilk test)
     df_i <- data.frame(pol_i) %>%
             dplyr::mutate(pol_i   = as.character(pol_i),
+                          p_ftest = summary(aov_i)[[1]]$`Pr(>F)`[1],
                           p_low_med  = tukey_i["Low-Medium", "p adj"],
                           p_med_high = tukey_i["Medium-High","p adj"],
                           p_low_high = tukey_i["Low-High",   "p adj"],
@@ -512,8 +494,10 @@ Neither the fuel shape effect nor the interaction term were significant for any 
   
     pol_i <- pol_list_log[i]
     
+    df_i  <- dplyr::filter(df_ef_anova, pol==pol_i)
+    
     # one-way ANOVA
-    aov_i <- aov(log_ef ~ mc_level, dplyr::filter(df_ef_anova, pol==pol_i))
+    aov_i <- aov(log_ef ~ mc_level, df_i)
     
     # Tukey's test
     tukey_i <- TukeyHSD(aov_i)$mc_level
@@ -523,6 +507,7 @@ Neither the fuel shape effect nor the interaction term were significant for any 
     # Check that the residuals are normally distributed (Shapiro-Wilk test)
     df_i <- data.frame(pol_i) %>%
             dplyr::mutate(pol_i   = as.character(pol_i),
+                          p_ftest_log = summary(aov_i)[[1]]$`Pr(>F)`[1],
                           p_low_med_log  = tukey_i["Low-Medium", "p adj"],
                           p_med_high_log = tukey_i["Medium-High","p adj"],
                           p_low_high_log = tukey_i["Low-High",   "p adj"],
@@ -553,6 +538,51 @@ Neither the fuel shape effect nor the interaction term were significant for any 
                      dplyr::select(-levene, -shapiro, -levene_log, -shapiro_log)
 
   kable(df_anova1_table, format="markdown", digits=4)
+```
+
+# Test for linearity
+
+```{r}
+
+  for(i in 1:length(pol_list)){
+
+    pol_i <- pol_list[i]
+    
+    df_i  <- dplyr::filter(df_ef, pol==pol_i)
+    
+    
+    # Model 1: Is there any association between MC and EF?
+    fit1 <- lm(ef ~ mc_level, df_i)
+    
+    f1 <- summary(fit1)$fstatistic
+    
+    p1 <- pf(f1[1], f1[2], f1[3], lower.tail=FALSE)
+    
+    # Model 2: Does a linear model have a nonzero slope?
+    fit2 <- lm(ef ~ mc_target, df_i)
+    
+    f2 <- summary(fit2)$fstatistic
+    
+    p2 <- pf(f2[1], f2[2], f2[3], lower.tail=FALSE)
+    
+    # Are models 1 and 2 equivalent, or is the relationship
+    # between MC and EF nonlinear? 
+    anova_i <- anova(fit1, fit2)
+    
+    p3 <- anova_i$`Pr(>F)`[2]
+    
+    df_i <- data.frame(pol_i) %>%
+            dplyr::mutate(pol_i = as.character(pol_i),
+                          p_assoc     = p1,
+                          p_slope     = p2,
+                          p_nonlinear = p3)
+    
+    if(i==1){
+      df_linear <- df_i
+    }else{
+      df_linear <- dplyr::bind_rows(df_linear,df_i)
+    }
+  }
 ```
 
 # Summarize EFs by fuel moisture level
@@ -601,12 +631,14 @@ Neither the fuel shape effect nor the interaction term were significant for any 
                          ci_upper = mean + (qt(.95,df=n-1)*sd/sqrt(n)))
 ```
 
-The upper limit on the 90% confidence interval for CO emissions was: 
+The upper limit on the 90% confidence interval for CO emissions was:  
+
 * `r round(dplyr::filter(df_co, mc_level=="High")$ci_upper, digits=1)` g/MJ~d~ with the high-moisture fuel.  
 * `r round(dplyr::filter(df_co, mc_level=="Medium")$ci_upper, digits=1)` g/MJ~d~ with the medium-moisture fuel.  
 * `r round(dplyr::filter(df_co, mc_level=="Low")$ci_upper, digits=1)` g/MJ~d~ with the low-moisture fuel.  
 
-The upper limit on the 90% confidence interval for PM~2.5~ emissions was: 
+The upper limit on the 90% confidence interval for PM~2.5~ emissions was:  
+
 * `r round(dplyr::filter(df_pm, mc_level=="High")$ci_upper)` g/MJ~d~ with the high-moisture fuel.  
 * `r round(dplyr::filter(df_pm, mc_level=="Medium")$ci_upper)` g/MJ~d~ with the medium-moisture fuel.  
 * `r round(dplyr::filter(df_pm, mc_level=="Low")$ci_upper)` g/MJ~d~ with the low-moisture fuel.  

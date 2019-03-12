@@ -14,6 +14,7 @@ output:
   library(lubridate)
   library(chron)
   library(car)
+  library(SDMTools)
 ```
 
 ```{r global_options, include=FALSE}
@@ -74,12 +75,6 @@ Carbonyls
   carbonyls_conc <- readRDS("../r_files/carbonyls_conc.RDS")
 ```
 
-Ultrafine particles
-
-```{r}
-  smps_ultrafine <- readRDS("../r_files/smps_ultrafine.RDS")
-```
-
 VOCs
 
 ```{r}
@@ -114,16 +109,15 @@ Get start and end times for integrated samples.
 Filter out data recorded outside the emissions sampling period.  
 
 ```{r}
-  co_co2_ch4 <- filter_times(times, fivegas_merged) %>%
-                dplyr::distinct() 
+  co_co2_ch4_time <- filter_times(times, fivegas_merged)   %>%
+                     dplyr::filter(substr(id,1,2) != "BG") 
 ```
 
 Calculate the average concentration (in ppmv) recorded during each test. 
 
 ```{r}
-  co_co2_ch4 <- dplyr::group_by(co_co2_ch4, id, pol) %>%
-                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE)) %>%
-                dplyr::filter(substr(id,1,2) != "BG") 
+  co_co2_ch4 <- dplyr::group_by(co_co2_ch4_time, id, pol) %>%
+                dplyr::summarise(ppm = mean(ppm, na.rm = TRUE))
 ```
 
 Convert mixing ratio (ppmv) to mass concentration (assuming constant T and P in the exhaust line).
@@ -139,9 +133,13 @@ Convert mixing ratio (ppmv) to mass concentration (assuming constant T and P in 
 Merge background concentrations with test data. 
 
 ```{r}
+  co_co2_ch4_time <- dplyr::left_join(co_co2_ch4_time,
+                                      dplyr::select(fivegas_bg, id, pol, ppm_bg),
+                                      by=c("pol","id"))
+
   co_co2_ch4 <- dplyr::left_join(co_co2_ch4,
                                  dplyr::select(fivegas_bg, id, pol, ppm_bg, conc_bg),
-                                 by=c("pol","id")) 
+                                 by=c("pol","id"))
 ```
 
 1. Merge fivegas data with sample time data.  
@@ -202,26 +200,6 @@ Calculate the masses of EC and OC emitted
 
 ---
 
-# SMPS
-
-1. Calculate the number of ultrafine particles emitted (per size bin).  
-2. Sum over all size bins (for each test ID).  
-
-```{r}
-  ultrafine <- dplyr::mutate(smps_ultrafine,
-                             num = num_conc * hood_flow * dur * (10^6)) %>% # 1
-               dplyr::group_by(id) %>%
-               summarise(num_emitted = sum(num)) %>%                        # 2
-               dplyr::mutate(inst = "smps",
-                             pol  = "ultrafines")
-```
-
-```{r}
-  head(ultrafine, 2)
-```
-
----
-
 # Carbonyls
 
 Add pollutant properties to data frame. 
@@ -239,8 +217,6 @@ Calculate mass of pollutant emitted and mass of carbon emitted. Replace `mass_em
                              mass_carbon  = mass_emitted * (num_c * mw_c / mw),
                              inst = "carbs")
 ```
-
-* output
 
 ```{r, eval = FALSE}
   head(carbonyls, 2)
@@ -279,8 +255,6 @@ Combine m+p-xylenes and o-xylenes
          dplyr::mutate(inst = "voc")
 ```
 
-* output
-
 ```{r, eval = FALSE}
   head(voc, 2)
 ```
@@ -311,19 +285,6 @@ Convert to longer format
   emissions_long <- tidyr::gather(emissions, "metric", "value", 3:6)
 ```
 
-Number-based pollutants
-
-```{r}
-  number <- dplyr::select(ultrafine, id, pol, num_emitted, inst) %>%
-            tidyr::gather("metric", "value", num_emitted)
-```
-
-Combine mass- and number-based emissions
-
-```{r}
-  emissions_long  <- dplyr::bind_rows(emissions_long, number)
-```
-
 Save the data frame. 
 
 ```{r}
@@ -332,27 +293,133 @@ Save the data frame.
 
 # Modified combustion efficiency
 
-Calculate MCE:
+Calculate real-time MCE:
 
 ```{r, message=FALSE}
-  df_mce <- dplyr::select(co_co2_ch4, id, pol, ppm, ppm_bg)     %>%
-            dplyr::mutate(ppm_bg_corr = ppm - ppm_bg)           %>% 
-            dplyr::select(-ppm, -ppm_bg)                        %>%
-            tidyr::spread(pol, ppm_bg_corr)                     %>%
-            dplyr::mutate(mce = co2/(co2 + co))                 %>%
-            
-            # Add test metadata to dataframe
-            dplyr::left_join(select(samples, id, type, mc_level, mc_dry),
-                             by=c("id")) %>%
-            dplyr::filter(id != "FH2")   
+  df_mce <- dplyr::filter(co_co2_ch4_time, pol %in% c("co","co2")) %>%
+            dplyr::mutate(ppm_bg_corr = ppm - ppm_bg)              %>%
+            dplyr::select(id, datetime, time, pol, ppm_bg_corr)    %>%
+            tidyr::spread(pol, ppm_bg_corr)                        %>%
+            dplyr::mutate(mce = co2/(co2 + co))                    %>%
+            dplyr::left_join(dplyr::select(times, id, start), by=c("id")) %>%
+            dplyr::mutate(time_since_start = time - start,
+                          id = forcats::fct_relevel(id,"LL1","LL2","LL3","LL4",
+                                                       "FL1","FL2","FL3","FL4",
+                                                       "LM1","LM2","LM3","LM4",
+                                                       "FM1","FM2","FM3","FM4",
+                                                       "LH1","LH2","LH3","LH4",
+                                                       "FH1","FH2","FH3","FH4"),
+                          mce = ifelse(id=="FH2", NA, mce))
 
+  test_names <- c("Low, milled 1",    "Low, milled 2",    "Low, milled 3",    "Low, milled 4",
+                  "Low, split 1",     "Low, split 2",     "Low, split 3",     "Low, split 4",
+                  "Medium, milled 1", "Medium, milled 2", "Medium, milled 3", "Medium, milled 4",
+                  "Medium, split 1",  "Medium, split 2",  "Medium, split 3",  "Medium, split 4",
+                  "High, milled 1",   "High, milled 2",   "High, milled 3",   "High, milled 4",
+                  "High, split 1",    "High, split 2",    "High, split 3",    "High, split 4")
+
+  test_ids <- dplyr::select(samples, id) %>%
+              dplyr::filter(substr(id,1,2) != "BG") %>%
+              dplyr::mutate(id = forcats::fct_relevel(id,"LL1","LL2","LL3","LL4",
+                                                         "FL1","FL2","FL3","FL4",
+                                                         "LM1","LM2","LM3","LM4",
+                                                         "FM1","FM2","FM3","FM4",
+                                                         "LH1","LH2","LH3","LH4",
+                                                         "FH1","FH2","FH3","FH4")) %>%
+              arrange(id)
+    
+  test_ids$test_name <- test_names
+  
+  df_mce <- dplyr::left_join(df_mce, test_ids, by=c("id"))
+  
   saveRDS(df_mce, file = "../r_files/df_mce.RDS")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=8.25, fig.align='center'}
+
+  ggplot(dplyr::filter(df_mce, id %in% c("LL1","LL2","LL3","LL4",
+                                         "FL1","FL2","FL3","FL4",
+                                         "LM1","LM2","LM3","LM4",
+                                         "FM1","FM2","FM3","FM4")),
+         aes(x=time_since_start/60, y=mce)) + 
+    geom_line() +
+    facet_wrap(~test_name, ncol=4, scales="free_x") +
+    
+    # format the plot
+    coord_cartesian(ylim=c(0.8,1.0)) + 
+    scale_y_continuous(breaks=seq(0.8,1.0,0.05)) +
+    xlab("Minutes since start of test") +
+    ylab("Modified combustion efficiency (%)") + 
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          panel.grid.major = element_line(color="gray95"),
+          strip.background = element_rect(fill="gray95", color="black"),
+          strip.text.x = element_text(size=10, color="black"),
+          text        = element_text(size=10, color='black'),
+          axis.text.x = element_text(size= 9, color='black'),
+          axis.text = element_text(size=10, color='black'),
+          axis.title  = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black')) 
+
+  ggsave(filename="../figures/mce_low_med.pdf", plot=last_plot(), device="pdf", width=6.5, height=8.25)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='markup', cache=FALSE, fig.width=6.5, fig.height=4.25, fig.align='center'}
+
+  ggplot(dplyr::filter(df_mce, id %in% c("LH1","LH2","LH3","LH4",
+                                         "FH1","FH2","FH3","FH4")),
+         aes(x=time_since_start/60, y=mce)) + 
+    geom_line() +
+    facet_wrap(~test_name, ncol=4, scales="free_x") +
+    
+    # format the plot
+    coord_cartesian(ylim=c(0.8,1.0)) + 
+    scale_y_continuous(breaks=seq(0.8,1.0,0.05)) +
+    xlab("Minutes since start of test") +
+    ylab("Modified combustion efficiency (%)") + 
+    theme(aspect.ratio=1,
+          panel.border     = element_rect(fill=NA),
+          panel.background = element_rect(fill='white'),
+          panel.grid.major = element_line(color="gray95"),
+          strip.background = element_rect(fill="gray95", color="black"),
+          strip.text.x = element_text(size=10, color="black"),
+          text        = element_text(size=10, color='black'),
+          axis.text.x = element_text(size= 9, color='black'),
+          axis.text = element_text(size=10, color='black'),
+          axis.title  = element_text(size=10, color='black'),
+          axis.ticks = element_line(color='black')) 
+
+  ggsave(filename="../figures/mce_high.pdf", plot=last_plot(), device="pdf", width=6.5, height=4.25)
+```
+
+Calculate summary values:
+
+```{r, message=FALSE, warning=FALSE}
+  df_mce_test <- dplyr::mutate(df_mce,
+                               dur_mixed   = ifelse(mce <= 0.97,  1, NA),
+                               dur_mixed   = ifelse(mce <= 0.85, NA, dur_mixed),
+                               dur_smolder = ifelse(mce <= 0.85,  1, NA)) %>%
+                 dplyr::group_by(id) %>%
+                 dplyr::summarise(mce         = mean(mce),
+                                  dur_mixed   = sum(dur_mixed,   na.rm=TRUE),
+                                  dur_smolder = sum(dur_smolder, na.rm=TRUE)) %>%
+                 dplyr::left_join(times, by=c("id")) %>%
+                 dplyr::mutate(dur          = end - start,
+                               frac_mixed   = dur_mixed / dur,
+                               frac_smolder = dur_smolder / dur) %>%
+                 # Add test metadata to dataframe
+                 dplyr::left_join(select(samples, id, type, mc_level, mc_dry),
+                                  by=c("id")) %>%
+                 dplyr::filter(id != "FH2")   %>%
+                 dplyr::select(id, mc_level, type, mc_dry, start, end, dur,
+                               mce, frac_mixed, frac_smolder)
 ```
 
 Perform a two-way ANOVA to see if fuel moisture level, fuel shape, and the interaction between these two factors have significant effects on the modified combustion efficiency. 
 
 ```{r}
-  mod_mce <- lm(mce ~ mc_level * type, df_mce)
+  mod_mce <- lm(mce ~ mc_level * type, df_mce_test)
 
   leveneTest(mod_mce)
   
@@ -364,7 +431,7 @@ Perform a two-way ANOVA to see if fuel moisture level, fuel shape, and the inter
 Use Tukey's test to determine whether the differences between the MCEs at different fuel moisture levels are significant. 
 
 ```{r}
-  aov_mce <- aov(mce ~ mc_level, df_mce)
+  aov_mce <- aov(mce ~ mc_level, df_mce_test)
 
   leveneTest(aov_mce)
   
@@ -376,7 +443,7 @@ Use Tukey's test to determine whether the differences between the MCEs at differ
 Calculate the mean MCE and standard deviation at each moisture level.  
 
 ```{r}
-  df_mce_summary <- group_by(df_mce, mc_level) %>%
+  df_mce_summary <- group_by(df_mce_test, mc_level) %>%
                      summarise(mean   = mean(100*mce),
                                sd     = sd(100*mce))
 
@@ -403,7 +470,7 @@ Extract temperature for periods of interest
 ```
 
 ```{r}
-  df_mce_temp <- left_join(df_mce, df_temp_e, by=c("id")) 
+  df_mce_temp <- left_join(df_mce_test, df_temp_e, by=c("id")) 
 
   pearson_r <- cor.test(df_mce_temp$temp_mean, df_mce_temp$mce, method="pearson", conf.level=0.95)
   pearson_r
@@ -425,11 +492,11 @@ Extract temperature for periods of interest
 
 ```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
 
-  ggplot(data=df_mce, aes(x=mc_dry, y=100*mce, shape=type)) + 
+  ggplot(data=df_mce_test, aes(x=mc_dry, y=100*mce, shape=type)) + 
          geom_point(size=3, alpha=0.7) +
-         coord_cartesian(xlim=c(4,30), ylim=c(96.1,99.2)) +
+         coord_cartesian(xlim=c(4,30), ylim=c(95.6,99.2)) +
          scale_x_continuous(breaks=seq(5,30,10)) + 
-         scale_y_continuous(breaks=seq(96,99,1)) + 
+         scale_y_continuous(breaks=seq(95,99,1)) + 
          xlab("Moisture content (%)") + 
          ylab("Modified combustion efficiency (%)") +
          labs(shape = "Fuel shape") + 
@@ -461,9 +528,9 @@ Extract temperature for periods of interest
   ggplot(data=df_mce_temp, aes(x=temp_mean, y=100*mce, shape=type, color=mc_level)) + 
          geom_point(size=3, alpha=0.7) +
             scale_color_manual(values = c(teal3,gold,pink1)) +
-         coord_cartesian(xlim=c(305,520), ylim=c(96.1,99.1)) +
+         coord_cartesian(xlim=c(305,520), ylim=c(95.7,99.1)) +
          scale_x_continuous(breaks=seq(300,500,50)) + 
-         scale_y_continuous(breaks=seq(96,99,1)) + 
+         scale_y_continuous(breaks=seq(95,99,1)) + 
          xlab(expression(Mean ~ exhaust ~ temperature ~ "(" * degree * C * ")")) + 
          ylab("Modified combustion efficiency (%)") +
          labs(shape="Fuel shape", color="Moisture level") + 
@@ -528,4 +595,40 @@ Extract temperature for periods of interest
           legend.position = c(0.8,0.8))
 
   ggsave(filename="../figures/firepower.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
+```
+
+```{r}
+  df_mce_test <- dplyr::left_join(df_mce_test,
+                                  dplyr::select(df_fp, id, firepower),
+                                  by=c("id"))
+```
+
+```{r, fig.width=3.15, fig.height=3.15, fig.align='center'}
+
+  ggplot(data=df_mce_test, aes(x=firepower, y=100*frac_mixed, shape=type)) + 
+         geom_point(size=3, alpha=0.7) +
+         coord_cartesian(c(1.5,3.5), ylim=c(0,60)) +
+         scale_x_continuous(breaks=seq(1.5,3.5,0.5)) + 
+         scale_y_continuous(breaks=seq(0,60,20)) + 
+         xlab("Firepower (kW)") +
+         ylab(expression("Fraction of test with" ~ 0.85 * "<" * "MCE" <= "0.97" ~ "(%)")) +
+         labs(shape = "Fuel shape") + 
+         theme(aspect.ratio=1,
+               panel.grid.major.x = element_line(color="gray95"),
+               panel.grid.minor.x = element_line(color="gray95"),
+               panel.grid.major.y = element_line(color="gray95"),
+               panel.grid.minor.y = element_line(color="gray95"),
+               panel.border     = element_rect(fill=NA),
+               panel.background = element_rect(fill='white'),
+               axis.text  = element_text(size=10, color='black'),
+               axis.title = element_text(size=10, color='black'),
+               axis.ticks = element_line(color='black'),
+               legend.text  = element_text(size=10, color='black'),
+               legend.title = element_text(size=10, color='black'),
+               legend.key   = element_blank(),
+               legend.box.background = element_rect(color="black", size=0.6),
+               legend.position = c(0.8,0.8)) 
+
+  ggsave(filename="../figures/mce_frac.svg", plot=last_plot(), device="svg", width=8/2.54, height=8/2.54)
+  ggsave(filename="../figures/mce_frac.pdf", plot=last_plot(), device="pdf", width=8/2.54, height=8/2.54)
 ```

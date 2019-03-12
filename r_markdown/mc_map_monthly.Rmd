@@ -259,22 +259,6 @@ Create color scale.
 
 ## Relate EMC to EFs
 
-### Carbon monoxide
-
-```{r}
-  mod_co <- lm(1000*ef ~ mc_dry, dplyr::filter(df_ef, pol=="co"))
-  summary(mod_co)
-```
-
-```{r, fig.width=6.3, fig.height=6.3, fig.align='center'}
-  par(mfrow = c(2, 2))
-  plot(mod_co)
-```
-
-```{r}
-  df <- mutate(df, co_ef = mod_co$coefficients[1] + (mod_co$coefficients[2]*EMC))
-```
-
 ### Formaldehyde
 
 ```{r}
@@ -317,9 +301,10 @@ Create color scale.
                             lat_dist == min(lat_dist))
 ```
 
+* The ambient temperature in New Dehli, India is `r round(df_dehli$temp, digits=1)` Celsius.  
+* The ambient RH in New Dehli, India is `r round(df_dehli$rh, digits=2)`.  
 * The EMC in New Dehli, India is `r round(df_dehli$EMC, digits=1)`.  
 * The PM~2.5~ EF in New Dehli, India is `r round(df_dehli$pm_ef, digits=0)` mg/MJ~d~.  
-* The CO EF in New Dehli, India is `r round(df_dehli$co_ef/1000, digits=1)` g/MJ~d~.  
 * The formaldehyde EF in New Dehli, India is `r round(df_dehli$formaldehyde_ef, digits=0)` mg/MJ~d~.  
 * The benzene EF in New Dehli, India is `r round(df_dehli$benzene_ef, digits=0)` mg/MJ~d~.  
 
@@ -331,9 +316,10 @@ Create color scale.
                             lat_dist == min(lat_dist))
 ```
 
+* The ambient temperature in Lagos, Nigeria is `r round(df_lagos$temp, digits=1)` Celsius.  
+* The ambient RH in Lagos, Nigeria is `r round(df_lagos$rh, digits=2)`.  
 * The EMC in Lagos, Nigeria is `r round(df_lagos$EMC, digits=1)`.  
 * The PM~2.5~ EF in Lagos, Nigeria is `r round(df_lagos$pm_ef, digits=0)` mg/MJ~d~.  
-* The CO EF in Lagos, Nigeria is `r round(df_lagos$co_ef/1000, digits=1)` g/MJ~d~.  
 * The formaldehyde EF in Lagos, Nigeria is `r round(df_lagos$formaldehyde_ef, digits=0)` mg/MJ~d~.  
 * The benzene EF in Lagos, Nigeria is `r round(df_lagos$benzene_ef, digits=0)` mg/MJ~d~.  
 
@@ -345,8 +331,9 @@ Create color scale.
                             lat_dist == min(lat_dist))
 ```
 
+* The ambient temperature in Khartoum, Sudan is `r round(df_khart$temp, digits=1)` Celsius.  
+* The ambient RH in Khartoum, Sudan is `r round(df_khart$rh, digits=2)`.  
 * The EMC in Khartoum, Sudan is `r round(df_khart$EMC, digits=1)`.  
 * The PM~2.5~ EF in Khartoum, Sudan is `r round(df_khart$pm_ef, digits=0)` mg/MJ~d~.  
-* The CO EF in Khartoum, Sudan is `r round(df_khart$co_ef/1000, digits=1)` g/MJ~d~.  
 * The formaldehyde EF in Khartoum, Sudan is `r round(df_khart$formaldehyde_ef, digits=0)` mg/MJ~d~.  
 * The benzene EF in Khartoum, Sudan is `r round(df_khart$benzene_ef, digits=0)` mg/MJ~d~.  

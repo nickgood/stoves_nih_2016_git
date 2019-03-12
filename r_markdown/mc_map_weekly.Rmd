@@ -204,7 +204,7 @@ Load the energy-based emission factors (g/MJ~d~).
       
     }else{
       
-      df <- readRDS("../r_files/df_pm_2017_weekly.RDS")
+      df_week <- readRDS("../r_files/df_pm_2017_weekly.RDS")
     }
   }
 ```
@@ -264,8 +264,8 @@ Load the energy-based emission factors (g/MJ~d~).
 Convert longitudes between 0 and 360 degrees to longitudes between -180 and 180 degrees ([see example](https://cran.r-project.org/web/packages/futureheatwaves/vignettes/starting_from_netcdf.html)).  
 
 ```{r}
-  df <- dplyr::ungroup(df) %>%
-        dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
+  df_week <- dplyr::ungroup(df_week) %>%
+             dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
 
   df_month <- dplyr::ungroup(df_month) %>%
               dplyr::mutate(lon  = ifelse(lon > 180, -(360-lon), lon))
@@ -276,7 +276,7 @@ Find out which country each latitude and longitude point in the data frame is lo
 ```{r}
   sp_countries <- getMap(resolution='low')
 
-  df_lon_lat <- dplyr::filter(df, week == 1) %>%
+  df_lon_lat <- dplyr::filter(df_week, week == 1) %>%
                 dplyr::select(lon, lat)
   
   sp_points = SpatialPoints(df_lon_lat, proj4string=CRS(proj4string(sp_countries)))
@@ -289,8 +289,8 @@ Then, add the country names to the data frame of emission factors.
 ```{r}
   df_lon_lat$country <- df_countries$ADMIN 
 
-  df <- left_join(df, df_lon_lat, by=c("lon","lat")) %>%
-        dplyr::filter(!is.na(country))
+  df_week <- left_join(df_week, df_lon_lat, by=c("lon","lat")) %>%
+             dplyr::filter(!is.na(country))
   
   df_month <- left_join(df_month, df_lon_lat, by=c("lon","lat")) %>%
               dplyr::filter(!is.na(country))
@@ -330,7 +330,7 @@ Create and save a plot for each week of the year.
     for (i in 1:52){ # for each day of the year
     
       # select data to plot
-      df_filt <- dplyr::filter(df, week == i)
+      df_filt <- dplyr::filter(df_week, week == i)
                  
       # get date for plot title
       week_name <- sprintf("Week %d", i)

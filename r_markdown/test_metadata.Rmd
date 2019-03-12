@@ -93,13 +93,27 @@ Remove moisture contents that were calculated in Excel and recalculate.
   saveRDS(df_fuel_prep, "../r_files/data_fuel_prep_clean.RDS")
 ```
 
+Sum total masses of wet and dry fuel.
+
+```{r}
+  df_fuel_sum <- dplyr::group_by(df_fuel_prep, id) %>%
+                 dplyr::summarise(mass_end  = sum(mass_end),
+                                  mass_dry  = sum(mass_dry),
+                                  mc_target = mean(mc_target)) %>%
+                 dplyr::mutate(mass_h2o = mass_end - mass_dry)
+
+  saveRDS(df_fuel_sum, "../r_files/df_fuel_sum.RDS")
+```
+
 Add moisture content data to sample data and save.
 
 ```{r}
-  
-  df_mc <- dplyr::group_by(df_fuel_prep, id) %>%
-           dplyr::summarise(mc_target = mean(mc_target),
-                            mc_dry    = mean(mc_dry)) 
+  df_mc <- df_fuel_sum %>%
+           dplyr::mutate(mc_dry = 100*(mass_end - mass_dry)/mass_dry) %>%
+           dplyr::select(id, mc_target, mc_dry)
+```
+
+```{r}
   
   samples <- dplyr::left_join(samples, df_mc, by=c("id")) %>%
              dplyr::mutate(mc_target = as.factor(mc_target),

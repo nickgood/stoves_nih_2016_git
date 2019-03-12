@@ -45,25 +45,31 @@ Constants:
 
 # Reformat data
 
-Convert the CO~2~ concentrations from percent volume to ppmv (note that CO and CH~4~ were recorded as ppmv).
+1. Convert the CO~2~ concentrations from percent volume to ppmv (note that CO and CH~4~ were recorded as ppmv).  
+2. Remove NO~x~ and oxygen columns (these channels were not used during the study).  
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results='markup', cache=FALSE}
-  fivegas_merged <- dplyr::mutate(fivegas, co2 = co2 * 10^4)
+  fivegas_merged <- dplyr::mutate(fivegas, co2 = co2 * 10^4) %>%
+                    dplyr::select(id, date, time, datetime, co2, co, ch4)
+```
+
+Group by timestamp and then average to get one measurement per second. 
+
+```{r}
+  fivegas_merged <- dplyr::group_by(fivegas_merged, id, date, time) %>%
+                    dplyr::summarise(datetime = mean(datetime),
+                                     co2 = mean(co2, na.rm=TRUE),
+                                     co  = mean(co,  na.rm=TRUE),
+                                     ch4 = mean(ch4, na.rm=TRUE))   %>%
+                    dplyr::ungroup()
 ```
 
 Convert the concentration data to longer format.
 
 ```{r}
-  fivegas_merged <- tibble::as_tibble(dplyr::select(fivegas_merged, -time_s) %>%
-                    tidyr::gather("pol", "ppm", ch4:co))
+  fivegas_merged <- tidyr::gather(fivegas_merged, "pol", "ppm", co2, co, ch4)
 
   head(fivegas_merged, 2)
-```
-
-Remove NO~x~ and oxygen rows (these channels were not used during the study)
-
-```{r}
- fivegas_merged <- dplyr::filter(fivegas_merged, pol != "nox", pol != "o2")
 ```
 
 The Fivegas analyzer measured during `r length(unique(fivegas_merged$id))` experiments between `r min(fivegas_merged$date, na.rm = TRUE)` and `r max(fivegas_merged$date, na.rm = TRUE)`. There is no fivegas data for tests: `r setdiff(as.character(samples$id), as.character(fivegas_merged$id))`.  
