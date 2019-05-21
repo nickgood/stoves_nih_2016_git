@@ -120,12 +120,19 @@ output:
     dplyr::left_join(ec_oc_ions_unc, by = "id")
 ```
 
+```{r}
+  mod = lm(ec_oc_ions ~ pm_mass, data = pm_comp)
+  summary(mod)
+  sqrt(mean(mod$residuals^2))
+```
+
 ```{r mass_balance, echo=FALSE, fig.width=7, fig.height=5}
   pm_comp %>%
-    ggplot(aes(y = ec_oc_ions, x = pm_mass, color = stove)) +
-      geom_point(size = 2) +
-      geom_errorbar(aes(ymin = ec_oc_ions - unc, ymax = ec_oc_ions + unc)) +
+    ggplot(aes(y = ec_oc_ions, x = pm_mass)) +
+      geom_point(aes(color = stove), size = 2) +
+      geom_errorbar(aes(ymin = ec_oc_ions - unc, ymax = ec_oc_ions + unc, color = stove)) +
       geom_abline(slope = 1, intercept = 0) +
+      geom_smooth(method="lm",se=FALSE) +
       scale_y_log10(limits = c(0.1, 1000), breaks = c(0.1, 1, 10, 100, 1000)) +
       scale_x_log10(limits = c(0.1, 1000), breaks = c(0.1, 1, 10, 100, 1000)) +
       theme_bw() +
@@ -133,5 +140,5 @@ output:
             legend.position = "right",
             legend.title = element_blank()) +
       xlab(expression(paste(PM[2.5], " EF (mg/", MJ[delivered], ")"))) +
-      ylab(expression(paste("EC + OM + ions", " EF (mg/", MJ[delivered], ")")))
+      ylab(expression(paste("EC + OA + inorganic ions", " EF (mg/", MJ[delivered], ")")))
 ```
