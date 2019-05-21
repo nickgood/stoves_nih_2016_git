@@ -1,0 +1,298 @@
+---
+title: "Figure 4: Carbonyls and VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, RColorBrewer)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
+```
+
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove_fuel = paste0(stove, ": ", fuel)) %>%
+    dplyr::mutate(stove_fuel = 
+                    stove_fuel %>%
+                    factor %>%
+                    forcats::fct_recode("Three-stone fire: Douglas fir" =
+                                          "three-stone fire: douglas fir",
+                                        "Three-stone fire: Eucalyptus" =
+                                          "three-stone fire: eucalyptus",
+                                        "Three-stone fire: Oak" =
+                                          "three-stone fire: oak",
+                                        "Mud chulha: Douglas fir" =
+                                          "chulha: douglas fir",
+                                        "Mud chulha: Eucalyptus" =
+                                          "chulha: eucalyptus",
+                                        "Mud chulha: Oak" =
+                                          "chulha: oak", 
+                                        "Rocket elbow: Douglas fir" =
+                                          "rocket elbow: douglas fir",
+                                        "Rocket elbow: Eucalyptus" =
+                                          "rocket elbow: eucalyptus",
+                                        "Rocket elbow: Oak" =
+                                          "rocket elbow: oak",
+                                        "Built-in plancha: Douglas fir" =
+                                          "built-in plancha: douglas fir",
+                                        "Built-in plancha: Eucalyptus" =
+                                          "built-in plancha: eucalyptus",
+                                        "Built-in plancha: Oak" =
+                                          "built-in plancha: oak",
+                                        "Fan rocket-elbow: Douglas fir" =
+                                          "fan rocket-elbow: douglas fir",
+                                        "Fan rocket-elbow: Eucalyptus" =
+                                            "fan rocket-elbow: eucalyptus",
+                                        "Fan rocket-elbow: Oak" =
+                                          "fan rocket-elbow: oak",
+                                        "Gasifier: West slope pellets" =
+                                          "forced-draft gasifier: west slope pellets",
+                                        "Gasifier: Eucalyptus pellets" =
+                                          "forced-draft gasifier: eucalyptus pellets",
+                                        "Ceramic charcoal: Lump hardwood (sm.)" =
+                                          "ceramic charcoal: lump hardwood (sm.)",
+                                        "Ceramic charcoal: Lump hardwood (med.)" =
+                                          "ceramic charcoal: lump hardwood (med.)",
+                                        "Ceramic charcoal: Coconut briquettes" =
+                                          "ceramic charcoal: coconut charcoal",
+                                        "Metal charcoal: Lump hardwood (sm.)" =
+                                          "metal charcoal: lump hardwood (sm.)",
+                                        "Metal charcoal: Lump hardwood (med.)" =
+                                          "metal charcoal: lump hardwood (med.)",
+                                        "Metal charcoal: Coconut briquettes" =
+                                          "metal charcoal: coconut charcoal",
+                                        "Wick kerosene: Kerosene" =
+                                          "wick kerosene: kerosene",
+                                        "Pressure kerosene: Kerosene" =
+                                          "pressure kerosene: kerosene",
+                                        "LPG: LPG" =
+                                          "lpg: lpg") %>%
+                    forcats::fct_relevel("Three-stone fire: Douglas fir",
+                                        "Three-stone fire: Eucalyptus",
+                                        "Three-stone fire: Oak",
+                                        "Mud chulha: Douglas fir",
+                                        "Mud chulha: Eucalyptus",
+                                        "Mud chulha: Oak",
+                                        "Rocket elbow: Douglas fir",
+                                        "Rocket elbow: Eucalyptus",
+                                        "Rocket elbow: Oak",
+                                        "Built-in plancha: Douglas fir",
+                                        "Built-in plancha: Eucalyptus",
+                                        "Built-in plancha: Oak",
+                                        "Fan rocket-elbow: Douglas fir",
+                                        "Fan rocket-elbow: Eucalyptus",
+                                        "Fan rocket-elbow: Oak",
+                                        "Gasifier: West slope pellets",
+                                        "Gasifier: Eucalyptus pellets",
+                                        "Ceramic charcoal: Lump hardwood (sm.)",
+                                        "Ceramic charcoal: Lump hardwood (med.)",
+                                        "Ceramic charcoal: Coconut briquettes",
+                                        "Metal charcoal: Lump hardwood (sm.)",
+                                        "Metal charcoal: Lump hardwood (med.)",
+                                        "Metal charcoal: Coconut briquettes",
+                                        "Wick kerosene: Kerosene",
+                                        "Pressure kerosene: Kerosene",
+                                        "LPG: LPG"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove_fuel), by = "id")
+```
+
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val))
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_category = ifelse(grepl("vocs", pol_category), "volatile organic compounds", pol_category))
+```
+
+## select pollutants
+
+```{r}
+  carbonyls <-
+    emissions %>%
+    dplyr::filter(grepl("carbonyls", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  vocs <-
+    emissions %>%
+    dplyr::filter(grepl("volatile organic compounds", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+notes: need to look at these tests still
+
+## calculate stats
+
+```{r}
+  stats_carbs <-
+    carbonyls %>%
+    dplyr::group_by(id, stove_fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove_fuel) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max, mean) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  stat_vocs <-
+    vocs %>%
+    dplyr::group_by(id, stove_fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove_fuel) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max, mean) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+## calculate means by pollutant
+
+```{r}
+  carbonyls_p <-
+    carbonyls %>%
+    dplyr::group_by(id, pol_subcategory, stove_fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(pol_subcategory, stove_fuel) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_subcategory = 
+                    pol_subcategory %>% 
+                    factor %>% 
+                    fct_recode("saturated aldehydes " = "saturated aldehydes",
+                               "unsaturated aldehydes " = "unsaturated aldehydes",
+                               "aromatic aldehydes " = "aromatic aldehydes",
+                               "ketones " = "ketones") %>% 
+                    forcats::fct_relevel("saturated aldehydes ",
+                                         "unsaturated aldehydes ",
+                                         "aromatic aldehydes ",
+                                         "ketones ") %>%
+                    forcats::fct_rev(),
+                  pol_category = "carbonyls")
+```
+
+```{r}
+  vocs_p <-
+    vocs %>%
+    dplyr::group_by(id, pol_subcategory, stove_fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(pol_subcategory, stove_fuel) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_subcategory = 
+                    pol_subcategory %>%
+                    factor %>% 
+                    fct_recode("alkanes " = "alkanes",
+                               "alkenes " = "alkenes",
+                               "alkyne (ethyne) " = "alkynes",
+                               "aromatics " = "aromatics") %>%
+                    forcats::fct_relevel("alkanes ",
+                                         "alkenes ",
+                                         "alkynes ",
+                                         "aromatics ") %>%
+                    forcats::fct_rev(),
+                  pol_category = "volatile organic compounds")
+```
+
+# figures
+
+```{r, echo=FALSE, fig.width=12, fig.height=4}
+  col_vector = c("cornflowerblue",
+                 "khaki",
+                 "slateblue3",
+                 "#9e9ac8")
+  p1 <-
+    carbonyls_p %>%
+    ggplot(aes(x = stove_fuel, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+      geom_text(data = stats_carbs %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove_fuel, y = val, label = sym), stroke = 2, size = 6, angle = 90, nudge_x = -0.05) +
+      theme_minimal() +
+      scale_fill_manual(values = col_vector) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 10, angle = 45, hjust = 1, vjust = 0.8),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per Megajoul', e[delivered]))))
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=4}
+  p2 <-
+    vocs_p %>%
+    ggplot(aes(x = stove_fuel, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
+      geom_text(data = stat_vocs  %>%
+                  dplyr::filter(var != "mean"),
+                aes(x = stove_fuel, y = val, label = sym), size = 6, angle = 90, nudge_x = -0.02) +
+      scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2"),
+                        name = "VOCs") +
+      #scale_y_continuous(limits = c(0, 2200)) +
+      #annotate("text", x = 1, y = 2200, label = "2251", size = 5) +
+      #annotate("text", x = 2, y = 2200, label = "3254", size = 5) +
+      theme_minimal() +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 10, angle = 45, hjust = 1, vjust = 0.8),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per Megajoul', e[delivered]))))
+```
+
+```{r figure_4_byfuel, echo=FALSE, fig.width=12, fig.height=10, dpi=400, dev='pdf'}
+  p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+

@@ -65,7 +65,7 @@ load data
   emissions <-
     emissions %>%
     dplyr::left_join(samples %>%
-                       dplyr::select(id, stove), by = "id")
+                       dplyr::select(id, stove_fuel), by = "id")
 ```
 
 ## filter out values below background
@@ -102,9 +102,9 @@ load data
 ```{r}
   stats_gases <-
     gases %>%
-    dplyr::group_by(id, stove) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove) %>%
+    dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE),
                      mean = mean(val, na.rm = TRUE)) %>%
@@ -115,9 +115,9 @@ load data
 ```{r}
   stats_particles <-
     particles %>%
-    dplyr::group_by(id, stove) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove) %>%
+    dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE),
                      mean = mean(val, na.rm = TRUE)) %>%
@@ -130,7 +130,7 @@ load data
 ```{r}
   gases_p <-
     gases %>%
-    dplyr::group_by(pol, stove) %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
     dplyr::ungroup() %>%
@@ -140,7 +140,7 @@ load data
 ```{r}
   particles_p <-
     particles %>%
-    dplyr::group_by(pol, stove) %>%
+    dplyr::group_by(pol, stove, stovecat) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::left_join(dplyr::select(pol_properties, pol, mw), by = "pol") %>%
     dplyr::ungroup() %>%
@@ -313,9 +313,9 @@ average gas-phase carcinogens by stove type (total)
 
 ```{r, echo=FALSE}
   gases %>%
-    dplyr::group_by(id, stove) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove) %>%
+    dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -330,9 +330,9 @@ average benzene by stove type
 ```{r, echo=FALSE}
   gases %>%
       dplyr::filter(grepl("benzene", pol)) %>%
-    dplyr::group_by(id, stove) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove) %>%
+    dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%
@@ -356,6 +356,26 @@ average gas-phase carcinogens by stove type (by pollutant)
     knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
+fraction of total carcinogenic emissions made up of formaldehyde
+
+```{r, echo=FALSE}
+  formaldehyde <-
+    gases %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::filter(grepl("form", pol)) %>%
+    dplyr::summarise(form_mean = mean(val, na.rm = TRUE))
+
+  gases %>%
+    dplyr::group_by(id, stovecat) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stovecat) %>%
+    dplyr::summarise(all_mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(formaldehyde, by = "stovecat") %>%
+    dplyr::mutate(ratio = form_mean / all_mean) %>%
+    dplyr::arrange(ratio) %>%
+    knitr::kable("markdown", digits = 2, align = 'c')
+```
 
 fraction of total emissions made up of benzene
 
@@ -411,9 +431,9 @@ average particle-phase carcinogens by stove type (total)
 
 ```{r, echo=FALSE}
   particles %>%
-    dplyr::group_by(id, stove) %>%
+    dplyr::group_by(id, stove, stovecat) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove) %>%
+    dplyr::group_by(stove, stovecat) %>%
     dplyr::summarise(mean = mean(val, na.rm = TRUE),
                      min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE)) %>%

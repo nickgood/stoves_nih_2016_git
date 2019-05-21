@@ -1,0 +1,244 @@
+---
+title: "Figure 4: Carbonyls and VOCs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, RColorBrewer, scales)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+  pol_properties <- readRDS("../../../r_data/pol_properties.RDS")
+```
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove = 
+                    stove %>% 
+                    factor %>% 
+                    forcats::fct_relevel("three-stone fire",
+                                         "chulha",
+                                         "rocket elbow",
+                                         "built-in plancha",
+                                         "fan rocket-elbow",
+                                         "forced-draft gasifier",
+                                         "ceramic charcoal",
+                                         "metal charcoal",
+                                         "wick kerosene",
+                                         "pressure kerosene",
+                                         "lpg") %>%
+                    forcats::fct_recode("Three-stone fire" = "three-stone fire",
+                                         "Mud chulha" = "chulha",
+                                         "Rocket elbow" = "rocket elbow",
+                                         "Built-in plancha" = "built-in plancha",
+                                         "Fan rocket elbow" = "fan rocket-elbow",
+                                         "Gasifier" = "forced-draft gasifier",
+                                         "Ceramic jiko" = "ceramic charcoal",
+                                          "Metal jiko" = "metal charcoal",
+                                          "Wick kerosene" = "wick kerosene",
+                                         "Pressure kerosene" = "pressure kerosene",
+                                          "LPG" = "lpg"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+## filter out values below background
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val))
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_category = ifelse(grepl("vocs", pol_category), "volatile organic compounds", pol_category))
+```
+
+## select pollutants
+
+```{r}
+  carbonyls <-
+    emissions %>%
+    dplyr::filter(grepl("carbonyls", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  vocs <-
+    emissions %>%
+    dplyr::filter(grepl("volatile organic compounds", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  pahs <-
+    emissions %>%
+    dplyr::filter(pol != "naphthalene") %>%
+    dplyr::filter(grepl("pahs", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+
+ec <-
+  emissions %>%
+  dplyr::filter(grepl("^ec$", pol_category)) %>%
+  dplyr::filter(metric == "energy_delivered_ef") %>%
+  tidyr::spread(pol, val) %>%
+  dplyr::select(id, ec)
+```
+
+## calculate stats
+
+```{r}
+  pahs_ec_p <-
+    pahs %>%
+    dplyr::group_by(id, stove, pol_subcategory) %>%
+    dplyr::summarise(pahs = sum(val, na.rm = TRUE)) %>%
+    dplyr::left_join(ec, by = "id")
+```
+
+```{r}
+  carbonyls_p <-
+    carbonyls %>%
+    dplyr::group_by(stove, pol, pol_subcategory) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::left_join(pol_properties, by = "pol") %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_subcategory = 
+                    pol_subcategory %>% 
+                    factor %>% 
+                    fct_recode("saturated aldehydes " = "saturated aldehydes",
+                               "unsaturated aldehydes " = "unsaturated aldehydes",
+                               "aromatic aldehydes " = "aromatic aldehydes",
+                               "ketones " = "ketones") %>% 
+                    forcats::fct_relevel("saturated aldehydes ",
+                                         "unsaturated aldehydes ",
+                                         "aromatic aldehydes ",
+                                         "ketones ") %>%
+                    forcats::fct_rev())
+```
+
+```{r}
+  vocs_p <-
+    vocs %>%
+    dplyr::group_by(stove, pol, pol_subcategory) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::left_join(pol_properties, by = "pol") %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol_subcategory = 
+                    pol_subcategory %>%
+                    factor %>% 
+                    fct_recode("alkanes " = "alkanes",
+                               "alkenes " = "alkenes",
+                               "alkyne (ethyne) " = "alkynes",
+                               "aromatics " = "aromatics") %>%
+                    forcats::fct_relevel("alkanes ",
+                                         "alkenes ",
+                                         "alkyne (ethyne) ",
+                                         "aromatics ") %>%
+                    forcats::fct_rev())
+```
+
+# figures
+
+```{r figure_4_mw_vocs, echo=FALSE, fig.width=14, fig.height=8, dpi=200}
+    vocs_p %>%
+    ggplot(aes(x = mw, y = mean, color = pol_subcategory)) +
+      geom_point(size = 3, alpha = 0.9) +
+      #geom_linerange(aes(ymin = min, ymax = max), size = 1, alpha = 0.9) +
+      theme_bw() +
+      scale_color_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2")) +
+      scale_y_continuous(trans = 'log10', labels = comma) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            #legend.justification = c(1, 1), 
+            #legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    facet_wrap(~stove, scales = 'fixed') +
+    ylab(expression(atop(paste('Volatile Organic Compounds'), paste('miligrams per Megajoul', e[delivered])))) + 
+    xlab('Molecular weight [grams per mole]')
+```
+
+```{r figure_4_mw_carbs, echo=FALSE, fig.width=14, fig.height=8, dpi=400}
+  col_vector = c("cornflowerblue",
+                 "khaki",
+                 "slateblue3",
+                 "#9e9ac8")
+
+    carbonyls_p %>%
+    ggplot(aes(x = mw, y = mean, color = pol_subcategory)) +
+      geom_point(size = 3, alpha = 0.9) +
+      geom_linerange(aes(ymin = min, ymax = max), size = 1, alpha = 0.9) +
+      theme_bw() +
+      scale_color_manual(values = col_vector) +
+      scale_y_continuous(trans = 'log10', labels = comma) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            #legend.justification = c(1, 1), 
+            #legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    facet_wrap(~stove, scales = 'fixed') +
+    ylab(expression(atop(paste('Carbonyl Compounds'), paste('miligrams per Megajoul', e[delivered])))) + 
+    xlab('Molecular weight [grams per mole]')
+```
+
+```{r figure_4_mw_pahs, echo=FALSE, fig.width=14, fig.height=8, dpi=400}
+    pahs_ec_p %>%
+    ggplot(aes(x = ec, y = pahs, color = stove)) +
+      geom_point(size = 3, alpha = 0.9) +
+      theme_bw() + 
+      #scale_color_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
+      scale_y_continuous(trans = 'log10', labels = comma) +
+      scale_x_continuous(trans = 'log10', labels = comma) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      theme(text = element_text(size = 18),
+            #legend.justification = c(1, 1), 
+            #legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+    facet_wrap(~pol_subcategory, scales = 'fixed') +
+    ylab(expression(atop(paste('Total Polycyclic Aromatic Hydrocarbons'), paste('miligrams per Megajoul', e[delivered])))) + 
+    xlab(expression(atop(paste('Elemental Carbon'), paste('miligrams per Megajoul', e[delivered]))))
+```
+

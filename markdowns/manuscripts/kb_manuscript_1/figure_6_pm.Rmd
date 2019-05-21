@@ -140,10 +140,9 @@ output:
     dplyr::anti_join(missing_fuel, by = c("pol", "fuel")) %>%
     dplyr::filter(bg != "below") %>%
     dplyr::select(id, pol, val, stove, fuel) %>%
-    dplyr::mutate(pol = ifelse(pol == "elemental carbon", "ec", pol)) %>%
     tidyr::spread(pol, val) %>%
-    tidyr::gather("pol", "val", -id, -stove, -ec, -fuel) %>%
-    dplyr::mutate(ec = log(ec),
+    tidyr::gather("pol", "val", -id, -stove, -pm_mass, -fuel) %>%
+    dplyr::mutate(pm_mass = log(pm_mass),
                   val = log(val)) %>%
     na.omit
 ```
@@ -155,7 +154,7 @@ output:
     all %>%
     dplyr::select(pol) %>%
     dplyr::distinct() %>%
-    dplyr::filter(pol != "ec")
+    dplyr::filter(pol != "pm_mass", pol != "co")
 ```
 
 ## PM2.5 and CO model
@@ -183,7 +182,7 @@ output:
       training <- mod_data[-i,]
       prediction <- mod_data[i,]
       
-      mdl <- lm(val ~ ec, data = training) # model with i'th observation out
+      mdl <- lm(val ~ pm_mass, data = training) # model with i'th observation out
       y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
       obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
       obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
@@ -220,7 +219,7 @@ output:
       training <- mod_data[-i,]
       prediction <- mod_data[i,]
       
-      mdl <- lm(val ~ ec + stove, data = training) # model with i'th observation out
+      mdl <- lm(val ~ pm_mass + stove, data = training) # model with i'th observation out
       y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
       obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
       obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
@@ -258,7 +257,7 @@ output:
       training <- mod_data[-i,]
       prediction <- mod_data[i,]
       
-      mdl <- lm(val ~ ec + fuel, data = training) # model with i'th observation out
+      mdl <- lm(val ~ pm_mass + fuel, data = training) # model with i'th observation out
       y_pred <- predict(mdl, newdata = prediction) # predict i'th observation
       obs_mod_sqdiff[i] <- (prediction$val - y_pred)^2 # obs - model squared
       obs_mean_sqdiff[i] <- (prediction$val - obs_mean)^2 # obs - model squared
@@ -274,7 +273,7 @@ output:
 
 ## Relative root Mean Squared Error
 
-```{r figure_6_ec, fig.height=5, fig.width=12, dpi=200}
+```{r figure_6, fig.height=5, fig.width=12, dpi=400, dev='pdf'}
   #p1 <-
     pred_metrics %>%
     dplyr::mutate(model = 1,
@@ -305,9 +304,9 @@ output:
                                                                  "2",
                                                                  "3")), aes(x = pol, y = rrmse, color = model)) +
         scale_color_manual(values = c("dodgerblue2", "yellowgreen", "red"),
-                          labels = c(expression(paste('Model 1: EC')),
-                                     expression(paste('Model 2: EC and stove type')),
-                                     expression(paste('Model 3: EC and fuel type')))) +
+                          labels = c(expression(paste('Model 1: ', PM[2.5])),
+                                     expression(paste('Model 2: ', PM[2.5], ' and stove type')),
+                                     expression(paste('Model 3: ', PM[2.5], ' and fuel type')))) +
         scale_y_continuous(limits = c(0, 1.13), breaks = c(0, 0.25, 0.5, 0.75, 1.0)) +
         guides(color = guide_legend(nrow = 1, byrow = FALSE, override.aes = list(size=2))) +
         theme_bw() +

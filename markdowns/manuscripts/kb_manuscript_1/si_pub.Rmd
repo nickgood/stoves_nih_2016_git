@@ -1,10 +1,22 @@
 ---
 title: "SUPPORTING INFORMATION"
-geometry: margin=0.75in
+geometry: margin=0.5in
 output:
   pdf_document:
-    toc: false
+    keep_tex: true
+header-includes:
+- \usepackage{fancyhdr}
+- \usepackage{lastpage}
 ---
+
+<!--- Define Headers and Footers --->
+\fancypagestyle{plain}{%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyhf{}%
+  \fancyfoot[C]{\footnotesize S\thepage}
+  \setlength\footskip{0pt}
+}
+\pagestyle{plain}
 
 ```{r load_libraries, echo=FALSE, message=FALSE}
   if (!require("pacman")) install.packages("pacman")
@@ -18,7 +30,9 @@ output:
 
 ```{r, echo=FALSE}
   emissions <- readRDS("../../../r_data/emissions_factors.RDS")
-  missing_stoves <- readRDS("../../../r_data/model_info.RDS")
+  missing_stoves <- readRDS("../../../r_data/model_info_stove.RDS")
+  missing_fuels <- readRDS("../../../r_data/model_info_fuel.RDS")
+  loocv_obs <- readRDS("../../../r_data/loocv_obs.RDS")
   fuel_burnt <- readRDS("../../../r_data/fuel_merged.RDS")
   times <- readRDS("../../../r_data/test_times.RDS")
   samples <- readRDS("../../../r_data/samples.RDS")
@@ -63,26 +77,58 @@ output:
 ```
 
 \begin{center}
-\LARGE{A Laboratory Assessment of 120 Air Pollutant Emissions from Biomass and Fossil-Fuel Cookstoves}
+\LARGE{A Laboratory Assessment of 120 Air Pollutant Emissions\\from Biomass and Fossil-Fuel Cookstoves}
 \end{center}
+\begin{align*}
+\end{align*}
+Kelsey R. Bilsback,$^1$ Jordyn Dahlke,$^1$ Kristen M. Fedak,$^2$ Nicholas Good,$^2$ Arsineh Hecobian,$^3$ Pierre Herckes,$^4$ Christian L’Orange,$^1$ John Mehaffy,$^1$ Amy Sullivan,$^3$ Jessica Tryner,$^1$ Lizette Van Zyl,$^1$ Ethan S. Walker,$^2$ Yong Zhou,$^3$ Jeffrey R. Pierce,$^3$ Ander Wilson,$^5$ Jennifer L. Peel,$^2$ John Volckens$^{1*}$
+\begin{align*}
+\end{align*}
+$^1$Department of Mechanical Engineering, Colorado State University, 1374 Campus Delivery, Fort Collins,  Colorado 80523
 
-Kelsey R. Bilsback, Jordyn Dahlke, Kristen Fedak, Nicholas Good, Arsineh Hecobian, Pierre Herckes, Christian L’Orange, John Mehaffy, Amy Sullivan, Jessica Tryner, Lizette Van Zyl, Ethan Walker, Ander Wilson, Jennifer L. Peel, John Volckens
+$^2$Department of Environmental and Radiological Health Sciences,Colorado State University, 1681 Campus  Delivery, Fort Collins, Colorado 80523
+
+$^3$Department of Atmospheric Science, Colorado State University, 1371 Campus Delivery, Fort Collins, Colorado  80526
+
+$^4$School of Molecular Sciences, Arizona State University, 1604 Campus Delivery, Tempe, Arizona, 85287
+
+$^5$Department of Statistics, Colorado State University, 1877 Campus Delivery, Fort Collins, Colorado 80523
+\begin{align*}
+\end{align*}
+\begin{bf}
+Corresponding Author Information
+\end{bf}
+
+$^*$Phone: 970-491-6341; Email: john.volckens@colostate.edu
+
+\begin{align*}
+\end{align*}
+Number of pages: \pageref*{LastPage}
+
+
+Number of tables: 11
+
+
+Number of figures: 17
+
+
+
+\newpage
 
 \tableofcontents
-\newpage
 
 \newpage
 
-# SI 1: Stove type information
+# Section 1: Stove type information
 
-Make and model of each stove type.
+### Table S1: Make and model of each stove type.
 
 ```{r}
   tibble::data_frame("Stove type" = c("Three-stone fire",
                                       "Mud chulha",
                                       "Rocket elbow",
                                       "Built-in plancha (with chimney)",
-                                      "Fan rocket-elbow",
+                                      "Fan rocket elbow",
                                       "Forced-draft gasifier",
                                       "Ceramic jiko",
                                       "Metal jiko",
@@ -118,265 +164,13 @@ Make and model of each stove type.
 
 \newpage
 
-# SI 2: Test setup and emissions measurement
+# Section 2: Number of measurements by stove type
 
-## SI 2.1: Test setup
+The number of per-energy-delivered emissions factors used in the analysis for each type of pollutant. The number of attempted measurements, by stove type, are listed in the footnote. See Figure 1 for breakdown by fuel type. Missing measurements are due to measurement issues or erroneous data. (The number of measurements include both measurements that were below the limit of detection or below the study-averaged laboratory background level.)
 
-Schematic of the testing setup. See SI 5.2 and SI 5.3 for details about the sampling media and analysis instrumentation.
+### Table S2: Number of measurements for wood stoves by stove type
 
-```{r, echo=FALSE, out.height = '85%', fig.align='center'}
-  knitr::include_graphics("images/schematic.pdf")
-```
-
-\newpage
-
-## SI 2.2: Emissions measurement
-
-Information about the sampling media and analysis instrumentation used to measure each cookstove smoke constituent. See SI 2.1 for instrumentation schematic.
-
-```{r}
-  tibble::data_frame("Smoke constituent" = c("Fine particulate matter",
-                                     "Organic carbon, elemental carbon, and organic carbon absorption artifact",
-                                     "Speciated inorganic anions",
-                                     "Speciated inorganic cations",
-                                     "Speciated polycyclic aromatic hydrocarbons (particle phase)",
-                                     "Speciated polycyclic aromatic hydrocarbons (gas phase)",
-                                     "Speciated carbohydrates",
-                                     "Speciated volatile organic compounds",
-                                     "Speciated aldehydes and ketones",
-                                     "Ultrafine particles",
-                                     "Carbon dioxide, carbon monoxide, and methane"),
-                     "Sampling media" = c("46.2 mm, 2 µm PTFE PM2.5 Air Monitoring Membrane Filter; Tisch International; North Bend, OH",
-                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
-                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
-                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
-                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
-                                          "PUF Replacement P226-92; SKC-West, Inc; Fullerton, CA (two inline)",
-                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
-                                          "Vacuum canister fitted with a critical orifice (CS1200ES Sampler; ENTECH Instruments, Inc.; Simi Valley, CA)",
-                                          "Dinitrophenylhydrazine cartridge (Sep-Pak DNPH-Silica Cartridge; Waters Corp; Milford, MA) placed inline behind an ozone scrubber (Sep-Pak Ozone Scrubber Potassium Iodide Cartridge; Waters Corp; Milford, MA)",
-                                          "",
-                                          ""),
-                     "Analysis instrumentation" = c("MX5 Microbalance; Mettler Toledo; Columbus, OH",
-                                                    "OCEC Carbon Aerosol Analyzer 5L; Sunset Laboratory, Inc; Tigard, OR",
-                                                    "DX-500 Ion Chromatography System; Dionex; Waltham, MA",
-                                                    "CS-3000 Ion Chromatography System; Dionex; Waltham, MA",
-                                                    "Agilent 6890/5973 Inert, Agilent Technologies, Santa Clara, CA",
-                                                    "Agilent 6890/5973 Inert, Agilent Technologies, Santa Clara, CA",
-                                                    "1260 Infinity; Agilent Technologies; Santa Clara, CA",
-                                                    "Gas chromatograph mass spectrometer (GC-17A); Shimadzu; Kyoto, Japan",
-                                                    "HPLC 1050 series; Agilent Technologies; Santa Clara, CA",
-                                                    "Scanning Mobility Particle Sizer Spectrometer 3938, TSI Incorporated, Shoreview, Minnesota",
-                                                    "ULTRAMAT/OXYMAT 6 and ULTRAMAT 23 (NDIR); Siemens; Munich, Germany"),
-                     "Mesurement frequency" = c("Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "Test integrated",
-                                                "$\\sim$0.0055 Hertz",
-                                                "1.0 Hertz")) %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
-          linesep = "", longtable = TRUE) %>%
-    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-    column_spec(1, width = "10em") %>%
-    column_spec(2, width = "10em") %>%
-    column_spec(3, width = "10em")
-```
-
-## SI 2.3: Additional instrumentation
-
-Instrumentation that was used for either quality control or as part of the test setup. See SI 2.1 for instrumentation schematic.
-
-```{r}
-  tibble::data_frame("Instrumentation" = c("Hot-wire anemometer",
-                                           "Bubble flow meter",
-                                           "Cyclone inlets",
-                                           "Carbon dioxide sensors",
-                                           "Thermocouple",
-                                           "HEPA filters",
-                                           "Needle valves",
-                                           "Rotometers",
-                                           "Diaphragm pump"),
-                     "Details" = c("Velometer AVM430-A; TSI Alnor; Huntington Beach, CA",
-                                   "mini-Buck Calibrator M-30; A.P. Buck, Inc; Orlando, FL",
-                                   "16.7 liters per minute, 2.5 µm cutpoint; URG; Chapel Hill, NC",
-                                   "LI-820 CO2 Analyzer; LI-COR; Lincoln, NE",
-                                   "K-type Thermocouple; OMEGA Engineering Inc.; Norwalk, CT",
-                                   "HEPA Capsule Filter (HC10-4N-PTF - HEPA); Eta Filters; Minneapolis, MN",
-                                   "High Flow Metering Valve (SS-4L/B-4L); Swagelok; Solon, OH",
-                                   "Acrylic Flow Meters (FL-2041-SS); OMEGA Engineering Inc.; Norwalk, CT",
-                                   "Oilless Diaphragm Pump (MOA-P109-CA); Gast; York, PA"),
-                     "Purpose" = c("Hood flow rates (monitored throughout the study)",
-                                   "Sample line flow rates (measured in triplicate before and after each test)",
-                                   "Removing particles above 2.5 µm for filter-based measurements",
-                                   "Measure dilution ratio of Venturi pump dilution system",
-                                   "Measure water temperature and flame temperature",
-                                   "Various (see SI 2.1)",
-                                   "Various (see SI 2.1)",
-                                   "Monitoring flow rates",
-                                   "Various (see SI 2.1)")) %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
-          linesep = "") %>%
-    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-    column_spec(1, width = "10em") %>%
-    column_spec(2, width = "15em") %>%
-    column_spec(3, width = "15em")
-```
-
-\newpage
-
-# SI 3: Cookstove smoke constituents
-
-Cookstove smoke constituents with associated grouping category. List includes 121 constituents, because organic matter and organic carbon are listed seperately. (Note: The alkyne category only includes one pollutant: ethyne.)
-
-```{r}
-  emissions %>%
-    dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel), by = "id") %>%
-    dplyr::filter(!grepl("unc", pol)) %>%
-    dplyr::filter(metric == "energy_delivered_ef") %>%
-    dplyr::select(pol_category, pol_subcategory, pol) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(pol = as.character(pol),
-                  pol_subcategory = as.character(pol_subcategory),
-                  pol_category = as.character(pol_category),
-                  pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
-                  pol_subcategory = ifelse(pol_subcategory == "pm_mass", "", pol_subcategory),
-                  pol_category = ifelse(pol_category == "pm_mass", "", pol_category),
-                  pol = ifelse(pol == "ec", "elemental carbon", pol),
-                  pol_subcategory = ifelse(pol_subcategory == "elemental carbon", "", pol_subcategory),
-                  pol_category = ifelse(pol_category == "ec", "", pol_category),
-                  pol = ifelse(pol == "om", "organic matter", pol),
-                  pol_subcategory = ifelse(pol_subcategory == "organic matter", "", pol_subcategory),
-                  pol_category = ifelse(pol_category == "om", "", pol_category),
-                  pol = ifelse(pol == "oc", "organic carbon", pol),
-                  pol_subcategory = ifelse(pol_subcategory == "organic carbon", "", pol_subcategory),
-                  pol_category = ifelse(pol_category == "oc", "", pol_category),
-                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
-                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "", pol_subcategory),
-                  pol_category = ifelse(grepl("^co2$", pol_category), "", pol_category),
-                  pol_subcategory = ifelse(grepl("^co$", pol_subcategory), "", pol_subcategory),
-                  pol_category = ifelse(grepl("^co$", pol_category), "", pol_category),
-                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
-                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "", pol_subcategory),
-                  pol_category = ifelse(grepl("^ch4$", pol_category), "", pol_category),
-                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
-                  pol_subcategory = ifelse(grepl("^ions$", pol_subcategory), "inorganic ions", pol_subcategory),
-                  pol_category = ifelse(grepl("^ions$", pol_category), "", pol_category),
-                  pol_category = ifelse(grepl("^smps$", pol_category), "", pol_category),
-                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "", pol_subcategory),
-                  pol_subcategory = gsub(" rings", " rings", pol_subcategory),
-                  pol_category = gsub("pahs", "PAHs", pol_category),
-                  pol_category = gsub("vocs", "VOCs", pol_category),
-                  pol_category = gsub("carbonyls", "carbonyls", pol_category),
-                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
-                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
-                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
-                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol),
-                  pol = gsub("alkynes", "alkyne", pol), 
-                  pol_category = gsub("carbohydrates", "carbohydrates", pol_category)) %>%
-    dplyr::select(pol, pol_subcategory, pol_category) %>%
-    dplyr::arrange(pol) %>%
-    dplyr::rename("Measurement grouping" = pol_category,
-                  "Analysis grouping" = pol_subcategory,
-                  "Smoke constituent" = pol) %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', linesep = "", longtable = TRUE) %>%
-    kable_styling(latex_options = c("striped"), position = "center", font_size = 8)
-```
-
-\newpage
-
-# SI 4: Particle number penetration through the Venturi pump
-
-Fraction of particles that penetrated the venturi pump (i.e., number penetration) at two different dilution ratios (DR) as a function of particle size (D$_p$). The venturi pump was upstream of the scanning mobility particle sizer and used to dilute the emissions sample. Although, there is substantial scatter at smaller particle sizes, these results suggest that the majority of particles lost in the Venturi pump are greater than 200 nm. Thus, the number concentration of ultrafines (particles less than 100 nm) will likely not be substantially affected by losses in the Venturi pump.(Note: Penetration efficiencies above one can be explained by low particle count statistics.)
-
-```{r, echo=FALSE, out.width = '100%'}
-  knitr::include_graphics("images/num_penetration.png")
-```
-
-\newpage
-
-# SI 5: Carcinogenic compound classifications
-
-```{r}
-  tibble::data_frame("pollutant" = c("benzene",
-                                    "formaldehyde",
-                                    "styrene",
-                                    "acetaldehyde",
-                                    "isoprene",
-                                    "benz[a]anthracene",
-                                    "benzo[a]pyrene",
-                                    "benzo[b]fluoranthene",
-                                    "benzo[j]fluoranthene",
-                                    "benzo[k]fluoranthene",
-                                    "cyclopenta[cd]pyrene",
-                                    "dibenzo[a,h]anthracene",
-                                    "indeno[1,2,3-cd]pyrene"),
-                     "phase" = c("gas",
-                                 "gas",
-                                 "gas",
-                                 "gas",
-                                 "gas",
-                                 "particle",
-                                 "particle",
-                                 "particle",
-                                 "particle",
-                                 "particle",
-                                 "particle",
-                                 "particle",
-                                 "particle"),
-                     "NTP$^1$" = c("Known to be a human carcinogen",
-                                   "Known to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "NA",
-                                   "Reasonably anticipated to be a human carcinogen",
-                                   "Reasonably anticipated to be a human carcinogen"),
-                     "IARC$^2$" = c("Group 1: Carcinogenic to humans",
-                                    "Group 1: Carcinogenic to humans",
-                                    "Group 2A: Probably carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 1: Carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans",
-                                    "Group 2A: Probably carcinogenic to humans",
-                                    "Group 2A: Probably carcinogenic to humans",
-                                    "Group 2B: Possibly carcinogenic to humans")) %>%
-    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
-          linesep = "") %>%
-    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-    footnote(general_title = "Notes: ", threeparttable = TRUE,
-             number = c("National Toxicology Program (NTP)",
-                        "International Agency for Research on Cancer (IARC)"))
-```
-
-\newpage
-
-# SI 6: Number of measurements by stove type
-
-The number of per-energy-delivered emissions factors used in the analysis for each type of pollutant. The number of attempted measurements, by stove type, are listed in the footnote. See Figure q for breakdown by fuel type. Missing measurements are due to measurement issues or erroneous data. (The number of measurements include both measurements that were below the limit of detection or below the study-averaged laboratory background level.)
-
-## SI 6.2: Wood stoves
-
-```{r}
+```{r, echo=FALSE}
   three_stone <-
     emissions %>%
       dplyr::left_join(samples %>%
@@ -519,9 +313,9 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
 
 \newpage
 
-## SI 6.2: Pellet, charcoal, and fossil-fuel stoves
+### Table S3: Number of measurements for pellet, charcoal, and fossil-fuel stoves by stove type
 
-```{r}
+```{r, echo=FALSE}
   gasifier <-
     emissions %>%
       dplyr::left_join(samples %>%
@@ -662,33 +456,367 @@ The number of per-energy-delivered emissions factors used in the analysis for ea
 
 \newpage
 
-```{r, echo=FALSE, eval=FALSE}
-  voc_lod <-
-    readRDS("../../../r_data/voc_lod.RDS") %>%
-    dplyr::mutate(lod = paste(lod, "ppbv*"))
+# Section 3: Test setup, instrumentation, and emissions measurements
 
-  carbos_lod <- 
-    readRDS("../../../r_data/carbohydrates_lod.RDS") %>%
-    dplyr::mutate(lod = paste(lod, "$\\mu$g/m$^3$*"))
-  
-  carbons_lod <- readRDS("../../../r_data/carbonyls_lod.RDS")
-  
-  ions_lod <- readRDS("../../../r_data/ions_lod.RDS")
-  ecoc_lod <- readRDS("../../../r_data/ecoc_lod.RDS")
-  pah_lod <- readRDS("../../../r_data/pah_lod.RDS")
-  
-  lods <-
-    voc_lod %>%
-    dplyr::bind_rows(carbos_lod) %>%
-    dplyr::bind_rows(carbons_lod) %>%
-    dplyr::bind_rows(ions_lod) %>%
-    dplyr::bind_rows(ecoc_lod) %>%
-    dplyr::bind_rows(pah_lod)
+### Figure S1: Emissions testing schematic
+
+Schematic of the emissions testing setup. See Table S4 and S5 for details about the sampling media and analysis instrumentation.
+
+```{r, echo=FALSE, out.height = '85%', fig.align='center'}
+  knitr::include_graphics("images/schematic.pdf")
 ```
 
-# SI 7: Fraction of measurements below limit of detection
+\newpage
 
-Fraction of measurements that were below the limit of detection (LOD) by smoke constituent. Refer to SI 6 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations). Pollutants not included in the table do not have any measurements below the LOD.
+### Table S4: Information about the sampling media and analysis instrumentation
+
+Information about the sampling media and analysis instrumentation used to measure each cookstove smoke constituent. See Figure S1 for instrumentation schematic.
+
+```{r, echo=FALSE}
+  tibble::data_frame("Smoke constituent" = c("Fine particulate matter",
+                                     "Organic carbon, elemental carbon, and organic carbon absorption artifact",
+                                     "Speciated inorganic anions",
+                                     "Speciated inorganic cations",
+                                     "Speciated polycyclic aromatic hydrocarbons (particle phase)",
+                                     "Speciated polycyclic aromatic hydrocarbons (gas phase)",
+                                     "Speciated carbohydrates",
+                                     "Speciated volatile organic compounds",
+                                     "Speciated aldehydes and ketones",
+                                     "Ultrafine particles",
+                                     "Carbon dioxide, carbon monoxide, and methane"),
+                     "Sampling media" = c("46.2 mm, 2 µm PTFE PM2.5 Air Monitoring Membrane Filter; Tisch International; North Bend, OH",
+                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
+                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
+                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
+                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
+                                          "PUF Replacement P226-92; SKC-West, Inc; Fullerton, CA (two inline)",
+                                          "Tissuquartz \\#2500QAT-UP; Pall Corporation; Port Washington, NY",
+                                          "Vacuum canister fitted with a critical orifice (CS1200ES Sampler; ENTECH Instruments, Inc.; Simi Valley, CA)",
+                                          "Dinitrophenylhydrazine cartridge (Sep-Pak DNPH-Silica Cartridge; Waters Corp; Milford, MA) placed inline behind an ozone scrubber (Sep-Pak Ozone Scrubber Potassium Iodide Cartridge; Waters Corp; Milford, MA)",
+                                          "",
+                                          ""),
+                     "Analysis instrumentation" = c("MX5 Microbalance; Mettler Toledo; Columbus, OH",
+                                                    "OCEC Carbon Aerosol Analyzer 5L; Sunset Laboratory, Inc; Tigard, OR",
+                                                    "DX-500 Ion Chromatography System; Dionex; Waltham, MA",
+                                                    "CS-3000 Ion Chromatography System; Dionex; Waltham, MA",
+                                                    "Agilent 6890/5973 Inert, Agilent Technologies, Santa Clara, CA",
+                                                    "Agilent 6890/5973 Inert, Agilent Technologies, Santa Clara, CA",
+                                                    "1260 Infinity; Agilent Technologies; Santa Clara, CA",
+                                                    "Gas chromatograph mass spectrometer (GC-17A); Shimadzu; Kyoto, Japan",
+                                                    "HPLC 1050 series; Agilent Technologies; Santa Clara, CA",
+                                                    "Scanning Mobility Particle Sizer Spectrometer 3938, TSI Incorporated, Shoreview, Minnesota",
+                                                    "ULTRAMAT/OXYMAT 6 and ULTRAMAT 23 (NDIR); Siemens; Munich, Germany"),
+                     "Mesurement frequency" = c("Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "Test integrated",
+                                                "$\\sim$0.0055 Hertz",
+                                                "1.0 Hertz")) %>%
+    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
+          linesep = "", longtable = TRUE) %>%
+    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+    column_spec(1, width = "10em") %>%
+    column_spec(2, width = "10em") %>%
+    column_spec(3, width = "10em")
+```
+
+\newpage
+
+### Table S5: Information about additional instrumentation
+
+Instrumentation that was used for either quality control or as part of the test setup. See Figure S1 for instrumentation schematic.
+
+```{r, echo=FALSE}
+  tibble::data_frame("Instrumentation" = c("Hot-wire anemometer",
+                                           "Bubble flow meter",
+                                           "Cyclone inlets",
+                                           "Carbon dioxide sensors",
+                                           "Thermocouple",
+                                           "HEPA filters",
+                                           "Needle valves",
+                                           "Rotometers",
+                                           "Diaphragm pump"),
+                     "Details" = c("Velometer AVM430-A; TSI Alnor; Huntington Beach, CA",
+                                   "mini-Buck Calibrator M-30; A.P. Buck, Inc; Orlando, FL",
+                                   "16.7 liters per minute, 2.5 µm cutpoint; URG; Chapel Hill, NC",
+                                   "LI-820 CO2 Analyzer; LI-COR; Lincoln, NE",
+                                   "K-type Thermocouple; OMEGA Engineering Inc.; Norwalk, CT",
+                                   "HEPA Capsule Filter (HC10-4N-PTF - HEPA); Eta Filters; Minneapolis, MN",
+                                   "High Flow Metering Valve (SS-4L/B-4L); Swagelok; Solon, OH",
+                                   "Acrylic Flow Meters (FL-2041-SS); OMEGA Engineering Inc.; Norwalk, CT",
+                                   "Oilless Diaphragm Pump (MOA-P109-CA); Gast; York, PA [and others]"),
+                     "Purpose" = c("Hood flow rates (monitored throughout the study)",
+                                   "Sample line flow rates (measured in triplicate before and after each test)",
+                                   "Removing particles above 2.5 µm for filter-based measurements",
+                                   "Measure dilution ratio of Venturi pump dilution system",
+                                   "Measure water temperature and flame temperature",
+                                   "Various (see Figure S1)",
+                                   "Various (see Figure S1)",
+                                   "Monitoring flow rates",
+                                   "Various (see Figure S1)")) %>%
+    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
+          linesep = "") %>%
+    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+    column_spec(1, width = "10em") %>%
+    column_spec(2, width = "15em") %>%
+    column_spec(3, width = "15em")
+```
+
+### Figure S2: Fraction of each PAH measured in the particle phase in the emissions hood
+
+Fraction of PAHs measured in the particle phase by pollutant in the emissions hood. The partitioning of these compounds will change in the home and in the atmosphere according to the equilibrium thermodynamics of the aerosol. (Data used to make this plot are not background corrected.) Tests where all measurements are below the limit of detection (for both fitlers and pufs) are excluded from the figure.
+
+```{r, echo=FALSE, out.width = '100%'}
+  knitr::include_graphics("figures/PAH_partition.png")
+```
+
+\newpage
+
+### Figure S3: Particle number penetration through the Venturi pump
+
+Fraction of particles that penetrated the venturi pump (i.e., number penetration) at two different dilution ratios (DR) as a function of particle size (D$_p$). The venturi pump was upstream of the scanning mobility particle sizer and used to dilute the emissions sample. Although, there is substantial scatter at smaller particle sizes, these results suggest that the majority of particles lost in the Venturi pump are greater than 200 nm. Thus, the number concentration of ultrafines (particles less than 100 nm) will likely not be substantially affected by losses in the Venturi pump.(Note: Penetration efficiencies above one can be explained by low particle count statistics.)
+
+```{r, echo=FALSE, out.width = '100%'}
+  knitr::include_graphics("images/num_penetration.png")
+```
+
+\newpage
+
+### Figure S4: Particle-emissions mass balance
+
+PM$_{2.5}$ emission factors (EF) versus the sum of inorganic ions, elemental carbon, and organic aerosol. Error bars represent propagated uncertainty from the Sunset OCEC analyzer (RMSE = 271 mg/MJ$_{delivered}$). The black line represent the equation $y = x$. The blue line represents the line of best fit (R$^2$ = 0.51). 
+
+```{r, echo=FALSE, out.width = '75%', fig.align="center"}
+  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
+```
+
+\newpage
+
+# Section 4: Cookstove smoke constituents and classifications
+
+### Table S6: List of cookstove smoke constituents measured with grouping categories
+
+Cookstove smoke constituents with associated grouping category. List includes 121 constituents, because organic aerosol and organic carbon are listed seperately. (Note: The alkyne category only includes one pollutant: ethyne.)
+
+```{r}
+  emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove, fuel), by = "id") %>%
+    dplyr::filter(!grepl("unc", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(pol_category, pol_subcategory, pol) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(pol = as.character(pol),
+                  pol_subcategory = as.character(pol_subcategory),
+                  pol_category = as.character(pol_category),
+                  pol = ifelse(pol == "pm_mass", "PM$_{2.5}$", pol),
+                  pol_subcategory = ifelse(pol_subcategory == "pm_mass", "", pol_subcategory),
+                  pol_category = ifelse(pol_category == "pm_mass", "", pol_category),
+                  pol = ifelse(pol == "ec", "elemental carbon", pol),
+                  pol_subcategory = ifelse(pol_subcategory == "elemental carbon", "", pol_subcategory),
+                  pol_category = ifelse(pol_category == "ec", "", pol_category),
+                  pol = ifelse(pol == "om", "organic aerosol", pol),
+                  pol_subcategory = ifelse(pol_subcategory == "organic matter", "", pol_subcategory),
+                  pol_category = ifelse(pol_category == "om", "", pol_category),
+                  pol = ifelse(pol == "oc", "organic carbon", pol),
+                  pol_subcategory = ifelse(pol_subcategory == "organic carbon", "", pol_subcategory),
+                  pol_category = ifelse(pol_category == "oc", "", pol_category),
+                  pol = ifelse(grepl("^co2$", pol), "carbon dioxide", pol),
+                  pol_subcategory = ifelse(grepl("^co2$", pol_subcategory), "", pol_subcategory),
+                  pol_category = ifelse(grepl("^co2$", pol_category), "", pol_category),
+                  pol_subcategory = ifelse(grepl("^co$", pol_subcategory), "", pol_subcategory),
+                  pol_category = ifelse(grepl("^co$", pol_category), "", pol_category),
+                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
+                  pol_subcategory = ifelse(grepl("^ch4$", pol_subcategory), "", pol_subcategory),
+                  pol_category = ifelse(grepl("^ch4$", pol_category), "", pol_category),
+                  pol = ifelse(grepl("^ch4$", pol), "methane", pol),
+                  pol_subcategory = ifelse(grepl("^ions$", pol_subcategory), "inorganic ions", pol_subcategory),
+                  pol_category = ifelse(grepl("^ions$", pol_category), "", pol_category),
+                  pol_category = ifelse(grepl("^smps$", pol_category), "", pol_category),
+                  pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
+                  pol_subcategory = ifelse(grepl("ultrafines", pol_subcategory), "", pol_subcategory),
+                  pol_subcategory = gsub(" rings", " rings", pol_subcategory),
+                  pol_category = gsub("pahs", "PAHs", pol_category),
+                  pol_category = gsub("vocs", "VOCs", pol_category),
+                  pol_category = gsub("carbonyls", "carbonyls", pol_category),
+                  pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
+                  pol = ifelse(grepl("2_methyl_2_butene", pol), "2-methyl-2-butene", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("([0-9])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("([a-z])(_)([0-9])", "\\1,\\3", pol),
+                  pol = gsub("(m)(_)(p)", "\\1,\\3", pol),
+                  pol = gsub("([a-z])(_)([a-z])", "\\1-\\3", pol),
+                  pol = gsub("alkynes", "alkyne", pol), 
+                  pol_category = gsub("carbohydrates", "carbohydrates", pol_category)) %>%
+    dplyr::select(pol, pol_subcategory, pol_category) %>%
+    dplyr::arrange(pol) %>%
+    dplyr::rename("Measurement grouping" = pol_category,
+                  "Analysis grouping" = pol_subcategory,
+                  "Smoke constituent" = pol) %>%
+    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', linesep = "", longtable = TRUE) %>%
+    kable_styling(latex_options = c("striped"), position = "center", font_size = 7.5)
+```
+
+\newpage
+
+### Table S7: Carcinogenic compound classifications
+
+Carcinogenic compounds with associated classifiecatin category.
+
+```{r}
+  tibble::data_frame("pollutant" = c("benzene",
+                                    "formaldehyde",
+                                    "styrene",
+                                    "acetaldehyde",
+                                    "isoprene",
+                                    "benz[a]anthracene",
+                                    "benzo[a]pyrene",
+                                    "benzo[b]fluoranthene",
+                                    "benzo[j]fluoranthene",
+                                    "benzo[k]fluoranthene",
+                                    "cyclopenta[cd]pyrene",
+                                    "dibenzo[a,h]anthracene",
+                                    "indeno[1,2,3-cd]pyrene"),
+                     "phase" = c("gas",
+                                 "gas",
+                                 "gas",
+                                 "gas",
+                                 "gas",
+                                 "particle",
+                                 "particle",
+                                 "particle",
+                                 "particle",
+                                 "particle",
+                                 "particle",
+                                 "particle",
+                                 "particle"),
+                     "NTP$^1$" = c("Known to be a human carcinogen",
+                                   "Known to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "NA",
+                                   "Reasonably anticipated to be a human carcinogen",
+                                   "Reasonably anticipated to be a human carcinogen"),
+                     "IARC$^2$" = c("Group 1: Carcinogenic to humans",
+                                    "Group 1: Carcinogenic to humans",
+                                    "Group 2A: Probably carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 1: Carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans",
+                                    "Group 2A: Probably carcinogenic to humans",
+                                    "Group 2A: Probably carcinogenic to humans",
+                                    "Group 2B: Possibly carcinogenic to humans")) %>%
+    kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c',
+          linesep = "") %>%
+    kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+    footnote(general_title = "Notes: ", threeparttable = TRUE,
+             number = c("National Toxicology Program (NTP)",
+                        "International Agency for Research on Cancer (IARC)"))
+```
+
+\newpage
+
+# Section 5: Leave-one-out cross validation
+
+### Table S8: Number of observations used and which stove or fuel types were excluded
+
+Number of observations used in leave-one-out cross validation by pollutant and which stove types or fuel types that were excluded from the regression analysis. Stove types or fuel types were exluded from the leave-one-out cross validation if they had less than three data points, because only two data points would be avaliable to fit the data. Replicates could be missing if the measurement was below background or if there were measurement issues. If a stove or fuel type is listed as missing in the table it was excluded from all models (i.e., models 1, 2, and 3).
+
+```{r, echo=FALSE}
+  loocv_obs %>%
+  dplyr::left_join(
+    missing_stoves %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(stove = 
+                      stove %>% 
+                      forcats::fct_recode("Three-stone fire" = "three-stone fire",
+                                          "Mud chulha" = "chulha",
+                                          "Rocket elbow" = "rocket elbow",
+                                          "Built-in plancha" = "built-in plancha",
+                                          "Fan rocket elbow" = "fan rocket-elbow",
+                                          "Gasifier" = "forced-draft gasifier",
+                                          "Ceramic jiko" = "ceramic charcoal",
+                                          "Metal jiko" = "metal charcoal",
+                                          "Wick kerosene" = "wick kerosene",
+                                          "Pressure kerosene" = "pressure kerosene",
+                                          "LPG" = "lpg") %>%
+                    forcats::fct_relevel("Three-stone fire",
+                                         "Mud chulha",
+                                         "Rocket elbow",
+                                         "Built-in plancha",
+                                         "Fan rocket elbow",
+                                         "Gasifier",
+                                         "Ceramic jiko",
+                                         "Metal jiko",
+                                         "Wick kerosene",
+                                         "Pressure kerosene",
+                                         "LPG")) %>%
+      dplyr::group_by(pol) %>%
+      dplyr::summarise(stove = paste(stove, collapse = ", ")), by = "pol") %>%
+  dplyr::left_join(
+    missing_fuels %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(fuel = 
+                        fuel %>% 
+                        forcats::fct_recode("Douglas fir" = "douglas fir",
+                                            "Eucalyptus" = "eucalyptus",
+                                            "Oak" = "oak",
+                                            "West slope pellets" = "west slope pellets",
+                                            "Eucalyptus pellets" = "eucalyptus pellets",
+                                            "Lump hardwood (sm.)" = "lump hardwood (sm.)",
+                                            "Lump hardwood (med.)" = "lump hardwood (med.)",
+                                            "Coconut briquettes" = "coconut charcoal",
+                                            "Kerosene" = "kerosene",
+                                            "LPG" = "lpg") %>%
+                      forcats::fct_relevel("Douglas fir",
+                                           "Eucalyptus",
+                                           "Oak",
+                                           "West slope pellets",
+                                           "Eucalyptus pellets",
+                                           "Lump hardwood (sm.)",
+                                           "Lump hardwood (med.)",
+                                           "Coconut briquettes",
+                                           "Kerosene",
+                                           "LPG")) %>%
+      dplyr::group_by(pol) %>%
+      dplyr::summarise(fuel = paste(fuel, collapse = ", ")), by = "pol") %>%
+    dplyr::rename("Missing stove types" = "stove",
+                  "Missing fuel types" = "fuel",
+                  "Observations" = "obs",
+                  " " = pol) %>%
+      kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
+            linesep = "") %>%
+      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
+      column_spec(1, width = "12em") %>%
+      column_spec(2, width = "4em") %>%
+      column_spec(3, width = "15em") %>%
+      column_spec(4, width = "15em")
+```
+
+\newpage
+
+# Section 6: Limit of detection
+
+### Table S9: Fraction of measurements below limit of detection
+
+Fraction of measurements that were below the limit of detection (LOD) by stove type and smoke constituent. Refer to SI Section 2 for the total number of measurements. Pollutants not included in the table do not have any measurements below the LOD. LODs were based on handling blanks (PM$_{2.5}$, elemental carbon, organic aerosol, PAHs) or instrument LODs (VOCs, carbonyls, ions, carbohydrates, ultrafines, CO$_2$, CO, and methane) depending on the measurement technique. LODs for handling blanks were calculated using the following formulation: LOD = $3 \cdot \sigma_{blanks}$.
+
 
 ```{r}
   three_stone <-
@@ -839,7 +967,7 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
                     pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
                     pol = ifelse(grepl("^ch4$", pol), "methane", pol),
                     pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                    pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                    pol = ifelse(grepl("^om$", pol), "organic aerosol", pol),
                     pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
                     pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
                     pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
@@ -870,21 +998,11 @@ Fraction of measurements that were below the limit of detection (LOD) by smoke c
 
 \newpage
 
-```{r, echo=FALSE, eval=FALSE}
-  vocs_bg <- readRDS("../../../r_data/vocs_bg.RDS")
-  carbos_bg <- readRDS("../../../r_data/carbohydrates_bg.RDS")
-  carbons_bg <- readRDS("../../../r_data/carbonyls_bg.RDS")
-  ions_bg <- readRDS("../../../r_data/ions_bg.RDS")
-  ecoc_bg <- readRDS("../../../r_data/ecoc_bg.RDS")
+# Section 7: Laboratory background
 
-  
-```
+### Table S10: Fraction of measurements below background
 
-\newpage
-
-# SI 8: Fraction of measurements below background
-
-Fraction of measurements that were below the study-averaged background by smoke constituent. Refer to SI 6 for the total number of measurements for each stove type. Fractions were calculated using all fuel types tested on a particular stove (see Figure 1 for details on the stove-fuel combinations). Pollutants not included in the table do not have any measurements below the study-averaged background.
+Fraction of measurements that were below the study-averaged background by stove type and smoke constituent. Refer to SI Section 2 for the total number of measurements. Pollutants not included in the table do not have any measurements below the study-averaged background.
 
 ```{r}
   three_stone <-
@@ -1024,7 +1142,7 @@ Fraction of measurements that were below the study-averaged background by smoke 
                     pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol),
                     pol = ifelse(grepl("^ch4$", pol), "methane", pol),
                     pol = ifelse(grepl("ultrafines", pol), "ultrafine particles", pol),
-                    pol = ifelse(grepl("^om$", pol), "organic matter", pol),
+                    pol = ifelse(grepl("^om$", pol), "organic aerosol", pol),
                     pol = ifelse(grepl("^oc$", pol), "organic carbon", pol),
                     pol = ifelse(grepl("^ec$", pol), "elemental carbon", pol),
                     pol = ifelse(grepl("pinene", pol), "alpha-pinene", pol),
@@ -1055,17 +1173,9 @@ Fraction of measurements that were below the study-averaged background by smoke 
 
 \newpage
 
-# SI 9: Particle-phase emissions mass balance
+# Section 8: Fuel properties
 
-PM$_{2.5}$ emission factors (EF) versus the sum of inorganic ions, elemental carbon, and organic matter. Error bars represent propagated uncertainty from the Sunset OCEC analyzer. The black line represent the equation $y = x$.
-
-```{r, echo=FALSE, out.width = '75%', fig.align="center"}
-  knitr::include_graphics("../../emissions_factors/figures/mass_balance-1.png")
-```
-
-\newpage
-
-# SI 10: Fuel properties
+### Table S11: Information about fuel properties
 
 Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany), proximate properties (Hazen Research Inc.; Golden, CO), and ultimate properties (Soil-Water-Plant laboratory at Colorado State University; Fort Collins, CO) of all fuels tested except the LPG. LPG properties were derived from the Phyllis database (https://phyllis.nl/). Fuel hydrogen contents from the Phyllis database (https://phyllis.nl/) and higher heating values (HHV) were used to calculate the lower heating values (LHV) of the fuels. Moisture content is reported on a wet basis, while all other measurements are reported on a dry basis. (Note: Due to a sample shortage, measurements are missing for the eucalyptus pellet fuel.)
 
@@ -1104,9 +1214,11 @@ Measured higher heating values (C 200 Calorimeter System; IKA; Staufen, Germany)
 
 \newpage
 
-# SI 11: Fuel use by stove type
+# Section 9: Stove operation
 
-Fuel use, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
+### Figure S5: Fuel use by stove type
+
+Estimated fuel use for each test by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
 
 ```{r}
   fuel_burnt %>%
@@ -1128,9 +1240,9 @@ Fuel use, during the emissions sample, by stove type, where the mean and range o
 
 \newpage
 
-# SI 12: Emissions measurement duration by stove type
+### Figure S6: Test length by stove type
 
-Emissions measurement duration by stove type, where the mean and range are indicated by the point markers and lines, respectively. (Note: The range is smaller than the size of the marker for the pressure kerosene and LPG stoves.)
+Emissions measurement duration, by stove type, where the mean and range are indicated by the point markers and lines, respectively. (Note: The range is smaller than the size of the marker for the pressure kerosene and LPG stoves.)
 
 ```{r}
   test_duration <-
@@ -1161,9 +1273,9 @@ Emissions measurement duration by stove type, where the mean and range are indic
 
 \newpage
 
-# SI 13: Test-averaged firepower by stove type
+### Figure S7: Firepower by stove type
 
-Average firepower, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively. The sample-averaged firepower was calculated using the average fuel burn rate (SI 11 & SI 12) and the lower heating value of the fuel (SI 10).
+Average firepower, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively. The sample-averaged firepower was calculated using the average fuel burn rate and the lower heating value of the fuel.
 
 ```{r}
   fuel_burnt %>%
@@ -1184,45 +1296,141 @@ Average firepower, during the emissions sample, by stove type, where the mean an
             axis.title.y = element_blank()) +
       ylab("Firepower (kilowatts)")
 ```
+\newpage
+
+### Figure S8: Modified combustion efficiency by stove type
+
+Average modified combustion efficiency, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
+
+```{r}
+  emissions  %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
+    dplyr::filter(grepl("^co$|^co2$", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::select(-pol_category, -pol_subcategory) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(mce = co2 / (co + co2)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(MCE = mean(mce, na.rm = TRUE),
+                     min = min(mce, na.rm = TRUE),
+                     max = max(mce, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = MCE)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      ylab("Modified combustion efficiency")
+```
 
 \newpage
 
-# SI 14: Stove types that were excluded from leave-one-out cross validation
+# Section 10: Select emissions on a per-mass-of-fuel-burned basis
 
-List of stove types that were excluded from the regression analysis by pollutant. Stove types were exluded from the leave-one-out cross validation if they had less than three data points, because only two data points would be avaliable to fit the data. Replicates could be missing if they the measurement was below background or there were measurement issues. Missing stove types were excluded from both models presented in the main manuscript for consistency.
+### Figure S9: PM$_{2.5}$, elemental carbon, organic carbon, and carbon monoxide
 
-```{r, echo=FALSE}
-  missing_stoves %>%
-    dplyr::mutate(stove = 
-                    stove %>% 
-                    forcats::fct_recode("Three-stone fire" = "three-stone fire",
-                                        "Mud chulha" = "chulha",
-                                        "Rocket elbow" = "rocket elbow",
-                                        "Built-in plancha" = "built-in plancha",
-                                        "Fan rocket elbow" = "fan rocket-elbow",
-                                        "Gasifier" = "forced-draft gasifier",
-                                        "Ceramic jiko" = "ceramic charcoal",
-                                        "Metal jiko" = "metal charcoal",
-                                        "Wick kerosene" = "wick kerosene",
-                                        "Pressure kerosene" = "pressure kerosene",
-                                        "LPG" = "lpg") %>%
-                  forcats::fct_relevel("Three-stone fire",
-                                       "Mud chulha",
-                                       "Rocket elbow",
-                                       "Built-in plancha",
-                                       "Fan rocket elbow",
-                                       "Gasifier",
-                                       "Ceramic jiko",
-                                       "Metal jiko",
-                                       "Wick kerosene",
-                                       "Pressure kerosene",
-                                       "LPG")) %>%
-    dplyr::group_by(pol) %>%
-    dplyr::summarise(stove = paste(stove, collapse = ", ")) %>%
-    dplyr::rename("Missing stove types" = "stove", " " = pol) %>%
-      kable("latex", escape = FALSE,  booktabs = TRUE, align = 'c', longtable = TRUE,
-            linesep = "") %>%
-      kable_styling(latex_options = c("striped"), position = "center", font_size = 8) %>%
-      column_spec(1, width = "12em") %>%
-      column_spec(2, width = "30em")
+Emissions of fine particulate matter (PM$_{2.5}$), elemental carbon, organic aerosol, inorganic ions, and carbon monoxide by stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of emissions measured. On the top panel, the brackets represent the range of PM$_{2.5}$ emissions, rather than the range of the summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_2_fuelmass-1.png")
+```
+
+\newpage
+
+### Figure S10: Volatile organic compounds and carbonyls
+
+Emissions of volatile organic compounds and carbonyls by stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_4_fuelmass-1.png")
+```
+
+\newpage
+
+# Section 11: Emissions by stove-fuel combination
+
+### Figure S11: PM$_{2.5}$, elemental carbon, organic aerosol, inorganic ions, and carbon monoxide
+
+Emissions of fine particulate matter (PM$_{2.5}$), elemental carbon, organic aerosol, inorganic ions, and carbon monoxide by stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of emissions measured. On the top panel, the brackets represent the range of PM$_{2.5}$ emissions, rather than the range of the summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_2_byfuel-1.png")
+```
+
+\newpage
+
+### Figure S12: Ultrafine particles (10-100 nm) and polycylic aromatic hydrocarbons
+
+Emissions of ultrafine particles (10-100 nm) and polycylic aromatic hydrocarbons by stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_3_byfuel-1.png")
+```
+
+\newpage
+
+### Figure S13: Volatile organic compounds and carbonyls
+
+Emissions of volatile organic compounds and carbonyls by stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_4_byfuel-1.png")
+```
+
+\newpage
+
+### Figure S14: Carcinogenic compounds
+
+Emissions of gas- and particle-phase carcinogenic compounds stove-fuel combination. The height of each bar represents replicate-averaged emissions for each stove-fuel combination. Brackets indicate the range of summed constituents.
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_5_byfuel-1.png")
+```
+
+\newpage
+
+# Section 12: Organic-carbon-to-elemental-carbon ratio
+
+### Figure S15: OC:EC ratio by stove type
+
+Average organic carbon (OC) to elemental carbon (EC) ratio, during the emissions sample, by stove type, where the mean and range of are indicated by the point markers and lines, respectively.
+
+```{r}
+  emissions  %>%
+    dplyr::left_join(dplyr::select(samples, id, stove), by = "id") %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val)) %>%
+    dplyr::filter(grepl("^oc$|^ec$", pol)) %>%
+    dplyr::filter(metric == "emissions_rate") %>%
+    dplyr::select(-pol_category, -pol_subcategory) %>%
+    tidyr::spread(pol, val) %>%
+    dplyr::mutate(ratio = oc / ec) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(ocec = mean(ratio, na.rm = TRUE),
+                     min = min(ratio, na.rm = TRUE),
+                     max = max(ratio, na.rm = TRUE)) %>%
+    dplyr::mutate(stove = forcats::fct_rev(stove)) %>%
+    ggplot(aes(x = stove, y = ocec)) +
+      geom_point(size = 2) +
+      geom_errorbar(aes(ymin = min, ymax = max), width = 0) +
+      scale_y_log10() +
+      coord_flip() +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      ylab("OC:EC ratio")
+```
+
+\newpage
+
+# Section 13: Leave-one-out cross validation for elemental carbon
+
+### Figure S16: Leave-one-out cross validation for elemental carbon
+
+Leave-one-out cross validation using models that are analogous to Model 1, Model 2, and Model 3, except with elemental carbon as a predictor rather than fine particulate matter PM$_{2.5}$ and carbon monoxide (CO). The root-mean-squared-error (RMSE) ratio is the RMSE of Model 1, Model 2, or Model 3 divided by the RMSE from a model in which the population mean is always the prediction (i.e., a model with no predictors). RMSE ratio = 1 indicates that the relevant model (i.e., Model 1, 2, or 3) provides no improvement in prediction over the population mean (i.e., a poorly performing model) and a ratio of zero indicates that the relevant model removes all the prediction uncertainty (i.e., a highly performing model). RMSE ratios larger than one indicates that the larger model results in worse prediction than a model with no predictors. Note that the dataset used for these models may differ slightly from the models that used PM$_{2.5}$ and CO as predictors, because tests that were missing PM$_{2.5}$ or CO data were not excluded from the models. 
+
+```{r, echo=FALSE, out.width = '100%', fig.align="center"}
+  knitr::include_graphics("figures/figure_6_ec-1.pdf")
 ```

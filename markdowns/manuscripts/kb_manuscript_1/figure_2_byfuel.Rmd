@@ -1,0 +1,323 @@
+---
+title: "Figure 2: PM composition and CO"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r load_libraries, echo=FALSE, message=FALSE}
+  if (!require("pacman")) install.packages("pacman")
+  pacman::p_load(tidyverse, pals, devtools, patchwork, Hmisc)
+  #devtools::install_github("thomasp85/patchwork")
+```
+
+```{r global_options, echo=FALSE}
+  knitr::opts_chunk$set(fig.path ='figures/',
+                        warning = FALSE, message = FALSE, cache = FALSE)
+```
+
+# figure 1
+
+## tidy data
+
+load data
+
+```{r}
+  emissions <- readRDS("../../../r_data/emissions_factors.RDS")
+  samples <- readRDS("../../../r_data/samples.RDS")
+```
+
+```{r}
+  samples <-
+    samples %>%
+    dplyr::mutate(stove_fuel = paste0(stove, ": ", fuel)) %>%
+    dplyr::mutate(stove_fuel = 
+                    stove_fuel %>%
+                    factor %>%
+                    forcats::fct_recode("Three-stone fire: Douglas fir" =
+                                          "three-stone fire: douglas fir",
+                                        "Three-stone fire: Eucalyptus" =
+                                          "three-stone fire: eucalyptus",
+                                        "Three-stone fire: Oak" =
+                                          "three-stone fire: oak",
+                                        "Mud chulha: Douglas fir" =
+                                          "chulha: douglas fir",
+                                        "Mud chulha: Eucalyptus" =
+                                          "chulha: eucalyptus",
+                                        "Mud chulha: Oak" =
+                                          "chulha: oak", 
+                                        "Rocket elbow: Douglas fir" =
+                                          "rocket elbow: douglas fir",
+                                        "Rocket elbow: Eucalyptus" =
+                                          "rocket elbow: eucalyptus",
+                                        "Rocket elbow: Oak" =
+                                          "rocket elbow: oak",
+                                        "Built-in plancha: Douglas fir" =
+                                          "built-in plancha: douglas fir",
+                                        "Built-in plancha: Eucalyptus" =
+                                          "built-in plancha: eucalyptus",
+                                        "Built-in plancha: Oak" =
+                                          "built-in plancha: oak",
+                                        "Fan rocket-elbow: Douglas fir" =
+                                          "fan rocket-elbow: douglas fir",
+                                        "Fan rocket-elbow: Eucalyptus" =
+                                            "fan rocket-elbow: eucalyptus",
+                                        "Fan rocket-elbow: Oak" =
+                                          "fan rocket-elbow: oak",
+                                        "Gasifier: West slope pellets" =
+                                          "forced-draft gasifier: west slope pellets",
+                                        "Gasifier: Eucalyptus pellets" =
+                                          "forced-draft gasifier: eucalyptus pellets",
+                                        "Ceramic charcoal: Lump hardwood (sm.)" =
+                                          "ceramic charcoal: lump hardwood (sm.)",
+                                        "Ceramic charcoal: Lump hardwood (med.)" =
+                                          "ceramic charcoal: lump hardwood (med.)",
+                                        "Ceramic charcoal: Coconut briquettes" =
+                                          "ceramic charcoal: coconut charcoal",
+                                        "Metal charcoal: Lump hardwood (sm.)" =
+                                          "metal charcoal: lump hardwood (sm.)",
+                                        "Metal charcoal: Lump hardwood (med.)" =
+                                          "metal charcoal: lump hardwood (med.)",
+                                        "Metal charcoal: Coconut briquettes" =
+                                          "metal charcoal: coconut charcoal",
+                                        "Wick kerosene: Kerosene" =
+                                          "wick kerosene: kerosene",
+                                        "Pressure kerosene: Kerosene" =
+                                          "pressure kerosene: kerosene",
+                                        "LPG: LPG" =
+                                          "lpg: lpg") %>%
+                    forcats::fct_relevel("Three-stone fire: Douglas fir",
+                                        "Three-stone fire: Eucalyptus",
+                                        "Three-stone fire: Oak",
+                                        "Mud chulha: Douglas fir",
+                                        "Mud chulha: Eucalyptus",
+                                        "Mud chulha: Oak",
+                                        "Rocket elbow: Douglas fir",
+                                        "Rocket elbow: Eucalyptus",
+                                        "Rocket elbow: Oak",
+                                        "Built-in plancha: Douglas fir",
+                                        "Built-in plancha: Eucalyptus",
+                                        "Built-in plancha: Oak",
+                                        "Fan rocket-elbow: Douglas fir",
+                                        "Fan rocket-elbow: Eucalyptus",
+                                        "Fan rocket-elbow: Oak",
+                                        "Gasifier: West slope pellets",
+                                        "Gasifier: Eucalyptus pellets",
+                                        "Ceramic charcoal: Lump hardwood (sm.)",
+                                        "Ceramic charcoal: Lump hardwood (med.)",
+                                        "Ceramic charcoal: Coconut briquettes",
+                                        "Metal charcoal: Lump hardwood (sm.)",
+                                        "Metal charcoal: Lump hardwood (med.)",
+                                        "Metal charcoal: Coconut briquettes",
+                                        "Wick kerosene: Kerosene",
+                                        "Pressure kerosene: Kerosene",
+                                        "LPG: LPG"))
+```
+
+## add stove fuel info
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::left_join(samples %>%
+                       dplyr::select(id, stove_fuel), by = "id")
+```
+
+## replace below background values with zero
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(val = ifelse(bg == "below", 0, val))
+```
+
+## rename pollutants
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::mutate(pol_category = ifelse(grepl("^ec$", pol_category), "elemental carbon", pol_category),
+                  pol_category = ifelse(grepl("^om$", pol_category), "organic aerosol", pol_category),
+                  pol_category = ifelse(grepl("ions", pol_category), "inorganic ions", pol_category),
+                  pol = ifelse(grepl("^co$", pol), "carbon monoxide", pol))
+```
+
+## select pollutants
+
+```{r}
+  ec_oc_ions <-
+    emissions %>%
+    dplyr::filter(grepl("inorganic ions|elemental carbon|organic aerosol", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+```{r}
+  pm_mass <-
+    emissions %>%
+    dplyr::filter(grepl("pm_mass", pol_category)) %>%
+    dplyr::filter(metric == "energy_delivered_ef") %>%
+    dplyr::mutate(pol_category = ifelse(grepl("pm_mass", pol_category), "PM2.5 mass", pol_category))
+```
+
+```{r}
+  co <-
+    emissions %>%
+    dplyr::filter(grepl("monoxide", pol)) %>%
+    dplyr::filter(metric == "energy_delivered_ef")
+```
+
+# calculate range by pollutant
+
+```{r}
+  range_pm <-
+    pm_mass %>%
+    na.omit %>%
+    dplyr::group_by(stove_fuel) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+```{r}
+  range_co <-
+    co %>%
+    dplyr::group_by(stove_fuel) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(min = min(val, na.rm = TRUE),
+                     max = max(val, na.rm = TRUE)) %>%
+    tidyr::gather("var", "val", min, max) %>%
+    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+```
+
+# calculate means by pollutant
+
+```{r}
+  pm_mass_p <-
+    pm_mass %>%
+    dplyr::group_by(pol_category, stove_fuel) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol = "PM2.5 mass",
+                  pol_category = "PM2.5 mass")
+```
+
+```{r}
+  ec_oc_ions_p <-
+    ec_oc_ions %>%
+    dplyr::group_by(id, pol_category, stove_fuel) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
+    tidyr::spread(pol_category, val) %>%
+    na.omit %>%
+    tidyr::gather(pol_category, val, 3:5) %>%
+    dplyr::group_by(pol_category, stove_fuel) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(pol = pol_category,
+                  pol = 
+                    pol %>% 
+                    factor %>% 
+                    forcats::fct_relevel("PM2.5 mass",
+                                         "organic aerosol",
+                                         "elemental carbon",
+                                         "inorganic ions") %>%
+                    forcats::fct_rev(),
+                  pol_category = "PM2.5 mass")
+```
+
+```{r}
+  co_p <-
+    co %>%
+    dplyr::group_by(pol, stove_fuel) %>%
+    dplyr::mutate(val = val / 1000) %>%
+    dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::mutate(pol_category = "carbon monoxide")
+```
+
+## figure 1
+
+```{r, echo=FALSE}
+  p1 <-
+    pm_mass_p %>%
+    dplyr::mutate(pol_category = "paste(PM[2.5], ' composition')") %>%
+      ggplot(aes(x = stove_fuel, y = val)) +
+      geom_histogram(fill = "#999999", stat = "identity") +
+      geom_histogram(data = ec_oc_ions_p %>%
+                           dplyr::mutate(pol =
+                                           pol %>% 
+                                           factor %>%
+                                           forcats::fct_expand("PM2.5 mass"),
+                                           forcats::fct_relevel("inorganic ions",
+                                                                "elemental carbon",
+                                                                "organic aerosol",
+                                                                "PM2.5 mass")),
+                     aes(x = stove_fuel, y = val, fill = pol, order = pol), stat = "identity", width = 0.6) +
+      scale_fill_manual(values = c("#E69F00", "gray30", "snow2", "#999999"),
+                        labels = c("inorganic ions", "elemental carbon",
+                                   "organic aerosol", expression(paste(PM[2.5], ' mass'))),
+                        drop = FALSE) +
+      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      geom_text(data = range_pm,
+                aes(x = stove_fuel, y = val, label = sym), size = 6, angle = 90, nudge_x = -0.05) +
+      #scale_y_continuous(limits = c(0, 1050), breaks = c(0, 250, 500, 750, 1000)) +
+      theme_minimal() +
+      theme(legend.text.align = 0,
+            text = element_text(size = 16),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 10, angle = 45, hjust = 1, vjust = 0.8),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(size = 14),
+            legend.title = element_blank(), 
+            legend.spacing.x = unit(0.25, 'cm'), 
+            legend.spacing.y = unit(0.25, 'cm')) +
+      ylab(expression(atop(paste(PM[2.5], ' composition'), paste('miligrams per Megajoul', e[delivered]))))
+```
+
+```{r}
+  p2 <-
+    co_p %>%
+      ggplot(aes(x = stove_fuel, y = mean)) +
+      geom_histogram(stat = "identity", fill = "cadetblue") +
+      geom_text(data = range_co,
+                aes(x = stove_fuel, y = val, label = sym), stroke = 2, size = 6, angle = 90, nudge_x = -0.05) +
+        #scale_y_continuous(limits = c(0, 25)) +
+        theme_minimal() +
+      theme(text = element_text(size = 16),
+            legend.justification = c(1, 1), 
+            legend.position = c(1, 1),
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 10, angle = 45, hjust = 1, vjust = 0.8),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank(),
+            legend.title = element_blank()) +
+      ylab(expression(atop(paste('Carbon monoxide'), paste('grams per Megajoul', e[delivered]))))
+```
+
+```{r figure_2_byfuel, echo=FALSE, fig.width=12, fig.height=10, dpi=400, dev='pdf'}
+  p1 + p2 + plot_layout(nrow = 2, heights = c(1, 1))
+```
+
+```{r, eval=FALSE}
+  ec_oc_ions_p <-
+    ec_oc_ions %>%
+    dplyr::group_by(pol, stove_fuel) %>%
+    dplyr::filter(pol_category == "inorganic ions") %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE))
+
+  ec_oc_ions_p %>%
+      ggplot(aes(x = stove_fuel, y = val, fill = pol)) +
+      geom_histogram(stat = "identity") +
+        theme_minimal() +
+      theme(text = element_text(size = 16),
+            legend.justification = c(1, 1), 
+            legend.position = 'top',
+            axis.text.y = element_text(size = 14),
+            axis.text.x = element_text(size = 10, angle = 45, hjust = 1, vjust = 0.8),
+            axis.title.y = element_text(size = 14),
+            axis.title.x = element_blank(),
+            legend.title = element_blank()) +
+      ylab(expression(atop(paste('Inorganic ions'), paste('grams per Megajoul', e[delivered]))))
+```

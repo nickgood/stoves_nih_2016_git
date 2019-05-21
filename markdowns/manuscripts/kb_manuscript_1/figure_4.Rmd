@@ -63,8 +63,7 @@ load data
   emissions <-
     emissions %>%
     dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::filter(!is.na(val))
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
 ```
 
 ## filter out values below background
@@ -99,42 +98,28 @@ load data
     dplyr::filter(metric == "energy_delivered_ef")
 ```
 
-## remove tests
-
-```{r}
-  vocs <- 
-    vocs %>%
-    dplyr::filter(id != "5A", id != "9A")
-```
-
-notes: need to look at these tests still
-
 ## calculate stats
 
 ```{r}
   stats_carbs <-
     carbonyls %>%
-    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE),
-                     mean = mean(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max, mean) %>%
-    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+                     mean = mean(val, na.rm = TRUE))
 ```
 
 ```{r}
   stat_vocs <-
     vocs %>%
-    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE),
-                     mean = mean(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max, mean) %>%
-    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+                     mean = mean(val, na.rm = TRUE))
 ```
 
 ## calculate means by pollutant
@@ -142,9 +127,9 @@ notes: need to look at these tests still
 ```{r}
   carbonyls_p <-
     carbonyls %>%
-    dplyr::group_by(id, pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(id, pol_subcategory, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(pol_subcategory, stove) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(pol_subcategory = 
@@ -165,9 +150,9 @@ notes: need to look at these tests still
 ```{r}
   vocs_p <-
     vocs %>%
-    dplyr::group_by(id, pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(id, pol_subcategory, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(pol_subcategory, stove) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(pol_subcategory = 
@@ -179,7 +164,7 @@ notes: need to look at these tests still
                                "aromatics " = "aromatics") %>%
                     forcats::fct_relevel("alkanes ",
                                          "alkenes ",
-                                         "alkynes ",
+                                         "alkyne (ethyne) ",
                                          "aromatics ") %>%
                     forcats::fct_rev(),
                   pol_category = "volatile organic compounds")
@@ -192,13 +177,18 @@ notes: need to look at these tests still
                  "khaki",
                  "slateblue3",
                  "#9e9ac8")
+carbonyls_all <-
+  carbonyls %>%
+  dplyr::group_by(id, stove) %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE))
+
   p1 <-
     carbonyls_p %>%
     ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_carbs %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha = 0.9) +
+      geom_boxplot(data = carbonyls_all, aes(x = stove, y = val), alpha = 0, color = "gray30", width=0.4) +
+      geom_point(data = stats_carbs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      geom_point(data = stats_carbs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
       theme_minimal() +
       scale_fill_manual(values = col_vector) +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
@@ -215,13 +205,21 @@ notes: need to look at these tests still
 ```
 
 ```{r, echo=FALSE, fig.width=12, fig.height=4}
+vocs_all <-
+  vocs %>%
+  dplyr::group_by(id, stove) %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE))
+
   p2 <-
     vocs_p %>%
     ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stat_vocs  %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha = 0.9) +
+      geom_boxplot(data = vocs_all, aes(x = stove, y = val), alpha = 0, color = "gray30", width=0.4) +
+      geom_point(data = stat_vocs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      geom_point(data = stat_vocs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_text(data = stat_vocs  %>%
+      #            dplyr::filter(var != "mean"),
+      #          aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2"),
                         name = "VOCs") +
       scale_y_continuous(limits = c(0, 2200)) +
@@ -245,17 +243,20 @@ notes: need to look at these tests still
   p2 + p1 + plot_layout(nrow = 2, heights = c(1, 1))
 ```
 
-```{r figure_4a, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
+```{r figure_4a, echo=FALSE, fig.width=12, fig.height=2, dpi=400, dev='pdf'}
     vocs_p %>%
     ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stat_vocs  %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha = 0.9) +
+      geom_boxplot(data = vocs_all, aes(x = stove, y = val), alpha = 0, color = "gray30", width=0.4) +
+      geom_point(data = stat_vocs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      geom_point(data = stat_vocs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_text(data = stat_vocs  %>%
+      #            dplyr::filter(var != "mean"),
+      #          aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
       scale_fill_manual(values = c("#fc8d62", "coral3", "slategray2", "#0072B2"),
                         name = "VOCs") +
-      annotate("text", x = 11, y = 300, label = "328", size = 5) +
-      scale_y_continuous(limits = c(0, 300), position = "right") +
+      #annotate("text", x = 11, y = 300, label = "328", size = 5) +
+      scale_y_continuous(limits = c(0, 330), position = "right") +
       theme_minimal() +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
       theme(text = element_text(size = 18),
@@ -278,10 +279,13 @@ notes: need to look at these tests still
                  "#9e9ac8")
     carbonyls_p %>%
     ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_carbs  %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha=0.9) +
+      geom_boxplot(data = carbonyls_all, aes(x = stove, y = val), alpha = 0, color = "gray30", width=0.4) +
+      geom_point(data = stats_carbs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      geom_point(data = stats_carbs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_text(data = stats_carbs  %>%
+      #            dplyr::filter(var != "mean"),
+      #          aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
       theme_minimal() +
       scale_y_continuous(limits = c(0, 15), position = "right") +
       scale_fill_manual(values = col_vector) +
@@ -312,13 +316,14 @@ VOCs
     
 
   stat_vocs %>%
-    dplyr::filter(var == "mean") %>%
-    dplyr::mutate(three_stone = three_stone$val[3]) %>%
-    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
-    dplyr::select(stove, prct_decrease) %>%
+    dplyr::mutate(three_stone = three_stone$mean[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100,
+                  abs_decrease = three_stone - mean) %>%
+    dplyr::select(stove, prct_decrease, abs_decrease) %>%
+    dplyr::select(stove, prct_decrease, abs_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    knitr::kable("markdown", digits = 0, align = 'c')
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
 Carbonyls
@@ -330,13 +335,13 @@ Carbonyls
     
 
   stats_carbs %>%
-    dplyr::filter(var == "mean") %>%
-    dplyr::mutate(three_stone = three_stone$val[3]) %>%
-    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
-    dplyr::select(stove, prct_decrease) %>%
+    dplyr::mutate(three_stone = three_stone$mean[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100,
+                  abs_decrease = three_stone - mean) %>%
+    dplyr::select(stove, prct_decrease, abs_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    knitr::kable("markdown", digits = 0, align = 'c')
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
 ## vocs

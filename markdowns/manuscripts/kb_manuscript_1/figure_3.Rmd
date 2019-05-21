@@ -63,8 +63,13 @@ load data
   emissions <-
     emissions %>%
     dplyr::left_join(samples %>%
-                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id") %>%
-    dplyr::filter(!is.na(val))
+                       dplyr::select(id, stove, fuel, stovecat, fuelcat), by = "id")
+```
+
+```{r}
+  emissions <-
+    emissions %>%
+    dplyr::filter(pol != "cyclopenta[ce]phenanthrylene")
 ```
 
 ## filter out values below background
@@ -107,24 +112,23 @@ load data
 ```{r}
   range_ultrafines <-
     ultrafines %>%
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
-                     max = max(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max) %>%
-    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+                     max = max(val, na.rm = TRUE),
+                     mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE))
 ```
 
 ```{r}
   stats_pahs <-
     pahs %>%
-    dplyr::group_by(id, stove, stovecat) %>%
+    dplyr::group_by(id, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(stove, stovecat) %>%
+    dplyr::group_by(stove) %>%
     dplyr::summarise(min = min(val, na.rm = TRUE),
                      max = max(val, na.rm = TRUE),
-                     mean = mean(val, na.rm = TRUE)) %>%
-    tidyr::gather("var", "val", min, max, mean) %>%
-    dplyr::mutate(sym = ifelse(var == "min", "[", "]"))
+                     mean = mean(val, na.rm = TRUE),
+                     median = median(val, na.rm = TRUE))
 ```
 
 ## calculate means by pollutant
@@ -132,8 +136,8 @@ load data
 ```{r}
   ultrafines_p <-
     ultrafines %>%
-    dplyr::group_by(stove, stovecat) %>%
-    dplyr::summarise(mean = mean(val, na.rm = TRUE)) %>%
+    dplyr::group_by(stove) %>%
+    dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::mutate(pol_category = "ultrafine particles")
 ```
 
@@ -141,9 +145,9 @@ load data
 ```{r}
   pahs_p <-
     pahs %>%
-    dplyr::group_by(id, pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(id, pol_subcategory, stove) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE)) %>%
-    dplyr::group_by(pol_subcategory, stove, stovecat) %>%
+    dplyr::group_by(pol_subcategory, stove) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE)) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(pol_subcategory = 
@@ -165,11 +169,20 @@ load data
 
 ```{r, echo=FALSE}
   p1 <- 
-    ultrafines_p %>%
+    range_ultrafines %>%
       ggplot(aes(x = stove, y = mean)) +
-      geom_histogram(stat = "identity", fill = "plum4") +
-      geom_text(data = range_ultrafines,
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+      geom_histogram(data = ultrafines_p, aes(x = stove, y = val), stat = "identity", fill = "plum3", alpha=0.9) +
+      geom_boxplot(data = ultrafines, aes(x = stove, y = val), fill = "transparent",
+                   color = "gray30", width=0.4, outlier.shape = NA, coef = 0) +
+      geom_jitter(data = ultrafines, aes(x = stove, y = val), shape = 1, width = 0.1, size = 1.5, stroke = 1, color = "gray30") +
+      #geom_point(aes(x = stove, y = mean), shape = 8, size = 2, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_errorbar(data = range_ultrafines, aes(x = stove, ymin = lq, ymax = uq), 
+      #              color = "gray30", width = 0.1) +
+    #geom_text(data = range_ultrafines,
+      #          aes(x = stove, y = val, label = sym), stroke = 2, size = 8, angle = 90, nudge_x = -0.05,
+      #          color = "gray30") +
         theme_minimal() +
         #scale_y_continuous(trans = "log10", limits = c(1e5, 1e8), breaks = c(1e5, 1e6, 1e7, 1e8)) +
       theme(text = element_text(size = 18),
@@ -182,20 +195,36 @@ load data
 ```
 
 ```{r, echo=FALSE}
+pahs_all <-
+  pahs %>%
+  dplyr::group_by(id, stove, fuel) %>%
+  dplyr::summarise(val = sum(val, na.rm = TRUE))
+  
   p2 <-
-    pahs_p %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_pahs %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
-      scale_y_continuous(limits = c(0, 30)) +
-      annotate("text", x = 1, y = 30, label = "35", size = 5) +
-      annotate("text", x = 2, y = 30, label = "55", size = 5) +
-      annotate("text", x = 3, y = 30, label = "73", size = 5) +
+      pahs_p %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha=0.9) +
+      geom_boxplot(data = pahs_all, aes(x = stove, y = val),
+                   color = "gray30", width=0.41, fill = "transparent", outlier.shape = NA, coef = 0) +
+    geom_jitter(data = pahs_all, aes(x = stove, y = val), shape = 1, width = 0.1, size = 1.5, stroke = 1, color = "gray30") +
+      #geom_dotplot(data = pahs_all, aes(x = stove, y = val), binaxis='y', stackdir='center',dotsize = 0.3, fill = "gray30") + 
+      #geom_errorbar(data = stats_pahs, aes(x = stove, y = mean, ymin = lq, ymax = uq),
+      #              color = "gray30", width = 0.1) +
+      #geom_point(data = stats_pahs, aes(x = stove, y = mean), shape = 8, size = 2, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(data = stats_pahs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(data = stats_pahs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_text(data = stats_pahs %>%
+      #            dplyr::filter(var != "mean"),
+      #          aes(x = stove, y = val, label = sym), size = 8, angle = 90, nudge_x = -0.02,
+      #          color = "gray30") +
+      scale_fill_manual(values = c("skyblue3", "grey", "darkcyan", "yellowgreen")) +
+      scale_y_continuous(limits = c(0, 60)) +
+      #annotate("text", x = 1, y = 46, label = "35", size = 5) +
+      #annotate("text", x = 2, y = 45, label = "55", size = 5) +
+      annotate("text", x = 3, y = 60, label = "73", size = 5) +
       theme_minimal() +
-      guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
+      guides(fill = guide_legend(order = 2,nrow = 2, byrow = FALSE),
+             shape = guide_legend(order = 1)) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
@@ -212,14 +241,20 @@ load data
 ```
 
 ```{r figure_3a, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
-    ultrafines_p %>%
-      ggplot(aes(x = stove, y = mean)) +
-      geom_histogram(stat = "identity", fill = "plum4") +
-      geom_text(data = range_ultrafines,
-                aes(x = stove, y = val, label = sym), stroke = 2, size = 10, angle = 90, nudge_x = -0.05) +
+    range_ultrafines %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(data = ultrafines_p, stat = "identity", fill = "plum3", alpha=0.9) +
+      geom_boxplot(data = ultrafines, aes(x = stove, y = val), fill = "transparent",
+                   color = "gray30", width=0.4, fill = "transparent", outlier.shape = NA, coef = 0) +
+    geom_jitter(data = ultrafines, aes(x = stove, y = val), shape = 1, width = 0.1, size = 1.5, stroke = 1, color = "gray30") +
+      #geom_point(aes(x = stove, y = mean), shape = 1, size = 2, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_errorbar(data = range_ultrafines, aes(x = stove, ymin = lq, ymax = uq),
+                    #color = "gray30", width = 0.1) +
         theme_minimal() +
-      scale_y_continuous(limits = c(0, 5e15), position = "right") +
-      annotate("text", x = 11, y = 5e15, label = "1e+16", size = 5) +
+      scale_y_continuous(limits = c(0, 3.5e14), position = "right") +
+      #annotate("text", x = 11, y = 3.5e14, label = "3.5e+14", size = 5) +
       theme(text = element_text(size = 18),
             legend.justification = c(1, 1), 
             legend.position = c(1, 1),
@@ -232,14 +267,16 @@ load data
 ```
 
 ```{r figure_3b, echo=FALSE, fig.width=12, fig.height=1.75, dpi=400, dev='pdf'}
-    pahs_p %>%
-    ggplot(aes(x = stove, y = val)) +
-      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity") +
-      geom_text(data = stats_pahs %>%
-                  dplyr::filter(var != "mean"),
-                aes(x = stove, y = val, label = sym), size = 10, angle = 90, nudge_x = -0.02) +
-      scale_fill_manual(values = c("gray36", "grey", "darkcyan", "yellowgreen")) +
-      scale_y_continuous(limits = c(0, 2), breaks = c(0, 1, 2, 3), position = "right") +
+      pahs_p %>%
+      ggplot(aes(x = stove, y = val)) +
+      geom_histogram(aes(fill = pol_subcategory, order = pol_subcategory), stat = "identity", alpha=0.9) +
+      geom_boxplot(data = pahs_all, aes(x = stove, y = val),
+                   fill = "transparent", outlier.shape = NA, coef = 0) +
+    geom_jitter(data = pahs_all, aes(x = stove, y = val), shape = 1, width = 0.1, size = 1.5, stroke = 1, color = "gray30") +
+      #geom_point(data = stats_pahs, aes(x = stove, y = min), shape = 24, color = "gray30", fill = "gray30", stroke = 1) +
+      #geom_point(data = stats_pahs, aes(x = stove, y = max), shape = 25, color = "gray30", fill = "gray30", stroke = 1) +
+      scale_fill_manual(values = c("skyblue3", "grey", "darkcyan", "yellowgreen")) +
+      scale_y_continuous(limits = c(0, 0.6), position = "right") +
       annotate("text", x = 9, y = 2, label = "2.9", size = 5) +
       theme_minimal() +
       guides(fill = guide_legend(nrow = 2, byrow = FALSE)) +
@@ -271,9 +308,10 @@ Ultrafines
     
 
   ultrafines_p %>%
-    dplyr::mutate(three_stone = three_stone$mean[1]) %>%
-    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100) %>%
-    dplyr::select(stove, prct_decrease) %>%
+    dplyr::mutate(three_stone = three_stone$val[1]) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100,
+                  abs_decrease = val - three_stone) %>%
+    dplyr::select(stove, prct_decrease, abs_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
     knitr::kable("markdown", digits = 0, align = 'c')
@@ -288,13 +326,13 @@ PAHs
     
 
   stats_pahs %>%
-    dplyr::filter(var == "mean") %>%
-    dplyr::mutate(three_stone = three_stone$val[3]) %>%
-    dplyr::mutate(prct_decrease = ((three_stone - val) / three_stone) * 100) %>%
-    dplyr::select(stove, prct_decrease) %>%
+    dplyr::mutate(three_stone = three_stone$mean) %>%
+    dplyr::mutate(prct_decrease = ((three_stone - mean) / three_stone) * 100,
+                  abs_decrease = mean - three_stone) %>%
+    dplyr::select(stove, prct_decrease, abs_decrease) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(stove = gsub("\n", " ", stove)) %>%
-    knitr::kable("markdown", digits = 0, align = 'c')
+    knitr::kable("markdown", digits = 2, align = 'c')
 ```
 
 ## ultrafines

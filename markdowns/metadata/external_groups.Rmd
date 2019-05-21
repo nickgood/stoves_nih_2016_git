@@ -18,6 +18,7 @@ output:
 ```{r load_data}
   wbt_data <- readRDS("../../r_data/wbt_data.RDS")
   field_data <- readRDS("../../r_data/field_data.RDS")
+  rose_data <- readRDS("../../r_data/rose_field_data.RDS")
 ```
 
 # wbt data
@@ -27,17 +28,24 @@ output:
     wbt_data %>%
     dplyr::mutate(stove = 
                     stove %>%
-                    forcats::fct_recode("rocket elbow" = "envirofit g3300",
-                                        "ceramic charcoal" = "ceramic charcoal",
-                                        "gasifier" = "philips fan",
-                                        "three stone fire" = "traditional"),
-                  fuel = 
-                    fuel %>%
-                    forcats::fct_recode("oak" = "red oak",
-                                        "oak" = "white oak")) %>%
-    dplyr::filter(grepl("rocket elbow|ceramic charcoal|gasifier|three stone fire", stove),
-                  study == "Jetter_2012") %>%
-    dplyr::mutate(test_type = "WBT")
+                    forcats::fct_recode("Rocket elbow" = "envirofit g3300",
+                                        "Rocket elbow" = "gyapa",
+                                        "Built-in plancha" = "onil",
+                                        "Built-in plancha" = "patsari",
+                                        "Rocket elbow" = "stovetec greenfire",
+                                        "Rocket elbow" = "improved no chimney",
+                                        "Metal jiko" = "metal charcoal",
+                                        "Ceramic jiko" = "ceramic charcoal",
+                                        "Ceramic jiko" = "kcj standard",
+                                        "Gasifier" = "philips fan",
+                                        "Three-stone fire" = "traditional",
+                                        "Three-stone fire" = "three stone fire",
+                                        "Rocket elbow" = "improved no chimney",
+                                        "Forced-draft gasifier" = "gasifier",
+                                        "Built-in plancha" = "ecostufa")) %>%
+    dplyr::mutate(study = gsub("_", " et al, ", study),
+                  pol = gsub("pm2.5", "pm_mass", pol)) %>%
+    dplyr::filter(var == "mean", grepl("pm|co|ec", pol), units == "grams per kilogram")
 ```
 
 # field data
