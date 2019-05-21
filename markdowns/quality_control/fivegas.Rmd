@@ -791,7 +791,7 @@ make dilution average variable
 ```{r}
   fivegas_merged <-
     fivegas_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
                   val = ifelse(bg == "below", NA, val))
 ```
 

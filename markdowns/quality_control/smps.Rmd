@@ -344,7 +344,7 @@ notes:
 * Detector laser error:
 * Detector growth tube temp error:
 
-all errors only happened for one or two scans - remove 
+all errors only happened for one or two scans - remove those scans
 
 ```{r}
  smps_merged <- 
@@ -543,7 +543,7 @@ notes: remove scan G6
 
 summed over each scan
 
-```{r smps_burn_bg_conc, echo=FALSE}
+```{r, echo=FALSE}
   smps_merged %>%
     dplyr::filter(!is.na(val)) %>%
     dplyr::left_join(dplyr::select(samples, id, date), by = 'id') %>%
@@ -624,15 +624,17 @@ notes: the negative concentration is small and mostly at large size bins that ha
 ```{r}
   smps_merged <-
     smps_merged %>%
-    dplyr::mutate(bg = ifelse(val < 0, "below", "above"),
-                  val = ifelse(bg == "below", NA, val))
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
+                  val = ifelse(bg == "below", 0, val))
 ```
+
+notes: replace below background values with zero
 
 # burn analysis for size distribution data
 
 ## plot: size distribution by stove type
 
-```{r size_distribution_stovetype, echo=FALSE, fig.height=10, fig.width=10}
+```{r size_distribution_stovetype, echo=FALSE, fig.height=12, fig.width=12}
   smps_merged_p <-
     smps_merged %>%
     dplyr::left_join(dplyr::select(samples, id, stove, fuel, stovecat, fuelcat), by = "id")
@@ -685,7 +687,7 @@ notes:
 ```{r}
   smps_merged <-
     smps_merged %>%
-    dplyr::group_by(id, pol, po_category, size) %>%
+    dplyr::group_by(id, pol, pol_category, size) %>%
     dplyr::summarise(val = mean(val, na.rm = TRUE),
                      qc = last(qc),
                      bg = last(bg))
@@ -707,19 +709,6 @@ notes:
 
 # burn analysis for ultrafines
 
-remove test with more that 40% of data missing for below background
-
-```{r}
-  bb_tests <-
-  smps_merged %>%
-    dplyr::group_by(id) %>%
-    dplyr::do(bb = round(nrow(filter(., bg == "below"))/nrow(.), 2) * 100) %>%
-    dplyr::mutate(bg = ifelse(bb > 40, "below", "above")) %>%
-    dplyr::select(-bb)
-```
-
-notes: background is below if more than 40% of data in the calculation is below background - should be none
-
 ```{r}
   ultrafines <-
     smps_merged %>%
@@ -727,8 +716,8 @@ notes: background is below if more than 40% of data in the calculation is below 
     dplyr::group_by(id) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE) * smps_constant * 1e6,
                      qc = first(qc)) %>%
-    dplyr::left_join(bb_tests, by = c("id")) %>%
-    dplyr::mutate(val = ifelse(bg == "below", NA, val))
+    dplyr::mutate(bg = ifelse(val <= 0, "below", "above"),
+                  val = ifelse(bg == "below", NA, val))
 ```
 
 notes:

@@ -278,7 +278,7 @@ notes: not that much of an outlier - proceed
   acf(blanks$val)
 ```
 
-notes:
+notes: no strong trend in time
 
 ## table: lab blanks with NA values
 

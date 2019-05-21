@@ -89,18 +89,9 @@ load schemes
     dplyr::distinct()
 ```
 
-## look at duplicates
-
-```{r}
-  zero_vals <-
-    pah %>%
-      dplyr::filter(val == 0) %>%
-      dplyr::arrange(id, pol)
-
-  readr::write_csv(zero_vals, "../../qaqc_files/zero_vals.csv")
-```
-
 ## filter out zeros and NAs
+
+* Pierre sent zero/NA values
 
 ```{r}
   pah <- 
@@ -305,7 +296,7 @@ notes:
 
 # samples to rerun
 
-```{r}
+```{r,eval=FALSE}
   all_vals <-
     pah_merged %>%
     dplyr::select(id, pol) %>%
@@ -317,7 +308,7 @@ notes:
 
 filters
 
-```{r}
+```{r,eval=FALSE}
   missing_filters <-
     all_vals %>%
     dplyr::anti_join(pah_merged %>%
@@ -331,7 +322,7 @@ filters
 
 pufs
 
-```{r}
+```{r,eval=FALSE}
   missing_front_pufs <-
     all_vals %>%
     dplyr::anti_join(pah_merged %>%
@@ -353,7 +344,7 @@ pufs
                    "../../qaqc_files/missing_test_filters.csv")
 ```
 
-```{r}
+```{r,eval=FALSE}
   missing_backgrounds <-
     pah_merged %>%
     dplyr::filter(is.na(val), test_type == "bg") %>%
@@ -363,7 +354,7 @@ pufs
   readr::write_csv(missing_backgrounds, "../../qaqc_files/missing_backgrounds.csv")
 ```
 
-```{r}
+```{r,eval=FALSE}
   missing_blanks <-
     pah_merged %>%
     dplyr::filter(is.na(val), test_type == "blank") %>%
@@ -485,13 +476,7 @@ summarize blanks
 ## save lod
 
 ```{r}
-  pah_lod <-
-    blanks %>%
-    dplyr::select()
-    tidyr::spread(filter_type, pol) %>%
-    dplyr::mutate(lod = paste0(filter, "|", puf))
-
-  saveRDS(pah_lod, "../../r_data/pah_lod.RDS")
+  saveRDS(blanks, "../../r_data/pah_lod.RDS")
 ```
 
 ## lod
@@ -522,12 +507,12 @@ add lod variable and replace with lod/sqrt(2)
 ```{r, eval=FALSE}
   # total number 
   pah_merged %>%
-    dplyr::filter(lod == "above", filter_type == "filter") %>%
+    dplyr::filter(lod == "above") %>%
     nrow(.)
 
   # lod 
   pah_merged %>%
-    dplyr::filter(lod == "below", filter_type == "filter") %>%
+    dplyr::filter(lod == "below") %>%
     nrow(.)
 ```
 
@@ -762,7 +747,7 @@ notes: most backgrounds below lod
     dplyr::group_by(id, pol, test_type) %>%
     dplyr::summarise(val = sum(val),
                      qc = first(qc),
-                     lod = first(lod)) %>%
+                     lod = last(lod)) %>%
     ggplot(aes_string(y = "val", x = "test_type")) +
       geom_boxplot(outlier.colour = NA) +
       geom_jitter(aes(color = qc, shape = lod), size = 2) +
@@ -777,33 +762,43 @@ notes: most backgrounds below lod
       xlab("")
 ```
 
-```{r, eval=FALSE}
-  pah_merged %>%
-    dplyr::filter(test_type == "test", grepl("front puf|filter", filter_type)) %>%
-    tidyr::spread(filter_type, val) %>%
-    dplyr::rename("front_puf" = "front puf") %>%
-    dplyr::mutate(ratio = front_puf / (filter + front_puf)) %>%
-      ggplot(aes_string(y = "ratio", x = "pol")) +
-      geom_boxplot(outlier.colour = NA) +
-      geom_jitter(shape = 1, size = 2) +
-      theme_bw() +
-      theme(text = element_text(size = 16),
-            legend.position = "top",
-            axis.text.x = element_text(angle = 25, hjust = 1, vjust = 1)) +
-      ylab("fraction of gas phase PAHs") +
-      xlab("")
-```
-
 ## sum across filters
+
+```{r}
+  filters <-
+    pah_merged %>%
+    dplyr::filter(test_type == "test", filter_type =="filter") %>%
+    dplyr::group_by(id, pol)  %>%
+    dplyr::summarise(filter = sum(val, na.rm = TRUE))
+```
 
 ```{r}
   pah_merged <-
     pah_merged %>%
     dplyr::filter(test_type == "test") %>%
     dplyr::group_by(id, pol)  %>%
+    na.omit() %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc),
                      lod = last(lod))
+```
+
+```{r PAH_partion, fig.width=12, fig.height=4}
+  #test <-
+  pah_merged %>%
+    dplyr::left_join(filters, by = c("pol", "id")) %>%
+    na.omit() %>%
+    dplyr::filter(lod !="below") %>%
+    dplyr::mutate(ratio = filter / (val)) %>%
+      ggplot(aes_string(y = "ratio", x = "pol")) +
+      geom_boxplot(outlier.colour = NA) +
+      #geom_jitter(size = 2) +
+      theme_bw() +
+      theme(text = element_text(size = 12),
+            legend.position = "top",
+            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.75)) +
+      ylab("Fraction of particle-phase PAHs") +
+      xlab("")
 ```
 
 ```{r, eval=FALSE}

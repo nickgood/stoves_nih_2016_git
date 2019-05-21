@@ -629,7 +629,7 @@ extract artifact
     dplyr::filter(cassette == "e") %>%
     dplyr::ungroup() %>%
     dplyr::select(-cassette) %>%
-    dplyr::left_join(ecoc_artifact, by = c("id", "pol")) %>%
+    dplyr::left_join(bg_artifact, by = c("id", "pol")) %>%
     dplyr::mutate(val = ifelse(!grepl("unc", pol), val - artifact, val),
                   val = ifelse(grepl("unc", pol), sqrt(val^2 + artifact^2), val)) %>%
     dplyr::filter(val > 0)

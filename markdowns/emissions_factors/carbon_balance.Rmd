@@ -78,7 +78,7 @@ notes: looks good!
                                                    "lodgepole pine pellets",
                                                    fuel)), by = "id") %>%
     dplyr::left_join(fuel_properties, by = "fuel") %>%
-    dplyr::mutate(mass_fuel_comb = ifelse(is.na(mass_fuel), mass_fuel_c, mass_fuel)) %>%
+    dplyr::mutate(mass_fuel_comb = ifelse(is.na(mass_fuel_c), mass_fuel, mass_fuel_c)) %>%
     dplyr::filter(!grepl("^27|^28|^29|^30", id))
 
   saveRDS(fuel_merged, file = "../../r_data/fuel_merged.RDS")
