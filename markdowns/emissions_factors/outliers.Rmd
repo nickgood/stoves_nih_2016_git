@@ -33,11 +33,11 @@ load data
                     stove %>% 
                     factor %>% 
                     forcats::fct_relevel("three-stone fire",
-                                         "clay ring",
+                                         "chulha",
                                          "rocket elbow",
                                          "built-in plancha",
                                          "fan rocket-elbow",
-                                         "gasifier",
+                                         "forced-draft gasifier",
                                          "ceramic charcoal",
                                          "metal charcoal",
                                          "wick kerosene",
@@ -77,45 +77,6 @@ load data
     facet_wrap(~stove, scales = "free")
 ```
 
-## mass of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "pm_mass", metric == "mass_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## energy of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "pm_mass", metric == "energy_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## emissions rate
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "pm_mass", metric == "emissions_rate") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
 # elemental carbon
 
 ## energy delivered
@@ -131,45 +92,6 @@ load data
     facet_wrap(~stove, scales = "free")
 ```
 
-## mass of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "ec", metric == "mass_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## energy of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "ec", metric == "energy_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## emissions rate
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "ec", metric == "emissions_rate") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
 # organic carbon
 
 ## energy delivered
@@ -177,45 +99,6 @@ load data
 ```{r, echo=FALSE, fig.width=10, fig.height=8}
   emissions %>%
     dplyr::filter(pol_category == "oc", metric == "energy_delivered_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## mass of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "oc", metric == "mass_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## energy of fuel
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "oc", metric == "energy_fuel_ef") %>%
-    ggplot(aes(x = id, y = val, color = qc)) +
-    geom_point() +
-    theme_bw() +
-    theme(text = element_text(size = 12),
-          legend.position = "top") +
-    facet_wrap(~stove, scales = "free")
-```
-
-## emissions rate
-
-```{r, echo=FALSE, fig.width=10, fig.height=8}
-  emissions %>%
-    dplyr::filter(pol_category == "oc", metric == "emissions_rate") %>%
     ggplot(aes(x = id, y = val, color = qc)) +
     geom_point() +
     theme_bw() +
@@ -243,11 +126,13 @@ load data
     facet_wrap(~stove, scales = "free")
 ```
 
-## mass of fuel
+# pahs
+
+## energy delivered
 
 ```{r, echo=FALSE, fig.width=10, fig.height=8}
   emissions %>%
-    dplyr::filter(pol_category == "ions", metric == "mass_fuel_ef") %>%
+    dplyr::filter(pol_category == "pahs", metric == "energy_delivered_ef") %>%
     dplyr::group_by(id) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc),
@@ -260,11 +145,14 @@ load data
     facet_wrap(~stove, scales = "free")
 ```
 
-## energy of fuel
+# vocs
+
+## energy delivered
 
 ```{r, echo=FALSE, fig.width=10, fig.height=8}
+  vocs <-
   emissions %>%
-    dplyr::filter(pol_category == "ions", metric == "energy_fuel_ef") %>%
+    dplyr::filter(pol_category == "vocs", metric == "energy_delivered_ef") %>%
     dplyr::group_by(id) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc),
@@ -277,11 +165,108 @@ load data
     facet_wrap(~stove, scales = "free")
 ```
 
-## emissions rate
+# carbonyls
+
+## energy delivered
 
 ```{r, echo=FALSE, fig.width=10, fig.height=8}
   emissions %>%
-    dplyr::filter(pol_category == "ions", metric == "emissions_rate") %>%
+    dplyr::filter(pol_category == "carbonyls", metric == "energy_delivered_ef") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     stove = first(stove)) %>%
+    ggplot(aes(x = id, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# carbohydrates
+
+## energy delivered
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  emissions %>%
+    dplyr::filter(pol_category == "carbohydrates", metric == "energy_delivered_ef") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     stove = first(stove)) %>%
+    ggplot(aes(x = id, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# ultrafines
+
+## energy delivered
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  emissions %>%
+    dplyr::filter(pol_category == "smps", metric == "energy_delivered_ef") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     stove = first(stove)) %>%
+    ggplot(aes(x = id, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# carbon dioxide
+
+## energy delivered
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  emissions %>%
+    dplyr::filter(pol == "co2", metric == "energy_delivered_ef") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     stove = first(stove)) %>%
+    ggplot(aes(x = id, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# carbon monoxide
+
+## energy delivered
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  emissions %>%
+    dplyr::filter(pol == "co", metric == "energy_delivered_ef") %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(val = sum(val, na.rm = TRUE),
+                     qc = first(qc),
+                     stove = first(stove)) %>%
+    ggplot(aes(x = id, y = val, color = qc)) +
+    geom_point() +
+    theme_bw() +
+    theme(text = element_text(size = 12),
+          legend.position = "top") +
+    facet_wrap(~stove, scales = "free")
+```
+
+# methane
+
+## energy delivered
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+  emissions %>%
+    dplyr::filter(pol == "ch4", metric == "energy_delivered_ef") %>%
     dplyr::group_by(id) %>%
     dplyr::summarise(val = sum(val, na.rm = TRUE),
                      qc = first(qc),
